@@ -44,17 +44,23 @@ public protocol GoogleDriveFetching: Sendable {
 // MARK: - GoogleDriveClient
 // Liest nur Metadaten (Name, Typ, Änderungszeit, Web-Link) — nie Dateiinhalte.
 public struct GoogleDriveClient: GoogleDriveFetching {
-    private let tokenStore: GoogleTokenStoring
+    private let tokenProvider: GoogleAccessTokenProviding
     private let session: URLSession
     private let baseURL = "https://www.googleapis.com/drive/v3/files"
 
-    public init(tokenStore: GoogleTokenStoring = KeychainGoogleTokenStore(), session: URLSession = .shared) {
-        self.tokenStore = tokenStore
+    public init(
+        tokenProvider: GoogleAccessTokenProviding = GoogleAccessTokenProvider(),
+        session: URLSession = .shared
+    ) {
+        self.tokenProvider = tokenProvider
         self.session = session
     }
 
     public func listFolder(folderID: String) async throws -> [GoogleDriveFile] {
-        guard let tokens = try? tokenStore.load() else {
+        // Provider-Fehler sind immer Auth-Zustand (nicht verbunden, Refresh
+        // fehlgeschlagen), nie Drive-API-Zustand — daher einheitlich auf
+        // .notConnected gemappt, statt den Fehlertyp durchzureichen.
+        guard let accessToken = try? await tokenProvider.validAccessToken() else {
             throw GoogleDriveError.notConnected
         }
         guard let url = Self.buildListFolderURL(folderID: folderID, baseURL: baseURL) else {
@@ -62,7 +68,7 @@ public struct GoogleDriveClient: GoogleDriveFetching {
         }
 
         var request = URLRequest(url: url)
-        request.setValue("Bearer \(tokens.accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw GoogleDriveError.invalidResponse }

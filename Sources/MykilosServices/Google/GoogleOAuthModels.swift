@@ -43,4 +43,23 @@ public enum GoogleOAuthError: Error, Sendable, Equatable {
     case missingClientID
     case loopbackStartupFailed
     case loopbackCancelled
+    case notConnected
+    case refreshUnavailable
+}
+
+// MARK: - urlEncodedFormBody
+// Geteilter Form-Encoder für POST-Requests an den Google-Token-Endpoint —
+// genutzt vom Code-Exchange (GoogleOAuthPKCEService) UND vom Token-Refresh
+// (GoogleTokenRefreshService), damit die Escaping-Logik nur einmal existiert.
+func urlEncodedFormBody(_ values: [String: String]) -> Data {
+    values
+        .map { key, value in "\(formEscape(key))=\(formEscape(value))" }
+        .joined(separator: "&")
+        .data(using: .utf8) ?? Data()
+}
+
+private func formEscape(_ value: String) -> String {
+    var allowed = CharacterSet.alphanumerics
+    allowed.insert(charactersIn: "-._~")
+    return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
 }

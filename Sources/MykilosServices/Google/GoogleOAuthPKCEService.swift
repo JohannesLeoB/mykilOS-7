@@ -111,21 +111,8 @@ public struct GoogleOAuthPKCEService: Sendable {
             "grant_type": "authorization_code",
             "redirect_uri": redirectURI,
         ]
-        request.httpBody = formBody(parameters)
+        request.httpBody = urlEncodedFormBody(parameters)
         return request
-    }
-
-    private func formBody(_ values: [String: String]) -> Data {
-        values
-            .map { key, value in "\(formEscape(key))=\(formEscape(value))" }
-            .joined(separator: "&")
-            .data(using: .utf8) ?? Data()
-    }
-
-    private func formEscape(_ value: String) -> String {
-        var allowed = CharacterSet.alphanumerics
-        allowed.insert(charactersIn: "-._~")
-        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? value
     }
 }
 

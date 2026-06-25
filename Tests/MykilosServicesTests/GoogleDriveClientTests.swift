@@ -44,7 +44,7 @@ struct GoogleDriveClientTests {
 
     @Test func listFolderWirftNotConnectedOhneToken() async {
         let store = InMemoryGoogleTokenStore()
-        let client = GoogleDriveClient(tokenStore: store)
+        let client = GoogleDriveClient(tokenProvider: GoogleAccessTokenProvider(tokenStore: store))
 
         do {
             _ = try await client.listFolder(folderID: "ABC123")

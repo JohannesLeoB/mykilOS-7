@@ -45,7 +45,7 @@ public struct WidgetBoardView: View {
         case .tasks:     TasksWidget(projectID: projectID)
         case .contacts:  ContactsWidget(projectID: projectID)
         case .cash:      CashWidget(projectID: projectID)
-        case .calendar:  CalendarWidget(projectID: projectID)
+        case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: nil)
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)
         case .assistant: AssistantWidget(projectID: projectID)
         case .focus, .projectFaves, .clockodo, .recentActivity:

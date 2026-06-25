@@ -70,7 +70,8 @@ struct ProjectDetailView: View {
                 boardStore: boardStore,
                 noteStore: noteStore,
                 projectID: project.projectNumber,
-                driveFolderID: project.links.driveFolderID
+                driveFolderID: project.links.driveFolderID,
+                calendarQuery: project.links.calendarQuery
             )
                 .padding(.horizontal, MykSpace.s9)
                 .padding(.top, MykSpace.s7)
@@ -88,6 +89,7 @@ private struct ProjectWidgetBoardView: View {
     let noteStore:  NoteStore
     let projectID:  String
     let driveFolderID: String?
+    let calendarQuery: String?
 
     var body: some View {
         Grid(alignment: .topLeading,
@@ -114,7 +116,7 @@ private struct ProjectWidgetBoardView: View {
         case .tasks:     TasksWidget(projectID: projectID)
         case .contacts:  ContactsWidget(projectID: projectID)
         case .cash:      CashWidget(projectID: projectID)
-        case .calendar:  CalendarWidget(projectID: projectID)
+        case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: calendarQuery)
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)
         case .assistant: AssistantWidget(projectID: projectID)
         default:         EmptyView()
