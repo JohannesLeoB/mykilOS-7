@@ -33,6 +33,7 @@ extension WidgetKind {
         case .assistant: "sparkles"
         case .focus:          "scope"
         case .projectFaves:   "star"
+        case .mail:           "envelope"
         case .clockodo:       "clock"
         case .recentActivity: "bolt"
         }

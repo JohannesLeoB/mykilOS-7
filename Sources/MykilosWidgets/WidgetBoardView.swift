@@ -48,6 +48,7 @@ public struct WidgetBoardView: View {
         case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: nil)
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)
         case .assistant: AssistantWidget(projectID: projectID)
+        case .mail:      MailWidget(projectID: projectID, mailQuery: nil)
         case .focus, .projectFaves, .clockodo, .recentActivity:
             EmptyView()
         }

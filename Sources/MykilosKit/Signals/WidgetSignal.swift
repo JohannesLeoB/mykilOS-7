@@ -9,6 +9,7 @@ public enum WidgetSource: String, Codable, Sendable, CaseIterable {
     case tasks       // Aufgaben       — Ocker
     case cash        // Geld/Angebote  — Tiefblau
     case notes       // Persönliches   — Pflaume
+    case mail        // E-Mails       — Pflaume
     case assistant   // Dolmetscher
 }
 

@@ -177,6 +177,7 @@ extension WidgetKind {
         case .assistant: .assistant
         case .focus:          .assistant
         case .projectFaves:   .tasks
+        case .mail:           .mail
         case .clockodo:       .tasks
         case .recentActivity: .drive
         }
@@ -190,7 +191,7 @@ extension WidgetSource {
         case .people, .calendar: MykColor.people.color
         case .tasks:             MykColor.tasks.color
         case .cash:              MykColor.cash.color
-        case .notes:             MykColor.personal.color
+        case .notes, .mail:      MykColor.personal.color
         case .assistant:         MykColor.ink.color
         }
     }

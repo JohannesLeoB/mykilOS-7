@@ -16,7 +16,8 @@ public enum WidgetKind: String, Codable, CaseIterable, Sendable {
     case projectFaves   // Projekt-Favoriten · Ocker
     case clockodo       // Zeiterfassung · Ocker
     case recentActivity // Letzte Aktivität · Terrakotta
-    // Akt 3+: sevdesk, mail…
+    case mail           // E-Mails · Pflaume
+    // Akt 3+: sevdesk…
 }
 
 // MARK: - WidgetSize
