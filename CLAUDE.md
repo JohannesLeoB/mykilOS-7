@@ -151,9 +151,14 @@ Jeder Schritt ist eine eigene Session/PR (siehe Prozess-Regel oben):
 swift package resolve          # GRDB + Dependencies holen
 swift build                    # Kompilieren
 swift test                     # Tests (zuerst Cold-Start-Tests)
-swift run                      # App starten
+swift run                      # App starten (ohne Bundle)
+./script/build_and_run.sh      # Echtes .app-Bundle in dist/ bauen + starten
+                                # (das ist auch die "Run"-Action in Codex)
 swiftlint --strict              # Token-Disziplin prüfen
 ```
+
+**Repo:** https://github.com/JohannesLeoB/mykilOS-6 (privat). Codex-Workflow
+und Session-Regeln: `docs/codex/WORKFLOW.md`.
 
 ---
 
@@ -164,3 +169,4 @@ swiftlint --strict              # Token-Disziplin prüfen
 - `docs/handoffs/HANDOFF_AKT2.md` — GRDB, Heute-Board, SaveState
 - `docs/handoffs/HANDOFF_AKT3_S1.md` — Google-OAuth-Fundament
 - `docs/MYKILOS_6_TEAM_MODELL.md` — Team, Airtable, Identität
+- `docs/codex/WORKFLOW.md` — Session-Regeln für Codex-Sessions in diesem Repo
