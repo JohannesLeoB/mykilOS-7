@@ -1,0 +1,25 @@
+import Foundation
+
+// MARK: - WidgetSource
+// Jede Quelle hat eine Identität — und im Designsystem eine eigene Farbe.
+public enum WidgetSource: String, Codable, Sendable, CaseIterable {
+    case drive       // Dateien        — Terrakotta
+    case people      // Kontakte       — Salbei
+    case calendar    // Termine        — Salbei
+    case tasks       // Aufgaben       — Ocker
+    case cash        // Geld/Angebote  — Tiefblau
+    case notes       // Persönliches   — Pflaume
+    case assistant   // Dolmetscher
+}
+
+// MARK: - WidgetSignal
+// Kleine, typisierte Ereignisse. Widgets SENDEN sie an den StudioContext und
+// LESEN die für sie relevanten. Widgets reden nie direkt miteinander.
+public enum WidgetSignal: Sendable, Equatable {
+    case projectFocused(projectID: String)
+    case driveFileAdded(projectID: String, fileName: String)
+    case offerDetected(projectID: String, label: String)
+    case reviewSuggested(projectID: String, label: String)   // VORSCHLAG, kein Write
+    case budgetThresholdCrossed(projectID: String, ratio: Double)
+    case deadlineNear(projectID: String, days: Int)
+}

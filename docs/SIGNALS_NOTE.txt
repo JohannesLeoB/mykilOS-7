@@ -1,0 +1,3 @@
+Hinweis: Der Mediator und der StudioContext sind bewusst testbar gehalten
+(reine Logik, keine UI). Ein Test wie "offerDetected erzeugt genau ein
+reviewSuggested und keine Aktion" gehört in Akt 2 ergänzt.

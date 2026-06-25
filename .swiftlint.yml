@@ -1,0 +1,28 @@
+# mykilOS 6 — Token-Disziplin wird erzwungen, nicht empfohlen.
+# Diese Custom-Rules lassen die zwei V5-Sünden gar nicht erst durch den Build.
+included:
+  - Sources
+excluded:
+  - Sources/MykilosApp/main.swift   # Akt-0-Ausnahme, in Akt 1 entfernen
+
+custom_rules:
+  no_system_font_in_features:
+    name: "Keine .font(.system) — nutze Typo-Tokens"
+    regex: '\.font\(\s*\.system'
+    match_kinds: [identifier, keyword]
+    message: "Direkte System-Schrift verboten. Verwende die Design-Tokens (Akt 1)."
+    severity: error
+  no_raw_color_in_features:
+    name: "Keine Color(red:) — nutze MykColor"
+    regex: 'Color\(\s*red\s*:'
+    message: "Hardcodierte Farben verboten. Verwende MykColor."
+    severity: error
+  no_silent_try:
+    name: "Kein verschlucktes try?"
+    regex: 'try\?'
+    message: "try? verschluckt Fehler. Wirf oder behandle ihn sichtbar (SaveState)."
+    severity: warning
+
+line_length:
+  warning: 140
+  error: 200
