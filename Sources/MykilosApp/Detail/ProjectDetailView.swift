@@ -72,7 +72,8 @@ struct ProjectDetailView: View {
                 projectID: project.projectNumber,
                 driveFolderID: project.links.driveFolderID,
                 calendarQuery: project.links.calendarQuery,
-                contactsQuery: project.links.contactsQuery
+                contactsQuery: project.links.contactsQuery,
+                mailQuery: project.links.mailQuery
             )
                 .padding(.horizontal, MykSpace.s9)
                 .padding(.top, MykSpace.s7)
@@ -84,7 +85,6 @@ struct ProjectDetailView: View {
 }
 
 // MARK: - ProjectWidgetBoardView
-// Wie WidgetBoardView aus Akt 1, aber mit persistentem Store + NoteStore.
 private struct ProjectWidgetBoardView: View {
     let boardStore: WidgetBoardStore
     let noteStore:  NoteStore
@@ -92,6 +92,9 @@ private struct ProjectWidgetBoardView: View {
     let driveFolderID: String?
     let calendarQuery: String?
     let contactsQuery: String?
+    let mailQuery: String?
+
+    @State private var dropTargetID: UUID?
 
     var body: some View {
         Grid(alignment: .topLeading,
@@ -100,8 +103,7 @@ private struct ProjectWidgetBoardView: View {
             ForEach(rows, id: \.id) { row in
                 GridRow {
                     ForEach(row.items) { instance in
-                        projectWidgetView(for: instance)
-                            .gridCellColumns(instance.size.columnSpan)
+                        draggableCell(for: instance)
                     }
                     if row.needsFiller {
                         Color.clear.gridCellColumns(row.fillerSpan)
@@ -109,6 +111,36 @@ private struct ProjectWidgetBoardView: View {
                 }
             }
         }
+    }
+
+    private func draggableCell(for instance: WidgetInstance) -> some View {
+        projectWidgetView(for: instance)
+            .gridCellColumns(instance.size.columnSpan)
+            .overlay(dropHighlight(for: instance.id))
+            .draggable(instance.id.uuidString)
+            .dropDestination(for: String.self) { items, _ in
+                handleDrop(items: items, targetID: instance.id)
+            } isTargeted: { targeted in
+                dropTargetID = targeted ? instance.id : nil
+            }
+    }
+
+    private func dropHighlight(for id: UUID) -> some View {
+        RoundedRectangle(cornerRadius: MykRadius.md)
+            .stroke(MykColor.tasks.color, lineWidth: 2)
+            .opacity(dropTargetID == id ? 1 : 0)
+    }
+
+    private func handleDrop(items: [String], targetID: UUID) -> Bool {
+        defer { dropTargetID = nil }
+        guard let droppedString = items.first,
+              let droppedUUID = UUID(uuidString: droppedString),
+              let sourceIndex = boardStore.instances.firstIndex(where: { $0.id == droppedUUID }),
+              let destIndex = boardStore.instances.firstIndex(where: { $0.id == targetID }),
+              sourceIndex != destIndex else { return false }
+        let offset = destIndex > sourceIndex ? destIndex + 1 : destIndex
+        try? boardStore.move(fromOffsets: IndexSet(integer: sourceIndex), toOffset: offset)
+        return true
     }
 
     @ViewBuilder
@@ -121,6 +153,7 @@ private struct ProjectWidgetBoardView: View {
         case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: calendarQuery)
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)
         case .assistant: AssistantWidget(projectID: projectID)
+        case .mail:      MailWidget(projectID: projectID, mailQuery: mailQuery)
         default:         EmptyView()
         }
     }

@@ -11,6 +11,8 @@ struct HomeBoardView: View {
     let boardStore: WidgetBoardStore
     let noteStore:  NoteStore
 
+    @State private var dropTargetID: UUID?
+
     var body: some View {
         Grid(alignment: .topLeading,
              horizontalSpacing: MykSpace.s5,
@@ -18,8 +20,7 @@ struct HomeBoardView: View {
             ForEach(rows, id: \.id) { row in
                 GridRow {
                     ForEach(row.items) { instance in
-                        homeWidgetView(for: instance)
-                            .gridCellColumns(instance.size.columnSpan)
+                        draggableCell(for: instance)
                     }
                     if row.needsFiller {
                         Color.clear.gridCellColumns(row.fillerSpan)
@@ -27,6 +28,36 @@ struct HomeBoardView: View {
                 }
             }
         }
+    }
+
+    private func draggableCell(for instance: WidgetInstance) -> some View {
+        homeWidgetView(for: instance)
+            .gridCellColumns(instance.size.columnSpan)
+            .overlay(dropHighlight(for: instance.id))
+            .draggable(instance.id.uuidString)
+            .dropDestination(for: String.self) { items, _ in
+                handleDrop(items: items, targetID: instance.id)
+            } isTargeted: { targeted in
+                dropTargetID = targeted ? instance.id : nil
+            }
+    }
+
+    private func dropHighlight(for id: UUID) -> some View {
+        RoundedRectangle(cornerRadius: MykRadius.md)
+            .stroke(MykColor.tasks.color, lineWidth: 2)
+            .opacity(dropTargetID == id ? 1 : 0)
+    }
+
+    private func handleDrop(items: [String], targetID: UUID) -> Bool {
+        defer { dropTargetID = nil }
+        guard let droppedString = items.first,
+              let droppedUUID = UUID(uuidString: droppedString),
+              let sourceIndex = boardStore.instances.firstIndex(where: { $0.id == droppedUUID }),
+              let destIndex = boardStore.instances.firstIndex(where: { $0.id == targetID }),
+              sourceIndex != destIndex else { return false }
+        let offset = destIndex > sourceIndex ? destIndex + 1 : destIndex
+        try? boardStore.move(fromOffsets: IndexSet(integer: sourceIndex), toOffset: offset)
+        return true
     }
 
     // MARK: Widget-Dispatch (Home-Arten + Projekt-Arten wo sinnvoll)
@@ -63,7 +94,6 @@ struct HomeBoardView: View {
     }
 }
 
-// BoardRow auch für HomeBoardView — selbe Logik wie WidgetBoardView
 private struct BoardRow: Identifiable {
     let id = UUID()
     let items: [WidgetInstance]
