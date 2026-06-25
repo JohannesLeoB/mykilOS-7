@@ -19,15 +19,17 @@ public struct ProjectLinks: Codable, Equatable, Sendable {
     public var driveFolderPath: String?
     public var clickUpListID: String?
     public var calendarQuery: String?
+    public var contactsQuery: String?
     public var sevdeskRef: String?
 
     public init(driveFolderID: String? = nil, driveFolderPath: String? = nil,
                 clickUpListID: String? = nil, calendarQuery: String? = nil,
-                sevdeskRef: String? = nil) {
+                contactsQuery: String? = nil, sevdeskRef: String? = nil) {
         self.driveFolderID = driveFolderID
         self.driveFolderPath = driveFolderPath
         self.clickUpListID = clickUpListID
         self.calendarQuery = calendarQuery
+        self.contactsQuery = contactsQuery
         self.sevdeskRef = sevdeskRef
     }
 }

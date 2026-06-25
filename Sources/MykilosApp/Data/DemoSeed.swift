@@ -27,7 +27,8 @@ public enum DemoSeed {
                         driveFolderID: "1AbC_drive_meyer",
                         driveFolderPath: "Projekte/ME-24 Küche Meyer",
                         clickUpListID: "9012345",
-                        calendarQuery: "Meyer"
+                        calendarQuery: "Meyer",
+                        contactsQuery: "Meyer"
                     ),
                     phase: "Ausführungsplanung",
                     airtableRecordID: "recME24",

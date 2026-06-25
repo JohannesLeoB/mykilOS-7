@@ -71,7 +71,8 @@ struct ProjectDetailView: View {
                 noteStore: noteStore,
                 projectID: project.projectNumber,
                 driveFolderID: project.links.driveFolderID,
-                calendarQuery: project.links.calendarQuery
+                calendarQuery: project.links.calendarQuery,
+                contactsQuery: project.links.contactsQuery
             )
                 .padding(.horizontal, MykSpace.s9)
                 .padding(.top, MykSpace.s7)
@@ -90,6 +91,7 @@ private struct ProjectWidgetBoardView: View {
     let projectID:  String
     let driveFolderID: String?
     let calendarQuery: String?
+    let contactsQuery: String?
 
     var body: some View {
         Grid(alignment: .topLeading,
@@ -114,7 +116,7 @@ private struct ProjectWidgetBoardView: View {
         switch instance.kind {
         case .drive:     DriveWidget(projectID: projectID, driveFolderID: driveFolderID)
         case .tasks:     TasksWidget(projectID: projectID)
-        case .contacts:  ContactsWidget(projectID: projectID)
+        case .contacts:  ContactsWidget(projectID: projectID, contactsQuery: contactsQuery)
         case .cash:      CashWidget(projectID: projectID)
         case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: calendarQuery)
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)

@@ -43,7 +43,7 @@ public struct WidgetBoardView: View {
         switch instance.kind {
         case .drive:     DriveWidget(projectID: projectID, driveFolderID: nil)
         case .tasks:     TasksWidget(projectID: projectID)
-        case .contacts:  ContactsWidget(projectID: projectID)
+        case .contacts:  ContactsWidget(projectID: projectID, contactsQuery: nil)
         case .cash:      CashWidget(projectID: projectID)
         case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: nil)
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)

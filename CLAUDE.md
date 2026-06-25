@@ -7,7 +7,7 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 
 ## Wo wir stehen
 
-**Akt 3, Schritt 3 abgeschlossen.** Token-Refresh + Kalender-Widget live.
+**Akt 3, Schritt 4 abgeschlossen.** Kontakte-Widget live.
 
 | Akt | Status | Inhalt |
 |---|---|---|
@@ -17,7 +17,8 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 | Akt 3, S1 | ✅ | Google OAuth/PKCE + Keychain, Settings-Tab mit Verbinden/Trennen |
 | Akt 3, S2 | ✅ | Drive-Widget live (read-only, GoogleDriveClient) |
 | Akt 3, S3 | ✅ | Token-Refresh (GoogleAccessTokenProvider) + Kalender-Widget live |
-| Akt 3, S4+ | 🔜 | Mail-Widget (neu, kein WidgetKind bisher), Clockodo live, Drag&Drop, Airtable-Sync |
+| Akt 3, S4 | ✅ | Kontakte-Widget live (GoogleContactsClient, contactsQuery) |
+| Akt 3, S5+ | 🔜 | Mail-Widget (neu, kein WidgetKind bisher), Clockodo live, Drag&Drop, Airtable-Sync |
 | Akt 4 | 🔜 | Assistent live (Tool-Use, proaktiver ein-Satz-Dolmetscher) |
 | Akt 5 | 🔜 | Politur, Dark Mode, DMG, Beta |
 
@@ -88,7 +89,7 @@ Sources/
                        # Google/ — OAuth/PKCE, Loopback-Server, Keychain-Store,
                        #   GoogleAuthService (Akt 3, S1), GoogleDriveClient (S2),
                        #   GoogleAccessTokenProvider + GoogleTokenRefreshService +
-                       #   GoogleCalendarClient (Akt 3, S3)
+                       #   GoogleCalendarClient (Akt 3, S3), GoogleContactsClient (S4)
   MykilosWidgets/      # WidgetContainer, WidgetBoardView, SourceChip, SaveStateBar,
                        # Kinds/ (7 Widgets: drive, tasks, contacts, cash, calendar, notes, assistant)
   MykilosApp/          # Shell (Sidebar), Gallery, Detail, Today, Data (AppState, AppDatabase,
@@ -98,9 +99,10 @@ Tests/
   MykilosKitTests/     # Cold-Start-Tests (FileBackedRepository)
   MykilosServicesTests/# WidgetBoardStoreTests (GRDB Cold-Start), GoogleOAuthTests,
                        # GoogleDriveClientTests, GoogleCalendarClientTests,
+                       # GoogleContactsClientTests,
                        # GoogleAccessTokenProviderTests (Refresh-Logik mit Fake) —
                        # kein echtes Keychain/Netzwerk im Testlauf, siehe
-                       # HANDOFF_AKT3_S1/S2/S3.md
+                       # HANDOFF_AKT3_S1/S2/S3/S4.md
 ```
 
 ---
@@ -130,19 +132,17 @@ Kein Sync-Backend in V1.
 
 ---
 
-## Nächste Schritte (Akt 3, ab Schritt 4)
+## Nächste Schritte (Akt 3, ab Schritt 5)
 
 Jeder Schritt ist eine eigene Session/PR (siehe Prozess-Regel oben):
 
 1. Mail-Widget: braucht zuerst eine UI-Entscheidung (neuer `WidgetKind .mail`,
    eigenes Widget, Platz im Board), dann Gmail live nach demselben Muster wie
-   `GoogleDriveClient`/`GoogleCalendarClient` (Scope `.gmailReadonly` ist
-   schon in `GoogleOAuthScope.readOnlyDefaults`).
-2. Kontakte live (`ContactsWidget` ist schon mit "GOOGLE"-Label demo'd,
-   gleiches Muster, People-API `contactsReadonly`-Scope ist schon vorhanden).
-3. Clockodo-Widget live (ZEITEN-Regel: nur Mapping/Status, nie Buchung)
-4. Drag&Drop im Widget-Board (`WidgetBoardStore.move` existiert bereits, fehlt nur die UI)
-5. Airtable-Sync implementieren (`AirtableRegistry.sync(into:)`)
+   `GoogleDriveClient`/`GoogleCalendarClient`/`GoogleContactsClient` (Scope
+   `.gmailReadonly` ist schon in `GoogleOAuthScope.readOnlyDefaults`).
+2. Clockodo-Widget live (ZEITEN-Regel: nur Mapping/Status, nie Buchung)
+3. Drag&Drop im Widget-Board (`WidgetBoardStore.move` existiert bereits, fehlt nur die UI)
+4. Airtable-Sync implementieren (`AirtableRegistry.sync(into:)`)
 
 **Bekannte offene Punkte aus Schritt 1 (noch nicht relevant geworden):**
 - Ob Google "Desktop App"-OAuth-Clients bei PKCE zusätzlich ein `client_secret`
@@ -168,6 +168,15 @@ Jeder Schritt ist eine eigene Session/PR (siehe Prozess-Regel oben):
   `.permissionRequired` mit klarem "Bitte neu verbinden"-Hinweis — das ist für
   V1 bewusst einfach gehalten, könnte aber verwirrend sein, falls es in der
   Praxis öfter vorkommt als gedacht.
+
+**Aus Schritt 4 (Kontakte-Widget):**
+- `ProjectLinks.contactsQuery` ist eine Freitext-Suche über die echten
+  Kontakte des verbundenen Accounts (People API `searchContacts`), keine
+  eigene Kontaktliste je Projekt — gleiches Muster wie `calendarQuery`.
+  Die Demo-Fantasie-Rollen ("Bauherr"/"Architektin") sind entfallen, die
+  People API liefert sie nicht.
+- Gleicher offener Punkt wie seit Schritt 1: ob Google "Desktop App"-Clients
+  zusätzlich ein `client_secret` verlangen, ist weiterhin nicht live getestet.
 
 ---
 
@@ -196,5 +205,6 @@ und Session-Regeln: `docs/codex/WORKFLOW.md`.
 - `docs/handoffs/HANDOFF_AKT3_S1.md` — Google-OAuth-Fundament
 - `docs/handoffs/HANDOFF_AKT3_S2.md` — Drive-Widget live
 - `docs/handoffs/HANDOFF_AKT3_S3.md` — Token-Refresh + Kalender-Widget live
+- `docs/handoffs/HANDOFF_AKT3_S4.md` — Kontakte-Widget live
 - `docs/MYKILOS_6_TEAM_MODELL.md` — Team, Airtable, Identität
 - `docs/codex/WORKFLOW.md` — Session-Regeln für Codex-Sessions in diesem Repo
