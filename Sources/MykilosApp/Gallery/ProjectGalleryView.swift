@@ -6,9 +6,11 @@ import MykilosDesign
 // Lazy grid — trägt 400 Projekte, weil nie alle 400 gleichzeitig gerendert werden.
 // Suche, Filter, leere/Lade-Zustände — alle schön, nie nackt.
 struct ProjectGalleryView: View {
-    @Environment(RegistryStore.self) private var registry
+    @Environment(AppState.self) private var appState
     @State private var searchText = ""
     @State private var selectedProject: Project? = nil
+
+    private var registry: RegistryStore { appState.registry }
 
     private let columns = [
         GridItem(.adaptive(minimum: 260, maximum: 340), spacing: MykSpace.s5)
