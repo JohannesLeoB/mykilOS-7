@@ -11,6 +11,9 @@ struct SettingsView: View {
     @State private var clockodoEmail: String = ""
     @State private var clockodoApiKey: String = ""
     @State private var clockodoError: String?
+    @State private var airtablePAT: String = ""
+    @State private var airtableBaseID: String = ""
+    @State private var airtableError: String?
 
     var body: some View {
         ScrollView {
@@ -20,6 +23,7 @@ struct SettingsView: View {
                     .foregroundStyle(MykColor.ink.color)
                 googleSection
                 clockodoSection
+                airtableSection
                 Spacer()
             }
             .padding(MykSpace.s9)
@@ -31,6 +35,10 @@ struct SettingsView: View {
             if let creds = try? appState.clockodoAuth.storedCredentials() {
                 clockodoEmail = creds.email
                 clockodoApiKey = creds.apiKey
+            }
+            if let creds = try? appState.airtableAuth.storedCredentials() {
+                airtablePAT = creds.pat
+                airtableBaseID = creds.baseID
             }
         }
     }
@@ -203,6 +211,108 @@ struct SettingsView: View {
             clockodoApiKey = ""
         } catch {
             clockodoError = "Trennen fehlgeschlagen: \(error)"
+        }
+    }
+
+    // MARK: - Airtable
+
+    private var airtableSection: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            Text("Airtable Projektdaten")
+                .font(.mykHeadline)
+                .foregroundStyle(MykColor.ink.color)
+            airtableStatusBadge
+            TextField("Base-ID (z. B. appXYZ123)", text: $airtableBaseID)
+                .textFieldStyle(.roundedBorder)
+                .font(.mykMono(12))
+            SecureField("Personal Access Token", text: $airtablePAT)
+                .textFieldStyle(.roundedBorder)
+                .font(.mykMono(12))
+            HStack(spacing: MykSpace.s4) {
+                Button(airtableConnectLabel) { connectAirtable() }
+                    .disabled(appState.airtableAuth.status == .syncing)
+                if appState.airtableAuth.status == .connected {
+                    Button("Jetzt synchronisieren") { syncAirtable() }
+                    Button("Trennen", role: .destructive) { disconnectAirtable() }
+                }
+            }
+            if let airtableError {
+                Text(airtableError)
+                    .font(.mykMono(10))
+                    .foregroundStyle(MykColor.critical.color)
+            }
+            Text("PAT unter airtable.com/create/tokens erstellen. Benötigt data.records:read auf die Base.")
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.faint.color)
+        }
+        .padding(MykSpace.s6)
+        .background(
+            RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1)
+        )
+    }
+
+    private var airtableStatusBadge: some View {
+        HStack(spacing: 6) {
+            Circle().fill(airtableStatusColor).frame(width: 7, height: 7)
+            Text(airtableStatusText).font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
+        }
+    }
+
+    private var airtableStatusColor: Color {
+        switch appState.airtableAuth.status {
+        case .connected:    MykColor.positive.color
+        case .syncing:      MykColor.tasks.color
+        case .disconnected: MykColor.faint.color
+        case .error:        MykColor.critical.color
+        }
+    }
+
+    private var airtableStatusText: String {
+        switch appState.airtableAuth.status {
+        case .connected:          "VERBUNDEN"
+        case .syncing:            "SYNCHRONISIERT…"
+        case .disconnected:       "NICHT VERBUNDEN"
+        case .error(let message): "FEHLER · \(message)"
+        }
+    }
+
+    private var airtableConnectLabel: String {
+        switch appState.airtableAuth.status {
+        case .connected: "Erneut verbinden"
+        case .syncing:   "Synchronisiert…"
+        default:         "Verbinden"
+        }
+    }
+
+    private func connectAirtable() {
+        airtableError = nil
+        do {
+            try appState.airtableAuth.connect(pat: airtablePAT, baseID: airtableBaseID)
+        } catch {
+            airtableError = "Verbindung fehlgeschlagen: \(error)"
+        }
+    }
+
+    private func syncAirtable() {
+        airtableError = nil
+        Task {
+            await appState.registry.syncFromAirtable(
+                baseID: airtableBaseID,
+                auth: appState.airtableAuth
+            )
+        }
+    }
+
+    private func disconnectAirtable() {
+        do {
+            try appState.airtableAuth.disconnect()
+            airtablePAT = ""
+            airtableBaseID = ""
+        } catch {
+            airtableError = "Trennen fehlgeschlagen: \(error)"
         }
     }
 }

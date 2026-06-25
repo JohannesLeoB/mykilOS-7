@@ -7,7 +7,7 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 
 ## Wo wir stehen
 
-**Akt 3, Schritt 7 abgeschlossen.** Drag & Drop im Widget-Board.
+**Akt 3 abgeschlossen.** Airtable-Sync live.
 
 | Akt | Status | Inhalt |
 |---|---|---|
@@ -21,7 +21,7 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 | Akt 3, S5 | ✅ | Clockodo-Widget live (API-Key-Auth, Settings-Sektion, ClockodoClient) |
 | Akt 3, S6 | ✅ | Mail-Widget live (GoogleGmailClient, WidgetKind .mail, mailQuery) |
 | Akt 3, S7 | ✅ | Drag & Drop im Widget-Board (Home + Projekt) |
-| Akt 3, S8+ | 🔜 | Airtable-Sync |
+| Akt 3, S8 | ✅ | Airtable-Sync live (AirtableClient, Auth, Settings, Registry.sync) |
 | Akt 4 | 🔜 | Assistent live (Tool-Use, proaktiver ein-Satz-Dolmetscher) |
 | Akt 5 | 🔜 | Politur, Dark Mode, DMG, Beta |
 
@@ -96,6 +96,8 @@ Sources/
                        #   GoogleGmailClient (Akt 3, S6)
                        # Clockodo/ — ClockodoClient, ClockodoAuthService,
                        #   KeychainClockodoCredentialsStore (Akt 3, S5)
+                       # Airtable/ — AirtableClient, AirtableAuthService,
+                       #   KeychainAirtableCredentialsStore (Akt 3, S8)
   MykilosWidgets/      # WidgetContainer, WidgetBoardView, SourceChip, SaveStateBar,
                        # Kinds/ (8 Widgets: drive, tasks, contacts, cash, calendar, notes, mail, assistant)
   MykilosApp/          # Shell (Sidebar), Gallery, Detail, Today, Data (AppState, AppDatabase,
@@ -106,8 +108,8 @@ Tests/
   MykilosServicesTests/# WidgetBoardStoreTests (GRDB Cold-Start), GoogleOAuthTests,
                        # GoogleDriveClientTests, GoogleCalendarClientTests,
                        # GoogleContactsClientTests, GoogleGmailClientTests,
-                       # ClockodoClientTests,
-                       # ClockodoAuthServiceTests,
+                       # ClockodoClientTests, ClockodoAuthServiceTests,
+                       # AirtableClientTests, AirtableAuthServiceTests,
                        # GoogleAccessTokenProviderTests (Refresh-Logik mit Fake) —
                        # kein echtes Keychain/Netzwerk im Testlauf, siehe
                        # HANDOFF_AKT3_S1/S2/S3/S4/S5/S6.md
@@ -140,11 +142,11 @@ Kein Sync-Backend in V1.
 
 ---
 
-## Nächste Schritte (Akt 3, ab Schritt 8)
+## Nächste Schritte (Akt 4)
 
-Jeder Schritt ist eine eigene Session/PR (siehe Prozess-Regel oben):
+Akt 3 ist abgeschlossen. Nächste große Phase:
 
-1. Airtable-Sync implementieren (`AirtableRegistry.sync(into:)`)
+1. Assistent live (Tool-Use, proaktiver ein-Satz-Dolmetscher)
 
 **Bekannte offene Punkte aus Schritt 1 (noch nicht relevant geworden):**
 - Ob Google "Desktop App"-OAuth-Clients bei PKCE zusätzlich ein `client_secret`
@@ -211,5 +213,6 @@ und Session-Regeln: `docs/codex/WORKFLOW.md`.
 - `docs/handoffs/HANDOFF_AKT3_S5.md` — Clockodo-Widget live
 - `docs/handoffs/HANDOFF_AKT3_S6.md` — Mail-Widget live
 - `docs/handoffs/HANDOFF_AKT3_S7.md` — Drag & Drop im Widget-Board
+- `docs/handoffs/HANDOFF_AKT3_S8.md` — Airtable-Sync live
 - `docs/MYKILOS_6_TEAM_MODELL.md` — Team, Airtable, Identität
 - `docs/codex/WORKFLOW.md` — Session-Regeln für Codex-Sessions in diesem Repo

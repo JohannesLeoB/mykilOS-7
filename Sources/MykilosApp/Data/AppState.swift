@@ -20,6 +20,7 @@ public final class AppState {
     // MARK: Integrationen
     public let googleAuth: GoogleAuthService
     public let clockodoAuth: ClockodoAuthService
+    public let airtableAuth: AirtableAuthService
 
     // Projekt-Boards on-demand (pro geöffnetem Projekt)
     private var projectBoards: [String: WidgetBoardStore] = [:]
@@ -39,6 +40,7 @@ public final class AppState {
         )
         self.googleAuth = GoogleAuthService()
         self.clockodoAuth = ClockodoAuthService()
+        self.airtableAuth = AirtableAuthService()
     }
 
     // MARK: Projekt-Board (lazy, gecached)

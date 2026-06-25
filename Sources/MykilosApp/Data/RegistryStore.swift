@@ -49,6 +49,24 @@ public final class RegistryStore {
         projects.filter { $0.parentProjectNumber == project.projectNumber }
     }
 
+    // MARK: Airtable-Sync
+    @MainActor
+    public func syncFromAirtable(baseID: String, auth: AirtableAuthService) async {
+        guard !isLoading, let reg = registry else { return }
+        isLoading = true
+        auth.setSyncing()
+        do {
+            let airtable = AirtableRegistry()
+            try await airtable.sync(baseID: baseID, into: reg)
+            auth.setSynced()
+            await load()
+        } catch {
+            auth.setError(String(describing: error))
+            errorMessage = error.localizedDescription
+            isLoading = false
+        }
+    }
+
     // MARK: Demo-Seed-Einstiegspunkt
     public func seedIfEmpty() async {
         guard let reg = registry else { return }
