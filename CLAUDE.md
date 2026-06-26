@@ -191,6 +191,8 @@ Die App ist feature-complete für Beta.
   lädt nur bei verbundener Claude-Konfiguration zusätzlich eine natürliche
   Zusammenfassung. Schreibaktionen bleiben bestätigungspflichtig und laufen
   weiter über Action-Card → Audit.
+- Live-API-Check mit Keychain-Credentials und `claude-sonnet-4-6` war
+  erfolgreich; das App-Bundle wurde danach neu gestartet und codesign-verifiziert.
 
 **Bekannte offene Punkte aus Schritt 1 (noch nicht relevant geworden):**
 - Ob Google "Desktop App"-OAuth-Clients bei PKCE zusätzlich ein `client_secret`

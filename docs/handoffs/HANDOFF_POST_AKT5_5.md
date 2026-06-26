@@ -62,6 +62,9 @@ Abgedeckt:
 
 - `swift build` — erfolgreich
 - `swift test` — 92 Tests grün
+- Live-API-Check — erfolgreich: Keychain-Credentials vorhanden, Anthropic
+  Messages API antwortet mit `claude-sonnet-4-6`
+- App-Bundle neu gestartet — erfolgreich, Codesign-Check gültig
 
 Bekannte bestehende Warnungen, nicht durch diese Aufgabe eingeführt:
 
@@ -70,13 +73,12 @@ Bekannte bestehende Warnungen, nicht durch diese Aufgabe eingeführt:
 
 ## Bewusst offen
 
-- Kein Live-API-Call in der automatisierten Verifikation. Erster echter Check:
-  Settings → Claude Assistent → API-Key eintragen → Assistent öffnen.
 - Wenn Anthropic später ein anderes Standardmodell bevorzugt, reicht die
   Anpassung von `ClaudeAuthService.defaultModel`.
+- Der visuelle UI-Check im laufenden Fenster bleibt manuell: Assistent öffnen
+  und prüfen, ob die Zusammenfassung neben den lokalen Insights erscheint.
 
 ## Nächster Schritt
 
-Beta-Check im echten App-Bundle: App starten, Claude-Key in Settings verbinden,
-Assistant-Seite öffnen und prüfen, ob die Zusammenfassung neben den lokalen
-Insights erscheint.
+Manueller Beta-UI-Check im laufenden App-Fenster: Assistant-Seite öffnen und
+prüfen, ob die Claude-Zusammenfassung neben den lokalen Insights erscheint.
