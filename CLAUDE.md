@@ -7,9 +7,11 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 
 ## Wo wir stehen
 
-**Akt 5 abgeschlossen.** Politur, Dark Mode, DMG. Post-Akt-5 Aufgabe 5
-ist abgeschlossen: Der Assistent kann Claude-Zusammenfassungen aus Signalen
-und regelbasierten Insights erzeugen.
+**Akt 5 abgeschlossen.** Politur, Dark Mode, DMG. Post-Akt-5 Aufgabe 6
+ist abgeschlossen: vollständiges Systemarchitektur-PDF (verifiziert aus dem
+Quellcode), Code-Cleanup und testgesicherte Härtung des Token-Refresh-Pfads
+(97 Tests). Davor (Aufgabe 5) erzeugt der Assistent Claude-Zusammenfassungen
+aus Signalen und regelbasierten Insights.
 
 | Akt | Status | Inhalt |
 |---|---|---|
@@ -31,6 +33,7 @@ und regelbasierten Insights erzeugen.
 | Post-Akt 5, Aufgabe 3 | ✅ | About-Fenster über App-Menü mit Version 6.0.0 |
 | Post-Akt 5, Aufgabe 4 | ✅ | Eigenes App-Icon (`AppIcon.icns`) im Bundle |
 | Post-Akt 5, Aufgabe 5 | ✅ | Claude-LLM-Integration im Assistenten (Keychain + Messages API) |
+| Post-Akt 5, Aufgabe 6 | ✅ | Systemarchitektur-PDF, Code-Cleanup & Refresh-Pfad-Härtung (97 Tests) |
 
 ---
 
@@ -201,10 +204,9 @@ Die App ist feature-complete für Beta.
   `clientSecret` Parameter in `GoogleOAuthPKCEService` nachziehen.
 
 **Aus Schritt 2 (Drive-Widget):**
-- `Sources/MykilosWidgets/WidgetBoardView.swift` (öffentlich, seit Akt 2
-  unbenutzt) ist als separater Cleanup-Task geflaggt — falls noch nicht
-  erledigt, vor dem nächsten großen Widget-Umbau aufräumen, sonst pflegt man
-  zwei Kopien des Dispatch-Switches.
+- ✅ Erledigt: Der ungenutzte `Sources/MykilosWidgets/WidgetBoardView.swift`
+  (öffentliches Duplikat des Dispatch-Switches) wurde gelöscht. Gerendert wird
+  ausschließlich über `ProjectWidgetBoardView` (Projekt) bzw. das Heute-Board.
 
 **Aus Schritt 3 (Token-Refresh + Kalender-Widget):**
 - Token-Refresh (`GoogleAccessTokenProvider`) ist jetzt zentral verdrahtet und
@@ -213,11 +215,17 @@ Die App ist feature-complete für Beta.
   läuft typischerweise erst nach 1 Stunde ab). Beim nächsten Live-Client
   (Mail/Kontakte) im Hinterkopf behalten, falls der erste echte Ablauf
   überraschend anders reagiert als der Test.
-- Schlägt ein Refresh fehl (z. B. Refresh-Token wurde widerrufen), landet das
-  als generischer `.error("httpError(...)")` im Widget, nicht als
-  `.permissionRequired` mit klarem "Bitte neu verbinden"-Hinweis — das ist für
-  V1 bewusst einfach gehalten, könnte aber verwirrend sein, falls es in der
-  Praxis öfter vorkommt als gedacht.
+- ✅ Korrigiert: Ein fehlgeschlagener Refresh (z. B. widerrufenes
+  Refresh-Token) wird jetzt einheitlich behandelt — alle vier Google-Clients
+  (Drive/Calendar/Contacts/Gmail) mappen jeden Provider-Fehler via
+  `try? await tokenProvider.validAccessToken()` auf `.notConnected`, und alle
+  vier Widgets übersetzen das auf `.permissionRequired`. Der Container zeigt
+  dort „Berechtigung nötig · In den Einstellungen verbinden" statt eines
+  generischen `httpError`. (Vorher als offener Punkt notiert — die alte Notiz
+  war veraltet.)
+- Offen bleibt nur die feine Unterscheidung „nie verbunden" vs. „Sitzung
+  abgelaufen" — beide zeigen denselben `.permissionRequired`-Zustand. Für V1
+  bewusst zusammengefasst; ein eigener `.authExpired`-State wäre Over-Engineering.
 
 **Aus Schritt 4 (Kontakte-Widget):**
 - `ProjectLinks.contactsQuery` ist eine Freitext-Suche über die echten
@@ -268,5 +276,7 @@ und Session-Regeln: `docs/codex/WORKFLOW.md`.
 - `docs/handoffs/HANDOFF_POST_AKT5_3.md` — About-Fenster mit Versionsnummer
 - `docs/handoffs/HANDOFF_POST_AKT5_4.md` — Eigenes App-Icon im Bundle
 - `docs/handoffs/HANDOFF_POST_AKT5_5.md` — Claude-LLM-Integration im Assistenten
+- `docs/handoffs/HANDOFF_POST_AKT5_6.md` — Systemarchitektur-PDF, Cleanup & Refresh-Härtung
+- `docs/architecture/mykilOS6_Systemarchitektur.pdf` — Systemarchitektur (9 S., A4 quer): Integrations-Landkarte, Steckbriefe (Google/Clockodo/Airtable/Claude), Signal-Nervensystem, GRDB-Persistenz, Funktionsbaum, Trigger-/Handle-Matrix; Quelle `.html` + `build_pdf.sh` daneben
 - `docs/MYKILOS_6_TEAM_MODELL.md` — Team, Airtable, Identität
 - `docs/codex/WORKFLOW.md` — Session-Regeln für Codex-Sessions in diesem Repo
