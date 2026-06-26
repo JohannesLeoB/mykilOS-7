@@ -7,11 +7,13 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 
 ## Wo wir stehen
 
-**Akt 5 abgeschlossen.** Politur, Dark Mode, DMG. Post-Akt-5 Aufgabe 7 ist
-abgeschlossen: das Tasks-Widget liest jetzt **live** aus ClickUp (statt
-Demo-Daten) — eigener Client, Auth, Keychain und Settings-Sektion (103 Tests).
-Davor (Aufgabe 6) entstanden das Systemarchitektur-PDF, ein Code-Cleanup und
-die testgesicherte Härtung des Token-Refresh-Pfads.
+**Akt 5 abgeschlossen.** Politur, Dark Mode, DMG. Post-Akt-5 Aufgabe 8 ist
+abgeschlossen: das Cash-Widget liest jetzt **live** aus Sevdesk — Ist-Umsatz
+(Summe der Rechnungen für `sevdeskRef`) gegen das Soll-Budget aus Airtable als
+Balken; eigener Client, Auth, Keychain und Settings-Sektion (109 Tests). Damit
+sind beide reservierten Stub-Slots (ClickUp = Aufgabe 7, Sevdesk = Aufgabe 8)
+live; alle Widgets sind echt. Einziger noch geplanter Anschluss: der
+Drive-Webhook als Live-Quelle für `offerDetected`.
 
 | Akt | Status | Inhalt |
 |---|---|---|
@@ -35,6 +37,7 @@ die testgesicherte Härtung des Token-Refresh-Pfads.
 | Post-Akt 5, Aufgabe 5 | ✅ | Claude-LLM-Integration im Assistenten (Keychain + Messages API) |
 | Post-Akt 5, Aufgabe 6 | ✅ | Systemarchitektur-PDF, Code-Cleanup & Refresh-Pfad-Härtung (97 Tests) |
 | Post-Akt 5, Aufgabe 7 | ✅ | ClickUp-Integration live (Tasks-Widget, ClickUpClient/Auth/Keychain, Settings, 103 Tests) |
+| Post-Akt 5, Aufgabe 8 | ✅ | Sevdesk-Integration live (Cash-Widget, Ist-Umsatz vs. Budget-Balken, 109 Tests) |
 
 ---
 
@@ -111,6 +114,8 @@ Sources/
                        #   KeychainAirtableCredentialsStore (Akt 3, S8)
                        # ClickUp/ — ClickUpClient, ClickUpAuthService,
                        #   KeychainClickUpCredentialsStore (Post-Akt 5, Aufgabe 7)
+                       # Sevdesk/ — SevdeskClient, SevdeskAuthService,
+                       #   KeychainSevdeskCredentialsStore (Post-Akt 5, Aufgabe 8)
   MykilosWidgets/      # WidgetContainer, WidgetBoardView, SourceChip, SaveStateBar,
                        # Kinds/ (8 Widgets: drive, tasks, contacts, cash, calendar, notes, mail, assistant)
   MykilosApp/          # Shell (Sidebar), Gallery, Detail, Today, Data (AppState, AppDatabase,
@@ -124,6 +129,7 @@ Tests/
                        # ClockodoClientTests, ClockodoAuthServiceTests,
                        # AirtableClientTests, AirtableAuthServiceTests,
                        # ClickUpClientTests (URL/Parser/notConnected),
+                       # SevdeskClientTests (URL/Parser/double/notConnected),
                        # GoogleAccessTokenProviderTests (Refresh-Logik mit Fake) —
                        # kein echtes Keychain/Netzwerk im Testlauf, siehe
                        # HANDOFF_AKT3_S1/S2/S3/S4/S5/S6.md
@@ -159,12 +165,35 @@ Kein Sync-Backend in V1.
 ## Nächste Schritte
 
 Akt 0–5 und alle dokumentierten Post-Akt-5-Verfeinerungen sind abgeschlossen.
-Die App ist feature-complete für Beta. Von den ursprünglich zwei Stub-Widgets
-ist **nur noch Cash (Sevdesk) Demo** — Tasks (ClickUp) ist seit Aufgabe 7 live.
+Die App ist feature-complete für Beta. **Beide ursprünglichen Stub-Widgets sind
+jetzt live** — Tasks (ClickUp, Aufgabe 7) und Cash (Sevdesk, Aufgabe 8). Alle
+Widgets lesen echte Daten.
 
-**Nächster offensichtlicher Schritt nach Plan:** Sevdesk-Integration für das
-Cash-Widget nach exakt demselben Muster wie ClickUp (Client + AuthService +
-Keychain `com.mykilos6.sevdesk` + Settings-Sektion + Tests, Handle `sevdeskRef`).
+**Nächster offensichtlicher Schritt nach Plan:** der letzte geplante Anschluss
+ist der **Drive-Webhook** als Live-Quelle für `offerDetected` (heute feuert das
+Signal nur per Demo-Button). Danach ist die Integrations-Landkarte vollständig.
+
+**Aus Post-Akt-5 Aufgabe 8 (Sevdesk-Integration):**
+- `SevdeskClient` liest die Rechnungen eines sevdesk-Kontakts
+  (`GET my.sevdesk.de/api/v1/Invoice`, `contact[id]=ref`, `limit=100`),
+  API-Token im `Authorization`-Header. Testbar über injizierbaren
+  `URLSession`/Store; reine statische `buildInvoicesURL`/`parseInvoices`/`double`.
+- `SevdeskAuthService` + `KeychainSevdeskCredentialsStore` (Service
+  `com.mykilos6.sevdesk`, ein Feld `apiToken`) — gleiche Form wie ClickUp/Airtable.
+- `CashWidget` konsumiert den Client per Loader (`sevdeskRef` als Handle):
+  Ist-Umsatz = Summe `sumGross`; **Budget kommt aus Airtable** über das neue Feld
+  `ProjectLinks.budget` (Spalte „Budget" → `numberValue` in `mapProjects`). Der
+  Balken zeigt Ist vs. Budget, über Budget → kritische Farbe. Der Drive→Cash-
+  Signal-Whisper bleibt **bewusst unabhängig** von der sevdesk-Verbindung, damit
+  der Signal-Showcase auch ohne sevdesk lebt; die Sub-States (loading/empty/
+  permissionRequired/error) rendert der Balken inline.
+- 6. Settings-Sektion „Sevdesk Umsatz" (SecureField Token, Verbinden/Trennen).
+- Tests: `SevdeskClientTests` (URL-Builder, Parser, `double`-Helfer, leere Liste,
+  kaputtes JSON, `notConnected`) — 109 Tests grün.
+- **Nicht live getestet:** echter sevdesk-Abruf mit Token + realem Kontakt bleibt
+  ein manueller Beta-Check (Tests nutzen kein echtes Keychain/Netzwerk). Offen
+  bleibt auch, welcher genaue `objectName`/Filter live die erwartete Rechnungs-
+  menge liefert — bei Bedarf in `buildInvoicesURL` nachziehen.
 
 **Aus Post-Akt-5 Aufgabe 7 (ClickUp-Integration):**
 - `ClickUpClient` liest die offenen Aufgaben einer Liste
@@ -304,6 +333,7 @@ und Session-Regeln: `docs/codex/WORKFLOW.md`.
 - `docs/handoffs/HANDOFF_POST_AKT5_5.md` — Claude-LLM-Integration im Assistenten
 - `docs/handoffs/HANDOFF_POST_AKT5_6.md` — Systemarchitektur-PDF, Cleanup & Refresh-Härtung
 - `docs/handoffs/HANDOFF_POST_AKT5_7.md` — ClickUp-Integration live (Tasks-Widget)
-- `docs/architecture/mykilOS6_Systemarchitektur.pdf` — Systemarchitektur (9 S., A4 quer): Integrations-Landkarte, Steckbriefe (Google/Clockodo/Airtable/ClickUp/Claude), Signal-Nervensystem, GRDB-Persistenz, Funktionsbaum, Trigger-/Handle-Matrix; Quelle `.html` + `build_pdf.sh` daneben
+- `docs/handoffs/HANDOFF_POST_AKT5_8.md` — Sevdesk-Integration live (Cash-Widget, Ist vs. Budget)
+- `docs/architecture/mykilOS6_Systemarchitektur.pdf` — Systemarchitektur (9 S., A4 quer): Integrations-Landkarte, Steckbriefe (Google/Clockodo/Airtable/ClickUp/Sevdesk/Claude), Signal-Nervensystem, GRDB-Persistenz, Funktionsbaum, Trigger-/Handle-Matrix; Quelle `.html` + `build_pdf.sh` daneben
 - `docs/MYKILOS_6_TEAM_MODELL.md` — Team, Airtable, Identität
 - `docs/codex/WORKFLOW.md` — Session-Regeln für Codex-Sessions in diesem Repo

@@ -1,16 +1,30 @@
 import SwiftUI
 import MykilosKit
 import MykilosDesign
+import MykilosServices
 
 // MARK: - CashWidget
-// Geld & Angebote. Empfänger der Drive-Signale. Tiefblau.
-// DAS Widget, das die Signal-Kommunikation zeigt: Drive flüstert, Cash fragt.
+// Geld & Angebote. Tiefblau. Zwei Rollen:
+//  1) Empfänger der Drive-Signale (DAS Widget, das die Signal-Kommunikation
+//     zeigt: Drive flüstert, Cash fragt) — bewusst unabhängig von sevdesk,
+//     damit der Architektur-Showcase auch ohne verbundenes sevdesk lebt.
+//  2) Budget-Balken: Ist-Umsatz (Summe der sevdesk-Rechnungen für
+//     Project.links.sevdeskRef) gegen das Soll-Budget (Project.links.budget,
+//     Quelle Airtable). Reiner Lesefetch — mykilOS bucht nie in sevdesk.
 public struct CashWidget: View {
     public let projectID: String
-    public init(projectID: String) { self.projectID = projectID }
+    public let sevdeskRef: String?
+    public let budget: Double?
+
+    public init(projectID: String, sevdeskRef: String?, budget: Double?) {
+        self.projectID = projectID
+        self.sevdeskRef = sevdeskRef
+        self.budget = budget
+    }
 
     @Environment(StudioContext.self) private var context
     @State private var reviewAccepted = false
+    @State private var loader = SevdeskInvoicesLoader()
 
     private var hasReviewSignal: Bool {
         context.signals(for: projectID).contains(where: {
@@ -21,7 +35,7 @@ public struct CashWidget: View {
     public var body: some View {
         WidgetContainer(
             kind: .cash,
-            sourceLabel: "SEVDESK + DRIVE  ·  \(hasReviewSignal && !reviewAccepted ? "WARTET AUF FREIGABE" : "AKTUELL")",
+            sourceLabel: sourceLabel,
             renderState: .content,
             projectID: projectID
         ) {
@@ -30,10 +44,18 @@ public struct CashWidget: View {
                 if hasReviewSignal && !reviewAccepted {
                     signalPrompt
                 } else {
-                    defaultContent
+                    budgetSection
                 }
             }
         }
+        .task(id: sevdeskRef) {
+            await loader.load(contactRef: sevdeskRef)
+        }
+    }
+
+    private var sourceLabel: String {
+        let signalPart = hasReviewSignal && !reviewAccepted ? "WARTET AUF FREIGABE" : "AKTUELL"
+        return "SEVDESK + DRIVE  ·  \(signalPart)"
     }
 
     // Das Signal-Prompt: Drive hat ein Angebot erkannt
@@ -65,7 +87,9 @@ public struct CashWidget: View {
         .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.cash.color.opacity(0.08)))
     }
 
-    private var defaultContent: some View {
+    // MARK: - Budget-Balken (Ist aus sevdesk vs. Soll aus Airtable)
+    @ViewBuilder
+    private var budgetSection: some View {
         VStack(alignment: .leading, spacing: MykSpace.s3) {
             if reviewAccepted {
                 HStack(spacing: 6) {
@@ -73,17 +97,122 @@ public struct CashWidget: View {
                     Text("Angebot in Review übernommen").font(.mykSmall).foregroundStyle(MykColor.ink.color)
                 }
             }
-            HStack {
-                Text("Budget").font(.mykSmall).foregroundStyle(MykColor.muted.color)
-                Spacer()
-                Text("72 %").font(.mykHeadline).foregroundStyle(MykColor.ink.color)
-            }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(MykColor.bone.color).frame(height: 4)
-                    Capsule().fill(MykColor.cash.color).frame(width: geo.size.width * 0.72, height: 4)
+            switch loader.renderState {
+            case .loading:
+                inlineHint(icon: "hourglass", text: "Lade sevdesk-Umsatz …")
+            case .permissionRequired:
+                HStack {
+                    inlineHint(icon: "lock", text: "sevdesk in den Einstellungen verbinden")
+                    Spacer()
+                    retryButton
                 }
-            }.frame(height: 4)
+            case .error(let msg):
+                HStack {
+                    inlineHint(icon: "exclamationmark.triangle", text: msg)
+                    Spacer()
+                    retryButton
+                }
+            default:
+                budgetBar
+            }
+        }
+    }
+
+    // Kein sevdesk-Bezug → reiner Soll-Wert; ohne Budget → Hinweis.
+    @ViewBuilder
+    private var budgetBar: some View {
+        if let budget, budget > 0 {
+            let ist = loader.ist
+            let ratio = min(max(ist / budget, 0), 1)
+            let overBudget = ist > budget
+            VStack(alignment: .leading, spacing: MykSpace.s3) {
+                HStack {
+                    Text("Budget").font(.mykSmall).foregroundStyle(MykColor.muted.color)
+                    Spacer()
+                    Text(percentText(ist: ist, budget: budget))
+                        .font(.mykHeadline)
+                        .foregroundStyle(overBudget ? MykColor.critical.color : MykColor.ink.color)
+                }
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(MykColor.bone.color).frame(height: 4)
+                        Capsule()
+                            .fill(overBudget ? MykColor.critical.color : MykColor.cash.color)
+                            .frame(width: geo.size.width * ratio, height: 4)
+                    }
+                }.frame(height: 4)
+                HStack {
+                    Text("\(currency(ist)) Ist").font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+                    Spacer()
+                    Text("\(currency(budget)) Budget").font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+                }
+            }
+        } else if sevdeskRef != nil {
+            inlineHint(icon: "eurosign.circle", text: "Kein Budget im Projekt hinterlegt")
+        } else {
+            inlineHint(icon: "tray", text: "Kein sevdesk-Kontakt verknüpft")
+        }
+    }
+
+    private func inlineHint(icon: String, text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon).foregroundStyle(MykColor.faint.color)
+            Text(text).font(.mykSmall).foregroundStyle(MykColor.muted.color)
+                .lineLimit(2)
+        }
+    }
+
+    private var retryButton: some View {
+        Button("Erneut versuchen") {
+            Task { await loader.load(contactRef: sevdeskRef) }
+        }
+        .font(.mykMono(9.5))
+        .buttonStyle(.plain)
+        .foregroundStyle(MykColor.cash.color)
+    }
+
+    private func percentText(ist: Double, budget: Double) -> String {
+        let pct = Int((ist / budget * 100).rounded())
+        return "\(pct) %"
+    }
+
+    private func currency(_ value: Double) -> String {
+        value.formatted(.currency(code: "EUR").precision(.fractionLength(0)))
+    }
+}
+
+// MARK: - SevdeskInvoicesLoader
+// Pro Widget-Instanz. Reiner Lesefetch des sevdesk-Umsatzes — kein Speichern-
+// Vertrag wie bei NoteStore/WidgetBoardStore.
+@MainActor
+@Observable
+private final class SevdeskInvoicesLoader {
+    private(set) var ist: Double = 0
+    private(set) var renderState: WidgetRenderState = .loading
+
+    private let client: SevdeskFetching
+
+    init(client: SevdeskFetching = SevdeskClient()) {
+        self.client = client
+    }
+
+    func load(contactRef: String?) async {
+        guard let contactRef, contactRef.isEmpty == false else {
+            ist = 0
+            renderState = .empty
+            return
+        }
+        renderState = .loading
+        do {
+            let invoices = try await client.invoices(contactRef: contactRef)
+            ist = invoices.reduce(0) { $0 + $1.sumGross }
+            renderState = .content
+        } catch SevdeskError.notConnected {
+            ist = 0
+            renderState = .permissionRequired
+        } catch {
+            ist = 0
+            renderState = .error(String(describing: error))
         }
     }
 }

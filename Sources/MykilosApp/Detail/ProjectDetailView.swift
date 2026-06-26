@@ -76,7 +76,9 @@ struct ProjectDetailView: View {
                 clickUpListID: project.links.clickUpListID,
                 calendarQuery: project.links.calendarQuery,
                 contactsQuery: project.links.contactsQuery,
-                mailQuery: project.links.mailQuery
+                mailQuery: project.links.mailQuery,
+                sevdeskRef: project.links.sevdeskRef,
+                budget: project.links.budget
             )
                 .padding(.horizontal, MykSpace.s9)
                 .padding(.top, MykSpace.s7)
@@ -99,6 +101,8 @@ private struct ProjectWidgetBoardView: View {
     let calendarQuery: String?
     let contactsQuery: String?
     let mailQuery: String?
+    let sevdeskRef: String?
+    let budget: Double?
 
     @State private var dropTargetID: UUID?
 
@@ -155,7 +159,7 @@ private struct ProjectWidgetBoardView: View {
         case .drive:     DriveWidget(projectID: projectID, driveFolderID: driveFolderID)
         case .tasks:     TasksWidget(projectID: projectID, clickUpListID: clickUpListID)
         case .contacts:  ContactsWidget(projectID: projectID, contactsQuery: contactsQuery)
-        case .cash:      CashWidget(projectID: projectID)
+        case .cash:      CashWidget(projectID: projectID, sevdeskRef: sevdeskRef, budget: budget)
         case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: calendarQuery)
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)
         case .assistant: AssistantWidget(projectID: projectID, auditStore: auditStore, llmProvider: llmProvider)

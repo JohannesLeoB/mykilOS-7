@@ -90,19 +90,19 @@
 
     <div class="grid3" style="margin-top:14px;">
       <div class="card"><div class="accent" style="background:var(--positive)"></div>
-        <h3>5 Live-Integrationen</h3>
-        <div class="kv">Google Workspace · Clockodo · Airtable · ClickUp · Anthropic Claude. Alle Geschäftsdaten werden
+        <h3>6 Live-Integrationen</h3>
+        <div class="kv">Google Workspace · Clockodo · Airtable · ClickUp · Sevdesk · Anthropic Claude. Alle Geschäftsdaten werden
         <b>read-only</b> gelesen; einzig Claude ist ein ausgehender Request/Response-Dienst.</div>
       </div>
       <div class="card"><div class="accent" style="background:var(--cash)"></div>
-        <h3>1 Stub-Widget</h3>
-        <div class="kv">Geld (Tiefblau) zeigt heute Demo-Daten — der reservierte, bereits verdrahtete
-        Slot für <b>Sevdesk</b>. Aufgaben (Ocker) liest jetzt live aus ClickUp.</div>
+        <h3>Alle Widgets live</h3>
+        <div class="kv">Geld (Tiefblau) liest jetzt live aus <b>Sevdesk</b>: Ist-Umsatz (Summe der Rechnungen für
+        <span class="mono">sevdeskRef</span>) gegen das Soll-Budget aus Airtable. Kein Stub-Widget mehr.</div>
       </div>
       <div class="card"><div class="accent" style="background:var(--muted)"></div>
-        <h3>2 geplante Anschlüsse</h3>
-        <div class="kv">Sevdesk-API · Drive-Webhook. Handle <span class="mono">sevdeskRef</span> ist in
-        Airtable &amp; Domain bereits angelegt.</div>
+        <h3>1 geplanter Anschluss</h3>
+        <div class="kv">Drive-Webhook als Live-Quelle für <span class="mono">offerDetected</span> — heute feuert das
+        Signal noch per Demo-Button. Alle anderen Handles sind verdrahtet.</div>
       </div>
     </div>
 
@@ -166,8 +166,8 @@
     <line x1="250" y1="470" x2="500" y2="360" stroke="#8d8474" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arP)"/>
     <!-- Live: ClickUp -> hub -->
     <line x1="585" y1="470" x2="575" y2="372" stroke="#3A352E" stroke-width="2" marker-end="url(#ar)"/>
-    <!-- Planned: Sevdesk -> hub -->
-    <line x1="820" y1="470" x2="660" y2="372" stroke="#8d8474" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arP)"/>
+    <!-- Live: Sevdesk -> hub -->
+    <line x1="820" y1="470" x2="660" y2="372" stroke="#3A352E" stroke-width="2" marker-end="url(#ar)"/>
 
     <!-- edge labels -->
     <g font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#6F685C">
@@ -235,7 +235,7 @@
 
     <!-- PLANNED band -->
     <g>
-      <text x="40" y="436" font-size="9.5" letter-spacing="2" font-weight="700" fill="#8d8474">RESERVIERTE SLOTS — 1 LIVE · 2 GEPLANT</text>
+      <text x="40" y="436" font-size="9.5" letter-spacing="2" font-weight="700" fill="#8d8474">RESERVIERTE SLOTS — 2 LIVE · 1 GEPLANT</text>
       <line x1="250" y1="431" x2="1150" y2="431" stroke="#E2DBCB" stroke-width="1"/>
       <rect x="70" y="470" width="200" height="74" rx="12" fill="#F2EEE4" stroke="#b6ab95" stroke-width="1.6" stroke-dasharray="6 5"/>
       <text x="86" y="494" font-size="13" font-weight="700" fill="#6F685C">Drive-Webhook</text>
@@ -248,15 +248,16 @@
       <text x="504" y="510" font-size="8.5" fill="#6F685C">REST v2 · GET list/{id}/task · Token</text>
       <text x="504" y="524" font-size="8.5" fill="#6F685C">→ TasksWidget (Ocker) · clickUpListID</text>
 
-      <rect x="722" y="470" width="194" height="74" rx="12" fill="#F2EEE4" stroke="#4C6280" stroke-width="1.6" stroke-dasharray="6 5"/>
+      <rect x="722" y="470" width="194" height="74" rx="12" fill="#fff" stroke="#4C6280" stroke-width="2"/>
+      <rect x="858" y="478" width="48" height="16" rx="5" fill="#3E7A4E"/><text x="882" y="490" font-size="8.5" font-weight="700" fill="#fff" text-anchor="middle">LIVE</text>
       <text x="738" y="494" font-size="13" font-weight="700" fill="#4C6280">Sevdesk-API</text>
-      <text x="738" y="510" font-size="8.5" fill="#8d8474">Angebote · sevdeskRef</text>
-      <text x="738" y="524" font-size="8.5" fill="#8d8474">→ CashWidget (Tiefblau)</text>
+      <text x="738" y="510" font-size="8.5" fill="#6F685C">REST v1 · GET Invoice · Token · sevdeskRef</text>
+      <text x="738" y="524" font-size="8.5" fill="#6F685C">→ CashWidget (Tiefblau) · Ist vs. Budget</text>
     </g>
   </svg>
 
   <div class="grid3" style="margin-top:6px;">
-    <div class="card tinted"><h3>Read-only-Invariante</h3><div class="kv">Drive, Calendar, Contacts, Gmail, Clockodo &amp; Airtable sind <b>strikt GET</b>. Die einzigen ausgehenden Schreib-Requests sind OAuth-Token-Austausch/-Refresh und der Claude-Messages-Call.</div></div>
+    <div class="card tinted"><h3>Read-only-Invariante</h3><div class="kv">Drive, Calendar, Contacts, Gmail, Clockodo, Airtable, ClickUp &amp; Sevdesk sind <b>strikt GET</b>. Die einzigen ausgehenden Schreib-Requests sind OAuth-Token-Austausch/-Refresh und der Claude-Messages-Call.</div></div>
     <div class="card tinted"><h3>Airtable = Rückgrat</h3><div class="kv">Airtable-Felder füllen pro Projekt die <span class="mono">ProjectLinks</span>-Handles (Drive-ID, ClickUp-Liste, Kalender-/Kontakte-/Mail-Suche, sevdesk-Ref) — sie verdrahten <b>jede</b> Integration.</div></div>
     <div class="card tinted"><h3>Secrets</h3><div class="kv">4 Keychain-Services: <span class="mono">com.mykilos6.google / .clockodo / .airtable / .claude</span>. Externe IDs sind Referenzen, nie Primärschlüssel.</div></div>
   </div>
@@ -380,7 +381,8 @@
         <tr><td class="mono">Kontakte-Suche</td><td class="mono">contactsQuery</td><td><span class="badge" style="background:var(--people)"></span>Google People</td></tr>
         <tr><td class="mono">Mail-Suche</td><td class="mono">mailQuery</td><td><span class="badge" style="background:var(--personal)"></span>Gmail</td></tr>
         <tr><td class="mono">ClickUp-Liste</td><td class="mono">clickUpListID</td><td><span class="badge" style="background:var(--tasks)"></span>ClickUp <span class="chip c-live">LIVE</span></td></tr>
-        <tr><td class="mono">sevdesk-Ref</td><td class="mono">sevdeskRef</td><td><span class="badge" style="background:var(--cash)"></span>Sevdesk <span class="chip c-plan">GEPLANT</span></td></tr>
+        <tr><td class="mono">sevdesk-Ref</td><td class="mono">sevdeskRef</td><td><span class="badge" style="background:var(--cash)"></span>Sevdesk <span class="chip c-live">LIVE</span></td></tr>
+        <tr><td class="mono">Budget</td><td class="mono">budget</td><td><span class="badge" style="background:var(--cash)"></span>Soll-Wert für Cash-Balken <span class="chip c-live">LIVE</span></td></tr>
         <tr><td class="mono">Projektnummer · Titel · Art · Kundennummer · Phase · Eltern-Projekt</td><td class="mono">Project.* Felder</td><td>Domain-Identität</td></tr>
       </tbody>
     </table>
@@ -393,8 +395,8 @@
 <!-- ============================ PAGE 5 — CLAUDE + GEPLANT ============================ -->
 <section class="page">
   <div class="pagehead">
-    <div><div class="kick">Steckbriefe · Live + Geplant</div><h2>Anthropic Claude, ClickUp &amp; geplante Anschlüsse</h2></div>
-    <div class="sub">Der einzige OUT-Dienst · ClickUp jetzt live · reservierte Slots Sevdesk / Drive-Webhook</div>
+    <div><div class="kick">Steckbriefe · Live + Geplant</div><h2>Anthropic Claude, ClickUp, Sevdesk &amp; geplanter Anschluss</h2></div>
+    <div class="sub">Der einzige OUT-Dienst · ClickUp &amp; Sevdesk jetzt live · reservierter Slot Drive-Webhook</div>
   </div>
 
   <div class="grid2">
@@ -423,10 +425,10 @@
         <b>Handle:</b> <span class="mono">clickUpListID</span> (in Airtable gemappt) · <b>Keychain:</b> <span class="mono">com.mykilos6.clickup</span>. Read-only; Write-back (Task erledigt) bliebe Action-Card → Bestätigung → Audit.</div>
       </div>
       <div class="card tinted" style="margin-bottom:10px;"><div class="accent" style="background:var(--cash)"></div>
-        <h3>Sevdesk <span class="chip c-plan">GEPLANT</span></h3>
-        <div class="kv"><b>Slot:</b> WidgetKind <span class="mono">.cash</span> (Tiefblau) · CashWidget zeigt heute eine Demo-Budgetleiste + Signal-Empfang.<br>
-        <b>Handle:</b> <span class="mono">sevdeskRef</span> (in Airtable als „sevdesk-Ref").<br>
-        <b>Geplant:</b> Sevdesk REST (Token-Header), Angebots-/Rechnungsdaten read-only, Keychain <span class="mono">com.mykilos6.sevdesk</span>. Lifecycle <span class="mono">offerImported / draftCreated / draftSent</span> ist im Audit bereits vorgesehen.</div>
+        <h3>Sevdesk — Umsatz <span class="chip c-live">LIVE</span></h3>
+        <div class="kv"><b>Slot:</b> WidgetKind <span class="mono">.cash</span> (Tiefblau) · CashWidget zeigt den Ist-Umsatz (Summe der Rechnungen für <span class="mono">sevdeskRef</span>) gegen das Soll-Budget aus Airtable als Balken — plus den Drive→Cash-Signal-Empfang.<br>
+        <b>Endpunkt:</b> <span class="mono">GET my.sevdesk.de/api/v1/Invoice</span> (contact[id]=ref, limit=100), Token im <span class="mono">Authorization</span>-Header.<br>
+        <b>Handle:</b> <span class="mono">sevdeskRef</span> + <span class="mono">budget</span> (beide in Airtable gemappt) · <b>Keychain:</b> <span class="mono">com.mykilos6.sevdesk</span>. Read-only; mykilOS bucht nie nach sevdesk.</div>
       </div>
       <div class="card tinted"><div class="accent" style="background:var(--muted)"></div>
         <h3>Drive-Webhook <span class="chip c-plan">GEPLANT</span></h3>
@@ -609,7 +611,7 @@
 ├─ AppState  <span class="note">@MainActor @Observable</span>
 │  ├─ GRDBDatabase · RegistryStore
 │  ├─ homeBoard · homeNotes · audit
-│  └─ Auth: google · clockodo · airtable · claude
+│  └─ Auth: google · clockodo · clickup · sevdesk · airtable · claude
 ├─ StudioContext  <span class="note">(Signale)</span>
 ├─ Fenster: Haupt (1340×860) · „Über" (440×300)
 │
@@ -619,7 +621,7 @@
    ├─ <b>Assistent</b>    → AssistantPageView
    ├─ Marken &amp; Daten  <span class="chip c-plan">GEPLANT</span>
    ├─ Angebote        <span class="chip c-plan">GEPLANT</span>
-   └─ <b>Einstellungen</b> → SettingsView (4 Sektionen)</div>
+   └─ <b>Einstellungen</b> → SettingsView (6 Sektionen)</div>
       <div class="note" style="margin-top:7px;"><b>Bootstrap:</b> homeBoard/notes/audit laden → registry seed+load → bei verbundenem Airtable Auto-Sync.</div>
     </div>
 
@@ -649,7 +651,7 @@
       <tr class="live"><td><b>Notes</b></td><td><span class="badge" style="background:var(--personal)"></span>notes · Pflaume</td><td>NoteStore (GRDB, lokal)</td><td><span class="chip c-live">LIVE</span></td><td>content + Autosave 0,8 s</td><td class="mono">boardID</td></tr>
       <tr class="live"><td><b>Assistant</b></td><td><span class="badge" style="background:var(--ink)"></span>assistant · Tinte</td><td>AssistantEngine (+ Claude opt.)</td><td><span class="chip c-live">LIVE</span></td><td>content</td><td class="mono">signals(for:)</td></tr>
       <tr><td><b>Tasks</b></td><td><span class="badge" style="background:var(--tasks)"></span>tasks · Ocker</td><td>ClickUp offene Aufgaben</td><td><span class="chip c-live">LIVE</span></td><td>alle States</td><td class="mono">clickUpListID</td></tr>
-      <tr><td><b>Cash</b></td><td><span class="badge" style="background:var(--cash)"></span>cash · Tiefblau</td><td>Demo-Budget + Signal (→ Sevdesk)</td><td><span class="chip c-stub">STUB</span></td><td>nur content</td><td class="mono">sevdeskRef (geplant)</td></tr>
+      <tr class="live"><td><b>Cash</b></td><td><span class="badge" style="background:var(--cash)"></span>cash · Tiefblau</td><td>Sevdesk Ist-Umsatz vs. Budget + Signal</td><td><span class="chip c-live">LIVE</span></td><td>content + loading/empty/perm/error inline</td><td class="mono">sevdeskRef · budget</td></tr>
       <tr><td colspan="6" class="note">Heute-spezifisch: <span class="mono">focus · projectFaves · clockodo · recentActivity</span> (Clockodo-Widget live über ClockodoClient).</td></tr>
     </tbody>
   </table>
@@ -693,7 +695,8 @@
           <tr><td class="mono">contactsQuery</td><td>Kontakte-Suche</td></tr>
           <tr><td class="mono">mailQuery</td><td>Gmail-Suche/Label</td></tr>
           <tr><td class="mono">clickUpListID</td><td>ClickUp-Liste <span class="chip c-live">LIVE</span></td></tr>
-          <tr><td class="mono">sevdeskRef</td><td>Sevdesk-Referenz <span class="chip c-plan">GEPLANT</span></td></tr>
+          <tr><td class="mono">sevdeskRef</td><td>Sevdesk-Kontakt-ID <span class="chip c-live">LIVE</span></td></tr>
+          <tr><td class="mono">budget</td><td>Soll-Budget (Cash-Balken) <span class="chip c-live">LIVE</span></td></tr>
         </tbody>
       </table>
     </div>
@@ -708,7 +711,7 @@
           <tr><td class="mono">boardID</td><td>home | project({nr}) → Layout-Key</td></tr>
         </tbody>
       </table>
-      <div class="note" style="margin-top:7px;"><b>Keychain-Services:</b> <span class="mono">com.mykilos6.google · .clockodo · .airtable · .clickup · .claude</span> &nbsp;(+ geplant <span class="mono">.sevdesk</span>).</div>
+      <div class="note" style="margin-top:7px;"><b>Keychain-Services:</b> <span class="mono">com.mykilos6.google · .clockodo · .airtable · .clickup · .sevdesk · .claude</span>.</div>
     </div>
   </div>
   <div class="foot mono">mykilOS 6 — Systemarchitektur · verifiziert aus Quellcode · 2026-06-26</div>

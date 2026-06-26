@@ -39,6 +39,11 @@ public enum AirtableFieldValue: Sendable, Equatable, Decodable {
         if case .array(let a) = self { return a.first }
         return nil
     }
+
+    public var numberValue: Double? {
+        if case .number(let n) = self { return n }
+        return nil
+    }
 }
 
 // MARK: - AirtableClient
@@ -129,7 +134,8 @@ public struct AirtableClient: AirtableFetching {
                 calendarQuery: fields["Kalender-Suche"]?.stringValue,
                 contactsQuery: fields["Kontakte-Suche"]?.stringValue,
                 mailQuery: fields["Mail-Suche"]?.stringValue,
-                sevdeskRef: fields["sevdesk-Ref"]?.stringValue
+                sevdeskRef: fields["sevdesk-Ref"]?.stringValue,
+                budget: fields["Budget"]?.numberValue
             )
 
             let recordID = fields["_airtableRecordID"]?.stringValue

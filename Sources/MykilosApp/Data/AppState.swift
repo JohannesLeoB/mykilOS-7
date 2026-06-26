@@ -22,6 +22,7 @@ public final class AppState {
     public let googleAuth: GoogleAuthService
     public let clockodoAuth: ClockodoAuthService
     public let clickUpAuth: ClickUpAuthService
+    public let sevdeskAuth: SevdeskAuthService
     public let airtableAuth: AirtableAuthService
     public let claudeAuth: ClaudeAuthService
     public let assistantLLM: any AssistantLLMProviding
@@ -46,6 +47,7 @@ public final class AppState {
         self.googleAuth = GoogleAuthService()
         self.clockodoAuth = ClockodoAuthService()
         self.clickUpAuth = ClickUpAuthService()
+        self.sevdeskAuth = SevdeskAuthService()
         self.airtableAuth = AirtableAuthService()
         let claudeCredentials = KeychainClaudeCredentialsStore()
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)

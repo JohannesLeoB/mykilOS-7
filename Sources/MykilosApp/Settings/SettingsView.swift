@@ -13,6 +13,8 @@ struct SettingsView: View {
     @State private var clockodoError: String?
     @State private var clickUpToken: String = ""
     @State private var clickUpError: String?
+    @State private var sevdeskToken: String = ""
+    @State private var sevdeskError: String?
     @State private var airtablePAT: String = ""
     @State private var airtableBaseID: String = ""
     @State private var airtableError: String?
@@ -29,6 +31,7 @@ struct SettingsView: View {
                 googleSection
                 clockodoSection
                 clickUpSection
+                sevdeskSection
                 airtableSection
                 claudeSection
                 Spacer()
@@ -45,6 +48,9 @@ struct SettingsView: View {
             }
             if let creds = try? appState.clickUpAuth.storedCredentials() {
                 clickUpToken = creds.apiToken
+            }
+            if let creds = try? appState.sevdeskAuth.storedCredentials() {
+                sevdeskToken = creds.apiToken
             }
             if let creds = try? appState.airtableAuth.storedCredentials() {
                 airtablePAT = creds.pat
@@ -305,6 +311,86 @@ struct SettingsView: View {
             clickUpToken = ""
         } catch {
             clickUpError = "Trennen fehlgeschlagen: \(error)"
+        }
+    }
+
+    // MARK: - Sevdesk
+
+    private var sevdeskSection: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            Text("Sevdesk Umsatz")
+                .font(.mykHeadline)
+                .foregroundStyle(MykColor.ink.color)
+            sevdeskStatusBadge
+            SecureField("API-Token", text: $sevdeskToken)
+                .textFieldStyle(.roundedBorder)
+                .font(.mykMono(12))
+            HStack(spacing: MykSpace.s4) {
+                Button(sevdeskConnectLabel) { connectSevdesk() }
+                if appState.sevdeskAuth.status == .connected {
+                    Button("Trennen", role: .destructive) { disconnectSevdesk() }
+                }
+            }
+            if let sevdeskError {
+                Text(sevdeskError)
+                    .font(.mykMono(10))
+                    .foregroundStyle(MykColor.critical.color)
+            }
+            Text("Token unter sevdesk.de → Einstellungen → Benutzer → API. Nur Lesezugriff: speist den Ist-Umsatz im Budget-Balken.")
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.faint.color)
+        }
+        .padding(MykSpace.s6)
+        .background(
+            RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1)
+        )
+    }
+
+    private var sevdeskStatusBadge: some View {
+        HStack(spacing: 6) {
+            Circle().fill(sevdeskStatusColor).frame(width: 7, height: 7)
+            Text(sevdeskStatusText).font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
+        }
+    }
+
+    private var sevdeskStatusColor: Color {
+        switch appState.sevdeskAuth.status {
+        case .connected:    MykColor.positive.color
+        case .disconnected: MykColor.faint.color
+        case .error:        MykColor.critical.color
+        }
+    }
+
+    private var sevdeskStatusText: String {
+        switch appState.sevdeskAuth.status {
+        case .connected:          "VERBUNDEN"
+        case .disconnected:       "NICHT VERBUNDEN"
+        case .error(let message): "FEHLER · \(message)"
+        }
+    }
+
+    private var sevdeskConnectLabel: String {
+        appState.sevdeskAuth.status == .connected ? "Erneut verbinden" : "Verbinden"
+    }
+
+    private func connectSevdesk() {
+        sevdeskError = nil
+        do {
+            try appState.sevdeskAuth.connect(apiToken: sevdeskToken)
+        } catch {
+            sevdeskError = "Verbindung fehlgeschlagen: \(error)"
+        }
+    }
+
+    private func disconnectSevdesk() {
+        do {
+            try appState.sevdeskAuth.disconnect()
+            sevdeskToken = ""
+        } catch {
+            sevdeskError = "Trennen fehlgeschlagen: \(error)"
         }
     }
 

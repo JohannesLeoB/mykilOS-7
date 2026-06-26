@@ -28,7 +28,9 @@ public enum DemoSeed {
                         driveFolderPath: "Projekte/ME-24 Küche Meyer",
                         clickUpListID: "9012345",
                         calendarQuery: "Meyer",
-                        contactsQuery: "Meyer"
+                        contactsQuery: "Meyer",
+                        sevdeskRef: "1001",
+                        budget: 48000
                     ),
                     phase: "Ausführungsplanung",
                     airtableRecordID: "recME24",
@@ -51,7 +53,9 @@ public enum DemoSeed {
                     links: ProjectLinks(
                         driveFolderID: "2XyZ_drive_loft",
                         clickUpListID: "9012346",
-                        calendarQuery: "Loft"
+                        calendarQuery: "Loft",
+                        sevdeskRef: "1002",
+                        budget: 120000
                     ),
                     phase: "Genehmigungsplanung",
                     airtableRecordID: "recLO23",

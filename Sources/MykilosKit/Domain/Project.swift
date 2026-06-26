@@ -12,8 +12,9 @@ public enum ProjectKind: String, Codable, Sendable, CaseIterable {
 }
 
 // MARK: - ProjectLinks
-// Die Referenzen & Pfade eines Projekts. NIEMALS Secrets — nur IDs und
-// lesbare Pfade. Quelle: Airtable-Spalten "Links und Pfade".
+// Die Referenzen & Pfade eines Projekts. NIEMALS Secrets — nur IDs, lesbare
+// Pfade und nicht-sensible Projektzahlen (Budget). Quelle: Airtable-Spalten
+// "Links und Pfade".
 public struct ProjectLinks: Codable, Equatable, Sendable {
     public var driveFolderID: String?
     public var driveFolderPath: String?
@@ -22,11 +23,12 @@ public struct ProjectLinks: Codable, Equatable, Sendable {
     public var contactsQuery: String?
     public var mailQuery: String?
     public var sevdeskRef: String?
+    public var budget: Double?   // Soll-Budget (Airtable) — Bezugswert für den Cash-Ist-Vergleich
 
     public init(driveFolderID: String? = nil, driveFolderPath: String? = nil,
                 clickUpListID: String? = nil, calendarQuery: String? = nil,
                 contactsQuery: String? = nil, mailQuery: String? = nil,
-                sevdeskRef: String? = nil) {
+                sevdeskRef: String? = nil, budget: Double? = nil) {
         self.driveFolderID = driveFolderID
         self.driveFolderPath = driveFolderPath
         self.clickUpListID = clickUpListID
@@ -34,6 +36,7 @@ public struct ProjectLinks: Codable, Equatable, Sendable {
         self.contactsQuery = contactsQuery
         self.mailQuery = mailQuery
         self.sevdeskRef = sevdeskRef
+        self.budget = budget
     }
 }
 
