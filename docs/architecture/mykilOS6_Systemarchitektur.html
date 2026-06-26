@@ -90,19 +90,19 @@
 
     <div class="grid3" style="margin-top:14px;">
       <div class="card"><div class="accent" style="background:var(--positive)"></div>
-        <h3>4 Live-Integrationen</h3>
-        <div class="kv">Google Workspace · Clockodo · Airtable · Anthropic Claude. Alle Geschäftsdaten werden
+        <h3>5 Live-Integrationen</h3>
+        <div class="kv">Google Workspace · Clockodo · Airtable · ClickUp · Anthropic Claude. Alle Geschäftsdaten werden
         <b>read-only</b> gelesen; einzig Claude ist ein ausgehender Request/Response-Dienst.</div>
       </div>
-      <div class="card"><div class="accent" style="background:var(--tasks)"></div>
-        <h3>2 Stub-Widgets</h3>
-        <div class="kv">Aufgaben (Ocker) und Geld (Tiefblau) zeigen heute Demo-Daten — die reservierten,
-        bereits verdrahteten Slots für <b>ClickUp</b> und <b>Sevdesk</b>.</div>
+      <div class="card"><div class="accent" style="background:var(--cash)"></div>
+        <h3>1 Stub-Widget</h3>
+        <div class="kv">Geld (Tiefblau) zeigt heute Demo-Daten — der reservierte, bereits verdrahtete
+        Slot für <b>Sevdesk</b>. Aufgaben (Ocker) liest jetzt live aus ClickUp.</div>
       </div>
       <div class="card"><div class="accent" style="background:var(--muted)"></div>
-        <h3>3 geplante Anschlüsse</h3>
-        <div class="kv">ClickUp-API · Sevdesk-API · Drive-Webhook. Handles (<span class="mono">clickUpListID</span>,
-        <span class="mono">sevdeskRef</span>) sind in Airtable &amp; Domain bereits angelegt.</div>
+        <h3>2 geplante Anschlüsse</h3>
+        <div class="kv">Sevdesk-API · Drive-Webhook. Handle <span class="mono">sevdeskRef</span> ist in
+        Airtable &amp; Domain bereits angelegt.</div>
       </div>
     </div>
 
@@ -164,8 +164,8 @@
     <line x1="730" y1="332" x2="912" y2="364" stroke="#7A5CA0" stroke-width="2" stroke-dasharray="1 0" marker-end="url(#arC)"/>
     <!-- Planned: Drive webhook -> signal/hub -->
     <line x1="250" y1="470" x2="500" y2="360" stroke="#8d8474" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arP)"/>
-    <!-- Planned: ClickUp -> hub -->
-    <line x1="585" y1="470" x2="575" y2="372" stroke="#8d8474" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arP)"/>
+    <!-- Live: ClickUp -> hub -->
+    <line x1="585" y1="470" x2="575" y2="372" stroke="#3A352E" stroke-width="2" marker-end="url(#ar)"/>
     <!-- Planned: Sevdesk -> hub -->
     <line x1="820" y1="470" x2="660" y2="372" stroke="#8d8474" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arP)"/>
 
@@ -235,17 +235,18 @@
 
     <!-- PLANNED band -->
     <g>
-      <text x="40" y="436" font-size="9.5" letter-spacing="2" font-weight="700" fill="#8d8474">GEPLANT — RESERVIERTE SLOTS</text>
+      <text x="40" y="436" font-size="9.5" letter-spacing="2" font-weight="700" fill="#8d8474">RESERVIERTE SLOTS — 1 LIVE · 2 GEPLANT</text>
       <line x1="250" y1="431" x2="1150" y2="431" stroke="#E2DBCB" stroke-width="1"/>
       <rect x="70" y="470" width="200" height="74" rx="12" fill="#F2EEE4" stroke="#b6ab95" stroke-width="1.6" stroke-dasharray="6 5"/>
       <text x="86" y="494" font-size="13" font-weight="700" fill="#6F685C">Drive-Webhook</text>
       <text x="86" y="510" font-size="8.5" fill="#8d8474">files.watch / changes</text>
       <text x="86" y="524" font-size="8.5" fill="#8d8474">→ speist Signale (heute Demo)</text>
 
-      <rect x="488" y="470" width="194" height="74" rx="12" fill="#F2EEE4" stroke="#C99A3E" stroke-width="1.6" stroke-dasharray="6 5"/>
+      <rect x="488" y="470" width="194" height="74" rx="12" fill="#fff" stroke="#C99A3E" stroke-width="2"/>
+      <rect x="624" y="478" width="48" height="16" rx="5" fill="#3E7A4E"/><text x="648" y="490" font-size="8.5" font-weight="700" fill="#fff" text-anchor="middle">LIVE</text>
       <text x="504" y="494" font-size="13" font-weight="700" fill="#9a7321">ClickUp-API</text>
-      <text x="504" y="510" font-size="8.5" fill="#8d8474">Tasks · clickUpListID</text>
-      <text x="504" y="524" font-size="8.5" fill="#8d8474">→ TasksWidget (Ocker)</text>
+      <text x="504" y="510" font-size="8.5" fill="#6F685C">REST v2 · GET list/{id}/task · Token</text>
+      <text x="504" y="524" font-size="8.5" fill="#6F685C">→ TasksWidget (Ocker) · clickUpListID</text>
 
       <rect x="722" y="470" width="194" height="74" rx="12" fill="#F2EEE4" stroke="#4C6280" stroke-width="1.6" stroke-dasharray="6 5"/>
       <text x="738" y="494" font-size="13" font-weight="700" fill="#4C6280">Sevdesk-API</text>
@@ -378,7 +379,7 @@
         <tr><td class="mono">Kalender-Suche</td><td class="mono">calendarQuery</td><td><span class="badge" style="background:var(--people)"></span>Google Calendar</td></tr>
         <tr><td class="mono">Kontakte-Suche</td><td class="mono">contactsQuery</td><td><span class="badge" style="background:var(--people)"></span>Google People</td></tr>
         <tr><td class="mono">Mail-Suche</td><td class="mono">mailQuery</td><td><span class="badge" style="background:var(--personal)"></span>Gmail</td></tr>
-        <tr><td class="mono">ClickUp-Liste</td><td class="mono">clickUpListID</td><td><span class="badge" style="background:var(--tasks)"></span>ClickUp <span class="chip c-plan">GEPLANT</span></td></tr>
+        <tr><td class="mono">ClickUp-Liste</td><td class="mono">clickUpListID</td><td><span class="badge" style="background:var(--tasks)"></span>ClickUp <span class="chip c-live">LIVE</span></td></tr>
         <tr><td class="mono">sevdesk-Ref</td><td class="mono">sevdeskRef</td><td><span class="badge" style="background:var(--cash)"></span>Sevdesk <span class="chip c-plan">GEPLANT</span></td></tr>
         <tr><td class="mono">Projektnummer · Titel · Art · Kundennummer · Phase · Eltern-Projekt</td><td class="mono">Project.* Felder</td><td>Domain-Identität</td></tr>
       </tbody>
@@ -392,8 +393,8 @@
 <!-- ============================ PAGE 5 — CLAUDE + GEPLANT ============================ -->
 <section class="page">
   <div class="pagehead">
-    <div><div class="kick">Steckbrief 4/4 · Live + Geplant</div><h2>Anthropic Claude &amp; geplante Anschlüsse</h2></div>
-    <div class="sub">Der einzige OUT-Dienst · reservierte Slots ClickUp / Sevdesk / Drive-Webhook</div>
+    <div><div class="kick">Steckbriefe · Live + Geplant</div><h2>Anthropic Claude, ClickUp &amp; geplante Anschlüsse</h2></div>
+    <div class="sub">Der einzige OUT-Dienst · ClickUp jetzt live · reservierte Slots Sevdesk / Drive-Webhook</div>
   </div>
 
   <div class="grid2">
@@ -416,10 +417,10 @@
 
     <div>
       <div class="card tinted" style="margin-bottom:10px;"><div class="accent" style="background:var(--tasks)"></div>
-        <h3>ClickUp <span class="chip c-plan">GEPLANT</span></h3>
-        <div class="kv"><b>Slot:</b> WidgetKind <span class="mono">.tasks</span> (Ocker) · TasksWidget zeigt heute 4 Demo-Tasks (immer <span class="mono">.content</span>).<br>
-        <b>Handle:</b> <span class="mono">clickUpListID</span> (in Airtable bereits gemappt).<br>
-        <b>Geplant:</b> ClickUp REST v2 GET <span class="mono">list/{id}/task</span>, Token-Header, neuer Keychain-Service <span class="mono">com.mykilos6.clickup</span>, 5. Settings-Sektion. Write-back (Task erledigt) über Action-Card → Bestätigung → Audit.</div>
+        <h3>ClickUp — Aufgaben <span class="chip c-live">LIVE</span></h3>
+        <div class="kv"><b>Slot:</b> WidgetKind <span class="mono">.tasks</span> (Ocker) · TasksWidget liest die offenen Aufgaben der verlinkten Liste, mit allen Renderstates (loading/content/empty/permissionRequired/error).<br>
+        <b>Endpunkt:</b> <span class="mono">GET api.clickup.com/api/v2/list/{id}/task</span> (archived=false, include_closed=false), Token im <span class="mono">Authorization</span>-Header.<br>
+        <b>Handle:</b> <span class="mono">clickUpListID</span> (in Airtable gemappt) · <b>Keychain:</b> <span class="mono">com.mykilos6.clickup</span>. Read-only; Write-back (Task erledigt) bliebe Action-Card → Bestätigung → Audit.</div>
       </div>
       <div class="card tinted" style="margin-bottom:10px;"><div class="accent" style="background:var(--cash)"></div>
         <h3>Sevdesk <span class="chip c-plan">GEPLANT</span></h3>
@@ -647,7 +648,7 @@
       <tr class="live"><td><b>Mail</b></td><td><span class="badge" style="background:var(--personal)"></span>mail · Pflaume</td><td>GoogleGmailClient (list+get)</td><td><span class="chip c-live">LIVE</span></td><td>alle 6</td><td class="mono">mailQuery</td></tr>
       <tr class="live"><td><b>Notes</b></td><td><span class="badge" style="background:var(--personal)"></span>notes · Pflaume</td><td>NoteStore (GRDB, lokal)</td><td><span class="chip c-live">LIVE</span></td><td>content + Autosave 0,8 s</td><td class="mono">boardID</td></tr>
       <tr class="live"><td><b>Assistant</b></td><td><span class="badge" style="background:var(--ink)"></span>assistant · Tinte</td><td>AssistantEngine (+ Claude opt.)</td><td><span class="chip c-live">LIVE</span></td><td>content</td><td class="mono">signals(for:)</td></tr>
-      <tr><td><b>Tasks</b></td><td><span class="badge" style="background:var(--tasks)"></span>tasks · Ocker</td><td>Demo-Tasks (→ ClickUp)</td><td><span class="chip c-stub">STUB</span></td><td>nur content</td><td class="mono">clickUpListID (geplant)</td></tr>
+      <tr><td><b>Tasks</b></td><td><span class="badge" style="background:var(--tasks)"></span>tasks · Ocker</td><td>ClickUp offene Aufgaben</td><td><span class="chip c-live">LIVE</span></td><td>alle States</td><td class="mono">clickUpListID</td></tr>
       <tr><td><b>Cash</b></td><td><span class="badge" style="background:var(--cash)"></span>cash · Tiefblau</td><td>Demo-Budget + Signal (→ Sevdesk)</td><td><span class="chip c-stub">STUB</span></td><td>nur content</td><td class="mono">sevdeskRef (geplant)</td></tr>
       <tr><td colspan="6" class="note">Heute-spezifisch: <span class="mono">focus · projectFaves · clockodo · recentActivity</span> (Clockodo-Widget live über ClockodoClient).</td></tr>
     </tbody>
@@ -691,7 +692,7 @@
           <tr><td class="mono">calendarQuery</td><td>Kalender-Suche</td></tr>
           <tr><td class="mono">contactsQuery</td><td>Kontakte-Suche</td></tr>
           <tr><td class="mono">mailQuery</td><td>Gmail-Suche/Label</td></tr>
-          <tr><td class="mono">clickUpListID</td><td>ClickUp-Liste <span class="chip c-plan">GEPLANT</span></td></tr>
+          <tr><td class="mono">clickUpListID</td><td>ClickUp-Liste <span class="chip c-live">LIVE</span></td></tr>
           <tr><td class="mono">sevdeskRef</td><td>Sevdesk-Referenz <span class="chip c-plan">GEPLANT</span></td></tr>
         </tbody>
       </table>
@@ -707,7 +708,7 @@
           <tr><td class="mono">boardID</td><td>home | project({nr}) → Layout-Key</td></tr>
         </tbody>
       </table>
-      <div class="note" style="margin-top:7px;"><b>Keychain-Services:</b> <span class="mono">com.mykilos6.google · .clockodo · .airtable · .claude</span> &nbsp;(+ geplant <span class="mono">.clickup · .sevdesk</span>).</div>
+      <div class="note" style="margin-top:7px;"><b>Keychain-Services:</b> <span class="mono">com.mykilos6.google · .clockodo · .airtable · .clickup · .claude</span> &nbsp;(+ geplant <span class="mono">.sevdesk</span>).</div>
     </div>
   </div>
   <div class="foot mono">mykilOS 6 — Systemarchitektur · verifiziert aus Quellcode · 2026-06-26</div>

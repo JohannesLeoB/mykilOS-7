@@ -7,11 +7,11 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 
 ## Wo wir stehen
 
-**Akt 5 abgeschlossen.** Politur, Dark Mode, DMG. Post-Akt-5 Aufgabe 6
-ist abgeschlossen: vollständiges Systemarchitektur-PDF (verifiziert aus dem
-Quellcode), Code-Cleanup und testgesicherte Härtung des Token-Refresh-Pfads
-(97 Tests). Davor (Aufgabe 5) erzeugt der Assistent Claude-Zusammenfassungen
-aus Signalen und regelbasierten Insights.
+**Akt 5 abgeschlossen.** Politur, Dark Mode, DMG. Post-Akt-5 Aufgabe 7 ist
+abgeschlossen: das Tasks-Widget liest jetzt **live** aus ClickUp (statt
+Demo-Daten) — eigener Client, Auth, Keychain und Settings-Sektion (103 Tests).
+Davor (Aufgabe 6) entstanden das Systemarchitektur-PDF, ein Code-Cleanup und
+die testgesicherte Härtung des Token-Refresh-Pfads.
 
 | Akt | Status | Inhalt |
 |---|---|---|
@@ -34,6 +34,7 @@ aus Signalen und regelbasierten Insights.
 | Post-Akt 5, Aufgabe 4 | ✅ | Eigenes App-Icon (`AppIcon.icns`) im Bundle |
 | Post-Akt 5, Aufgabe 5 | ✅ | Claude-LLM-Integration im Assistenten (Keychain + Messages API) |
 | Post-Akt 5, Aufgabe 6 | ✅ | Systemarchitektur-PDF, Code-Cleanup & Refresh-Pfad-Härtung (97 Tests) |
+| Post-Akt 5, Aufgabe 7 | ✅ | ClickUp-Integration live (Tasks-Widget, ClickUpClient/Auth/Keychain, Settings, 103 Tests) |
 
 ---
 
@@ -108,6 +109,8 @@ Sources/
                        #   KeychainClockodoCredentialsStore (Akt 3, S5)
                        # Airtable/ — AirtableClient, AirtableAuthService,
                        #   KeychainAirtableCredentialsStore (Akt 3, S8)
+                       # ClickUp/ — ClickUpClient, ClickUpAuthService,
+                       #   KeychainClickUpCredentialsStore (Post-Akt 5, Aufgabe 7)
   MykilosWidgets/      # WidgetContainer, WidgetBoardView, SourceChip, SaveStateBar,
                        # Kinds/ (8 Widgets: drive, tasks, contacts, cash, calendar, notes, mail, assistant)
   MykilosApp/          # Shell (Sidebar), Gallery, Detail, Today, Data (AppState, AppDatabase,
@@ -120,6 +123,7 @@ Tests/
                        # GoogleContactsClientTests, GoogleGmailClientTests,
                        # ClockodoClientTests, ClockodoAuthServiceTests,
                        # AirtableClientTests, AirtableAuthServiceTests,
+                       # ClickUpClientTests (URL/Parser/notConnected),
                        # GoogleAccessTokenProviderTests (Refresh-Logik mit Fake) —
                        # kein echtes Keychain/Netzwerk im Testlauf, siehe
                        # HANDOFF_AKT3_S1/S2/S3/S4/S5/S6.md
@@ -155,7 +159,29 @@ Kein Sync-Backend in V1.
 ## Nächste Schritte
 
 Akt 0–5 und alle dokumentierten Post-Akt-5-Verfeinerungen sind abgeschlossen.
-Die App ist feature-complete für Beta.
+Die App ist feature-complete für Beta. Von den ursprünglich zwei Stub-Widgets
+ist **nur noch Cash (Sevdesk) Demo** — Tasks (ClickUp) ist seit Aufgabe 7 live.
+
+**Nächster offensichtlicher Schritt nach Plan:** Sevdesk-Integration für das
+Cash-Widget nach exakt demselben Muster wie ClickUp (Client + AuthService +
+Keychain `com.mykilos6.sevdesk` + Settings-Sektion + Tests, Handle `sevdeskRef`).
+
+**Aus Post-Akt-5 Aufgabe 7 (ClickUp-Integration):**
+- `ClickUpClient` liest die offenen Aufgaben einer Liste
+  (`GET api.clickup.com/api/v2/list/{id}/task`, `archived=false`,
+  `include_closed=false`), Personal-Token im `Authorization`-Header.
+  Testbar über injizierbaren `URLSession`/Store; reine statische
+  `buildTasksURL`/`parseTasks`/`date(fromEpochMillis:)`.
+- `ClickUpAuthService` + `KeychainClickUpCredentialsStore` (Service
+  `com.mykilos6.clickup`, ein Feld `apiToken`) — gleiche Form wie Airtable-PAT.
+- `TasksWidget` konsumiert den Client wie `DriveWidget`: per-Projekt-Loader,
+  `clickUpListID` als Handle, alle Renderstates (leerer Handle → `.empty`,
+  `notConnected` → `.permissionRequired`). In `ProjectDetailView` verdrahtet.
+- 5. Settings-Sektion „ClickUp Aufgaben" (SecureField Token, Verbinden/Trennen).
+- Tests: `ClickUpClientTests` (URL-Builder, Parser inkl. Fälligkeit/Assignee/
+  Urgent, leere Liste, kaputtes JSON, `notConnected`) — 103 Tests grün.
+- **Nicht live getestet:** echter ClickUp-Abruf mit Token + realer Liste bleibt
+  ein manueller Beta-Check (Tests nutzen kein echtes Keychain/Netzwerk).
 
 **Aus Post-Akt-5 Aufgabe 1 (Auto-Sync bei App-Start):**
 - `AppState.bootstrap()` lädt weiterhin zuerst lokale Boards und Registry
@@ -277,6 +303,7 @@ und Session-Regeln: `docs/codex/WORKFLOW.md`.
 - `docs/handoffs/HANDOFF_POST_AKT5_4.md` — Eigenes App-Icon im Bundle
 - `docs/handoffs/HANDOFF_POST_AKT5_5.md` — Claude-LLM-Integration im Assistenten
 - `docs/handoffs/HANDOFF_POST_AKT5_6.md` — Systemarchitektur-PDF, Cleanup & Refresh-Härtung
-- `docs/architecture/mykilOS6_Systemarchitektur.pdf` — Systemarchitektur (9 S., A4 quer): Integrations-Landkarte, Steckbriefe (Google/Clockodo/Airtable/Claude), Signal-Nervensystem, GRDB-Persistenz, Funktionsbaum, Trigger-/Handle-Matrix; Quelle `.html` + `build_pdf.sh` daneben
+- `docs/handoffs/HANDOFF_POST_AKT5_7.md` — ClickUp-Integration live (Tasks-Widget)
+- `docs/architecture/mykilOS6_Systemarchitektur.pdf` — Systemarchitektur (9 S., A4 quer): Integrations-Landkarte, Steckbriefe (Google/Clockodo/Airtable/ClickUp/Claude), Signal-Nervensystem, GRDB-Persistenz, Funktionsbaum, Trigger-/Handle-Matrix; Quelle `.html` + `build_pdf.sh` daneben
 - `docs/MYKILOS_6_TEAM_MODELL.md` — Team, Airtable, Identität
 - `docs/codex/WORKFLOW.md` — Session-Regeln für Codex-Sessions in diesem Repo

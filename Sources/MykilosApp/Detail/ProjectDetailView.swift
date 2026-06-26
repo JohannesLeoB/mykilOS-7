@@ -73,6 +73,7 @@ struct ProjectDetailView: View {
                 llmProvider: appState.claudeAuth.status == .connected ? appState.assistantLLM : nil,
                 projectID: project.projectNumber,
                 driveFolderID: project.links.driveFolderID,
+                clickUpListID: project.links.clickUpListID,
                 calendarQuery: project.links.calendarQuery,
                 contactsQuery: project.links.contactsQuery,
                 mailQuery: project.links.mailQuery
@@ -94,6 +95,7 @@ private struct ProjectWidgetBoardView: View {
     let llmProvider: (any AssistantLLMProviding)?
     let projectID:  String
     let driveFolderID: String?
+    let clickUpListID: String?
     let calendarQuery: String?
     let contactsQuery: String?
     let mailQuery: String?
@@ -151,7 +153,7 @@ private struct ProjectWidgetBoardView: View {
     private func projectWidgetView(for instance: WidgetInstance) -> some View {
         switch instance.kind {
         case .drive:     DriveWidget(projectID: projectID, driveFolderID: driveFolderID)
-        case .tasks:     TasksWidget(projectID: projectID)
+        case .tasks:     TasksWidget(projectID: projectID, clickUpListID: clickUpListID)
         case .contacts:  ContactsWidget(projectID: projectID, contactsQuery: contactsQuery)
         case .cash:      CashWidget(projectID: projectID)
         case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: calendarQuery)

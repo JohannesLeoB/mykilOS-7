@@ -21,6 +21,7 @@ public final class AppState {
     // MARK: Integrationen
     public let googleAuth: GoogleAuthService
     public let clockodoAuth: ClockodoAuthService
+    public let clickUpAuth: ClickUpAuthService
     public let airtableAuth: AirtableAuthService
     public let claudeAuth: ClaudeAuthService
     public let assistantLLM: any AssistantLLMProviding
@@ -44,6 +45,7 @@ public final class AppState {
         self.audit = AuditStore(db: database)
         self.googleAuth = GoogleAuthService()
         self.clockodoAuth = ClockodoAuthService()
+        self.clickUpAuth = ClickUpAuthService()
         self.airtableAuth = AirtableAuthService()
         let claudeCredentials = KeychainClaudeCredentialsStore()
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
