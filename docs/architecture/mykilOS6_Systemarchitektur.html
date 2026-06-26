@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --paper:#FAF8F3; --paper2:#F2EEE4; --ink:#1A1814; --inkSoft:#3A352E; --muted:#6F685C;
+    --line:#E2DBCB; --drive:#C26B4A; --people:#6E8B6A; --tasks:#C99A3E; --cash:#4C6280;
+    --personal:#8A5B73; --positive:#3E7A4E; --critical:#B4503C; --claude:#7A5CA0;
+  }
+  @page{ size:A4 landscape; margin:0; }
+  *{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  html,body{ margin:0; padding:0; background:var(--paper); color:var(--ink);
+    font-family:-apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif; }
+  .page{ position:relative; width:297mm; min-height:209.5mm; padding:11mm 13mm 9mm;
+    page-break-after:always; overflow:hidden; background:var(--paper); }
+  .page:last-child{ page-break-after:auto; }
+  h1{ font-size:30px; margin:0; letter-spacing:-.5px; }
+  h2{ font-size:19px; margin:0 0 3px; letter-spacing:-.3px; }
+  h3{ font-size:13px; margin:0 0 4px; letter-spacing:.2px; }
+  .sub{ color:var(--muted); font-size:11px; }
+  .mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+  .pagehead{ display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom:2px solid var(--ink); padding-bottom:6px; margin-bottom:11px; }
+  .pagehead .kick{ font-size:9.5px; letter-spacing:2px; color:var(--muted);
+    text-transform:uppercase; font-weight:600; }
+  .pnum{ position:absolute; bottom:5mm; right:13mm; font-size:9px; color:var(--muted); }
+  .foot{ position:absolute; bottom:5mm; left:13mm; font-size:9px; color:var(--muted);
+    letter-spacing:.5px; }
+  /* tables */
+  table{ width:100%; border-collapse:collapse; font-size:9px; }
+  th,td{ text-align:left; padding:4px 7px; vertical-align:top; border-bottom:1px solid var(--line); }
+  th{ font-size:8px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted);
+    background:var(--paper2); border-bottom:1.5px solid #D8D0BE; }
+  td.mono,th.mono{ font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+  tr.live td:first-child{ box-shadow:inset 3px 0 0 var(--positive); }
+  /* chips */
+  .chip{ display:inline-block; padding:1.5px 7px; border-radius:20px; font-size:8px;
+    font-weight:700; letter-spacing:.4px; vertical-align:middle; }
+  .c-live{ background:rgba(62,122,78,.16); color:var(--positive); }
+  .c-stub{ background:rgba(201,154,62,.18); color:#9a7321; }
+  .c-plan{ background:rgba(111,104,92,.16); color:var(--muted); border:1px dashed #b6ab95; }
+  .c-in{ background:rgba(76,98,128,.14); color:var(--cash); }
+  .c-out{ background:rgba(122,92,160,.16); color:var(--claude); }
+  .badge{ display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:5px; vertical-align:middle; }
+  /* layout helpers */
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+  .grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  .card{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:#fff; }
+  .card.tinted{ background:var(--paper2); }
+  .lead{ font-size:11px; line-height:1.45; color:var(--inkSoft); margin:0 0 9px; }
+  .accent{ height:4px; border-radius:3px; margin:-10px -12px 9px; }
+  ul.tight{ margin:3px 0 0; padding-left:15px; font-size:9.5px; line-height:1.5; }
+  ul.tight li{ margin-bottom:2px; }
+  .kv{ font-size:9px; line-height:1.5; }
+  .kv b{ font-weight:700; }
+  .note{ font-size:8.5px; color:var(--muted); line-height:1.4; }
+  .pill{ display:inline-block; padding:2px 8px; border-radius:6px; font-size:9px; font-weight:600; margin:0 4px 4px 0; }
+  /* cover */
+  .cover{ display:flex; flex-direction:column; height:188mm; }
+  .cover .logo{ width:76px; height:76px; border-radius:18px; background:var(--ink);
+    color:var(--paper); display:flex; align-items:center; justify-content:center;
+    font-size:44px; font-weight:700; }
+  .legendrow{ display:flex; gap:26px; flex-wrap:wrap; font-size:10px; align-items:center; }
+  .swatch{ display:inline-block; width:13px; height:13px; border-radius:4px; margin-right:6px; vertical-align:middle; }
+</style>
+</head>
+<body>
+
+<!-- ============================ PAGE 1 — COVER ============================ -->
+<section class="page">
+  <div class="cover">
+    <div style="display:flex; align-items:center; gap:18px;">
+      <div class="logo">6</div>
+      <div>
+        <div style="font-size:10px; letter-spacing:3px; color:var(--muted); font-weight:600;">SYSTEMARCHITEKTUR · STAND BETA</div>
+        <h1 style="font-size:40px; margin-top:4px;">mykilOS&nbsp;6</h1>
+      </div>
+    </div>
+
+    <div style="margin-top:14px; max-width:200mm;">
+      <div style="font-size:16px; color:var(--inkSoft); font-weight:600;">Datenflüsse, Integrationen &amp; Funktionsbaum</div>
+      <p class="lead" style="font-size:12px; margin-top:8px;">
+        Vollständige, aus dem Quellcode verifizierte Übersicht: welche externen Dienste wo und wie mit mykilOS&nbsp;6
+        kommunizieren, mit welchen Protokollen, Triggern, Handshakes und Referenz-Handles — plus das interne
+        Signal-Nervensystem, die Persistenz und der gesamte Funktionsbaum der App.
+        <b>local-first</b>, macOS&nbsp;14+, SwiftUI. Secrets ausschließlich in der macOS-Keychain.
+      </p>
+    </div>
+
+    <div class="grid3" style="margin-top:14px;">
+      <div class="card"><div class="accent" style="background:var(--positive)"></div>
+        <h3>4 Live-Integrationen</h3>
+        <div class="kv">Google Workspace · Clockodo · Airtable · Anthropic Claude. Alle Geschäftsdaten werden
+        <b>read-only</b> gelesen; einzig Claude ist ein ausgehender Request/Response-Dienst.</div>
+      </div>
+      <div class="card"><div class="accent" style="background:var(--tasks)"></div>
+        <h3>2 Stub-Widgets</h3>
+        <div class="kv">Aufgaben (Ocker) und Geld (Tiefblau) zeigen heute Demo-Daten — die reservierten,
+        bereits verdrahteten Slots für <b>ClickUp</b> und <b>Sevdesk</b>.</div>
+      </div>
+      <div class="card"><div class="accent" style="background:var(--muted)"></div>
+        <h3>3 geplante Anschlüsse</h3>
+        <div class="kv">ClickUp-API · Sevdesk-API · Drive-Webhook. Handles (<span class="mono">clickUpListID</span>,
+        <span class="mono">sevdeskRef</span>) sind in Airtable &amp; Domain bereits angelegt.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:auto;">
+      <div class="card tinted">
+        <h3 style="margin-bottom:7px;">Legende</h3>
+        <div class="legendrow" style="margin-bottom:8px;">
+          <span><span class="swatch" style="background:var(--drive)"></span>Drive / Dateien</span>
+          <span><span class="swatch" style="background:var(--people)"></span>Menschen / Kalender</span>
+          <span><span class="swatch" style="background:var(--tasks)"></span>Aufgaben (ClickUp)</span>
+          <span><span class="swatch" style="background:var(--cash)"></span>Geld (Sevdesk)</span>
+          <span><span class="swatch" style="background:var(--personal)"></span>Notizen / Mail</span>
+          <span><span class="swatch" style="background:var(--claude)"></span>Assistent / Claude</span>
+        </div>
+        <div class="legendrow">
+          <span><span class="chip c-live">LIVE</span> echte API, im Einsatz</span>
+          <span><span class="chip c-stub">STUB</span> Demo-Daten, Slot reserviert</span>
+          <span><span class="chip c-plan">GEPLANT</span> noch nicht gebaut</span>
+          <span><span class="chip c-in">IN</span> liest von extern</span>
+          <span><span class="chip c-out">OUT</span> sendet nach extern</span>
+          <span style="color:var(--muted)">── durchgezogen = live &nbsp;&nbsp; ⇠⇢ gestrichelt = geplant</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot mono">mykilOS 6 — Systemarchitektur · verifiziert aus Quellcode · 2026-06-26</div>
+  <div class="pnum">1 / 9</div>
+</section>
+
+<!-- ============================ PAGE 2 — INTEGRATIONS-LANDKARTE ============================ -->
+<section class="page">
+  <div class="pagehead">
+    <div><div class="kick">Übersicht</div><h2>Integrations-Landkarte</h2></div>
+    <div class="sub">Wer spricht mit wem — Richtung, Protokoll, Auth</div>
+  </div>
+
+  <svg viewBox="0 0 1180 560" width="100%" style="display:block;">
+    <defs>
+      <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M0,0 L9,3 L0,6 Z" fill="#3A352E"/>
+      </marker>
+      <marker id="arP" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M0,0 L9,3 L0,6 Z" fill="#8d8474"/>
+      </marker>
+      <marker id="arC" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M0,0 L9,3 L0,6 Z" fill="#7A5CA0"/>
+      </marker>
+    </defs>
+
+    <!-- EDGES (drawn first, under nodes) -->
+    <!-- Google -> hub -->
+    <line x1="590" y1="168" x2="590" y2="232" stroke="#3A352E" stroke-width="2" marker-end="url(#ar)"/>
+    <!-- Airtable -> hub -->
+    <line x1="262" y1="300" x2="452" y2="300" stroke="#3A352E" stroke-width="2" marker-end="url(#ar)"/>
+    <!-- Clockodo -> hub -->
+    <line x1="918" y1="190" x2="735" y2="272" stroke="#3A352E" stroke-width="2" marker-end="url(#ar)"/>
+    <!-- Claude <-> hub (round trip) -->
+    <line x1="918" y1="350" x2="730" y2="318" stroke="#7A5CA0" stroke-width="2" marker-end="url(#arC)"/>
+    <line x1="730" y1="332" x2="912" y2="364" stroke="#7A5CA0" stroke-width="2" stroke-dasharray="1 0" marker-end="url(#arC)"/>
+    <!-- Planned: Drive webhook -> signal/hub -->
+    <line x1="250" y1="470" x2="500" y2="360" stroke="#8d8474" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arP)"/>
+    <!-- Planned: ClickUp -> hub -->
+    <line x1="585" y1="470" x2="575" y2="372" stroke="#8d8474" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arP)"/>
+    <!-- Planned: Sevdesk -> hub -->
+    <line x1="820" y1="470" x2="660" y2="372" stroke="#8d8474" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arP)"/>
+
+    <!-- edge labels -->
+    <g font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#6F685C">
+      <rect x="404" y="190" width="372" height="34" rx="6" fill="#FAF8F3" opacity="0.0"/>
+      <text x="600" y="206" text-anchor="middle">OAuth2 · PKCE (S256) · Bearer</text>
+      <text x="600" y="221" text-anchor="middle" fill="#4C6280">IN · read-only · GET</text>
+      <text x="300" y="288" text-anchor="middle">REST v0 · Bearer PAT</text>
+      <text x="300" y="302" text-anchor="middle" fill="#4C6280">IN · Sync (System-of-Record)</text>
+      <text x="845" y="222" text-anchor="middle">API-Key-Header</text>
+      <text x="845" y="236" text-anchor="middle" fill="#4C6280">IN · GET</text>
+      <text x="838" y="408" text-anchor="middle" fill="#7A5CA0">HTTPS POST · x-api-key</text>
+      <text x="838" y="422" text-anchor="middle" fill="#7A5CA0">OUT · Request/Response</text>
+    </g>
+
+    <!-- GOOGLE WORKSPACE (top) -->
+    <g>
+      <rect x="400" y="20" width="380" height="148" rx="14" fill="#fff" stroke="#C26B4A" stroke-width="2"/>
+      <text x="416" y="44" font-size="15" font-weight="700" fill="#1A1814">Google Workspace</text>
+      <text x="416" y="60" font-size="10" fill="#6F685C" font-family="Menlo,monospace">accounts.google.com · *.googleapis.com</text>
+      <g font-size="11" font-weight="600">
+        <rect x="416" y="74" width="160" height="36" rx="8" fill="#C26B4A"/><text x="496" y="92" fill="#fff" text-anchor="middle">Drive v3</text><text x="496" y="104" fill="#fff" text-anchor="middle" font-size="8" font-weight="400">files.list (Ordner)</text>
+        <rect x="604" y="74" width="160" height="36" rx="8" fill="#6E8B6A"/><text x="684" y="92" fill="#fff" text-anchor="middle">Calendar v3</text><text x="684" y="104" fill="#fff" text-anchor="middle" font-size="8" font-weight="400">events.list</text>
+        <rect x="416" y="118" width="160" height="36" rx="8" fill="#6E8B6A"/><text x="496" y="136" fill="#fff" text-anchor="middle">People (Contacts)</text><text x="496" y="148" fill="#fff" text-anchor="middle" font-size="8" font-weight="400">searchContacts</text>
+        <rect x="604" y="118" width="160" height="36" rx="8" fill="#8A5B73"/><text x="684" y="136" fill="#fff" text-anchor="middle">Gmail v1</text><text x="684" y="148" fill="#fff" text-anchor="middle" font-size="8" font-weight="400">messages list+get</text>
+      </g>
+    </g>
+
+    <!-- AIRTABLE (left) -->
+    <g>
+      <rect x="30" y="244" width="232" height="112" rx="14" fill="#fff" stroke="#1A1814" stroke-width="2"/>
+      <text x="46" y="270" font-size="15" font-weight="700">Airtable</text>
+      <text x="46" y="287" font-size="9.5" fill="#6F685C">System-of-Record</text>
+      <text x="46" y="305" font-size="9.5" fill="#3A352E">Kunden + Projekte</text>
+      <text x="46" y="322" font-size="9" fill="#6F685C" font-family="Menlo,monospace">api.airtable.com/v0</text>
+      <text x="46" y="340" font-size="9" fill="#6F685C">→ ProjectLinks-Handles</text>
+    </g>
+
+    <!-- CLOCKODO (top-right) -->
+    <g>
+      <rect x="918" y="118" width="232" height="84" rx="14" fill="#fff" stroke="#C99A3E" stroke-width="2"/>
+      <text x="934" y="144" font-size="15" font-weight="700">Clockodo</text>
+      <text x="934" y="161" font-size="9.5" fill="#6F685C">Zeiterfassung · heutige Einträge</text>
+      <text x="934" y="179" font-size="9" fill="#6F685C" font-family="Menlo,monospace">my.clockodo.com/api/v2</text>
+      <text x="934" y="194" font-size="9" fill="#6F685C">API-Key + E-Mail (kein OAuth)</text>
+    </g>
+
+    <!-- CLAUDE (right) -->
+    <g>
+      <rect x="918" y="316" width="232" height="84" rx="14" fill="#fff" stroke="#7A5CA0" stroke-width="2"/>
+      <text x="934" y="342" font-size="15" font-weight="700">Anthropic Claude</text>
+      <text x="934" y="359" font-size="9.5" fill="#6F685C">Assistent-Zusammenfassungen</text>
+      <text x="934" y="377" font-size="9" fill="#6F685C" font-family="Menlo,monospace">api.anthropic.com/v1</text>
+      <text x="934" y="392" font-size="9" fill="#6F685C">default: claude-sonnet-4-6</text>
+    </g>
+
+    <!-- CENTER HUB -->
+    <g>
+      <rect x="452" y="232" width="278" height="140" rx="16" fill="#1A1814"/>
+      <text x="591" y="266" font-size="20" font-weight="700" fill="#FAF8F3" text-anchor="middle">mykilOS 6</text>
+      <text x="591" y="286" font-size="10" fill="#FAF8F3" opacity="0.7" text-anchor="middle">local-first · macOS · SwiftUI</text>
+      <rect x="472" y="300" width="110" height="26" rx="7" fill="#3A352E"/><text x="527" y="317" font-size="9.5" fill="#FAF8F3" text-anchor="middle">macOS-Keychain</text>
+      <rect x="600" y="300" width="110" height="26" rx="7" fill="#3A352E"/><text x="655" y="317" font-size="9.5" fill="#FAF8F3" text-anchor="middle">GRDB / SQLite</text>
+      <text x="591" y="350" font-size="9" fill="#FAF8F3" opacity="0.6" text-anchor="middle">Signal-Nervensystem · Audit · Widget-Boards</text>
+    </g>
+
+    <!-- PLANNED band -->
+    <g>
+      <text x="40" y="436" font-size="9.5" letter-spacing="2" font-weight="700" fill="#8d8474">GEPLANT — RESERVIERTE SLOTS</text>
+      <line x1="250" y1="431" x2="1150" y2="431" stroke="#E2DBCB" stroke-width="1"/>
+      <rect x="70" y="470" width="200" height="74" rx="12" fill="#F2EEE4" stroke="#b6ab95" stroke-width="1.6" stroke-dasharray="6 5"/>
+      <text x="86" y="494" font-size="13" font-weight="700" fill="#6F685C">Drive-Webhook</text>
+      <text x="86" y="510" font-size="8.5" fill="#8d8474">files.watch / changes</text>
+      <text x="86" y="524" font-size="8.5" fill="#8d8474">→ speist Signale (heute Demo)</text>
+
+      <rect x="488" y="470" width="194" height="74" rx="12" fill="#F2EEE4" stroke="#C99A3E" stroke-width="1.6" stroke-dasharray="6 5"/>
+      <text x="504" y="494" font-size="13" font-weight="700" fill="#9a7321">ClickUp-API</text>
+      <text x="504" y="510" font-size="8.5" fill="#8d8474">Tasks · clickUpListID</text>
+      <text x="504" y="524" font-size="8.5" fill="#8d8474">→ TasksWidget (Ocker)</text>
+
+      <rect x="722" y="470" width="194" height="74" rx="12" fill="#F2EEE4" stroke="#4C6280" stroke-width="1.6" stroke-dasharray="6 5"/>
+      <text x="738" y="494" font-size="13" font-weight="700" fill="#4C6280">Sevdesk-API</text>
+      <text x="738" y="510" font-size="8.5" fill="#8d8474">Angebote · sevdeskRef</text>
+      <text x="738" y="524" font-size="8.5" fill="#8d8474">→ CashWidget (Tiefblau)</text>
+    </g>
+  </svg>
+
+  <div class="grid3" style="margin-top:6px;">
+    <div class="card tinted"><h3>Read-only-Invariante</h3><div class="kv">Drive, Calendar, Contacts, Gmail, Clockodo &amp; Airtable sind <b>strikt GET</b>. Die einzigen ausgehenden Schreib-Requests sind OAuth-Token-Austausch/-Refresh und der Claude-Messages-Call.</div></div>
+    <div class="card tinted"><h3>Airtable = Rückgrat</h3><div class="kv">Airtable-Felder füllen pro Projekt die <span class="mono">ProjectLinks</span>-Handles (Drive-ID, ClickUp-Liste, Kalender-/Kontakte-/Mail-Suche, sevdesk-Ref) — sie verdrahten <b>jede</b> Integration.</div></div>
+    <div class="card tinted"><h3>Secrets</h3><div class="kv">4 Keychain-Services: <span class="mono">com.mykilos6.google / .clockodo / .airtable / .claude</span>. Externe IDs sind Referenzen, nie Primärschlüssel.</div></div>
+  </div>
+  <div class="foot mono">mykilOS 6 — Systemarchitektur</div>
+  <div class="pnum">2 / 9</div>
+</section>
+
+<!-- ============================ PAGE 3 — GOOGLE ============================ -->
+<section class="page">
+  <div class="pagehead">
+    <div><div class="kick">Steckbrief 1/4 · Live</div><h2>Google Workspace</h2></div>
+    <div class="sub">OAuth2 / PKCE · 4 read-only Clients · zentraler Token-Refresh</div>
+  </div>
+
+  <p class="lead">Authentifizierung über <b>OAuth2 mit PKCE</b> (S256) und lokalem Loopback-Redirect (NWListener auf <span class="mono">127.0.0.1:{dyn. Port}</span>). Tokens liegen in der Keychain; alle vier Clients holen ihr Access-Token zentral über <span class="mono">GoogleAccessTokenProvider</span>, der bei Ablauf automatisch refresht.</p>
+
+  <h3 style="margin-bottom:5px;">Externe Endpunkte</h3>
+  <table>
+    <thead><tr><th style="width:13%">Zweck</th><th style="width:7%">Methode</th><th style="width:34%">URL</th><th style="width:13%">Auth</th><th style="width:8%">Richtung</th><th>Parameter / Notiz</th></tr></thead>
+    <tbody>
+      <tr><td>Authorize</td><td class="mono">GET</td><td class="mono">accounts.google.com/o/oauth2/v2/auth</td><td>PKCE challenge + state</td><td><span class="chip c-out">OUT</span></td><td class="mono">client_id, scope, code_challenge=S256, access_type=offline, prompt=consent</td></tr>
+      <tr><td>Token / Refresh</td><td class="mono">POST</td><td class="mono">oauth2.googleapis.com/token</td><td>form: client_id + code/refresh_token</td><td><span class="chip c-out">OUT</span></td><td class="mono">grant_type=authorization_code | refresh_token</td></tr>
+      <tr class="live"><td>Drive</td><td class="mono">GET</td><td class="mono">www.googleapis.com/drive/v3/files</td><td>Bearer</td><td><span class="chip c-in">IN</span></td><td class="mono">q='{folderID}' in parents, fields, pageSize, orderBy</td></tr>
+      <tr class="live"><td>Calendar</td><td class="mono">GET</td><td class="mono">www.googleapis.com/calendar/v3/calendars/primary/events</td><td>Bearer</td><td><span class="chip c-in">IN</span></td><td class="mono">timeMin/timeMax (14 T.), q, singleEvents, orderBy</td></tr>
+      <tr class="live"><td>Contacts</td><td class="mono">GET</td><td class="mono">people.googleapis.com/v1/people:searchContacts</td><td>Bearer</td><td><span class="chip c-in">IN</span></td><td class="mono">query, readMask=names,emailAddresses,phoneNumbers,organizations</td></tr>
+      <tr class="live"><td>Gmail (Liste)</td><td class="mono">GET</td><td class="mono">gmail.googleapis.com/gmail/v1/users/me/messages</td><td>Bearer</td><td><span class="chip c-in">IN</span></td><td class="mono">q (Gmail-Suchsyntax), maxResults=10 → IDs</td></tr>
+      <tr class="live"><td>Gmail (Detail)</td><td class="mono">GET</td><td class="mono">…/messages/{id}</td><td>Bearer</td><td><span class="chip c-in">IN</span></td><td class="mono">format=metadata, metadataHeaders=Subject,From,Date (N+1 pro ID)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="grid3" style="margin-top:11px;">
+    <div class="card"><div class="accent" style="background:var(--drive)"></div>
+      <h3>OAuth-Scopes (verbatim)</h3>
+      <ul class="tight mono" style="font-size:8.5px;">
+        <li>auth/drive.metadata.readonly</li>
+        <li>auth/calendar.events.readonly</li>
+        <li>auth/gmail.readonly</li>
+        <li>auth/contacts.readonly</li>
+      </ul>
+      <div class="note" style="margin-top:6px;">gmail.readonly (statt .metadata), weil Volltextsuche es verlangt.</div>
+    </div>
+    <div class="card"><div class="accent" style="background:var(--people)"></div>
+      <h3>Trigger &amp; Handshake</h3>
+      <ul class="tight" style="font-size:9px;">
+        <li><b>Verbinden</b> → Browser → Loopback-Redirect mit <span class="mono">?code&amp;state</span> → Token-Exchange</li>
+        <li><b>Widget lädt</b> → <span class="mono">validAccessToken()</span> → ggf. Refresh → Bearer-GET</li>
+        <li><b>Token-Ablauf</b> (expiresAt ≤ jetzt) → automatischer Refresh</li>
+        <li><b>Trennen</b> → Keychain leeren</li>
+      </ul>
+    </div>
+    <div class="card"><div class="accent" style="background:var(--ink)"></div>
+      <h3>Secret &amp; Handles</h3>
+      <div class="kv"><b>Keychain:</b> <span class="mono">com.mykilos6.google</span><br><span class="note">accounts: tokens (JSON), clientID</span></div>
+      <div class="kv" style="margin-top:6px;"><b>Handles:</b> <span class="mono">driveFolderID</span>, <span class="mono">calendarQuery</span>, <span class="mono">contactsQuery</span>, <span class="mono">mailQuery</span> (aus ProjectLinks)</div>
+    </div>
+  </div>
+
+  <div class="card tinted" style="margin-top:10px;">
+    <h3>Bekannter Punkt</h3>
+    <div class="kv">Ein fehlgeschlagener Refresh (widerrufenes Refresh-Token) landet aktuell als generischer <span class="mono">.error("httpError(…)")</span> im Widget — nicht als <span class="mono">.permissionRequired</span> mit „Bitte neu verbinden". Bewusst einfach für V1. Reine Parser-Bausteine (buildListURL, parseFiles …) sind vollständig unit-getestet ohne Netz/Keychain.</div>
+  </div>
+  <div class="foot mono">mykilOS 6 — Systemarchitektur</div>
+  <div class="pnum">3 / 9</div>
+</section>
+
+<!-- ============================ PAGE 4 — CLOCKODO + AIRTABLE ============================ -->
+<section class="page">
+  <div class="pagehead">
+    <div><div class="kick">Steckbrief 2&amp;3/4 · Live</div><h2>Clockodo &amp; Airtable</h2></div>
+    <div class="sub">Zeiterfassung (API-Key) · System-of-Record (PAT)</div>
+  </div>
+
+  <div class="grid2">
+    <!-- CLOCKODO -->
+    <div>
+      <div class="card"><div class="accent" style="background:var(--tasks)"></div>
+        <h3>Clockodo — Zeiterfassung</h3>
+        <p class="kv" style="margin:0 0 8px;">Holt die heutigen Zeiteinträge read-only. Auth per Header (API-Key + E-Mail), kein OAuth. Keine Pagination.</p>
+        <table>
+          <tbody>
+            <tr><td style="width:30%"><b>Endpunkt</b></td><td class="mono">GET my.clockodo.com/api/v2/entries</td></tr>
+            <tr><td><b>Query</b></td><td class="mono">time_since / time_until (Tagesbereich, ISO8601)</td></tr>
+            <tr><td><b>Auth-Header</b></td><td class="mono">X-ClockodoApiUser · X-ClockodoApiKey · X-Clockodo-External-Application</td></tr>
+            <tr><td><b>Keychain</b></td><td class="mono">com.mykilos6.clockodo<br><span class="note">accounts: email, apiKey</span></td></tr>
+            <tr><td><b>Liefert</b></td><td>ClockodoTimeEntry: id, label, durationSeconds<br><span class="note">Label-Fallback: Projekt → Kunde → „(ohne Projekt)"</span></td></tr>
+            <tr><td><b>Status</b></td><td>disconnected · connected · error(String)</td></tr>
+            <tr><td><b>Richtung</b></td><td><span class="chip c-in">IN</span> read-only</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AIRTABLE -->
+    <div>
+      <div class="card"><div class="accent" style="background:var(--ink)"></div>
+        <h3>Airtable — System-of-Record</h3>
+        <p class="kv" style="margin:0 0 8px;">Wahrheitsquelle für Kunden &amp; Projekte. Lädt zwei Tabellen, mappt auf Domain-Objekte, persistiert lokal (FileBackedRepository) für Offline/Restart.</p>
+        <table>
+          <tbody>
+            <tr><td style="width:30%"><b>Endpunkt</b></td><td class="mono">GET api.airtable.com/v0/{baseID}/{table}</td></tr>
+            <tr><td><b>Tabellen</b></td><td class="mono">Kunden · Projekte</td></tr>
+            <tr><td><b>Auth</b></td><td class="mono">Authorization: Bearer {PAT}</td></tr>
+            <tr><td><b>Pagination</b></td><td class="mono">offset · pageSize=100</td></tr>
+            <tr><td><b>Keychain</b></td><td class="mono">com.mykilos6.airtable<br><span class="note">accounts: pat, baseID</span></td></tr>
+            <tr><td><b>Status</b></td><td>disconnected · connected · syncing · error(String)</td></tr>
+            <tr><td><b>Richtung</b></td><td><span class="chip c-in">IN</span> read-only (kein Write-back)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card tinted" style="margin-top:11px;">
+    <h3>Feld-Mapping: Airtable → ProjectLinks-Handles (das Rückgrat)</h3>
+    <p class="kv" style="margin:4px 0 8px;"><span class="mono">AirtableClient.mapProjects</span> übersetzt Airtable-Spalten in die externen Referenz-Handles jedes Projekts — diese füttern danach jedes Widget:</p>
+    <table>
+      <thead><tr><th>Airtable-Feld</th><th>→ ProjectLinks</th><th>nutzt Integration</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">Drive-Ordner-ID</td><td class="mono">driveFolderID</td><td><span class="badge" style="background:var(--drive)"></span>Google Drive</td></tr>
+        <tr><td class="mono">Kalender-Suche</td><td class="mono">calendarQuery</td><td><span class="badge" style="background:var(--people)"></span>Google Calendar</td></tr>
+        <tr><td class="mono">Kontakte-Suche</td><td class="mono">contactsQuery</td><td><span class="badge" style="background:var(--people)"></span>Google People</td></tr>
+        <tr><td class="mono">Mail-Suche</td><td class="mono">mailQuery</td><td><span class="badge" style="background:var(--personal)"></span>Gmail</td></tr>
+        <tr><td class="mono">ClickUp-Liste</td><td class="mono">clickUpListID</td><td><span class="badge" style="background:var(--tasks)"></span>ClickUp <span class="chip c-plan">GEPLANT</span></td></tr>
+        <tr><td class="mono">sevdesk-Ref</td><td class="mono">sevdeskRef</td><td><span class="badge" style="background:var(--cash)"></span>Sevdesk <span class="chip c-plan">GEPLANT</span></td></tr>
+        <tr><td class="mono">Projektnummer · Titel · Art · Kundennummer · Phase · Eltern-Projekt</td><td class="mono">Project.* Felder</td><td>Domain-Identität</td></tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:6px;"><b>Auto-Sync-Trigger:</b> <span class="mono">AppState.bootstrap()</span> ruft bei <span class="mono">status == .connected</span> automatisch <span class="mono">syncFromAirtable(baseID)</span>; zusätzlich manuell über „Jetzt synchronisieren" in den Einstellungen. Die <span class="mono">airtableRecordID</span> bleibt als Rückverweis am Domain-Objekt.</div>
+  </div>
+  <div class="foot mono">mykilOS 6 — Systemarchitektur</div>
+  <div class="pnum">4 / 9</div>
+</section>
+
+<!-- ============================ PAGE 5 — CLAUDE + GEPLANT ============================ -->
+<section class="page">
+  <div class="pagehead">
+    <div><div class="kick">Steckbrief 4/4 · Live + Geplant</div><h2>Anthropic Claude &amp; geplante Anschlüsse</h2></div>
+    <div class="sub">Der einzige OUT-Dienst · reservierte Slots ClickUp / Sevdesk / Drive-Webhook</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><div class="accent" style="background:var(--claude)"></div>
+      <h3>Anthropic Claude — Assistent-Zusammenfassungen <span class="chip c-live">LIVE</span></h3>
+      <p class="kv" style="margin:2px 0 8px;">Der Assistent zeigt sofort regelbasierte Insights und lädt — nur bei verbundener Claude-Konfiguration — zusätzlich eine natürliche Zusammenfassung. <b>Claude schreibt nie</b>; Aktionen bleiben bestätigungspflichtig.</p>
+      <table>
+        <tbody>
+          <tr><td style="width:30%"><b>Endpunkt</b></td><td class="mono">POST api.anthropic.com/v1/messages</td></tr>
+          <tr><td><b>Header</b></td><td class="mono">x-api-key · anthropic-version: 2023-06-01 · Content-Type: application/json</td></tr>
+          <tr><td><b>Modell</b></td><td class="mono">default claude-sonnet-4-6 · max_tokens 420</td></tr>
+          <tr><td><b>Payload</b></td><td>System-Prompt (DE) + User-Prompt aus Signalen &amp; Insights als Bulletlisten</td></tr>
+          <tr><td><b>Keychain</b></td><td class="mono">com.mykilos6.claude<br><span class="note">accounts: apiKey, model</span></td></tr>
+          <tr><td><b>Trigger</b></td><td class="mono">.task(id: hash(signals))</td><td></td></tr>
+          <tr><td><b>Richtung</b></td><td><span class="chip c-out">OUT</span> Request/Response</td></tr>
+        </tbody>
+      </table>
+      <div class="note" style="margin-top:7px;"><b>Write-Guard:</b> Die LLM-Antwort erzeugt nie einen Audit-Eintrag. Erst der manuelle „Bestätigen"-Tap schreibt eine <span class="mono">AuditEntry</span>.</div>
+    </div>
+
+    <div>
+      <div class="card tinted" style="margin-bottom:10px;"><div class="accent" style="background:var(--tasks)"></div>
+        <h3>ClickUp <span class="chip c-plan">GEPLANT</span></h3>
+        <div class="kv"><b>Slot:</b> WidgetKind <span class="mono">.tasks</span> (Ocker) · TasksWidget zeigt heute 4 Demo-Tasks (immer <span class="mono">.content</span>).<br>
+        <b>Handle:</b> <span class="mono">clickUpListID</span> (in Airtable bereits gemappt).<br>
+        <b>Geplant:</b> ClickUp REST v2 GET <span class="mono">list/{id}/task</span>, Token-Header, neuer Keychain-Service <span class="mono">com.mykilos6.clickup</span>, 5. Settings-Sektion. Write-back (Task erledigt) über Action-Card → Bestätigung → Audit.</div>
+      </div>
+      <div class="card tinted" style="margin-bottom:10px;"><div class="accent" style="background:var(--cash)"></div>
+        <h3>Sevdesk <span class="chip c-plan">GEPLANT</span></h3>
+        <div class="kv"><b>Slot:</b> WidgetKind <span class="mono">.cash</span> (Tiefblau) · CashWidget zeigt heute eine Demo-Budgetleiste + Signal-Empfang.<br>
+        <b>Handle:</b> <span class="mono">sevdeskRef</span> (in Airtable als „sevdesk-Ref").<br>
+        <b>Geplant:</b> Sevdesk REST (Token-Header), Angebots-/Rechnungsdaten read-only, Keychain <span class="mono">com.mykilos6.sevdesk</span>. Lifecycle <span class="mono">offerImported / draftCreated / draftSent</span> ist im Audit bereits vorgesehen.</div>
+      </div>
+      <div class="card tinted"><div class="accent" style="background:var(--muted)"></div>
+        <h3>Drive-Webhook <span class="chip c-plan">GEPLANT</span></h3>
+        <div class="kv">Echtes Drive-Änderungs-Event (<span class="mono">files.watch</span>/<span class="mono">changes</span>) soll künftig das Signal <span class="mono">offerDetected</span> feuern (Drive findet Rechnungs-PDF → Cash fragt). Heute wird dieses Signal nur vom Demo-Button erzeugt; im lokalen Desktop-Kontext vermutlich als Polling von <span class="mono">changes.list</span>.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot mono">mykilOS 6 — Systemarchitektur</div>
+  <div class="pnum">5 / 9</div>
+</section>
+
+<!-- ============================ PAGE 6 — NERVENSYSTEM ============================ -->
+<section class="page">
+  <div class="pagehead">
+    <div><div class="kick">Intern</div><h2>Signal-Nervensystem &amp; Audit</h2></div>
+    <div class="sub">Widgets reden nie direkt — nur über StudioContext.emit()</div>
+  </div>
+
+  <p class="lead">Widgets senden typisierte Ereignisse an den gemeinsamen <span class="mono">StudioContext</span>. Der <span class="mono">Mediator</span> leitet (azyklisch) Folgesignale ab. Die <span class="mono">AssistantEngine</span> formt daraus priorisierte Insights. <b>Signale sind Vorschläge</b> — der einzige Schreibvorgang ist der bestätigte Audit-Eintrag.</p>
+
+  <svg viewBox="0 0 1180 230" width="100%" style="display:block; margin-bottom:8px;">
+    <defs><marker id="f" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L9,3 L0,6 Z" fill="#3A352E"/></marker></defs>
+    <!-- nodes -->
+    <g font-size="12">
+      <rect x="10" y="70" width="150" height="90" rx="12" fill="#fff" stroke="#C26B4A" stroke-width="2"/>
+      <text x="85" y="105" text-anchor="middle" font-weight="700" font-size="13">Widget</text>
+      <text x="85" y="124" text-anchor="middle" font-size="9" fill="#6F685C">Drive / Cash / …</text>
+      <text x="85" y="139" text-anchor="middle" font-size="8.5" fill="#6F685C">emit(.offerDetected)</text>
+
+      <rect x="225" y="70" width="160" height="90" rx="12" fill="#1A1814"/>
+      <text x="305" y="103" text-anchor="middle" font-weight="700" font-size="13" fill="#FAF8F3">StudioContext</text>
+      <text x="305" y="122" text-anchor="middle" font-size="9" fill="#FAF8F3" opacity="0.7">@Observable</text>
+      <text x="305" y="137" text-anchor="middle" font-size="8.5" fill="#FAF8F3" opacity="0.7">signals(for: projectID)</text>
+
+      <rect x="450" y="70" width="150" height="90" rx="12" fill="#fff" stroke="#6E8B6A" stroke-width="2"/>
+      <text x="525" y="103" text-anchor="middle" font-weight="700" font-size="13">Mediator</text>
+      <text x="525" y="122" text-anchor="middle" font-size="8.5" fill="#6F685C">offerDetected →</text>
+      <text x="525" y="137" text-anchor="middle" font-size="8.5" fill="#6F685C">reviewSuggested</text>
+
+      <rect x="665" y="70" width="160" height="90" rx="12" fill="#fff" stroke="#7A5CA0" stroke-width="2"/>
+      <text x="745" y="100" text-anchor="middle" font-weight="700" font-size="13">AssistantEngine</text>
+      <text x="745" y="119" text-anchor="middle" font-size="8.5" fill="#6F685C">→ [AssistantInsight]</text>
+      <text x="745" y="134" text-anchor="middle" font-size="8.5" fill="#6F685C">urgent &gt; attention &gt; info</text>
+
+      <rect x="890" y="45" width="140" height="60" rx="12" fill="#fff" stroke="#7A5CA0" stroke-width="2"/>
+      <text x="960" y="71" text-anchor="middle" font-weight="700" font-size="12">Assistant-Widget</text>
+      <text x="960" y="89" text-anchor="middle" font-size="8.5" fill="#6F685C">Insight + „Bestätigen"</text>
+
+      <rect x="890" y="125" width="140" height="60" rx="12" fill="#fff" stroke="#C99A3E" stroke-width="2"/>
+      <text x="960" y="145" text-anchor="middle" font-weight="700" font-size="11">Claude (opt.)</text>
+      <text x="960" y="162" text-anchor="middle" font-size="8" fill="#6F685C">Zusammenfassung</text>
+      <text x="960" y="175" text-anchor="middle" font-size="8" fill="#6F685C">read-only</text>
+
+      <rect x="1055" y="45" width="115" height="60" rx="12" fill="#3E7A4E"/>
+      <text x="1112" y="71" text-anchor="middle" font-weight="700" font-size="12" fill="#fff">AuditStore</text>
+      <text x="1112" y="89" text-anchor="middle" font-size="8" fill="#fff" opacity="0.85">GRDB · append()</text>
+    </g>
+    <!-- edges -->
+    <g>
+      <line x1="160" y1="115" x2="223" y2="115" stroke="#3A352E" stroke-width="2" marker-end="url(#f)"/>
+      <line x1="385" y1="115" x2="448" y2="115" stroke="#3A352E" stroke-width="2" marker-end="url(#f)"/>
+      <line x1="600" y1="115" x2="663" y2="115" stroke="#3A352E" stroke-width="2" marker-end="url(#f)"/>
+      <line x1="825" y1="100" x2="888" y2="80" stroke="#3A352E" stroke-width="2" marker-end="url(#f)"/>
+      <line x1="825" y1="130" x2="888" y2="150" stroke="#7A5CA0" stroke-width="2" marker-end="url(#f)"/>
+      <line x1="1030" y1="75" x2="1053" y2="75" stroke="#3A352E" stroke-width="2" marker-end="url(#f)"/>
+    </g>
+    <text x="1042" y="125" font-size="8.5" fill="#B4503C" font-style="italic">nur nach Bestätigung</text>
+  </svg>
+
+  <div class="grid3">
+    <div class="card"><div class="accent" style="background:var(--drive)"></div>
+      <h3>WidgetSignal (6)</h3>
+      <ul class="tight mono" style="font-size:8.5px;">
+        <li>projectFocused</li><li>driveFileAdded</li><li>offerDetected</li>
+        <li>reviewSuggested <span class="note">(Vorschlag)</span></li><li>budgetThresholdCrossed</li><li>deadlineNear</li>
+      </ul>
+    </div>
+    <div class="card"><div class="accent" style="background:var(--people)"></div>
+      <h3>WidgetSource (8) · Farbe = Sprache</h3>
+      <div style="font-size:8.5px; line-height:1.7;">
+        <span class="pill" style="background:var(--drive);color:#fff">drive</span>
+        <span class="pill" style="background:var(--people);color:#fff">people</span>
+        <span class="pill" style="background:var(--people);color:#fff">calendar</span>
+        <span class="pill" style="background:var(--tasks);color:#fff">tasks</span>
+        <span class="pill" style="background:var(--cash);color:#fff">cash</span>
+        <span class="pill" style="background:var(--personal);color:#fff">notes</span>
+        <span class="pill" style="background:var(--personal);color:#fff">mail</span>
+        <span class="pill" style="background:var(--ink);color:#fff">assistant</span>
+      </div>
+    </div>
+    <div class="card"><div class="accent" style="background:var(--positive)"></div>
+      <h3>AuditEntry.Action (5) — einzige Writes</h3>
+      <ul class="tight mono" style="font-size:8.5px;">
+        <li>offerImported</li><li>draftCreated</li><li>draftSent</li><li>projectLinked</li><li>noteUpdated</li>
+      </ul>
+      <div class="note" style="margin-top:5px;">Felder: id · timestamp · actorUserID · projectID · action · summary</div>
+    </div>
+  </div>
+
+  <div class="card tinted" style="margin-top:10px;">
+    <h3>Invariante</h3>
+    <div class="kv">Mediator-Regeln sind azyklisch (abgeleitete Signale lösen keine weitere Ableitung aus). <span class="mono">AssistantEngine</span> ist synchron &amp; testbar; Netzwerk passiert außerhalb. Heute feuert <span class="mono">offerDetected</span> nur per Demo-Button — die Live-Quelle (Drive-Webhook) ist geplant.</div>
+  </div>
+  <div class="foot mono">mykilOS 6 — Systemarchitektur</div>
+  <div class="pnum">6 / 9</div>
+</section>
+
+<!-- ============================ PAGE 7 — PERSISTENZ ============================ -->
+<section class="page">
+  <div class="pagehead">
+    <div><div class="kick">Intern</div><h2>Persistenz &amp; Cold-Start</h2></div>
+    <div class="sub">GRDB / SQLite · sichtbarer SaveState · jeder Write throws</div>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <div class="card"><div class="accent" style="background:var(--cash)"></div>
+        <h3>GRDB-Datenbank</h3>
+        <div class="kv" style="margin-bottom:7px;"><b>Datei:</b> <span class="mono">~/Library/Application Support/mykilOS6/db.sqlite</span> · WAL · serialisierte Writes</div>
+        <table>
+          <thead><tr><th>Tabelle</th><th>Inhalt / Schlüssel</th><th>Store</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">widgetInstances</td><td>Layout je boardID (kind, size, position, sichtbar)</td><td>WidgetBoardStore</td></tr>
+            <tr><td class="mono">notes</td><td>eine Notiz je boardID (INSERT OR REPLACE)</td><td>NoteStore</td></tr>
+            <tr><td class="mono">auditEntries</td><td>Audit-Log je projectID (append, DESC)</td><td>AuditStore</td></tr>
+          </tbody>
+        </table>
+        <div class="note" style="margin-top:6px;">Migration <span class="mono">v1_widgets_notes</span> aktiv. Migrationen nur anhängen, nie ändern. <span class="mono">AppDatabase.production</span> nutzt <span class="mono">try!</span> (hartes Scheitern bei fehlendem Application Support — bewusst).</div>
+      </div>
+
+      <div class="card" style="margin-top:10px;"><div class="accent" style="background:var(--drive)"></div>
+        <h3>FileBackedRepository (JSON)</h3>
+        <div class="kv">Disk-Cache für <span class="mono">customers</span> &amp; <span class="mono">projects</span> (aus Airtable). Atomare Writes (temp + rename).</div>
+        <div class="note" style="margin-top:6px;"><b>Caveat:</b> Date-Kodierung zwingend über <span class="mono">timeIntervalSinceReferenceDate</span> — nur das ist bitgenau roundtrip-sicher (ISO8601/secondsSince1970 verlieren Präzision).</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card tinted"><div class="accent" style="background:var(--positive)"></div>
+        <h3>SaveState — sichtbarer Speicher-Vertrag</h3>
+        <div style="font-size:9.5px; line-height:1.9; margin-top:3px;">
+          <span class="pill" style="background:#E2DBCB;color:var(--ink)">idle</span>
+          <span class="pill" style="background:rgba(201,154,62,.25);color:#9a7321">saving</span>
+          <span class="pill" style="background:rgba(62,122,78,.22);color:var(--positive)">saved(Date)</span>
+          <span class="pill" style="background:rgba(180,80,60,.18);color:var(--critical)">failed(String)</span>
+        </div>
+        <div class="kv" style="margin-top:7px;">Jeder Schreibvorgang <span class="mono">throws</span> — kein stilles Scheitern. Die <span class="mono">SaveStateBar</span> zeigt den Zustand im Board direkt an und bietet manuelles Speichern.</div>
+      </div>
+
+      <div class="card" style="margin-top:10px;"><div class="accent" style="background:var(--ink)"></div>
+        <h3>Cold-Start-Vertrag</h3>
+        <ul class="tight" style="font-size:9.5px;">
+          <li><b>Leeres Board</b> → <span class="mono">load()</span> pflanzt das Default-Layout je ProjectKind und speichert sofort.</li>
+          <li><b>Leere Registry</b> → <span class="mono">seedIfEmpty()</span> injiziert DemoSeed (4 Kunden, 6 Projekte).</li>
+          <li><b>Test je Feature:</b> schreiben → neue Instanz → lesen → identisch.</li>
+        </ul>
+      </div>
+
+      <div class="card" style="margin-top:10px;"><div class="accent" style="background:var(--claude)"></div>
+        <h3>Secrets-Trennung</h3>
+        <div class="kv">Tokens/Keys/PATs liegen <b>ausschließlich</b> in der Keychain (4 Services) — nie in DB, JSON, Code oder Logs. Die DB enthält nur Layout, Notizen und Audit; der JSON-Cache nur Referenz-IDs.</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot mono">mykilOS 6 — Systemarchitektur</div>
+  <div class="pnum">7 / 9</div>
+</section>
+
+<!-- ============================ PAGE 8 — FUNKTIONSBAUM ============================ -->
+<section class="page">
+  <div class="pagehead">
+    <div><div class="kick">Funktionsbaum</div><h2>App-Struktur &amp; Widgets</h2></div>
+    <div class="sub">MykilOS6App → AppState → Module → Views → Widgets → Quellen</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Navigationsbaum</h3>
+      <div class="mono" style="font-size:9px; line-height:1.65; white-space:pre;">MykilOS6App  <span class="note">(@main)</span>
+├─ AppState  <span class="note">@MainActor @Observable</span>
+│  ├─ GRDBDatabase · RegistryStore
+│  ├─ homeBoard · homeNotes · audit
+│  └─ Auth: google · clockodo · airtable · claude
+├─ StudioContext  <span class="note">(Signale)</span>
+├─ Fenster: Haupt (1340×860) · „Über" (440×300)
+│
+└─ Sidebar / AppModule
+   ├─ <b>Heute</b>        → TodayView → HomeBoardView
+   ├─ <b>Projekte</b>     → ProjectGalleryView → ProjectDetailView
+   ├─ <b>Assistent</b>    → AssistantPageView
+   ├─ Marken &amp; Daten  <span class="chip c-plan">GEPLANT</span>
+   ├─ Angebote        <span class="chip c-plan">GEPLANT</span>
+   └─ <b>Einstellungen</b> → SettingsView (4 Sektionen)</div>
+      <div class="note" style="margin-top:7px;"><b>Bootstrap:</b> homeBoard/notes/audit laden → registry seed+load → bei verbundenem Airtable Auto-Sync.</div>
+    </div>
+
+    <div class="card">
+      <h3>Heute-Board &amp; Projekt-Board</h3>
+      <div class="mono" style="font-size:9px; line-height:1.6; white-space:pre;"><b>HomeBoardView</b> <span class="note">(3-Spalten-Grid, Drag&amp;Drop)</span>
+   focus · projectFaves · clockodo
+   recentActivity · notes
+
+<b>ProjectDetailView</b> <span class="note">(Tabs, Drag&amp;Drop)</span>
+   Hero + ProjectLinks → Widgets
+   Tabs: Übersicht (live) · Dateien/
+   Angebote/Timeline/Material <span class="chip c-plan">GEPLANT</span></div>
+      <div class="note" style="margin-top:8px;"><b>Drag&amp;Drop:</b> jede Kachel ist draggable (UUID) → <span class="mono">handleDrop()</span> → <span class="mono">boardStore.move()</span> → SaveStateBar.<br>
+      <b>Projekt öffnen:</b> <span class="mono">context.focus()</span> + Board/Notes laden; ProjectLinks (driveFolderID, calendar/contacts/mailQuery) gehen an die Widgets.</div>
+    </div>
+  </div>
+
+  <h3 style="margin:11px 0 5px;">Widget-Katalog (12 Kinds)</h3>
+  <table>
+    <thead><tr><th>Widget</th><th>Quelle / Farbe</th><th>Datenquelle</th><th>Status</th><th>Render-States</th><th>Handle / Trigger</th></tr></thead>
+    <tbody>
+      <tr class="live"><td><b>Drive</b></td><td><span class="badge" style="background:var(--drive)"></span>drive · Terrakotta</td><td>GoogleDriveClient (files.list)</td><td><span class="chip c-live">LIVE</span></td><td>alle 6</td><td class="mono">driveFolderID · .task</td></tr>
+      <tr class="live"><td><b>Calendar</b></td><td><span class="badge" style="background:var(--people)"></span>calendar · Salbei</td><td>GoogleCalendarClient (14 T.)</td><td><span class="chip c-live">LIVE</span></td><td>alle 6</td><td class="mono">calendarQuery</td></tr>
+      <tr class="live"><td><b>Contacts</b></td><td><span class="badge" style="background:var(--people)"></span>people · Salbei</td><td>GoogleContactsClient (People)</td><td><span class="chip c-live">LIVE</span></td><td>alle 6</td><td class="mono">contactsQuery</td></tr>
+      <tr class="live"><td><b>Mail</b></td><td><span class="badge" style="background:var(--personal)"></span>mail · Pflaume</td><td>GoogleGmailClient (list+get)</td><td><span class="chip c-live">LIVE</span></td><td>alle 6</td><td class="mono">mailQuery</td></tr>
+      <tr class="live"><td><b>Notes</b></td><td><span class="badge" style="background:var(--personal)"></span>notes · Pflaume</td><td>NoteStore (GRDB, lokal)</td><td><span class="chip c-live">LIVE</span></td><td>content + Autosave 0,8 s</td><td class="mono">boardID</td></tr>
+      <tr class="live"><td><b>Assistant</b></td><td><span class="badge" style="background:var(--ink)"></span>assistant · Tinte</td><td>AssistantEngine (+ Claude opt.)</td><td><span class="chip c-live">LIVE</span></td><td>content</td><td class="mono">signals(for:)</td></tr>
+      <tr><td><b>Tasks</b></td><td><span class="badge" style="background:var(--tasks)"></span>tasks · Ocker</td><td>Demo-Tasks (→ ClickUp)</td><td><span class="chip c-stub">STUB</span></td><td>nur content</td><td class="mono">clickUpListID (geplant)</td></tr>
+      <tr><td><b>Cash</b></td><td><span class="badge" style="background:var(--cash)"></span>cash · Tiefblau</td><td>Demo-Budget + Signal (→ Sevdesk)</td><td><span class="chip c-stub">STUB</span></td><td>nur content</td><td class="mono">sevdeskRef (geplant)</td></tr>
+      <tr><td colspan="6" class="note">Heute-spezifisch: <span class="mono">focus · projectFaves · clockodo · recentActivity</span> (Clockodo-Widget live über ClockodoClient).</td></tr>
+    </tbody>
+  </table>
+  <div class="foot mono">mykilOS 6 — Systemarchitektur</div>
+  <div class="pnum">8 / 9</div>
+</section>
+
+<!-- ============================ PAGE 9 — TRIGGER-MATRIX ============================ -->
+<section class="page">
+  <div class="pagehead">
+    <div><div class="kick">Referenz</div><h2>Trigger-, Handshake- &amp; Handle-Matrix</h2></div>
+    <div class="sub">Was passiert wann — und welche IDs verdrahten was</div>
+  </div>
+
+  <h3 style="margin-bottom:5px;">Trigger &amp; Effekte</h3>
+  <table>
+    <thead><tr><th style="width:26%">Trigger</th><th>Effekt</th><th style="width:14%">Protokoll</th></tr></thead>
+    <tbody>
+      <tr><td><b>App-Start</b> (bootstrap)</td><td>GRDB laden → Registry seed+load → bei verbundenem Airtable: Auto-Sync mit gespeicherter baseID</td><td>lokal + REST</td></tr>
+      <tr><td><b>„Verbinden" Google</b></td><td>Loopback-Server → Browser → Redirect <span class="mono">?code&amp;state</span> → Token-Exchange → Keychain</td><td>OAuth2 PKCE</td></tr>
+      <tr><td><b>Widget erscheint</b></td><td><span class="mono">.task</span> → validAccessToken (ggf. Refresh) → Bearer-GET → Render-State</td><td>HTTPS GET</td></tr>
+      <tr><td><b>Token abgelaufen</b></td><td>GoogleAccessTokenProvider → Refresh-POST → neue Tokens in Keychain</td><td>OAuth2 refresh</td></tr>
+      <tr><td><b>„Jetzt synchronisieren" Airtable</b></td><td>status .syncing → fetchRecords (paginiert) → map → CachedProjectRegistry → Disk → .connected</td><td>REST Bearer PAT</td></tr>
+      <tr><td><b>Clockodo/Claude verbinden</b></td><td>connect(...) → Keychain → status .connected (Validierung)</td><td>API-Key / x-api-key</td></tr>
+      <tr><td><b>Kachel ziehen (Board)</b></td><td>draggable UUID → handleDrop → boardStore.move → SaveStateBar zeigt Speicherzustand</td><td>lokal (GRDB)</td></tr>
+      <tr><td><b>Notiz tippen</b></td><td>0,8 s Debounce → NoteStore.save (throws) → SaveState</td><td>lokal (GRDB)</td></tr>
+      <tr><td><b>Signal-Demo-Button</b></td><td>emit(offerDetected/budgetThresholdCrossed/deadlineNear) → Mediator → AssistantEngine</td><td>intern</td></tr>
+      <tr><td><b>„Bestätigen" am Insight</b></td><td>AuditEntry → AuditStore.append → GRDB (der einzige Write des Assistenten)</td><td>lokal (GRDB)</td></tr>
+      <tr><td><b>Assistent lädt</b> (Signale ändern sich)</td><td><span class="mono">.task(id: hash(signals))</span> → Claude-POST → Zusammenfassung (read-only)</td><td>HTTPS POST</td></tr>
+    </tbody>
+  </table>
+
+  <div class="grid2" style="margin-top:11px;">
+    <div class="card"><div class="accent" style="background:var(--drive)"></div>
+      <h3>Referenz-Handles (ProjectLinks) — nie Primärschlüssel</h3>
+      <table>
+        <tbody>
+          <tr><td class="mono">driveFolderID</td><td>Google-Drive-Ordner</td></tr>
+          <tr><td class="mono">driveFolderPath</td><td>lesbarer Pfad</td></tr>
+          <tr><td class="mono">calendarQuery</td><td>Kalender-Suche</td></tr>
+          <tr><td class="mono">contactsQuery</td><td>Kontakte-Suche</td></tr>
+          <tr><td class="mono">mailQuery</td><td>Gmail-Suche/Label</td></tr>
+          <tr><td class="mono">clickUpListID</td><td>ClickUp-Liste <span class="chip c-plan">GEPLANT</span></td></tr>
+          <tr><td class="mono">sevdeskRef</td><td>Sevdesk-Referenz <span class="chip c-plan">GEPLANT</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card"><div class="accent" style="background:var(--ink)"></div>
+      <h3>Geschäftsschlüssel &amp; Secrets</h3>
+      <table>
+        <tbody>
+          <tr><td class="mono">projectNumber</td><td>Projekt-Business-Key (z. B. ME-24)</td></tr>
+          <tr><td class="mono">customerNumber</td><td>Kunden-Key (z. B. K-1001)</td></tr>
+          <tr><td class="mono">parentProjectNumber</td><td>Nachtrag → Eltern-Projekt</td></tr>
+          <tr><td class="mono">airtableRecordID</td><td>Rückverweis zur Wahrheitsquelle</td></tr>
+          <tr><td class="mono">boardID</td><td>home | project({nr}) → Layout-Key</td></tr>
+        </tbody>
+      </table>
+      <div class="note" style="margin-top:7px;"><b>Keychain-Services:</b> <span class="mono">com.mykilos6.google · .clockodo · .airtable · .claude</span> &nbsp;(+ geplant <span class="mono">.clickup · .sevdesk</span>).</div>
+    </div>
+  </div>
+  <div class="foot mono">mykilOS 6 — Systemarchitektur · verifiziert aus Quellcode · 2026-06-26</div>
+  <div class="pnum">9 / 9</div>
+</section>
+
+</body>
+</html>
