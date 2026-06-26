@@ -54,13 +54,15 @@ public final class DriveOfferWatcher {
     // Ein „Angebot" ist ein PDF, dessen Name auf einen Angebots-/Rechnungs-
     // Beleg hindeutet. Bewusst konservativ und gut dokumentiert: lieber ein
     // Beleg verpassen als jeden Drive-Upload als Angebot melden.
-    static let offerKeywords = ["angebot", "rechnung", "kostenvoranschlag", "offer", "invoice"]
+    // `public`, damit die Angebote-Tab dieselbe Erkennung nutzt wie das Signal —
+    // eine Quelle der Wahrheit (keine zweite, abweichende Heuristik in der UI).
+    public static let offerKeywords = ["angebot", "rechnung", "kostenvoranschlag", "offer", "invoice"]
 
-    static func detectOffers(in files: [GoogleDriveFile]) -> [GoogleDriveFile] {
+    public static func detectOffers(in files: [GoogleDriveFile]) -> [GoogleDriveFile] {
         files.filter { isOffer($0) }
     }
 
-    static func isOffer(_ file: GoogleDriveFile) -> Bool {
+    public static func isOffer(_ file: GoogleDriveFile) -> Bool {
         guard file.mimeType == "application/pdf" else { return false }
         let name = file.name.lowercased()
         return offerKeywords.contains { name.contains($0) }

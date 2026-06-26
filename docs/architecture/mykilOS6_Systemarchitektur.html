@@ -635,10 +635,11 @@
 
 <b>ProjectDetailView</b> <span class="note">(Tabs, Drag&amp;Drop)</span>
    Hero + ProjectLinks → Widgets
-   Tabs: Übersicht (live) · Dateien/
-   Angebote/Timeline/Material <span class="chip c-plan">GEPLANT</span></div>
+   Tabs: Übersicht · Angebote <span class="chip c-live">LIVE</span>
+   Dateien/Timeline/Material <span class="chip c-plan">GEPLANT</span></div>
       <div class="note" style="margin-top:8px;"><b>Drag&amp;Drop:</b> jede Kachel ist draggable (UUID) → <span class="mono">handleDrop()</span> → <span class="mono">boardStore.move()</span> → SaveStateBar.<br>
-      <b>Projekt öffnen:</b> <span class="mono">context.focus()</span> + Board/Notes laden; ProjectLinks (driveFolderID, calendar/contacts/mailQuery) gehen an die Widgets.</div>
+      <b>Projekt öffnen:</b> <span class="mono">context.focus()</span> + Board/Notes laden; ProjectLinks (driveFolderID, calendar/contacts/mailQuery) gehen an die Widgets.<br>
+      <b>Angebote-Tab:</b> listet die Belege aus dem Drive-Ordner über <span class="mono">DriveOfferWatcher.detectOffers</span> — dieselbe Erkennung wie das <span class="mono">offerDetected</span>-Signal (eine Quelle der Wahrheit), read-only.</div>
     </div>
   </div>
 

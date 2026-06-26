@@ -14,7 +14,9 @@ und feuert ein Signal, sobald ein neues Angebots-/Rechnungs-PDF auftaucht
 (Baseline beim ersten Lauf, danach nur Neues). Damit ist auch der letzte
 geplante Anschluss live: alle Widgets sind echt, die Integrations-Landkarte ist
 vollständig (114 Tests). Der Signal-Demo-Button bleibt als sofort auslösbarer
-Showcase erhalten.
+Showcase erhalten. Aufgabe 10 baut darauf auf: die Projekt-Tab **Angebote** ist
+live und listet die Belege aus dem Drive-Ordner über dieselbe Erkennung wie das
+Signal (`DriveOfferWatcher.detectOffers`).
 
 | Akt | Status | Inhalt |
 |---|---|---|
@@ -40,6 +42,7 @@ Showcase erhalten.
 | Post-Akt 5, Aufgabe 7 | ✅ | ClickUp-Integration live (Tasks-Widget, ClickUpClient/Auth/Keychain, Settings, 103 Tests) |
 | Post-Akt 5, Aufgabe 8 | ✅ | Sevdesk-Integration live (Cash-Widget, Ist-Umsatz vs. Budget-Balken, 109 Tests) |
 | Post-Akt 5, Aufgabe 9 | ✅ | Drive-Offer-Watcher live (Polling → `offerDetected`, Baseline-Semantik, 114 Tests) |
+| Post-Akt 5, Aufgabe 10 | ✅ | Angebote-Tab live (Belege aus Drive via `DriveOfferWatcher.detectOffers`, read-only) |
 
 ---
 
@@ -121,8 +124,9 @@ Sources/
                        #   KeychainSevdeskCredentialsStore (Post-Akt 5, Aufgabe 8)
   MykilosWidgets/      # WidgetContainer, WidgetBoardView, SourceChip, SaveStateBar,
                        # Kinds/ (8 Widgets: drive, tasks, contacts, cash, calendar, notes, mail, assistant)
-  MykilosApp/          # Shell (Sidebar), Gallery, Detail, Today, Data (AppState, AppDatabase,
-                       # RegistryStore, DemoSeed)
+  MykilosApp/          # Shell (Sidebar), Gallery, Detail (ProjectDetailView,
+                       # OffersTabView — Angebote-Tab live, Aufgabe 10), Today,
+                       # Data (AppState, AppDatabase, RegistryStore, DemoSeed)
 
 Tests/
   MykilosKitTests/     # Cold-Start-Tests (FileBackedRepository)
@@ -175,8 +179,27 @@ mit Aufgabe 9 hat auch `offerDetected` eine echte Live-Quelle. Alle Widgets
 lesen echte Daten, die Integrations-Landkarte ist vollständig.
 
 **Was nach Plan noch offen ist:** kein verdrahteter Integrations-Anschluss mehr.
-Verbleibende GEPLANT-Punkte sind reine App-Feature-Seiten (Marken & Daten,
-Angebote, Timeline, Material) — eigene Oberflächen, keine Datenquellen.
+Mit Aufgabe 10 ist die erste App-Feature-Seite (Projekt-Tab **Angebote**) live.
+Verbleibende GEPLANT-Punkte sind weitere reine Oberflächen ohne neue Datenquelle:
+Projekt-Tabs Dateien/Timeline/Material und die Sidebar-Module Marken & Daten /
+Angebote.
+
+**Aus Post-Akt-5 Aufgabe 10 (Angebote-Tab):**
+- Der Projekt-Tab „Angebote" (`OffersTabView`, in `MykilosApp/Detail/`) war ein
+  „in Vorbereitung"-Platzhalter und zeigt jetzt die Angebots-/Rechnungs-PDFs aus
+  dem verlinkten Drive-Ordner.
+- **Eine Quelle der Wahrheit:** erkannt wird über `DriveOfferWatcher.detectOffers`
+  (dafür `public` gemacht) — exakt dieselbe Heuristik wie das `offerDetected`-
+  Signal, keine zweite, abweichende Logik in der UI.
+- Read-only über den bestehenden `GoogleDriveClient`: privater `@Observable`-
+  Loader, `.task(id: driveFolderID)`, alle Renderstates über den geteilten
+  `WidgetContainer` (leer/loading/permissionRequired/error inkl. Retry),
+  Quellzeile „GOOGLE DRIVE · N BELEGE" sichtbar. Rows öffnen `webViewLink` im
+  Browser, kein Download/Schreiben.
+- In `ProjectDetailView.tabContent` als `case .offers` verdrahtet.
+- Keine neuen Tests nötig: die einzige echte Logik (`detectOffers`) deckt der
+  bestehende Test `detectOffersErkenntNurAngebotsPDFs` ab — jetzt über die
+  `public`-Methode, die auch die Tab nutzt. 114 Tests grün.
 
 **Aus Post-Akt-5 Aufgabe 9 (Drive-Offer-Watcher):**
 - `DriveOfferWatcher` (`@MainActor @Observable`, in `Services/Google/`) ist die
@@ -365,6 +388,7 @@ und Session-Regeln: `docs/codex/WORKFLOW.md`.
 - `docs/handoffs/HANDOFF_POST_AKT5_7.md` — ClickUp-Integration live (Tasks-Widget)
 - `docs/handoffs/HANDOFF_POST_AKT5_8.md` — Sevdesk-Integration live (Cash-Widget, Ist vs. Budget)
 - `docs/handoffs/HANDOFF_POST_AKT5_9.md` — Drive-Offer-Watcher live (Polling → offerDetected)
+- `docs/handoffs/HANDOFF_POST_AKT5_10.md` — Angebote-Tab live (Belege aus Drive, geteilte Erkennung)
 - `docs/architecture/mykilOS6_Systemarchitektur.pdf` — Systemarchitektur (9 S., A4 quer): Integrations-Landkarte, Steckbriefe (Google/Clockodo/Airtable/ClickUp/Sevdesk/Claude), Signal-Nervensystem, GRDB-Persistenz, Funktionsbaum, Trigger-/Handle-Matrix; Quelle `.html` + `build_pdf.sh` daneben
 - `docs/MYKILOS_6_TEAM_MODELL.md` — Team, Airtable, Identität
 - `docs/codex/WORKFLOW.md` — Session-Regeln für Codex-Sessions in diesem Repo

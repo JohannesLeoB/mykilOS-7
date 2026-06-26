@@ -100,6 +100,11 @@ struct ProjectDetailView: View {
                 .padding(.horizontal, MykSpace.s9)
                 .padding(.top, MykSpace.s7)
                 .padding(.bottom, 64)   // Platz für SaveStateBar
+        case .offers:
+            OffersTabView(
+                projectID: project.projectNumber,
+                driveFolderID: project.links.driveFolderID
+            )
         default:
             ComingTabView(tab: activeTab)
         }
