@@ -7,19 +7,17 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 
 ## Wo wir stehen
 
-**🟢 Release 6.2.0 — Streaming + Profil (Branch `sprint/shared-drive-widget-oauth`).**
-Der Assistent tippt live: SSE-Streaming via `ClaudeChatClient.streamText()` + agentische
-Schleife streamt final answer wenn keine Tools aktiv sind. `UserProfile` fließt in den
-System-Prompt ein (Name + Rolle). Zwei Bugfixes (Aufgabe 14): Integer-Decode-Bug in
-`AssistantToolRegistry` (JSONSerialization statt JSONDecoder), Wizard-Schließen-Button.
-Dynamische Beispielfragen je `toolsEnabled`. Chat-Verlauf-Löschen mit Bestätigung.
-Streaming-Test + 4 Grounding-Tests. **163 Tests grün.** Offen: Google live verifizieren,
-Phase 3 (Datei-Upload, ChatActionCard für Kalender-Entwürfe).
-**Neu (Aufgabe 13): First-Run-Onboarding-Wizard + lokales Profil** (`UserProfile`,
-`ProfileStore`, Migration `v3_profile`, `OnboardingWizardView` als Overlay) — führt
-einen Testuser durch Profil → Claude → Google (read-only) → optionale Quellen; Done-State
-ehrlich (Assistent bereit nur bei Claude), Sevdesk ausgelassen (NO-GO),
-Wizard-Render live bestätigt, +3 Cold-Start-Tests.
+**🟢 Release 6.2.0+ — App-Vollständigkeit (Branch `sprint/shared-drive-widget-oauth`).**
+Alle ursprünglichen „in Vorbereitung"-Oberflächen sind jetzt live. **Sidebar:** Angebote
+(`GlobalOffersView`, Projektauswahl + OffersTabView je Projekt) und Marken & Daten
+(`BrandsView`, Integrations-Dashboard aller 6 Quellen). **Projekt-Tabs:** Assistent
+(konversationeller Chat scoped auf Projektnummer, `ChatScope.project(nr)`) und Dateien
+(alle Drive-Dateien im Ordner, nach Änderungszeit sortiert, `FilesTabView`).
+**Settings:** Profil-Sektion (Name + Rolle direkt editierbar ohne Wizard-Umweg).
+Streaming + UserProfile im System-Prompt aus Aufgabe 14. **163 Tests grün.** Offen:
+Google live verifizieren, Phase 3 (ChatActionCard für Kalender-Entwürfe).
+**Aufgabe 14 (Bugfixes + Streaming):** SSE-Streaming live tippend, UserProfile im Prompt,
+dynamische Beispielfragen, Chat-Verlauf-Löschen, 2 Bugfixes (Integer-Decode, Wizard-X).
 
 **Akt 5 abgeschlossen.** Politur, Dark Mode, DMG. Aufgabe 9/10: `DriveOfferWatcher`
 als Live-Quelle für `offerDetected` + Angebote-Tab. **Aufgabe 11 (Stabilisierung)**
@@ -66,6 +64,10 @@ Daten sind heilig; bei Datenverlust-Gefahr warnen.
 | Post-Akt 5, Aufgabe 12 | ✅ | Konversationeller Assistent 6.1.0: Phase 0 (ChatStore) + Phase 1 (Multi-Turn-Chat, live verifiziert) + Phase 2 (read-only Tool-Use, Opt-in, Gmail-Labels) — 155 Tests, Sevdesk-Negativtest |
 | Post-Akt 5, Aufgabe 13 | ✅ | First-Run-Onboarding-Wizard + lokales Profil (UserProfile/ProfileStore/v3_profile, Overlay-Wizard, geteilte ConnectionStatusView, ehrlicher Done-State) — 158 Tests, Wizard live bestätigt |
 | Post-Akt 5, Aufgabe 14 | ✅ | Streaming Phase 1e (SSE live-tippend), UserProfile im System-Prompt, dynamische Beispielfragen, Chat-Verlauf-Löschen, 2 Bugfixes (Integer-Decode, Wizard-X), 5 neue Tests — 163 Tests, Version 6.2.0 |
+| Post-Akt 5, Aufgabe 15 | ✅ | Projekt-Assistent-Tab (AssistantChatView scoped auf project.projectNumber, volle Höhe, Header fix) |
+| Post-Akt 5, Aufgabe 16 | ✅ | Profil-Sektion in Settings (Name + Rolle editierbar ohne Wizard-Umweg) |
+| Post-Akt 5, Aufgabe 17 | ✅ | Globales Angebote-Modul (GlobalOffersView: Projektliste links + OffersTabView rechts) |
+| Post-Akt 5, Aufgabe 18 | ✅ | Dateien-Tab live (FilesTabView: alle Drive-Dateien, nach Änderungszeit) + Marken & Daten (BrandsView: Integrations-Dashboard) |
 
 ---
 
@@ -201,11 +203,10 @@ jetzt live** — Tasks (ClickUp, Aufgabe 7) und Cash (Sevdesk, Aufgabe 8) — un
 mit Aufgabe 9 hat auch `offerDetected` eine echte Live-Quelle. Alle Widgets
 lesen echte Daten, die Integrations-Landkarte ist vollständig.
 
-**Was nach Plan noch offen ist:** kein verdrahteter Integrations-Anschluss mehr.
-Mit Aufgabe 10 ist die erste App-Feature-Seite (Projekt-Tab **Angebote**) live.
-Verbleibende GEPLANT-Punkte sind weitere reine Oberflächen ohne neue Datenquelle:
-Projekt-Tabs Dateien/Timeline/Material und die Sidebar-Module Marken & Daten /
-Angebote.
+**Was nach Plan noch offen ist:** Mit Aufgaben 15–18 sind alle ursprünglich geplanten
+„in Vorbereitung"-Oberflächen live: Projekt-Tabs Assistent und Dateien, Sidebar-Module
+Angebote und Marken & Daten. Noch „ComingSoon": Projekt-Tabs Timeline und Material
+(keine Datenquelle vorhanden). Offen: Google live verifizieren, Phase 3 ChatActionCard.
 
 **Aus Post-Akt-5 Aufgabe 10 (Angebote-Tab):**
 - Der Projekt-Tab „Angebote" (`OffersTabView`, in `MykilosApp/Detail/`) war ein
