@@ -52,7 +52,13 @@ public final class AppState {
         self.audit = AuditStore(db: database)
         let chatStore = ChatStore(db: database)
         self.chat = chatStore
-        self.conversation = ConversationEngine(chatStore: chatStore, provider: ClaudeChatClient())
+        // Read-only Tool-Whitelist (Sevdesk NIE enthalten). Tools laufen nur,
+        // wenn der Nutzer das Opt-in aktiviert (siehe AssistantChatView).
+        self.conversation = ConversationEngine(
+            chatStore: chatStore,
+            provider: ClaudeChatClient(),
+            registry: .standard()
+        )
         self.googleAuth = GoogleAuthService()
         self.clockodoAuth = ClockodoAuthService()
         self.clickUpAuth = ClickUpAuthService()

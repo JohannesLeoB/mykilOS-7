@@ -18,6 +18,9 @@ public struct AssistantChatView: View {
 
     @Environment(StudioContext.self) private var context
     @State private var draft = ""
+    // Datenschutz-Opt-in: Tools (Gmail/Kalender lesen) gehen erst nach bewusster
+    // Aktivierung an die Anthropic-API. Default AUS, persistent.
+    @AppStorage("assistant.toolsEnabled") private var toolsEnabled = false
 
     public init(
         scope: ChatScope,
@@ -43,6 +46,7 @@ public struct AssistantChatView: View {
         VStack(spacing: 0) {
             if isConnected {
                 conversation
+                optInBar
                 composer
             } else {
                 notConnected
@@ -97,6 +101,27 @@ public struct AssistantChatView: View {
         ["Was steht diese Woche an?“", "Fasse die offenen Signale zusammen.“", "Worauf soll ich heute achten?“"]
     }
 
+    // MARK: Datenschutz-Opt-in für Live-Tools
+    private var optInBar: some View {
+        HStack(spacing: MykSpace.s4) {
+            Image(systemName: toolsEnabled ? "bolt.fill" : "bolt.slash")
+                .font(.mykCaption)
+                .foregroundStyle(toolsEnabled ? MykColor.positive.color : MykColor.faint.color)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(toolsEnabled ? "Live-Zugriffe aktiv" : "Live-Zugriffe aus")
+                    .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+                Text(toolsEnabled
+                     ? "Mail/Kalender werden bei Bedarf gelesen und an Anthropic gesendet."
+                     : "Aktivieren, damit der Assistent deine Mail/Kalender lesen darf.")
+                    .font(.mykMono(9)).foregroundStyle(MykColor.faint.color).lineLimit(1)
+            }
+            Spacer()
+            Toggle("", isOn: $toolsEnabled).labelsHidden().toggleStyle(.switch).scaleEffect(0.8)
+        }
+        .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s3)
+        .overlay(alignment: .top) { Divider().overlay(MykColor.line.color) }
+    }
+
     // MARK: Eingabe
     private var composer: some View {
         HStack(alignment: .bottom, spacing: MykSpace.s4) {
@@ -135,7 +160,7 @@ public struct AssistantChatView: View {
         Task {
             await engine.send(
                 toSend, scope: scope, focusedProjectID: focusedProjectID,
-                signals: signals, projects: projects
+                signals: signals, projects: projects, toolsEnabled: toolsEnabled
             )
         }
     }
