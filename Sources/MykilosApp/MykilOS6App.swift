@@ -118,6 +118,7 @@ struct ContentView: View {
         case .projects:  ProjectGalleryView()
         case .assistant: AssistantPageView()
         case .offers:    GlobalOffersView()
+        case .brands:    BrandsView()
         case .settings:  SettingsView()
         default:         ComingSoonView(module: module)
         }
