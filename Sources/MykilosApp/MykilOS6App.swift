@@ -66,10 +66,32 @@ enum AppModule: String, CaseIterable, Identifiable {
 struct ContentView: View {
     @State private var module: AppModule = .today
     @Environment(AppState.self) private var appState
+    @AppStorage("onboarding.hasCompleted") private var hasCompleted = false
+    @State private var showOnboarding = false
+
+    // Onboarding-Overlay liegt, solange noch nicht abgeschlossen ODER wenn es der
+    // Nutzer über den Profil-Eintrag erneut öffnet. hasCompleted = reiner
+    // Erst-Start-Marker; erneutes Öffnen läuft über showOnboarding (NICHT
+    // hasCompleted zurücksetzen — sonst triggert der Wizard bei jedem Start).
+    private var isOnboardingUp: Bool { hasCompleted == false || showOnboarding }
 
     var body: some View {
+        ZStack {
+            shell
+            if isOnboardingUp {
+                MykColor.ink.color.opacity(0.55).ignoresSafeArea()
+                    .onTapGesture { }   // blockierender Backdrop — kein Durchklicken
+                OnboardingWizardView(onFinish: {
+                    hasCompleted = true
+                    showOnboarding = false
+                })
+            }
+        }
+    }
+
+    private var shell: some View {
         HStack(spacing: 0) {
-            SidebarView(selection: $module)
+            SidebarView(selection: $module, onOpenProfile: { showOnboarding = true })
             Divider().overlay(MykColor.line.color)
             moduleView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -83,6 +105,7 @@ struct ContentView: View {
         // .defaultSize(1340×860), die laufende Größe behält der Nutzer.
         .frame(minWidth: 1100, maxWidth: .infinity,
                minHeight: 720, maxHeight: .infinity)
+        .disabled(isOnboardingUp)
     }
 
     @ViewBuilder

@@ -6,6 +6,9 @@ import MykilosDesign
 // Kein macOS-Standardsidebar — Custom-Layout, weil die CI es verlangt.
 struct SidebarView: View {
     @Binding var selection: AppModule
+    var onOpenProfile: () -> Void = {}
+    @Environment(AppState.self) private var appState
+    @State private var profileHovered = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -55,17 +58,35 @@ struct SidebarView: View {
         }
     }
 
-    // MARK: Fußzeile
+    // MARK: Fußzeile — Profil & Verbindungen (öffnet den Onboarding-Wizard erneut)
     private var navFoot: some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(MykColor.positive.color)
-                .frame(width: 5, height: 5)
-            Text("LOKAL · GESPEICHERT")
-                .font(.mykMono(9.5))
-                .foregroundStyle(MykColor.faint.color)
+        Button(action: onOpenProfile) {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(appState.profile.profile?.isComplete == true ? MykColor.positive.color : MykColor.faint.color)
+                    .frame(width: 6, height: 6)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(appState.profile.profile?.displayName.isEmpty == false
+                         ? (appState.profile.profile?.displayName ?? "Profil")
+                         : "Profil einrichten")
+                        .font(.mykSmall)
+                        .foregroundStyle(MykColor.inkSoft.color)
+                        .lineLimit(1)
+                    Text("Profil & Verbindungen")
+                        .font(.mykMono(9))
+                        .foregroundStyle(MykColor.faint.color)
+                }
+                Spacer()
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, MykSpace.s4)
+            .background(
+                RoundedRectangle(cornerRadius: 11)
+                    .fill(profileHovered ? MykColor.paper2.color : Color.clear)
+            )
         }
-        .padding(.leading, MykSpace.s4)
+        .buttonStyle(.plain)
+        .onHover { profileHovered = $0 }
         .padding(.bottom, MykSpace.s3)
     }
 }

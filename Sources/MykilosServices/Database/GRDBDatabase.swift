@@ -89,6 +89,16 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v3_profile — lokales Nutzerprofil (Onboarding). Single-Row id="local".
+        migrator.registerMigration("v3_profile") { db in
+            try db.create(table: "userProfile") { t in
+                t.primaryKey("id", .text)
+                t.column("displayName", .text).notNull()
+                t.column("role",        .text).notNull()
+                t.column("updatedAt",   .double).notNull()
+            }
+        }
+
         try migrator.migrate(queue)
     }
 

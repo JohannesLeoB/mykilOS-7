@@ -19,6 +19,7 @@ public final class AppState {
     public let audit:      AuditStore
     public let chat:       ChatStore
     public let conversation: ConversationEngine
+    public let profile:    ProfileStore
 
     // MARK: Integrationen
     public let googleAuth: GoogleAuthService
@@ -50,6 +51,7 @@ public final class AppState {
             db: database
         )
         self.audit = AuditStore(db: database)
+        self.profile = ProfileStore(db: database)
         let chatStore = ChatStore(db: database)
         self.chat = chatStore
         // Read-only Tool-Whitelist (Sevdesk NIE enthalten). Tools laufen nur,
@@ -117,6 +119,7 @@ public final class AppState {
         // DB-Stores laden
         try? homeBoard.load()
         try? homeNotes.load()
+        try? profile.load()   // nicht-gefunden ist kein Fehler (leeres Profil)
         do {
             try audit.load()
         } catch {
