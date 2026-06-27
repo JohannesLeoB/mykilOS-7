@@ -75,6 +75,20 @@ public final class GRDBDatabase: Sendable {
         // v2 — Projekte + Kunden aus Airtable-Cache in DB (Akt 3)
         // migrator.registerMigration("v2_projects_customers") { db in ... }
 
+        // v2_chat — Assistenten-Chat-Verlauf (Phase 0). Ein Thread je Scope
+        // (home + je Projektnummer), Nachrichten als JSON-BLOB (blocks/status).
+        migrator.registerMigration("v2_chat") { db in
+            try db.create(table: "chatMessages") { t in
+                t.primaryKey("id", .text)
+                t.column("threadScopeKey", .text).notNull().indexed()
+                t.column("role",       .text).notNull()
+                t.column("blocksJSON",  .blob).notNull()
+                t.column("statusJSON",  .blob).notNull()
+                t.column("sequence",    .integer).notNull()
+                t.column("createdAt",   .double).notNull()
+            }
+        }
+
         try migrator.migrate(queue)
     }
 

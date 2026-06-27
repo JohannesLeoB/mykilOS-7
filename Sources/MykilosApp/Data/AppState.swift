@@ -17,6 +17,7 @@ public final class AppState {
     public let homeBoard:  WidgetBoardStore
     public let homeNotes:  NoteStore
     public let audit:      AuditStore
+    public let chat:       ChatStore
 
     // MARK: Integrationen
     public let googleAuth: GoogleAuthService
@@ -48,6 +49,7 @@ public final class AppState {
             db: database
         )
         self.audit = AuditStore(db: database)
+        self.chat = ChatStore(db: database)
         self.googleAuth = GoogleAuthService()
         self.clockodoAuth = ClockodoAuthService()
         self.clickUpAuth = ClickUpAuthService()
