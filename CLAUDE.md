@@ -7,6 +7,16 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 
 ## Wo wir stehen
 
+**🟢 Release 6.1.0 — Konversationeller Assistent (Branch `feat/conversational-assistant`).**
+Der Assistent ist jetzt ein echter Chat: Multi-Turn über Claude (Phase 1, **live
+verifiziert** — erdet sich an echten Projekten, bleibt ehrlich), read-only Tool-Use mit
+agentischer Schleife + Datenschutz-Opt-in (Phase 2, gebaut + unit-getestet, **noch nicht
+live**, weil App-Google-OAuth unverbunden), Gmail-„wo abgelegt?" via Labels. **Sevdesk
+strukturell aus der Tool-Whitelist + Negativtest.** 155 Tests grün, Version 6.1.0 markiert,
+gepusht. Ehrlicher Stand + Vision + Startprompt in
+[HANDOFF_POST_AKT5_13_ASSISTANT_RELEASE.md](docs/handoffs/HANDOFF_POST_AKT5_13_ASSISTANT_RELEASE.md).
+Offen: Onboarding/Profil, Google live verifizieren, ToolCallRow, Streaming, Phase 3.
+
 **Akt 5 abgeschlossen.** Politur, Dark Mode, DMG. Aufgabe 9/10: `DriveOfferWatcher`
 als Live-Quelle für `offerDetected` + Angebote-Tab. **Aufgabe 11 (Stabilisierung)**
 ist abgeschlossen: ein zuvor 100%iger Crash beim Öffnen jeder Projektseite
@@ -49,6 +59,7 @@ Daten sind heilig; bei Datenverlust-Gefahr warnen.
 | Post-Akt 5, Aufgabe 9 | ✅ | Drive-Offer-Watcher live (Polling → `offerDetected`, Baseline-Semantik, 114 Tests) |
 | Post-Akt 5, Aufgabe 10 | ✅ | Angebote-Tab live (Belege aus Drive via `DriveOfferWatcher.detectOffers`, read-only) |
 | Post-Akt 5, Aufgabe 11 | ✅ | Stabilisierung: Projektdetail-Crash + Galerie-Hang behoben, Multi-Agent-Bug-Audit-Fixes (118 Tests, live verifiziert) |
+| Post-Akt 5, Aufgabe 12 | ✅ | Konversationeller Assistent 6.1.0: Phase 0 (ChatStore) + Phase 1 (Multi-Turn-Chat, live verifiziert) + Phase 2 (read-only Tool-Use, Opt-in, Gmail-Labels) — 155 Tests, Sevdesk-Negativtest |
 
 ---
 
@@ -396,6 +407,8 @@ und Session-Regeln: `docs/codex/WORKFLOW.md`.
 - `docs/handoffs/HANDOFF_POST_AKT5_9.md` — Drive-Offer-Watcher live (Polling → offerDetected)
 - `docs/handoffs/HANDOFF_POST_AKT5_10.md` — Angebote-Tab live (Belege aus Drive, geteilte Erkennung)
 - `docs/handoffs/HANDOFF_POST_AKT5_11.md` — Stabilisierung: Projektdetail-Crash + Galerie-Hang + Bug-Audit-Fixes (live verifiziert, 118 Tests)
+- `docs/handoffs/HANDOFF_POST_AKT5_12_ASSISTANT_PLAN.md` — Multi-Agent-Synthese-Plan für den konversationellen Assistenten (Phasen 0–4, NO-GO-Durchsetzung, offene Entscheidungen)
+- `docs/handoffs/HANDOFF_POST_AKT5_13_ASSISTANT_RELEASE.md` — Release 6.1.0: ehrlicher Reality-Check, feste Vision, fester Nächste-Session-Plan, **Startprompt**
 - `docs/architecture/mykilOS6_Systemarchitektur.pdf` — Systemarchitektur (9 S., A4 quer): Integrations-Landkarte, Steckbriefe (Google/Clockodo/Airtable/ClickUp/Sevdesk/Claude), Signal-Nervensystem, GRDB-Persistenz, Funktionsbaum, Trigger-/Handle-Matrix; Quelle `.html` + `build_pdf.sh` daneben
 - `docs/MYKILOS_6_TEAM_MODELL.md` — Team, Airtable, Identität
 - `docs/codex/WORKFLOW.md` — Session-Regeln für Codex-Sessions in diesem Repo
