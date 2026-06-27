@@ -13,6 +13,7 @@ import MykilosWidgets
 struct OnboardingWizardView: View {
     @Environment(AppState.self) private var appState
     let onFinish: () -> Void
+    var onDismiss: (() -> Void)? = nil   // gesetzt beim manuellen Wiederöffnen
 
     @State private var step: OnboardingStep = .welcome
     @State private var displayName = ""
@@ -44,18 +45,29 @@ struct OnboardingWizardView: View {
         }
     }
 
-    // MARK: Header (Titel + Schritt-Punkte)
+    // MARK: Header (Titel + Schritt-Punkte [+ Schließen beim Wiederöffnen])
     private var header: some View {
-        VStack(alignment: .leading, spacing: MykSpace.s3) {
-            Text("mykilOS einrichten")
-                .font(.mykHeadline)
-                .foregroundStyle(MykColor.ink.color)
-            HStack(spacing: 6) {
-                ForEach(OnboardingStep.allCases, id: \.rawValue) { s in
-                    Capsule()
-                        .fill(s.rawValue <= step.rawValue ? MykColor.drive.color : MykColor.line.color)
-                        .frame(width: s == step ? 22 : 12, height: 4)
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: MykSpace.s3) {
+                Text("mykilOS einrichten")
+                    .font(.mykHeadline)
+                    .foregroundStyle(MykColor.ink.color)
+                HStack(spacing: 6) {
+                    ForEach(OnboardingStep.allCases, id: \.rawValue) { s in
+                        Capsule()
+                            .fill(s.rawValue <= step.rawValue ? MykColor.drive.color : MykColor.line.color)
+                            .frame(width: s == step ? 22 : 12, height: 4)
+                    }
                 }
+            }
+            Spacer()
+            if let onDismiss {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.mykCaption)
+                        .foregroundStyle(MykColor.muted.color)
+                }
+                .buttonStyle(.plain)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

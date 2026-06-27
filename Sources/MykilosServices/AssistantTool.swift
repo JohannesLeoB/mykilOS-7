@@ -198,7 +198,18 @@ public struct AssistantToolRegistry: Sendable {
         guard let tool = tools.first(where: { $0.name == name }) else {
             return ToolRunResult(text: "Tool nicht erlaubt oder unbekannt: \(name)", isError: true)
         }
-        let input = (try? JSONDecoder().decode([String: String].self, from: inputJSON)) ?? [:]
+        let input = Self.stringDict(from: inputJSON)
         return await tool.run(input: input)
+    }
+
+    // Claude kann integer-Parameter (z. B. within_days) als JSON-Number senden.
+    // JSONSerialization + compactMapValues fängt String und Number gleichermaßen ab.
+    static func stringDict(from data: Data) -> [String: String] {
+        guard let raw = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return [:] }
+        return raw.compactMapValues { v in
+            if let s = v as? String { return s }
+            if let n = v as? NSNumber { return n.stringValue }
+            return nil
+        }
     }
 }

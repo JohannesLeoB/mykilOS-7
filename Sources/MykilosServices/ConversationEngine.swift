@@ -126,7 +126,7 @@ public final class ConversationEngine {
     // Menschliche Spur eines Tool-Aufrufs (Quelle sichtbar). Zeigt die Quelle +
     // ggf. die Suchabfrage — keine sensiblen Ergebnisinhalte.
     static func activityLabel(name: String, inputJSON: Data) -> String {
-        let input = (try? JSONDecoder().decode([String: String].self, from: inputJSON)) ?? [:]
+        let input = Self.stringDict(from: inputJSON)
         let query = input["query"]?.trimmingCharacters(in: .whitespacesAndNewlines)
         let base: String
         switch name {
@@ -136,6 +136,18 @@ public final class ConversationEngine {
         }
         if let query, query.isEmpty == false { return "\(base) · \(query)" }
         return base
+    }
+
+    // Claude kann integer-Parameter (z. B. within_days) als JSON-Number senden.
+    // JSONDecoder().decode([String:String].self …) wirft dann typeMismatch.
+    // JSONSerialization + compactMapValues fängt beides ab.
+    static func stringDict(from data: Data) -> [String: String] {
+        guard let raw = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return [:] }
+        return raw.compactMapValues { v in
+            if let s = v as? String { return s }
+            if let n = v as? NSNumber { return n.stringValue }
+            return nil
+        }
     }
 
     static func describe(_ error: Error) -> String {

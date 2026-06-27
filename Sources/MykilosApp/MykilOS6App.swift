@@ -86,10 +86,10 @@ struct ContentView: View {
             if isOnboardingUp {
                 MykColor.ink.color.opacity(0.55).ignoresSafeArea()
                     .onTapGesture { }   // blockierender Backdrop — kein Durchklicken
-                OnboardingWizardView(onFinish: {
-                    hasCompleted = true
-                    showOnboarding = false
-                })
+                OnboardingWizardView(
+                    onFinish: { hasCompleted = true; showOnboarding = false },
+                    onDismiss: hasCompleted ? { showOnboarding = false } : nil
+                )
             }
         }
     }
