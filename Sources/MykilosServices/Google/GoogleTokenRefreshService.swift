@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - GoogleTokenRefreshing
 public protocol GoogleTokenRefreshing: Sendable {
-    func refresh(refreshToken: String, clientID: String) async throws -> GoogleOAuthTokenExchangeResponse
+    func refresh(refreshToken: String, clientID: String, clientSecret: String?) async throws -> GoogleOAuthTokenExchangeResponse
 }
 
 // MARK: - GoogleTokenRefreshService
@@ -17,18 +17,22 @@ public struct GoogleTokenRefreshService: GoogleTokenRefreshing {
         self.session = session
     }
 
-    public func refresh(refreshToken: String, clientID: String) async throws -> GoogleOAuthTokenExchangeResponse {
+    public func refresh(refreshToken: String, clientID: String, clientSecret: String? = nil) async throws -> GoogleOAuthTokenExchangeResponse {
         guard let url = URL(string: tokenEndpoint) else {
             throw GoogleOAuthError.invalidEndpoint
         }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.httpBody = urlEncodedFormBody([
+        var parameters: [String: String] = [
             "client_id": clientID,
             "refresh_token": refreshToken,
             "grant_type": "refresh_token",
-        ])
+        ]
+        if let clientSecret, clientSecret.isEmpty == false {
+            parameters["client_secret"] = clientSecret
+        }
+        request.httpBody = urlEncodedFormBody(parameters)
 
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw GoogleOAuthError.invalidResponse }

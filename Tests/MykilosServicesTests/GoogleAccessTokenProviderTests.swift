@@ -9,7 +9,7 @@ final class FakeTokenRefreshing: GoogleTokenRefreshing, @unchecked Sendable {
     var response: GoogleOAuthTokenExchangeResponse?
     var errorToThrow: Error?
 
-    func refresh(refreshToken: String, clientID: String) async throws -> GoogleOAuthTokenExchangeResponse {
+    func refresh(refreshToken: String, clientID: String, clientSecret: String?) async throws -> GoogleOAuthTokenExchangeResponse {
         callCount += 1
         if let errorToThrow { throw errorToThrow }
         guard let response else { fatalError("response oder errorToThrow setzen") }

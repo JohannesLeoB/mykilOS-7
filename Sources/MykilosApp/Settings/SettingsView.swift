@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var profileRole: String = ""
     @State private var profileSaved = false
     @State private var clientID: String = ""
+    @State private var clientSecret: String = ""
     @State private var errorMessage: String?
     @State private var clockodoEmail: String = ""
     @State private var clockodoApiKey: String = ""
@@ -49,6 +50,7 @@ struct SettingsView: View {
                 profileName = p.displayName; profileRole = p.role
             }
             clientID = (try? appState.googleAuth.storedClientID()) ?? ""
+            clientSecret = (try? appState.googleAuth.storedClientSecret()) ?? ""
             if let creds = try? appState.clockodoAuth.storedCredentials() {
                 clockodoEmail = creds.email
                 clockodoApiKey = creds.apiKey
@@ -77,6 +79,9 @@ struct SettingsView: View {
                 .foregroundStyle(MykColor.ink.color)
             statusBadge
             TextField("OAuth-Client-ID (Desktop App)", text: $clientID)
+                .textFieldStyle(.roundedBorder)
+                .font(.mykMono(12))
+            SecureField("Client-Secret (nur falls Google es verlangt)", text: $clientSecret)
                 .textFieldStyle(.roundedBorder)
                 .font(.mykMono(12))
             HStack(spacing: MykSpace.s4) {
@@ -140,9 +145,10 @@ struct SettingsView: View {
     private func connect() {
         errorMessage = nil
         let clientID = self.clientID
+        let clientSecret = self.clientSecret
         Task {
             do {
-                try await appState.googleAuth.startAuthorization(clientID: clientID)
+                try await appState.googleAuth.startAuthorization(clientID: clientID, clientSecret: clientSecret)
             } catch {
                 errorMessage = "Verbindung fehlgeschlagen: \(error)"
             }

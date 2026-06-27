@@ -30,12 +30,16 @@ public struct GoogleOAuthAuthorizationRequest: Sendable {
 // Portiert aus mykilOS 5.5 (Integrations/Google/Auth/GoogleOAuthPKCEService.swift),
 // auf reine Readonly-Scopes und einen einzigen Fehlertyp (GoogleOAuthError) verschlankt.
 public struct GoogleOAuthPKCEService: Sendable {
-    // Client-ID kommt vom Nutzer (Settings → Keychain) — nie hardcodiert.
+    // Client-ID/-Secret kommen vom Nutzer (Settings → Keychain) — nie hardcodiert.
+    // clientSecret ist optional: reine "Installed App"-Clients brauchen keins,
+    // manche ("Web", teils "Desktop") verlangen es trotz PKCE beim Token-Tausch.
     public let clientID: String
+    public let clientSecret: String?
     public let redirectURI: String
 
-    public init(clientID: String, redirectURI: String) {
+    public init(clientID: String, clientSecret: String? = nil, redirectURI: String) {
         self.clientID = clientID
+        self.clientSecret = clientSecret
         self.redirectURI = redirectURI
     }
 
@@ -104,13 +108,16 @@ public struct GoogleOAuthPKCEService: Sendable {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        let parameters: [String: String] = [
+        var parameters: [String: String] = [
             "client_id": clientID,
             "code": code,
             "code_verifier": codeVerifier,
             "grant_type": "authorization_code",
             "redirect_uri": redirectURI,
         ]
+        if let clientSecret, clientSecret.isEmpty == false {
+            parameters["client_secret"] = clientSecret
+        }
         request.httpBody = urlEncodedFormBody(parameters)
         return request
     }

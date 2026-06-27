@@ -9,6 +9,11 @@ public protocol GoogleTokenStoring: Sendable {
     func clear() throws
     func storeClientID(_ clientID: String) throws
     func loadClientID() throws -> String?
+    // Manche Google-OAuth-Client-Typen ("Web", teils "Desktop") verlangen beim
+    // Token-Tausch zusätzlich zum PKCE-Verifier ein client_secret — optional,
+    // da reine "Installed App"-Clients ohne Secret funktionieren.
+    func storeClientSecret(_ clientSecret: String) throws
+    func loadClientSecret() throws -> String?
 }
 
 // MARK: - KeychainGoogleTokenStore
@@ -16,6 +21,7 @@ public struct KeychainGoogleTokenStore: GoogleTokenStoring {
     private static let service = "com.mykilos6.google"
     private static let tokensAccount = "tokens"
     private static let clientIDAccount = "clientID"
+    private static let clientSecretAccount = "clientSecret"
 
     private let keychain = KeychainStore()
     private let encoder: JSONEncoder
@@ -60,5 +66,13 @@ public struct KeychainGoogleTokenStore: GoogleTokenStoring {
 
     public func loadClientID() throws -> String? {
         try keychain.load(service: Self.service, account: Self.clientIDAccount)
+    }
+
+    public func storeClientSecret(_ clientSecret: String) throws {
+        try keychain.store(clientSecret, service: Self.service, account: Self.clientSecretAccount)
+    }
+
+    public func loadClientSecret() throws -> String? {
+        try keychain.load(service: Self.service, account: Self.clientSecretAccount)
     }
 }

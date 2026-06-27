@@ -33,7 +33,8 @@ public struct GoogleAccessTokenProvider: GoogleAccessTokenProviding {
             throw GoogleOAuthError.refreshUnavailable
         }
 
-        let response = try await refreshing.refresh(refreshToken: refreshToken, clientID: clientID)
+        let clientSecret = try? tokenStore.loadClientSecret()
+        let response = try await refreshing.refresh(refreshToken: refreshToken, clientID: clientID, clientSecret: clientSecret ?? nil)
         let refreshed = GoogleTokens(
             accessToken: response.accessToken,
             refreshToken: response.refreshToken ?? refreshToken,

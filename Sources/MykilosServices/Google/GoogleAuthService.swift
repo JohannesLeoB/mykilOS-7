@@ -31,8 +31,13 @@ public final class GoogleAuthService {
         try tokenStore.loadClientID()
     }
 
-    public func startAuthorization(clientID: String) async throws {
+    public func storedClientSecret() throws -> String? {
+        try tokenStore.loadClientSecret()
+    }
+
+    public func startAuthorization(clientID: String, clientSecret: String = "") async throws {
         let trimmedClientID = clientID.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedClientSecret = clientSecret.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmedClientID.isEmpty == false else {
             status = .error("Client-ID fehlt")
             throw GoogleOAuthError.missingClientID
@@ -41,9 +46,16 @@ public final class GoogleAuthService {
         status = .connecting
         do {
             try tokenStore.storeClientID(trimmedClientID)
+            if trimmedClientSecret.isEmpty == false {
+                try tokenStore.storeClientSecret(trimmedClientSecret)
+            }
 
             let redirectURI = try await redirectServer.start()
-            let pkceService = GoogleOAuthPKCEService(clientID: trimmedClientID, redirectURI: redirectURI)
+            let pkceService = GoogleOAuthPKCEService(
+                clientID: trimmedClientID,
+                clientSecret: trimmedClientSecret.isEmpty ? nil : trimmedClientSecret,
+                redirectURI: redirectURI
+            )
             guard let request = pkceService.buildAuthorizationRequest(scopes: scopes) else {
                 throw GoogleOAuthError.invalidEndpoint
             }

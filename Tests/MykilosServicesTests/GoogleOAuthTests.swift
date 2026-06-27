@@ -10,12 +10,15 @@ import MykilosKit
 final class InMemoryGoogleTokenStore: GoogleTokenStoring, @unchecked Sendable {
     var tokens: GoogleTokens?
     var clientID: String?
+    var clientSecret: String?
 
     func store(_ tokens: GoogleTokens) throws { self.tokens = tokens }
     func load() throws -> GoogleTokens? { tokens }
     func clear() throws { tokens = nil }
     func storeClientID(_ clientID: String) throws { self.clientID = clientID }
     func loadClientID() throws -> String? { clientID }
+    func storeClientSecret(_ clientSecret: String) throws { self.clientSecret = clientSecret }
+    func loadClientSecret() throws -> String? { clientSecret }
 }
 
 // MARK: - ThrowingTokenProvider
