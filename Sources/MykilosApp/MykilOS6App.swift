@@ -160,7 +160,7 @@ struct AboutMykilOSView: View {
                     Text("mykilOS 6")
                         .font(.mykDisplay)
                         .foregroundStyle(MykColor.ink.color)
-                    Text("Version 6.0.0")
+                    Text("Version 6.1.0 · Assistent")
                         .font(.mykMono(11))
                         .foregroundStyle(MykColor.muted.color)
                 }
