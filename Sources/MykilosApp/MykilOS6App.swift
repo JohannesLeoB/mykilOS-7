@@ -204,7 +204,7 @@ struct AboutMykilOSView: View {
                     Text("mykilOS 6")
                         .font(.mykDisplay)
                         .foregroundStyle(MykColor.ink.color)
-                    Text("Version 6.2.0 · Streaming + Profil")
+                    Text("Version 6.3.0 · CalendarAction + Vollständigkeit")
                         .font(.mykMono(11))
                         .foregroundStyle(MykColor.muted.color)
                 }

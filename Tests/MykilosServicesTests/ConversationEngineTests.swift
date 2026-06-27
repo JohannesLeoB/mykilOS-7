@@ -97,6 +97,28 @@ struct ConversationEngineTests {
         #expect(provider.respondCallCount == 0)
     }
 
+    // MARK: CalendarAction-Block wird injiziert wenn Tool actionURL zurückgibt
+    @Test func calendarToolInjiziertAktionsBlock() async throws {
+        let store = ChatStore(db: try GRDBDatabase.inMemory())
+        let calendarTool = SuggestCalendarEventTool()
+        let registry = AssistantToolRegistry(tools: [calendarTool])
+        let toolUse = ClaudeToolUse(id: "tu_cal", name: "suggest_calendar_event",
+                                    inputJSON: Data(#"{"title":"Kundentermin"}"#.utf8))
+        let provider = ScriptedProvider(responses: [
+            ClaudeChatResponse(text: "", toolUses: [toolUse], stopReason: "tool_use"),
+            textResponse("Ich habe einen Kalender-Link für den Kundentermin erstellt."),
+        ])
+        let engine = ConversationEngine(chatStore: store, provider: provider, registry: registry)
+
+        await engine.send("Termin anlegen", scope: .home, focusedProjectID: nil, signals: [], projects: [], toolsEnabled: true)
+
+        let last = store.messages(for: .home).last
+        let hasCalendarAction = last?.blocks.contains {
+            if case .calendarAction = $0 { true } else { false }
+        } == true
+        #expect(hasCalendarAction, "Engine muss .calendarAction-Block speichern wenn Tool actionURL zurückgibt")
+    }
+
     @Test func toolSchleifeRespektiertOptInAus() async throws {
         let store = ChatStore(db: try GRDBDatabase.inMemory())
         let registry = AssistantToolRegistry.standard(gmail: FakeGmailForEngine(messages: []))

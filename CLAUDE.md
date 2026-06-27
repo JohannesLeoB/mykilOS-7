@@ -7,15 +7,14 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 
 ## Wo wir stehen
 
-**🟢 Release 6.2.0+ — App-Vollständigkeit (Branch `sprint/shared-drive-widget-oauth`).**
-Alle ursprünglichen „in Vorbereitung"-Oberflächen sind jetzt live. **Sidebar:** Angebote
-(`GlobalOffersView`, Projektauswahl + OffersTabView je Projekt) und Marken & Daten
-(`BrandsView`, Integrations-Dashboard aller 6 Quellen). **Projekt-Tabs:** Assistent
-(konversationeller Chat scoped auf Projektnummer, `ChatScope.project(nr)`) und Dateien
-(alle Drive-Dateien im Ordner, nach Änderungszeit sortiert, `FilesTabView`).
-**Settings:** Profil-Sektion (Name + Rolle direkt editierbar ohne Wizard-Umweg).
-Streaming + UserProfile im System-Prompt aus Aufgabe 14. **163 Tests grün.** Offen:
-Google live verifizieren, Phase 3 (ChatActionCard für Kalender-Entwürfe).
+**🟢 Release 6.3.0 — App-Vollständigkeit + Phase 3 CalendarActionCard (Branch `sprint/shared-drive-widget-oauth`).**
+Alle ursprünglichen „in Vorbereitung"-Oberflächen sind live. **Sidebar:** Angebote
+(`GlobalOffersView`) und Marken & Daten (`BrandsView`, Integrations-Dashboard).
+**Projekt-Tabs:** Assistent (Chat scoped auf Projektnummer) und Dateien (`FilesTabView`).
+**Phase 3 (Aufgabe 20):** `SuggestCalendarEventTool` + `CalendarActionCard` — wenn
+Claude einen Termin empfiehlt, erscheint eine klickbare Karte die Google Kalender im
+Browser öffnet (kein API-Write, nur URL). `.calendarAction`-Block in `ChatContentBlock`,
+nie an die API gesendet. **169 Tests grün.** Offen: Google live verifizieren.
 **Aufgabe 14 (Bugfixes + Streaming):** SSE-Streaming live tippend, UserProfile im Prompt,
 dynamische Beispielfragen, Chat-Verlauf-Löschen, 2 Bugfixes (Integer-Decode, Wizard-X).
 
@@ -68,7 +67,8 @@ Daten sind heilig; bei Datenverlust-Gefahr warnen.
 | Post-Akt 5, Aufgabe 16 | ✅ | Profil-Sektion in Settings (Name + Rolle editierbar ohne Wizard-Umweg) |
 | Post-Akt 5, Aufgabe 17 | ✅ | Globales Angebote-Modul (GlobalOffersView: Projektliste links + OffersTabView rechts) |
 | Post-Akt 5, Aufgabe 18 | ✅ | Dateien-Tab live (FilesTabView: alle Drive-Dateien, nach Änderungszeit) + Marken & Daten (BrandsView: Integrations-Dashboard) |
-| Post-Akt 5, Aufgabe 19 | ✅ | Polishing: personalisierte Begrüßung, Cmd+1..6 Navigation, projektspezifische Beispielfragen, Sidebar-Profil→Settings, Files-Refresh-Button |
+| Post-Akt 5, Aufgabe 19 | ✅ | Polishing: personalisierte Begrüßung, Cmd+1..6 Navigation, projektspezifische Beispielfragen, Sidebar-Profil→Settings, Files-Refresh-Button, Signal-Strip in TodayView |
+| Post-Akt 5, Aufgabe 20 | ✅ | Phase 3: `SuggestCalendarEventTool` + `CalendarActionCard` + `.calendarAction` Block (URL → Browser, kein API-Write) — 169 Tests, Version 6.3.0 |
 
 ---
 
