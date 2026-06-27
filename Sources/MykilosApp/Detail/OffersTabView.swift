@@ -52,12 +52,22 @@ struct OffersTabView: View {
             SourceChip(kind: .drive)
             Text("Angebote & Rechnungen").mykWidgetTitle()
             Spacer()
-            if case .error = loader.renderState {
-                retryButton
-            } else if case .permissionRequired = loader.renderState {
-                retryButton
-            }
+            if case .content = loader.renderState { refreshButton }
+            else if case .error = loader.renderState { retryButton }
+            else if case .permissionRequired = loader.renderState { retryButton }
         }
+    }
+
+    private var refreshButton: some View {
+        Button {
+            Task { await loader.load(folderID: driveFolderID) }
+        } label: {
+            Image(systemName: "arrow.clockwise")
+                .font(.mykCaption)
+                .foregroundStyle(MykColor.drive.color)
+        }
+        .buttonStyle(.plain)
+        .help("Aktualisieren")
     }
 
     private var retryButton: some View {
