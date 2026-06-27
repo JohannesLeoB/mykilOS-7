@@ -5,6 +5,18 @@
 fähigkeiten leben ab sofort als Modul innerhalb von mykilOS 6. Alle Schreibrechte
 liegen bei mykilOS 6.
 
+> ⚠️ **WICHTIG — präzisierte Architektur (2026-06-28, nach Code-Lesung):**
+> Dieses Dokument ist der Grobplan. Die **am echten Code verifizierten** Entscheidungen
+> stehen in **[HANDOFF_LIVE_WIRING_5.md → Teil 2](handoffs/HANDOFF_LIVE_WIRING_5.md)** und
+> haben Vorrang. Wichtigste Korrekturen gegenüber den Abschnitten unten:
+> - Der pure Kern kommt in ein **eigenes Foundation-only-Target `MykilosKalkulationsCore`**
+>   (NICHT in `MykilosServices/Kalkulation/` — das importiert GRDB). Nur die GRDB-Adapter
+>   landen in `MykilosServices/Kalkulation/`.
+> - LearningStore bleibt in **eigener `learning.sqlite`**, nicht in der Haupt-GRDB-Migration.
+> - `AirtableSyncService.swift` wird **gelöscht** (ENV-Secrets, fremde Base, Blocking).
+> - Einstieg ist **zweistufig**: `parse(_:) -> EstimateRequest` dann `estimate(_:)`.
+> - **Harter Blocker:** Geschwister-Typen (`CarryforwardRule` etc.) — Pfade ausstehend.
+
 ---
 
 ## 1. Was mykilO$$ mitbringt

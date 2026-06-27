@@ -197,3 +197,81 @@ GRDB-Migration ab: v3_kalkulation_learning
 1. Stundensätze in `Clockodo-Leistungen.Stundensatz (€/h)` (`fld4NBokj4MoOy8Uq`) — noch leer
 2. Kategorie-Unterordner unter `05 eingehende Angebote` (Tischler, Stein + was noch?)
 3. Welche 59 Tests aus mykilO$$ werden direkt übernommen, welche passen nicht?
+
+---
+
+# Teil 2 — Architektur-Klärung im Austausch mit mykilO$$ (2026-06-28, Fortsetzung)
+
+Nach dem ersten Handoff wurde der **echte mykilO$$-Code gelesen** (alle KalkulationsCore +
+KalkulationsData Dateien) und über eine 8-Agent-Workflow-Analyse + direkte Verifikation zu
+einem belastbaren Integrationsvertrag verdichtet. Quelle (read-only):
+`/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilO$$$/.../MYKILOSKalkulationslabor`.
+
+## Verifizierte Befunde (am Code geprüft, nicht aus Selbstbeschreibung)
+
+1. **`KalkulationsCore` importiert über alle 10 Dateien nur `Foundation`** — null GRDB/SwiftUI/Airtable.
+   → Eigenes reines Target **`MykilosKalkulationsCore`** (Geschwister zu MykilosKit), Port verbatim.
+   NICHT in `MykilosServices/Kalkulation/` (das importiert GRDB → würde Reinheit + 59 Tests verschmutzen).
+2. **Einstieg ist zweistufig:** `Parsing.swift:43 parse(_:) -> EstimateRequest` (Semantik) DANN
+   `Estimation.swift:18 estimate(_:) -> EstimateResult` (Preislogik). `estimate()` nimmt KEINEN
+   Freitext. Das semantische Verständnis lebt in `parse()` + `MaterialLexicon`. Adapter
+   `schaetze(freitext:)` = `parse → estimate`.
+3. **`AirtableSyncService.swift` muss gelöscht werden** (3 verifizierte Verstöße):
+   `:54` Secrets aus `ProcessInfo.environment["AIRTABLE_TOKEN"]`; `:39` fremde Base
+   `appkPzoEiI5eSMkNK`; `:158` blockierender `DispatchSemaphore`. Upsert-Absicht → append-only
+   `AirtableClient.createRecord` bei uns.
+4. **`CostModel.stages` Stundensätze sind hardcoded** (`BottomUpCost.swift:44`, `ratePerHour: 104…`).
+   → Leere `Clockodo-Leistungen`-Stundensatz-Spalte blockiert den Kostenboden NICHT.
+5. **LearningStore bleibt in eigener `learning.sqlite`** (nicht in mykilOS-6-Hauptmigration) —
+   verhindert Überfrachtung; `LearningDatabase` bringt eigenes Queue-Muster + `inMemory()` mit.
+6. **`KostenSchaetzung` braucht additiv `id: UUID` + `erstelltAm: Date`.** `id` MUSS die
+   persistierte `EstimateSession`-UUID sein (NIE `EstimateLine.id` — frisch pro Lauf), sonst hat
+   `recordAdjustment(schaetzungsID:)` keinen Quellschlüssel.
+
+## Korpus-Entscheidung: V4_MoneyObservations
+
+Roh-Evidenz: **3.383 Beobachtungen, 145 Dokumente, 8 Lieferanten** (Bartels 1249, Weichsel78 963,
+Jandali 610, HKT, Meylahn, …), **33 Projekte**; **1.104 Zeilen `total_or_carryforward_risk`**
+(bestätigt die Existenz von `CarryforwardRule.isForbiddenContext`). Wird zu ~204 aktiven Ankern destilliert.
+
+**Heimat = beides** (Johannes' Entscheidung):
+1. **System-of-Record:** neue Tabelle `Preis-Beobachtungen` in Mastermind-Base `appuVMh3KDfKw4OoQ`.
+   Alte Base `appkPzoEiI5eSMkNK` wird stillgelegt.
+2. **Laufzeit:** destilliertes Seed-`sqlite` als read-only `activeAnchors()`-Pfad
+   (Bundle/Application-Support); ~11MB JSONL + extracted_text werden NICHT mitgeshippt.
+
+## HARTER BLOCKER (an mykilO$$ gestellt)
+
+`Estimation.swift` referenziert Typen, die in den vier Core-Dateien NICHT enthalten sind und
+ohne die nichts kompiliert: **`CarryforwardRule`** (`.isForbiddenContext`, ref. `:163`),
+`CalibrationFactor`, `CalibrationTarget`, `AppliedCalibrationFactor`, `GermanNumberParser`.
+→ Exakte Pfade + Foundation-only-Bestätigung von mykilO$$ ausstehend. Partielles Portieren =
+#1-Fehlermodus.
+
+## 5 offene Fragen an mykilO$$ (gesendet)
+
+1. Pfade der Geschwister-Typen (Blocker, siehe oben).
+2. Trägt `EvidenceCase` Provenienz (lieferant + Original-Zitat + Seite) für verlustfreies
+   `PriceEvidence`-Mapping?
+3. Ist `EstimateSession`-UUID in `saveSession()` erzeugt/persistiert und Key für `appendAdjustment`?
+4. Liest `activeAnchors()` die ~204 destillierten Anker (nach Risk-Flag-Filter), nicht die 3.383
+   Rohzeilen? Ist die Seed-`sqlite` self-sufficient ohne CSV-Geschwister? Destillation reproduzierbar?
+5. PDF-Textextraktion hinter `importPDF` — wo, was hängt dran? Oder V1 = nur Drive-File + SHA256?
+   Plus: ist `gen_lexicon.py` (MaterialLexicon-Generator) noch da?
+
+## Port-Reihenfolge (sobald Blocker gelöst)
+
+1. `MykilosKalkulationsCore`-Target anlegen, KalkulationsCore + Geschwister-Typen verbatim, 59 Tests grün.
+2. `KostenSchaetzung` um `id` + `erstelltAm` erweitern (additiv).
+3. LearningStore/LearningDatabase → `MykilosServices/Kalkulation/` (eigene `learning.sqlite`).
+4. **LearningStore Cold-Start-Test (Merge-Gate).**
+5. BrainSeedAnchorProvider + DeviceCatalog (Seed-sqlite read-only aus Application-Support).
+6. `KalkulationsEngine`-Adapter (`schaetze`/`geraetepreis`/`importPDF`/`recordAdjustment`).
+7. AppState-Slot verdrahten (eine Zeile in `bootstrap()`).
+8. UI in BESTEHENDE Flächen: „Angebote"-Tab (`ProjectDetailView`) + `KalkulationsActionCard` im AssistantWidget.
+
+## Korpus-Migration (unabhängig, parallel möglich)
+
+- Tabelle `Preis-Beobachtungen` in `appuVMh3KDfKw4OoQ` anlegen (12 Spalten aus CSV).
+- 3.383 Beobachtungen importieren (wartet auf Frage #4 — ob Roh oder nur destilliert nach Airtable).
+- Alte Base `appkPzoEiI5eSMkNK` als stillgelegt dokumentieren.

@@ -463,9 +463,21 @@ Angebote und Marken & Daten. Noch „ComingSoon": Projekt-Tabs Timeline und Mate
 - **Vollständiger Merge-Plan:** [KALKULATION_INTEGRATION.md](docs/KALKULATION_INTEGRATION.md)
   (10 Schritte, GRDB-Migration-Plan, UI-Slots, 59 Tests, Drive-Integration).
 - **Offener Punkt:** Stundensätze in `Clockodo-Leistungen` (Feld
-  `fld4NBokj4MoOy8Uq`) sind noch leer — manuell einzutragen.
+  `fld4NBokj4MoOy8Uq`) sind noch leer — manuell einzutragen (blockiert den
+  Kostenboden aber NICHT: `CostModel.stages` sind hardcoded).
 - **Offener Punkt:** Naming der `05 eingehende Angebote`-Kategorie-Unterordner
   (Tischler, Stein + was noch?) — nur Johannes kann bestätigen.
+- **Verifizierte Architektur (Code gelesen):** `KalkulationsCore` (10 Dateien)
+  ist Foundation-only → eigenes Target `MykilosKalkulationsCore`, NICHT in
+  `MykilosServices/Kalkulation/` (GRDB). Zweistufig `parse → estimate`.
+  LearningStore in eigener `learning.sqlite`. `AirtableSyncService.swift` löschen
+  (ENV-Secrets, fremde Base `appkPzoEiI5eSMkNK`, Blocking). Details + Port-Reihenfolge
+  in [HANDOFF_LIVE_WIRING_5.md → Teil 2](docs/handoffs/HANDOFF_LIVE_WIRING_5.md).
+- **HARTER BLOCKER:** Geschwister-Typen (`CarryforwardRule` u.a.) referenziert aber
+  nicht in den Core-Dateien — Pfade von mykilO$$ ausstehend, sonst kein Compile.
+- **Korpus (V4_MoneyObservations, 3.383 Beobachtungen, 8 Lieferanten):** Heimat =
+  beides — Tabelle `Preis-Beobachtungen` in Base `appuVMh3KDfKw4OoQ` (System-of-Record,
+  alte Base stillgelegt) + destilliertes Seed-`sqlite` zur Laufzeit.
 
 **Bekannte offene Punkte aus Schritt 1 (noch nicht relevant geworden):**
 - Ob Google "Desktop App"-OAuth-Clients bei PKCE zusätzlich ein `client_secret`
