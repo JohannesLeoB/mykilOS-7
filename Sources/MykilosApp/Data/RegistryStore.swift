@@ -75,12 +75,12 @@ public final class RegistryStore {
         }
     }
 
-    // MARK: Demo-Seed-Einstiegspunkt
+    // MARK: Initiale Live-Daten-Einstiegspunkt
     public func seedIfEmpty() async {
         guard let reg = registry else { return }
         do {
             if try reg.allProjects().isEmpty {
-                try DemoSeed.inject(into: reg)
+                try InitialProjectSeed.inject(into: reg)
                 await load()
             }
         } catch { errorMessage = error.localizedDescription }

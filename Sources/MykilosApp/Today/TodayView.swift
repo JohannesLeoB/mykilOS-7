@@ -133,7 +133,9 @@ private struct SignalPill: View {
 }
 
 // MARK: - HomeDemoSignalButton
-// Demo: feuert Signale für "Küche Meyer" damit FocusWidget reagiert
+// Demo: feuert Signale für ein reales Projekt (2026-015, Hustadt) damit
+// FocusWidget reagiert. Bleibt Showcase-Button bis Aufgabe 10 (Force-Poll
+// gegen DriveOfferWatcher statt Fake-Signale) umgesetzt ist.
 private struct HomeDemoSignalButton: View {
     @Environment(StudioContext.self) private var context
     @State private var fired = false
@@ -141,9 +143,9 @@ private struct HomeDemoSignalButton: View {
     var body: some View {
         Button {
             withAnimation {
-                context.emit(.offerDetected(projectID: "ME-24", label: "Arbeitsplatte"))
-                context.emit(.budgetThresholdCrossed(projectID: "ME-24", ratio: 0.72))
-                context.emit(.deadlineNear(projectID: "ME-24", days: 2))
+                context.emit(.offerDetected(projectID: "2026-015", label: "Arbeitsplatte"))
+                context.emit(.budgetThresholdCrossed(projectID: "2026-015", ratio: 0.72))
+                context.emit(.deadlineNear(projectID: "2026-015", days: 2))
                 fired = true
             }
         } label: {
