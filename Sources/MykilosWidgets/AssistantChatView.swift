@@ -129,7 +129,7 @@ public struct AssistantChatView: View {
                 return [
                     "Was steht f\u{00FC}r \(project.title) diese Woche an?\u{201D}",
                     "Suche Mails zu \(project.title).\u{201D}",
-                    "Fasse die offenen Signale f\u{00FC}r \(project.title) zusammen.\u{201D}",
+                    "Lege einen Termin f\u{00FC}r das n\u{00E4}chste \(project.title)-Meeting an.\u{201D}",
                 ]
             } else {
                 return [
@@ -143,8 +143,8 @@ public struct AssistantChatView: View {
         if toolsEnabled {
             return [
                 "Was steht diese Woche im Kalender an?\u{201D}",
+                "Erstelle einen Termin f\u{00FC}r das Teammeeting Montag.\u{201D}",
                 "Suche Mails zum Thema Angebot.\u{201D}",
-                "Fasse die offenen Signale zusammen.\u{201D}",
             ]
         } else {
             return [
