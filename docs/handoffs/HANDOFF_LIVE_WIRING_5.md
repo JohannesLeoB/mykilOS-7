@@ -275,3 +275,81 @@ ohne die nichts kompiliert: **`CarryforwardRule`** (`.isForbiddenContext`, ref. 
 - Tabelle `Preis-Beobachtungen` in `appuVMh3KDfKw4OoQ` anlegen (12 Spalten aus CSV).
 - 3.383 Beobachtungen importieren (wartet auf Frage #4 — ob Roh oder nur destilliert nach Airtable).
 - Alte Base `appkPzoEiI5eSMkNK` als stillgelegt dokumentieren.
+
+---
+
+# Teil 3 — mykilO$$ Antworten: BLOCKER GELÖST (2026-06-28)
+
+mykilO$$ hat alle 5 Fragen mit exakten Code-Referenzen beantwortet und alle 3
+Korrekturen (eigenes Target / eigene learning.sqlite / AirtableSyncService löschen)
+bestätigt.
+
+## ✅ Blocker aufgelöst: alle Typen liegen in KalkulationsCore
+
+Kein partieller Port — die 10 Dateien gehen komplett, alle Foundation-only:
+
+| Typ | Datei:Zeile |
+|-----|-------------|
+| `CarryforwardRule` | `Review.swift:33` |
+| `GermanNumberParser` | `Parsing.swift:3` |
+| `CalibrationFactorProviding` | `LearningModels.swift:278` |
+| `ActiveCalibrationFactor` | `LearningModels.swift:218` |
+| `CalibrationFactorCandidate` | `LearningModels.swift:192` |
+| `AppliedCalibrationFactor` | `LearningModels.swift:260` |
+| `EstimateAdjustmentTarget` (= „CalibrationTarget") | `LearningModels.swift:41` |
+
+**`MykilosKalkulationsCore` (verbatim, Foundation-only):** AirtableOffer, BottomUpCost,
+ComponentResolver, Estimation, LearningModels, MaterialLexicon, Models, Parsing, Review, Version.
+
+## ✅ EvidenceCase → PriceEvidence verlustfrei
+
+`EvidenceCase`: `sourceFile→dokument`, `page→seite`, `supplier→lieferant`,
+`quote→originalZitat`, `netPrice→nettoPreis`. Alle Felder vorhanden.
+
+## ✅ Session-UUID-Kette geschlossen — ABER String, nicht UUID
+
+`EstimateSession.id: String` (`UUID().uuidString`), sofort in `LearningDatabase.insert`
+persistiert, `EstimateAdjustment.sessionID` ist FK darauf, `recordAdjustment` schreibt darauf.
+**Reconciliation nötig:** unser Protokoll hat `recordAdjustment(schaetzungsID: UUID)` und
+`KostenSchaetzung.id` würde UUID — mykilO$$ nutzt `String`. Entscheidung: `KostenSchaetzung.id`
+und `recordAdjustment` auf **`String`** umstellen (matcht den persistierten Key, vermeidet
+fragiles UUID-Parsing). Additive Protokolländerung.
+
+## ✅ PDF-Import V1 = nur SHA256 + Dedup
+
+`importPDF` V1: Download via `GoogleDriveClient` + SHA256-Dedup gegen `knownDocumentSHA256()`
++ Registrierung in `document_imports`. KEINE Textextraktion — die ist bewusst V2.
+
+## ⚠️ NEUE OFFENE ENTSCHEIDUNG: wer besitzt die Destillation?
+
+`BrainSeedAnchorProvider.activeAnchors()` liest **CSVs** (`active_price_anchors.csv`,
+`component_price_atoms.csv`) + `BaselineAnchors`, NICHT die sqlite direkt. Beide müssen im
+`seedDirectory` liegen:
+- Seed-`sqlite` (11 MB): Roh-Archiv — `money_observations` (3.383), `position_candidates` (818),
+  `component_price_atoms` (200).
+- CSVs: destilliertes Artefakt davon (`active_price_anchors`, `review_queue`,
+  `superseded_candidates`, `component_price_atoms`).
+
+**Die 3.383 → 204-Destillation ist externer Python-Code, NICHT im Repo, nicht in Swift
+reproduzierbar.** Wenn neue `Preis-Beobachtungen` aus Airtable dazukommen, muss dieser Schritt
+neu laufen. → Offene Frage an Johannes + beide Sessions: Destillation als Swift-Pipeline nachbauen
+(V2) oder extern lassen + manuell triggern? Das beeinflusst, ob der Roh-Import nach Airtable
+überhaupt Mehrwert hat.
+
+## ⚠️ Bekannte Schwäche: kein Lexikon-Generator
+
+`gen_lexicon.py` ist NICHT im Repo. `MaterialLexicon` (149 Einträge) ist hartcodiertes Swift.
+Erweiterung auf Sanitär/Elektro/Stein = manuelles Editieren. Keine Daten-Ableitung — noch nicht.
+
+## Port-Reihenfolge (mit mykilO$$ abgestimmt, sequenziell)
+
+1. `MykilosKalkulationsCore`-Target: 10 Dateien verbatim, `Package.swift`, `swift build` grün.
+2. GRDB-Adapter in `MykilosServices/Kalkulation/`: `KalkulationsLearningStore` (eigene
+   `learning.sqlite`), `BrainSeedAnchorProvider` (CSVs + Baseline), `DeviceCatalog`.
+3. Cold-Start-Test (Merge-Gate).
+4. `KalkulationsEngine: KalkulationsEngineProviding` (`parse → estimate`, Typ-Adapter, id als String).
+5. AppState verdrahten.
+6. Destillations-Frage klären (V2-Pipeline vs. extern).
+
+**Seed-Dateien beschaffen:** Seed-`sqlite` (11 MB) + die 4 CSVs müssen aus dem mykilO$$-Tree ins
+mykilOS-6-Application-Support kopiert werden (read-only, nicht ins Repo — externe Daten heilig).

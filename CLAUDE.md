@@ -473,8 +473,11 @@ Angebote und Marken & Daten. Noch „ComingSoon": Projekt-Tabs Timeline und Mate
   LearningStore in eigener `learning.sqlite`. `AirtableSyncService.swift` löschen
   (ENV-Secrets, fremde Base `appkPzoEiI5eSMkNK`, Blocking). Details + Port-Reihenfolge
   in [HANDOFF_LIVE_WIRING_5.md → Teil 2](docs/handoffs/HANDOFF_LIVE_WIRING_5.md).
-- **HARTER BLOCKER:** Geschwister-Typen (`CarryforwardRule` u.a.) referenziert aber
-  nicht in den Core-Dateien — Pfade von mykilO$$ ausstehend, sonst kein Compile.
+- **✅ BLOCKER GELÖST (2026-06-28):** Alle Geschwister-Typen liegen in den 10
+  KalkulationsCore-Dateien (`CarryforwardRule`=Review.swift:33 usw.). Kompletter verbatim Port.
+  Reconciliation: `EstimateSession.id` ist `String` → Protokoll-IDs auf String. Siehe Handoff Teil 3.
+- **⚠️ Offene Entscheidung — Destillation:** 3.383→204 ist externer Python-Code (nicht im Repo);
+  V2-Swift-Pipeline oder extern+manuell? `gen_lexicon.py` fehlt → MaterialLexicon manuell.
 - **Korpus (V4_MoneyObservations, 3.383 Beobachtungen, 8 Lieferanten):** Heimat =
   beides — Tabelle `Preis-Beobachtungen` in Base `appuVMh3KDfKw4OoQ` (System-of-Record,
   alte Base stillgelegt) + destilliertes Seed-`sqlite` zur Laufzeit.
