@@ -85,7 +85,8 @@ Daten sind heilig; bei Datenverlust-Gefahr warnen.
 | Post-Akt 5, Aufgabe 18 | ✅ | Dateien-Tab live (FilesTabView: alle Drive-Dateien, nach Änderungszeit) + Marken & Daten (BrandsView: Integrations-Dashboard) |
 | Post-Akt 5, Aufgabe 19 | ✅ | Polishing: personalisierte Begrüßung, Cmd+1..6 Navigation, projektspezifische Beispielfragen, Sidebar-Profil→Settings, Files-Refresh-Button, Signal-Strip in TodayView |
 | Post-Akt 5, Aufgabe 20 | ✅ | Phase 3: `SuggestCalendarEventTool` + `CalendarActionCard` + `.calendarAction` Block (URL → Browser, kein API-Write) — 169 Tests, Version 6.3.0 |
-| Live-Wiring, Session 1 | 🟡 | Angebote-Tab-Bugfix (zwei Spalten, 169 Tests grün); neue Airtable-Base "mykilOS Mastermind" mit Schema + 69 Records live; ClickUp-Sandbox-Space entdeckt; Demo-/Dummy-Audit (11 Punkte) für Folge-Session. **DemoSeed noch nicht ersetzt.** Details: [HANDOFF_LIVE_WIRING_1.md](docs/handoffs/HANDOFF_LIVE_WIRING_1.md) |
+| Live-Wiring, Session 1 | ✅ | Angebote-Tab-Bugfix, Airtable-Base "mykilOS Mastermind" (Schema + 69 Records live), ClickUp-Sandbox-Space, DemoSeed → 31 echte Projekte, hartkodierte Bugs gefixt, Force-Poll-Buttons. Details: [HANDOFF_LIVE_WIRING_1.md](docs/handoffs/HANDOFF_LIVE_WIRING_1.md) |
+| Live-Wiring, Session 2 | 🟡 | Google-Login client_secret-Fix, Fenster-Drift-Guard, Projekt-Favoriten klickbar, Drive-Routing über alle 31 Projekte (alle code-fertig, **Live-Verifikation ausstehend**), Assistent-Ausbauplan (nur geplant). Details: [HANDOFF_LIVE_WIRING_2.md](docs/handoffs/HANDOFF_LIVE_WIRING_2.md) |
 
 ---
 
@@ -493,7 +494,8 @@ und Session-Regeln: `docs/codex/WORKFLOW.md`.
 - `docs/handoffs/HANDOFF_POST_AKT5_13_ASSISTANT_RELEASE.md` — Release 6.1.0: ehrlicher Reality-Check, feste Vision, fester Nächste-Session-Plan, **Startprompt**
 - `docs/handoffs/HANDOFF_POST_AKT5_15_SURFACE_COMPLETION.md` — Release 6.3.0: App-Vollständigkeit (Aufgaben 15–21), Phase 3 CalendarActionCard, Signal-Badges, Grounding-Update, 169 Tests
 - `docs/handoffs/HANDOFF_POST_AKT5_14_BUGFIXES.md` — Bugfixes #1/#2 + Streaming Phase 1e + UserProfile im Prompt + dynamische Beispielfragen + Chat-Löschen (163 Tests, Version 6.2.0)
-- `docs/handoffs/HANDOFF_LIVE_WIRING_1.md` — Airtable Mastermind-Base live (Schema + 69 Records), ClickUp-Testspace, Angebote-Tab-Bugfix, vollständiger Demo-Audit + Startprompt für Session 2
+- `docs/handoffs/HANDOFF_LIVE_WIRING_1.md` — Airtable Mastermind-Base live (Schema + 69 Records), ClickUp-Testspace, Angebote-Tab-Bugfix, DemoSeed → echte Projekte, hartkodierte Bugs + Force-Poll erledigt
+- `docs/handoffs/HANDOFF_LIVE_WIRING_2.md` — Google-Login-Fix, Fenster-Drift-Guard, Projekt-Favoriten klickbar, Drive-Routing über alle Projekte, Assistent-Ausbauplan, Startprompt für Session 3
 - `docs/registry/README.md` — 3-Kopien-Redundanzmodell (Airtable/lokaler Cache/Git-JSON) für die Projekt-/Kunden-Registry
 - `docs/architecture/mykilOS6_Systemarchitektur.pdf` — Systemarchitektur (9 S., A4 quer): Integrations-Landkarte, Steckbriefe (Google/Clockodo/Airtable/ClickUp/Sevdesk/Claude), Signal-Nervensystem, GRDB-Persistenz, Funktionsbaum, Trigger-/Handle-Matrix; Quelle `.html` + `build_pdf.sh` daneben
 - `docs/MYKILOS_6_TEAM_MODELL.md` — Team, Airtable, Identität

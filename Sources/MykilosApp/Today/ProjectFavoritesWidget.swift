@@ -37,7 +37,9 @@ struct ProjectFavoritesWidget: View {
             spacing: MykSpace.s4
         ) {
             ForEach(appState.registry.activeProjects().prefix(6)) { project in
-                MiniProjectCard(project: project, customer: appState.registry.customer(for: project))
+                MiniProjectCard(project: project, customer: appState.registry.customer(for: project)) {
+                    appState.pendingProjectSelection = project
+                }
             }
         }
     }
@@ -55,9 +57,17 @@ struct ProjectFavoritesWidget: View {
 private struct MiniProjectCard: View {
     let project: Project
     let customer: Customer?
+    let onTap: () -> Void
     @State private var isHovered = false
 
     var body: some View {
+        Button(action: onTap) {
+            cardContent
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var cardContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Hero-Mini
             heroGradient

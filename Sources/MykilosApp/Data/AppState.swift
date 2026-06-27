@@ -38,6 +38,16 @@ public final class AppState {
     // werden nie gemeldet).
     private var projectOfferWatchers: [String: DriveOfferWatcher] = [:]
 
+    // MARK: Navigations-Brücke
+    // ContentView besitzt `module` (Sidebar-Auswahl), ProjectGalleryView besitzt
+    // `selectedProject` (welches Projekt offen ist) — beide bewusst reine
+    // View-lokale @State, nicht hier zentralisiert. Andere Module (z. B.
+    // ProjectFavoritesWidget im Heute-Tab) brauchen aber einen Weg, "öffne
+    // Projekt X" auszulösen, ohne diese beiden States zu kennen. Dieses einzelne
+    // Feld ist die Brücke: setzen → ContentView wechselt das Modul, Gallery
+    // öffnet das Projekt und räumt danach selbst wieder auf (nil).
+    public var pendingProjectSelection: Project?
+
     public init(database: GRDBDatabase) {
         self.database = database
         self.registry = RegistryStore()
@@ -99,6 +109,25 @@ public final class AppState {
         let watcher = DriveOfferWatcher()
         projectOfferWatchers[projectNumber] = watcher
         return watcher
+    }
+
+    // MARK: Drive-Poll über alle Projekte
+    // Bisher pollte DriveOfferWatcher nur, solange die jeweilige Projektseite
+    // offen war — alle anderen Projekte hatten keine Live-Quelle, solange
+    // niemand draufschaut. Diese Methode pollt alle aktiven Projekte mit
+    // verlinktem Drive-Ordner auf einmal; genutzt vom manuellen
+    // "Jetzt prüfen"-Button (TodayView) UND vom Hintergrund-Sweep unten.
+    @discardableResult
+    public func pollAllActiveProjectsForOffers(into context: StudioContext) async -> Int {
+        var total = 0
+        for project in registry.activeProjects() {
+            guard let folderID = project.links.driveFolderID, folderID.isEmpty == false else { continue }
+            let watcher = offerWatcher(for: project.projectNumber)
+            let signals = await watcher.poll(projectID: project.projectNumber, folderID: folderID)
+            for signal in signals { context.emit(signal) }
+            total += signals.count
+        }
+        return total
     }
 
     // MARK: Notizen-Flush (App-Quit / Hintergrund)

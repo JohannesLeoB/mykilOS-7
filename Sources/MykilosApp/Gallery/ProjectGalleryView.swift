@@ -41,6 +41,17 @@ struct ProjectGalleryView: View {
         .clipped()
         .animation(.easeInOut(duration: 0.22), value: selectedProject?.id)
         .task { await registry.load() }
+        // Navigations-Brücke (siehe AppState.pendingProjectSelection): andere
+        // Module fordern hier "öffne dieses Projekt" an, ohne unseren lokalen
+        // selectedProject-State zu kennen. Wir öffnen es und räumen sofort auf,
+        // damit ein erneutes Tippen auf "Projekte" in der Sidebar es nicht
+        // wieder aufreißt.
+        .onChange(of: appState.pendingProjectSelection) { _, requested in
+            guard let requested else { return }
+            withAnimation(.easeInOut(duration: 0.22)) { selectedProject = requested }
+            appState.pendingProjectSelection = nil
+        }
+        .guardWindowPosition(on: selectedProject?.id)
     }
 
     // MARK: Galerie-Inhalt

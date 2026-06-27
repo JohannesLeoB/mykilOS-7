@@ -320,10 +320,15 @@ dann zur Verfügung).
 
 | Schritt | Aufgabe(n) | Status |
 |---|---|---|
-| A | #8 DemoSeed → echte Daten | ⬜ offen — **Voraussetzung für ersten Live-Test** |
-| B | #9 Hartkodierte Bugs | ⬜ offen |
-| C | #10 Force-Poll-Buttons | ⬜ offen |
+| A | #8 DemoSeed → echte Daten | ✅ erledigt, `769d63e`, live verifiziert |
+| B | #9 Hartkodierte Bugs | ✅ erledigt, `d27eaeb` |
+| C | #10 Force-Poll-Buttons | ✅ erledigt, `866b491` |
 | D | #2/#3/#11 Neue Tabs | ⬜ offen — größter Aufwand |
+
+Fortsetzung dieser Session (Google-Login-Fix, Identity-Plan, Assistent-Plan,
+Window-Drift-Guard, Projekt-Favoriten klickbar, Drive-Routing über alle
+Projekte): siehe
+[HANDOFF_LIVE_WIRING_2.md](HANDOFF_LIVE_WIRING_2.md).
 
 Wird ein Schritt in einer Folgesession umgesetzt: bitte hier den Status auf
 ✅ setzen und kurz verlinken, in welchem Commit/Handoff er erledigt wurde —

@@ -102,6 +102,13 @@ struct ContentView: View {
             }
         }
         .focusedValue(\.activeModule, $module)
+        // Navigations-Brücke (siehe AppState.pendingProjectSelection): sobald ein
+        // anderes Modul "öffne Projekt X" anfordert, wechselt hier nur das Modul
+        // — das tatsächliche Öffnen übernimmt ProjectGalleryView selbst.
+        .onChange(of: appState.pendingProjectSelection) { _, new in
+            if new != nil { module = .projects }
+        }
+        .guardWindowPosition(on: module)
     }
 
     private var shell: some View {

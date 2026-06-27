@@ -36,6 +36,16 @@ struct TodayView: View {
             }
             SaveStateBar(state: appState.homeBoard.saveState)
         }
+        // Drive-Live-Quelle jetzt für ALLE aktiven Projekte, nicht nur für das
+        // gerade geöffnete (das deckt nur ProjectDetailView's eigener 60s-Loop
+        // ab). Läuft, solange die Heute-Seite offen ist — bewusst seltener als
+        // der Pro-Projekt-Loop (read-only, aber 31 Ordner statt 1 pro Tick).
+        .task {
+            while Task.isCancelled == false {
+                _ = await appState.pollAllActiveProjectsForOffers(into: context)
+                try? await Task.sleep(for: .seconds(300))
+            }
+        }
     }
 
     // MARK: Command-Bar
@@ -184,15 +194,7 @@ private struct HomeForcePollButton: View {
 
     private func forcePollAll() async {
         isPolling = true
-        var total = 0
-        for project in appState.registry.activeProjects() {
-            guard let folderID = project.links.driveFolderID, folderID.isEmpty == false else { continue }
-            let watcher = appState.offerWatcher(for: project.projectNumber)
-            let signals = await watcher.poll(projectID: project.projectNumber, folderID: folderID)
-            for signal in signals { context.emit(signal) }
-            total += signals.count
-        }
-        lastResultCount = total
+        lastResultCount = await appState.pollAllActiveProjectsForOffers(into: context)
         isPolling = false
     }
 }
