@@ -79,6 +79,7 @@ struct AssistantGroundingTests {
         )
         #expect(prompt.contains("search_gmail"))
         #expect(prompt.contains("list_calendar_events"))
+        #expect(prompt.contains("suggest_calendar_event"))   // Phase 3: Kalender-Link-Tool erwähnt
         // toolsEnabled=true: LIVE-Zugriff auf Gmail/Kalender, aber nicht Mail/Kalender als "KEINE"-Pfad
         #expect(prompt.contains("LIVE-Lesezugriff"))
         #expect(prompt.contains("KEINE Live-Zugriffe auf \nMails, Kalender") == false)

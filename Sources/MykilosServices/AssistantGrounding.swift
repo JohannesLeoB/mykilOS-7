@@ -51,8 +51,10 @@ public enum AssistantGrounding {
             lines.append(
                 "Wichtig: Erfinde keine Fakten. Du hast LIVE-Lesezugriff auf Gmail (search_gmail) "
                 + "und Google Kalender (list_calendar_events) — nutze diese Tools, wenn Mails oder "
-                + "Termine gefragt sind. Für Drive, Aufgaben und Rechnungen hast du KEINE Live-Zugriffe. "
-                + "Schreibaktionen (Mails senden, Termine anlegen) darfst du nur als Vorschlag formulieren."
+                + "Termine gefragt sind. Für Terminvorschläge nutze suggest_calendar_event: es erstellt "
+                + "einen Kalender-Link, den der Nutzer im Browser öffnen kann (kein API-Write). "
+                + "Für Drive, Aufgaben und Rechnungen hast du KEINE Live-Zugriffe. "
+                + "Mails versenden darfst du nur als Vorschlag formulieren, nie als erledigt darstellen."
             )
         } else {
             lines.append(
