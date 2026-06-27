@@ -1,29 +1,40 @@
 import Foundation
 import MykilosKit
 
-// MARK: - AssistantChatProviding
-// Abstrahiert den Chat-Aufruf, damit die Engine ohne Netz/Keychain testbar ist.
-// (ClaudeChatClient erklärt seine Konformität in seiner eigenen Datei, sonst
-// wäre die Sendable-Konformität „retroactive" → Swift-6-Fehler.)
-public protocol AssistantChatProviding: Sendable {
-    func chat(messages: [ChatMessage], system: String, maxTokens: Int) async throws -> String
+// MARK: - AssistantConversing
+// Tool-aware Chat-Aufruf, abstrahiert für Tests (ohne Netz/Keychain).
+// (ClaudeChatClient erklärt die Konformität in seiner eigenen Datei — sonst wäre
+// die Sendable-Konformität „retroactive" → Swift-6-Fehler.)
+public protocol AssistantConversing: Sendable {
+    func respond(
+        messages: [ChatMessage], system: String, tools: [ClaudeToolDefinition], maxTokens: Int
+    ) async throws -> ClaudeChatResponse
 }
 
 // MARK: - ConversationEngine
-// Orchestriert einen Chat-Turn: User-Nachricht anhängen → Platzhalter-Antwort
-// (.streaming) → geerdeter Claude-Aufruf → Antwort finalisieren (.complete) bzw.
-// bei Fehler .failed. Phase 1: non-streaming (ein Platzhalter, ein finaler Commit).
-// Persistenz/SaveState laufen über den ChatStore — keine Schreibvorgänge aus Views.
+// Orchestriert einen Chat-Turn inkl. agentischer Tool-Schleife:
+// User-Turn → .streaming-Platzhalter → Claude. Liefert Claude tool_use, werden
+// die (read-only, gewhitelisteten) Tools ausgeführt, die Ergebnisse als
+// tool_result zurückgespielt und erneut gefragt — bis end_turn oder maxToolRounds.
+// Tool-Ergebnisse sind DATEN, nie Instruktionen. Persistiert wird nur der finale
+// Antworttext (ein Platzhalter, ein Commit). Tools nur, wenn toolsEnabled (Opt-in).
 @MainActor
 public final class ConversationEngine {
     private let chatStore: ChatStore
-    private let provider: any AssistantChatProviding
+    private let provider: any AssistantConversing
+    private let registry: AssistantToolRegistry?
+    private static let maxToolRounds = 6
 
     public private(set) var isResponding = false
 
-    public init(chatStore: ChatStore, provider: any AssistantChatProviding) {
+    public init(
+        chatStore: ChatStore,
+        provider: any AssistantConversing,
+        registry: AssistantToolRegistry? = nil
+    ) {
         self.chatStore = chatStore
         self.provider = provider
+        self.registry = registry
     }
 
     public func send(
@@ -32,6 +43,7 @@ public final class ConversationEngine {
         focusedProjectID: String?,
         signals: [WidgetSignal],
         projects: [Project],
+        toolsEnabled: Bool = false,
         now: Date = Date()
     ) async {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -45,19 +57,22 @@ public final class ConversationEngine {
             try chatStore.append(user, to: scope)
             try chatStore.append(placeholder, to: scope)
         } catch {
-            // Persistenzfehler ist über chatStore.saveState in der UI sichtbar.
-            return
+            return   // Persistenzfehler ist über chatStore.saveState sichtbar.
         }
 
-        // Verlauf für den API-Call: alles AUSSER dem leeren Platzhalter.
-        let history = chatStore.messages(for: scope).filter { $0.id != placeholder.id }
+        // API-Konversation: persistierter Verlauf (ohne den leeren Platzhalter),
+        // plus die transienten tool_use/tool_result-Turns dieser Runde.
+        var convo = chatStore.messages(for: scope).filter { $0.id != placeholder.id }
         let system = AssistantGrounding.systemPrompt(
             focusedProjectID: focusedProjectID, signals: signals, projects: projects, now: now
         )
+        let tools = (toolsEnabled ? registry?.definitions() : nil) ?? []
 
         do {
-            let answer = try await provider.chat(messages: history, system: system, maxTokens: 1024)
-            try chatStore.updateAssistantTurn(id: placeholder.id, blocks: [.text(answer)], status: .complete, in: scope)
+            let finalText = try await runLoop(convo: &convo, system: system, tools: tools)
+            try chatStore.updateAssistantTurn(
+                id: placeholder.id, blocks: [.text(finalText)], status: .complete, in: scope
+            )
         } catch {
             let message = Self.describe(error)
             // try? begründet: scheitert sogar das Finalisieren, ist der Fehler über
@@ -65,6 +80,34 @@ public final class ConversationEngine {
             try? chatStore.updateAssistantTurn(
                 id: placeholder.id, blocks: [.text(message)], status: .failed(message), in: scope
             )
+        }
+    }
+
+    // Agentische Schleife. Gibt den finalen Antworttext zurück.
+    private func runLoop(convo: inout [ChatMessage], system: String, tools: [ClaudeToolDefinition]) async throws -> String {
+        var rounds = 0
+        while true {
+            rounds += 1
+            let response = try await provider.respond(messages: convo, system: system, tools: tools, maxTokens: 1024)
+
+            if response.toolUses.isEmpty || rounds >= Self.maxToolRounds {
+                let text = response.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                return text.isEmpty ? "Ich konnte gerade keine Antwort bilden." : response.text
+            }
+
+            // Assistenten-Turn mit tool_use anhängen (API-Kontinuität).
+            var assistantBlocks: [ChatContentBlock] = response.text.isEmpty ? [] : [.text(response.text)]
+            assistantBlocks += response.toolUses.map { .toolUse(id: $0.id, name: $0.name, inputJSON: $0.inputJSON) }
+            convo.append(ChatMessage(role: .assistant, blocks: assistantBlocks, status: .complete))
+
+            // Tools ausführen → tool_result-Turn (role user) anhängen.
+            var resultBlocks: [ChatContentBlock] = []
+            for toolUse in response.toolUses {
+                let result = await (registry?.run(name: toolUse.name, inputJSON: toolUse.inputJSON)
+                    ?? ToolRunResult(text: "Keine Tools verfügbar.", isError: true))
+                resultBlocks.append(.toolResult(toolUseID: toolUse.id, summary: result.text, isError: result.isError))
+            }
+            convo.append(ChatMessage(role: .user, blocks: resultBlocks, status: .complete))
         }
     }
 

@@ -72,7 +72,7 @@ public struct ChatAttachmentRef: Codable, Sendable, Equatable {
 // vollständig, damit spätere Phasen kein Schema-Bruch sind.
 public enum ChatContentBlock: Codable, Sendable, Equatable {
     case text(String)
-    case toolUse(id: String, name: String, inputJSON: String)
+    case toolUse(id: String, name: String, inputJSON: Data)   // rohes Input-Objekt (JSON)
     case toolResult(toolUseID: String, summary: String, isError: Bool)
     case image(ChatAttachmentRef)
     case document(ChatAttachmentRef)
