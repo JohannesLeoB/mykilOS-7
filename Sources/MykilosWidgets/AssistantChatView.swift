@@ -19,6 +19,7 @@ public struct AssistantChatView: View {
 
     @Environment(StudioContext.self) private var context
     @State private var draft = ""
+    @State private var showClearConfirm = false
     // Datenschutz-Opt-in: Tools (Gmail/Kalender lesen) gehen erst nach bewusster
     // Aktivierung an die Anthropic-API. Default AUS, persistent.
     @AppStorage("assistant.toolsEnabled") private var toolsEnabled = false
@@ -57,6 +58,12 @@ public struct AssistantChatView: View {
             sourceLine
         }
         .task(id: scope.rawKey) { try? chatStore.loadIfNeeded(scope) }
+        .alert("Verlauf löschen?", isPresented: $showClearConfirm) {
+            Button("Löschen", role: .destructive) { try? chatStore.clear(scope) }
+            Button("Abbrechen", role: .cancel) {}
+        } message: {
+            Text("Der gesamte Chat-Verlauf dieses Threads wird unwiderruflich gelöscht.")
+        }
     }
 
     // MARK: Verlauf
@@ -69,6 +76,19 @@ public struct AssistantChatView: View {
                 }
                 .padding(.horizontal, MykSpace.s9)
                 .padding(.vertical, MykSpace.s7)
+            }
+            .overlay(alignment: .topTrailing) {
+                if messages.isEmpty == false {
+                    Button { showClearConfirm = true } label: {
+                        Image(systemName: "trash")
+                            .font(.mykCaption)
+                            .foregroundStyle(MykColor.faint.color)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, MykSpace.s5)
+                    .padding(.trailing, MykSpace.s9)
+                    .help("Verlauf löschen")
+                }
             }
             .onChange(of: messages.last?.id) { _, last in
                 guard let last else { return }
