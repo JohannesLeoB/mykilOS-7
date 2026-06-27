@@ -126,6 +126,11 @@ struct ProjectDetailView: View {
                 focusedProjectID: project.projectNumber,
                 profile: appState.profile.profile
             )
+        case .files:
+            FilesTabView(
+                projectID: project.projectNumber,
+                driveFolderID: project.links.driveFolderID
+            )
         case .offers:
             OffersTabView(
                 projectID: project.projectNumber,
