@@ -8,7 +8,7 @@ struct AssistantToolTests {
     // MARK: Whitelist enthält die erwarteten Tools, input_schema serialisiert
     @Test func standardRegistryHatErwarteteTools() throws {
         let registry = AssistantToolRegistry.standard()
-        #expect(registry.toolNames.sorted() == ["list_calendar_events", "search_gmail"])
+        #expect(registry.toolNames.sorted() == ["list_calendar_events", "search_gmail", "suggest_calendar_event"])
 
         let defs = registry.definitions()
         let json = try JSONEncoder().encode(defs)
@@ -91,6 +91,49 @@ struct AssistantToolTests {
     @Test func unbekanntesToolWirdAbgelehnt() async {
         let result = await AssistantToolRegistry.standard().run(name: "rm_rf", inputJSON: Data("{}".utf8))
         #expect(result.isError == true)
+    }
+
+    // MARK: SuggestCalendarEventTool — URL-Builder
+    @Test func calendarSuggestionMitTitelUndDatum() async {
+        let tool = SuggestCalendarEventTool()
+        let result = await tool.run(input: ["title": "Kundengespräch", "date": "2024-03-15"])
+        #expect(result.isError == false)
+        #expect(result.text.contains("Kundengespräch"))
+        let url = try! #require(result.actionURL)
+        #expect(url.contains("calendar.google.com"))
+        #expect(url.contains("text=Kundengespräch") || url.contains("text=Kundengespr"))
+        #expect(url.contains("20240315"))
+    }
+
+    @Test func calendarSuggestionOhneDatum() async {
+        let tool = SuggestCalendarEventTool()
+        let result = await tool.run(input: ["title": "Meeting"])
+        #expect(result.isError == false)
+        #expect(result.actionURL?.contains("calendar.google.com") == true)
+        #expect(result.actionURL?.contains("dates=") == false)
+    }
+
+    @Test func calendarSuggestionMitNotizen() async {
+        let tool = SuggestCalendarEventTool()
+        let result = await tool.run(input: ["title": "Review", "notes": "Ergebnisse besprechen"])
+        #expect(result.actionURL?.contains("details=") == true)
+    }
+
+    @Test func calendarSuggestionOhneTitelIstFehler() async {
+        let tool = SuggestCalendarEventTool()
+        let result = await tool.run(input: [:])
+        #expect(result.isError == true)
+        #expect(result.actionURL == nil)
+    }
+
+    @Test func calendarSuggestionInRegistry() async {
+        let registry = AssistantToolRegistry.standard()
+        let result = await registry.run(
+            name: "suggest_calendar_event",
+            inputJSON: Data(#"{"title":"Test-Termin"}"#.utf8)
+        )
+        #expect(result.isError == false)
+        #expect(result.actionURL?.contains("calendar.google.com") == true)
     }
 }
 

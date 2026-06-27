@@ -19,8 +19,11 @@ public struct ToolParameter: Sendable, Equatable {
 public struct ToolRunResult: Sendable, Equatable {
     public let text: String
     public let isError: Bool
-    public init(text: String, isError: Bool = false) {
-        self.text = text; self.isError = isError
+    /// Optionaler Aktions-URL, den die Engine als `.calendarAction`-Block in der
+    /// Nachricht speichert (nur Anzeige, nie an die API gesendet).
+    public let actionURL: String?
+    public init(text: String, isError: Bool = false, actionURL: String? = nil) {
+        self.text = text; self.isError = isError; self.actionURL = actionURL
     }
 }
 
@@ -169,6 +172,58 @@ public struct ListCalendarTool: AssistantTool {
     }
 }
 
+// MARK: - SuggestCalendarEventTool (output-only, Phase 3)
+// Generiert einen Google-Kalender-Link zum Anlegen eines Termins im Browser.
+// Liest KEINE Daten — kein API-Call, keine Google-Verbindung nötig.
+// Das erzeugte .calendarAction-Block öffnet nur eine URL; es wird NIE in den
+// Google Calendar geschrieben.
+public struct SuggestCalendarEventTool: AssistantTool {
+    public init() {}
+
+    public let name = "suggest_calendar_event"
+    public let description =
+        "Erstellt einen Google-Kalender-Link, den der Nutzer öffnen kann, um einen Termin "
+        + "direkt im Browser anzulegen. Keine API-Verbindung nötig — reine Link-Generierung. "
+        + "Verwende dieses Tool, wenn der Nutzer explizit einen Termin anlegen möchte oder du "
+        + "eine klare Terminempfehlung hast."
+    public var parameters: [ToolParameter] {
+        [
+            ToolParameter(name: "title", description: "Titel des Termins (Pflicht)"),
+            ToolParameter(name: "date",
+                          description: "Datum im Format YYYYMMDD oder YYYYMMDDTHHmmss (optional)",
+                          required: false),
+            ToolParameter(name: "notes",
+                          description: "Optionale Beschreibung oder Notizen",
+                          required: false),
+        ]
+    }
+
+    public func run(input: [String: String]) async -> ToolRunResult {
+        let title = (input["title"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard title.isEmpty == false else {
+            return ToolRunResult(text: "Kein Titel angegeben.", isError: true)
+        }
+        var items: [URLQueryItem] = [URLQueryItem(name: "text", value: title)]
+        if let raw = input["date"], raw.isEmpty == false {
+            let normalized = raw
+                .replacingOccurrences(of: "-", with: "")
+                .replacingOccurrences(of: ":", with: "")
+                .replacingOccurrences(of: " ", with: "T")
+            items.append(URLQueryItem(name: "dates", value: "\(normalized)/\(normalized)"))
+        }
+        if let notes = input["notes"], notes.isEmpty == false {
+            items.append(URLQueryItem(name: "details", value: notes))
+        }
+        var comps = URLComponents(string: "https://calendar.google.com/calendar/r/eventedit")!
+        comps.queryItems = items
+        let url = comps.url?.absoluteString ?? "https://calendar.google.com/calendar/r/eventedit"
+        return ToolRunResult(
+            text: "Kalender-Link erstellt: \(title)",
+            actionURL: url
+        )
+    }
+}
+
 // MARK: - AssistantToolRegistry (Whitelist, default-deny)
 public struct AssistantToolRegistry: Sendable {
     private let tools: [any AssistantTool]
@@ -184,6 +239,7 @@ public struct AssistantToolRegistry: Sendable {
         AssistantToolRegistry(tools: [
             SearchGmailTool(client: gmail),
             ListCalendarTool(client: calendar),
+            SuggestCalendarEventTool(),
         ])
     }
 

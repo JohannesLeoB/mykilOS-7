@@ -159,6 +159,10 @@ public final class ConversationEngine {
                     label: Self.activityLabel(name: toolUse.name, inputJSON: toolUse.inputJSON),
                     isError: result.isError
                 ))
+                if let url = result.actionURL {
+                    // Aktionskarte als sichtbarer Block — nie an die API gesendet.
+                    activities.append(.calendarAction(url: url, label: "Im Kalender öffnen"))
+                }
             }
             convo.append(ChatMessage(role: .user, blocks: resultBlocks, status: .complete))
         }
@@ -186,9 +190,10 @@ public final class ConversationEngine {
         let query = input["query"]?.trimmingCharacters(in: .whitespacesAndNewlines)
         let base: String
         switch name {
-        case "search_gmail":         base = "Gmail durchsucht"
-        case "list_calendar_events": base = "Kalender gelesen"
-        default:                     base = name
+        case "search_gmail":              base = "Gmail durchsucht"
+        case "list_calendar_events":      base = "Kalender gelesen"
+        case "suggest_calendar_event":    base = "Kalender-Link generiert"
+        default:                          base = name
         }
         if let query, query.isEmpty == false { return "\(base) · \(query)" }
         return base

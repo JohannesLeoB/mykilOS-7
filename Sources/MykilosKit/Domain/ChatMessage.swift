@@ -77,6 +77,9 @@ public enum ChatContentBlock: Codable, Sendable, Equatable {
     // Nur-Anzeige-Spur eines gelaufenen Tools (Transparenz „Quelle sichtbar").
     // Wird NIE an die API gesendet (kein orphaned tool_use beim erneuten Schicken).
     case toolActivity(label: String, isError: Bool)
+    // Aktionskarte für einen generierten Kalender-Link (Phase 3).
+    // Nur Anzeige — öffnet URL im Browser, schreibt NIE in Google Calendar.
+    case calendarAction(url: String, label: String)
     case image(ChatAttachmentRef)
     case document(ChatAttachmentRef)
 }

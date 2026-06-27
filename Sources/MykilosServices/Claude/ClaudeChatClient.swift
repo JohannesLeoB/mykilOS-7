@@ -131,7 +131,7 @@ public struct ClaudeChatClient: AssistantConversing {
                 blocks.append(.toolUse(id: id, name: name, input: input))
             case .toolResult(let tid, let summary, let isError):
                 blocks.append(.toolResult(toolUseID: tid, content: summary, isError: isError))
-            case .toolActivity:
+            case .toolActivity, .calendarAction:
                 break   // nur Anzeige — nie an die API
             case .image, .document:
                 break   // Phase 3

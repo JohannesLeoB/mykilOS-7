@@ -259,6 +259,10 @@ struct ChatMessageBubble: View {
                     ToolCallRow(label: activity.label, isError: activity.isError)
                 }
                 bubble
+                // Kalender-Aktionskarten nach der Antwort.
+                ForEach(Array(calendarActions.enumerated()), id: \.offset) { _, action in
+                    CalendarActionCard(url: action.url, label: action.label)
+                }
                 if case .failed = message.status {
                     Label("Erneut versuchen über erneutes Senden", systemImage: "exclamationmark.triangle")
                         .font(.mykMono(9.5)).foregroundStyle(MykColor.critical.color)
@@ -271,6 +275,12 @@ struct ChatMessageBubble: View {
     private var toolActivities: [(label: String, isError: Bool)] {
         message.blocks.compactMap {
             if case let .toolActivity(label, isError) = $0 { (label, isError) } else { nil }
+        }
+    }
+
+    private var calendarActions: [(url: String, label: String)] {
+        message.blocks.compactMap {
+            if case let .calendarAction(url, label) = $0 { (url, label) } else { nil }
         }
     }
 
@@ -304,6 +314,45 @@ struct ChatMessageBubble: View {
             markdown: raw,
             options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         )) ?? AttributedString(raw)
+    }
+}
+
+// MARK: - CalendarActionCard
+// Aktionskarte für einen generierten Google-Kalender-Link (Phase 3).
+// Öffnet den Link im Browser — schreibt NIE selbst in den Kalender.
+struct CalendarActionCard: View {
+    let url: String
+    let label: String
+
+    var body: some View {
+        Button {
+            if let u = URL(string: url) { NSWorkspace.shared.open(u) }
+        } label: {
+            HStack(spacing: MykSpace.s3) {
+                Image(systemName: "calendar.badge.plus")
+                    .font(.mykCaption)
+                    .foregroundStyle(MykColor.people.color)
+                Text(label)
+                    .font(.mykMono(10))
+                    .foregroundStyle(MykColor.ink.color)
+                Spacer()
+                Image(systemName: "arrow.up.right.square")
+                    .font(.mykMono(9.5))
+                    .foregroundStyle(MykColor.faint.color)
+            }
+            .padding(.horizontal, MykSpace.s5)
+            .padding(.vertical, MykSpace.s4)
+            .background(
+                RoundedRectangle(cornerRadius: MykRadius.md)
+                    .fill(MykColor.card.color)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: MykRadius.md)
+                            .stroke(MykColor.people.color.opacity(0.3), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: 360)
     }
 }
 

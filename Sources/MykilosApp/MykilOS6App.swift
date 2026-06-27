@@ -136,7 +136,6 @@ struct ContentView: View {
         case .offers:    GlobalOffersView()
         case .brands:    BrandsView()
         case .settings:  SettingsView()
-        default:         ComingSoonView(module: module)
         }
     }
 }
