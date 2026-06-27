@@ -15,6 +15,7 @@ public struct AssistantChatView: View {
     let modelName: String
     let projects: [Project]
     let focusedProjectID: String?
+    let profile: UserProfile?
 
     @Environment(StudioContext.self) private var context
     @State private var draft = ""
@@ -29,7 +30,8 @@ public struct AssistantChatView: View {
         isConnected: Bool,
         modelName: String,
         projects: [Project],
-        focusedProjectID: String?
+        focusedProjectID: String?,
+        profile: UserProfile? = nil
     ) {
         self.scope = scope
         self.chatStore = chatStore
@@ -38,6 +40,7 @@ public struct AssistantChatView: View {
         self.modelName = modelName
         self.projects = projects
         self.focusedProjectID = focusedProjectID
+        self.profile = profile
     }
 
     private var messages: [ChatMessage] { chatStore.messages(for: scope) }
@@ -160,7 +163,8 @@ public struct AssistantChatView: View {
         Task {
             await engine.send(
                 toSend, scope: scope, focusedProjectID: focusedProjectID,
-                signals: signals, projects: projects, toolsEnabled: toolsEnabled
+                signals: signals, projects: projects, toolsEnabled: toolsEnabled,
+                profile: profile
             )
         }
     }

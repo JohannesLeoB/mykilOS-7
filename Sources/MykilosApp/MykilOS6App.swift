@@ -150,7 +150,8 @@ struct AssistantPageView: View {
                 isConnected: appState.claudeAuth.status == .connected,
                 modelName: (try? appState.claudeAuth.storedCredentials()?.model) ?? ClaudeAuthService.defaultModel,
                 projects: appState.registry.projects,
-                focusedProjectID: context.focusedProjectID
+                focusedProjectID: context.focusedProjectID,
+                profile: appState.profile.profile
             )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)

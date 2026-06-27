@@ -9,16 +9,24 @@ import MykilosKit
 public enum AssistantGrounding {
 
     public static func systemPrompt(
+        profile: UserProfile? = nil,
         focusedProjectID: String?,
         signals: [WidgetSignal],
         projects: [Project],
-        now: Date
+        now: Date,
+        toolsEnabled: Bool = false
     ) -> String {
         var lines: [String] = []
-        lines.append(
-            "Du bist der mykilOS-Projektassistent für ein Design-/Küchenstudio. "
-            + "Antworte knapp, konkret und auf Deutsch."
-        )
+        var intro = "Du bist der mykilOS-Projektassistent für ein Design-/Küchenstudio. "
+        if let profile, profile.isComplete {
+            intro += "Du sprichst mit \(profile.displayName)"
+            if profile.role.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+                intro += " (\(profile.role))"
+            }
+            intro += ". "
+        }
+        intro += "Antworte knapp, konkret und auf Deutsch."
+        lines.append(intro)
         lines.append("Heute ist \(dateString(now)).")
 
         if let focusedProjectID, let project = projects.first(where: { $0.projectNumber == focusedProjectID }) {
@@ -39,12 +47,21 @@ public enum AssistantGrounding {
         }
 
         lines.append("")
-        lines.append(
-            "Wichtig: Erfinde keine Fakten. Du hast in dieser Version KEINE Live-Zugriffe auf "
-            + "Mails, Kalender, Drive oder Aufgaben — beziehe dich nur auf den oben gegebenen Kontext "
-            + "und sage offen, wenn dir Informationen fehlen. Schreibaktionen (Mails, Termine) darfst "
-            + "du nur als Vorschlag formulieren, nie als bereits erledigt darstellen."
-        )
+        if toolsEnabled {
+            lines.append(
+                "Wichtig: Erfinde keine Fakten. Du hast LIVE-Lesezugriff auf Gmail (search_gmail) "
+                + "und Google Kalender (list_calendar_events) — nutze diese Tools, wenn Mails oder "
+                + "Termine gefragt sind. Für Drive, Aufgaben und Rechnungen hast du KEINE Live-Zugriffe. "
+                + "Schreibaktionen (Mails senden, Termine anlegen) darfst du nur als Vorschlag formulieren."
+            )
+        } else {
+            lines.append(
+                "Wichtig: Erfinde keine Fakten. Du hast in dieser Version KEINE Live-Zugriffe auf "
+                + "Mails, Kalender, Drive oder Aufgaben — beziehe dich nur auf den oben gegebenen Kontext "
+                + "und sage offen, wenn dir Informationen fehlen. Schreibaktionen (Mails, Termine) darfst "
+                + "du nur als Vorschlag formulieren, nie als bereits erledigt darstellen."
+            )
+        }
         return lines.joined(separator: "\n")
     }
 

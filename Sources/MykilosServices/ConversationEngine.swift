@@ -70,7 +70,8 @@ public final class ConversationEngine {
         signals: [WidgetSignal],
         projects: [Project],
         toolsEnabled: Bool = false,
-        now: Date = Date()
+        now: Date = Date(),
+        profile: UserProfile? = nil
     ) async {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.isEmpty == false, isResponding == false else { return }
@@ -90,7 +91,8 @@ public final class ConversationEngine {
         // plus die transienten tool_use/tool_result-Turns dieser Runde.
         var convo = chatStore.messages(for: scope).filter { $0.id != placeholder.id }
         let system = AssistantGrounding.systemPrompt(
-            focusedProjectID: focusedProjectID, signals: signals, projects: projects, now: now
+            profile: profile, focusedProjectID: focusedProjectID,
+            signals: signals, projects: projects, now: now, toolsEnabled: toolsEnabled
         )
         let tools = (toolsEnabled ? registry?.definitions() : nil) ?? []
 
