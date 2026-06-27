@@ -167,6 +167,126 @@ drei neuen Tabs #2/#3/#11 in beliebiger Reihenfolge je nach Priorität.
 
 ---
 
+## 5a. Detaillierter Implementierungsplan: Minimal-Pfad zum ersten Live-Test
+
+Dieser Abschnitt ist bewusst **konkreter** als die Tabelle oben — Ziel ist,
+dass eine spätere Session (oder ein späterer Blick zurück) exakt sieht, was
+angedacht war, ohne den Code erneut komplett lesen zu müssen. Reihenfolge ist
+absichtlich so gewählt, dass nach Schritt A bereits ein echter Live-Test in
+der laufenden App möglich ist — B–D sind unabhängig voneinander und können
+in beliebiger Reihenfolge folgen.
+
+### Schritt A — Aufgabe 8: DemoSeed durch die echten 31 Projekte ersetzen
+
+**Status: noch nicht begonnen.** Das ist der einzige Schritt, der für einen
+ersten echten Live-Blick in der App nötig ist.
+
+- **Datei:** `Sources/MykilosApp/Data/DemoSeed.swift`
+- **Aktueller Zustand:** `DemoSeed.inject(into:)` baut 4 fiktive `Customer`
+  und 6 fiktive `Project`-Werte (Küche Meyer/ME-24, Nachtrag Beleuchtung/
+  ME-24-N1, Loft Umbau Mitte/LO-23, Lichtplanung Praxis/SO-24, Studio
+  Bergmann Küche/BE-24, Bad Meyer/ME-23) als Swift-Literale und schreibt sie
+  über `registry.replaceCustomers(...)`/`registry.replaceProjects(...)`.
+- **Aufrufstelle:** `RegistryStore.seedIfEmpty()`
+  (`Sources/MykilosApp/Data/RegistryStore.swift:79`) ruft `DemoSeed.inject`
+  **nur** auf, wenn `reg.allProjects().isEmpty` — Cold-Start-sicher, kein
+  Risiko für bestehende echte Daten.
+- **Wichtige Erkenntnis aus dieser Session:** Die in `docs/registry/
+  projekte.json` (31 Einträge) und `docs/registry/kunden.json` (30 Einträge)
+  liegenden echten Daten nutzen ISO-8601-Datumsstrings — das ist **kein**
+  Problem für diesen Schritt, weil sie hier nur als *Quelle zum Bauen der
+  Swift-Literale* dienen, nicht direkt in den App-eigenen Cache kopiert
+  werden. Die im `docs/registry/README.md` beschriebene Inkompatibilität
+  (Double- vs. ISO-Encoding) betrifft nur den Versuch, die JSON-Dateien
+  1:1 in den `FileBackedRepository`-Cache-Ordner zu kopieren — **nicht**
+  relevant, wenn man sie zum Erzeugen von `Project`/`Customer`-Werten in
+  Swift-Code verwendet.
+- **Zwei Umsetzungs-Optionen, beide gültig:**
+  1. **Swift-Literale (empfohlen, konsistent mit bestehendem Stil):**
+     `DemoSeed.swift`-Inhalt durch 31 `Project(...)`-/30 `Customer(...)`-
+     Literale ersetzen, generiert aus `docs/registry/projekte.json` +
+     `kunden.json`. Kein neuer Code, keine Bundle-Resource, keine
+     `Package.swift`-Änderung. Nachteil: lange Datei (~31 Literale statt 6).
+  2. **JSON-Bundle + Decoder:** `projekte.json`/`kunden.json` als Resource
+     in `Sources/MykilosApp/Resources/` aufnehmen, in `Package.swift` als
+     `.copy(...)`-Resource deklarieren, zur Laufzeit per
+     `JSONDecoder` mit `.dateDecodingStrategy = .iso8601` laden. Vorteil:
+     kürzerer Code. Nachteil: neue Abstraktion für einen einmaligen
+     Seed-Vorgang — gegen das CLAUDE.md-Prinzip "keine Abstraktion ohne
+     echten Bedarf", da die Daten sich nicht mehr ändern, sobald Airtable
+     die Quelle der Wahrheit wird.
+  - **Empfehlung:** Option 1, weil es exakt dem bestehenden Muster folgt
+    und CLAUDE.md explizit vor vorzeitiger Abstraktion warnt.
+- **Mapping-Hinweis:** `Project.kind` (`ProjectKind`) ist in den echten
+  Daten für alle 31 Projekte `kitchen` (außer `2026-001` MYKILOS =
+  `studioInternal`, siehe Drive-Scan dieser Session) — `ClickUp-Liste`,
+  `Kalender-Suche` etc. aus `Projekte.csv`-Spalten direkt übernehmen.
+- **Nach der Umsetzung zwingend:**
+  - `swift build` + `swift test` — Cold-Start-Tests dürfen nicht brechen.
+  - `./script/build_and_run.sh` — echtes Bundle starten, Galerie ansehen,
+    mindestens 2–3 echte Projekte öffnen (Dateien-Tab, Angebote-Tab,
+    Budget-Anzeige in `ProjectHeroView`). **Das ist der "erste echte
+    Live-Test" aus dieser Session.**
+  - Kein neuer Cold-Start-Test nötig — `DemoSeed.inject` wird bereits über
+    bestehende Mechanismen getestet (indirekt über `RegistryTests`).
+
+### Schritt B — Aufgabe 9: Verbleibende hartkodierte Demo-Bugs
+
+**Status: noch nicht begonnen.** Unabhängig von Schritt A, aber durch
+Schritt A teilweise entschärft (echte `project.links.budget`-Werte stehen
+dann zur Verfügung).
+
+| Datei | Zeile(n) | Befund | Fix-Ansatz |
+|---|---|---|---|
+| `Sources/MykilosApp/Detail/ProjectHeroView.swift` | 114, 119, 121, 133 | Budget-Balken-Breite (`geo.size.width * 0.72`), Text `"BUDGET 72 % · 4 H HEUTE"` und Trim-Wert `0.72` sind für **jedes** Projekt identisch hartkodiert, unabhängig vom echten Budget | Echte Berechnung aus `project.links.budget` vs. tatsächlichem Ist-Umsatz (gleiche Quelle wie `CashWidget` nutzt — `SevdeskClient`/`sumGross`) ableiten; falls kein `sevdeskRef` gesetzt: sauberer Leerzustand statt Fake-Prozent |
+| `Sources/MykilosApp/Today/FocusWidget.swift` | 73, 83 | `synthesized`-Property erzeugt Text wie `"Angebot Küche Meyer prüfen → Cash-Widget"` und Fallback `["Küche Meyer — Bartresen-Detail freigeben", "Loft — Zeichnungen für Freitag"]` **unabhängig vom echten `projectID` des Signals** | Signal-Payload (`projectID`) tatsächlich auflösen → echten Projekttitel aus der Registry nachschlagen statt String-Literal |
+| `Sources/MykilosWidgets/Kinds/CashWidget.swift` | 71 | `signalPrompt`-Text hartkodiert `"Lieferanten-PDF erkannt — **Arbeitsplatte Naturstein, 3 Positionen**. Liegt 8 % über dem aktuellen Bieterspiegel."` für jedes Projekt mit `hasReviewSignal` | Echten Signal-Payload-Text durchreichen (Dateiname/Betrag aus `DriveOfferWatcher`-Treffer), nicht generischen Platzhaltertext |
+| `Sources/MykilosWidgets/Kinds/CashWidget.swift` | 26, 75, 94 | `reviewAccepted` ist nur `@State` (View-lokal) — "In Review übernehmen" persistiert nichts, überlebt keinen Neustart | Muss über Action-Card → `AuditStore.append(...)` laufen, nicht direkt im View-State (Architektur-Regel: Schreibvorgänge nie direkt aus Views) |
+
+### Schritt C — Aufgabe 10: Demo-Signal-Buttons → echter Force-Poll
+
+**Status: noch nicht begonnen.**
+
+- **Dateien:** `Sources/MykilosApp/Detail/SignalDemoView.swift` (Button auf
+  jeder Projektseite), `Sources/MykilosApp/Today/TodayView.swift:144-146`
+  (`HomeDemoSignalButton`, ruft `context.emit(.offerDetected(projectID:
+  "ME-24", ...))` mit fest verdrahteter Projekt-ID `"ME-24"` — die nach
+  Schritt A nicht mehr existiert, also würde der Button nach Schritt A ins
+  Leere zeigen, falls nicht vorher angepasst).
+- **Fix-Ansatz:** Button soll `DriveOfferWatcher.poll(...)` für das aktuell
+  offene Projekt (bzw. auf der Heute-Seite: für alle Projekte mit
+  `driveFolderID`) **sofort** auslösen statt ein Fake-Signal zu emittieren
+  — der Watcher existiert bereits und läuft eh alle 60 s im Hintergrund
+  (`ProjectDetailView`), hier nur ein manueller Sofort-Trigger derselben
+  Funktion.
+- **Wichtig:** `TodayView.swift:144-146` MUSS spätestens mit Schritt A
+  angepasst werden (feste `"ME-24"`-Referenz existiert dann nicht mehr) —
+  auch wenn Schritt C selbst aufgeschoben wird, diesen einen Punkt vorher
+  prüfen.
+
+### Schritt D — Aufgaben 2/3/11: Neue Tabs (Zeichnungen, Abnahme, Material)
+
+**Status: noch nicht begonnen, größter Einzelaufwand.**
+
+- **Zeichnungen-Tab (Aufgabe 2):** neuer `ProjectTab`-Fall, Quelle
+  `02 CAD`-Unterordner (gleiches Subfolder-Resolution-Pattern wie der
+  frisch gefixte Angebote-Tab, Abschnitt 2 dieses Dokuments). PDF-Vorschau
+  ist der technisch unklarste Teil — `QuickLookThumbnailing`/`PDFKit` in
+  SwiftUI einbinden, noch nicht recherchiert. **Hier ggf. Opus statt Sonnet
+  einsetzen, falls es hakt** (siehe Modell-Empfehlung aus dem Chat).
+  Erfordert vermutlich Drive-Datei-Download (aktuell nur `webViewLink`
+  geöffnet, kein echter Download/Cache) — neue Funktionalität, kein
+  bestehendes Pattern.
+- **Material-Tab (Aufgabe 11):** Quelle `03 PRÄSENTATION`-Unterordner,
+  sollte dem Angebote-Tab-Pattern (Liste von Drive-Dateien) sehr ähnlich
+  sein, kein PDF-Vorschau-Bedarf vermutet — einfacher als Zeichnungen.
+- **Abnahme-Bereich (Aufgabe 3):** noch keine Drive-Quelle identifiziert/
+  zugeordnet — erster Schritt wäre, mit dem User zu klären, ob es einen
+  eigenen Unterordner oder ein eigenes Datenmodell (Abnahmeprotokoll als
+  Formular?) braucht. Am wenigsten konkret von allen offenen Punkten.
+
+---
+
 ## 6. Was diese Session NICHT angefasst hat (bewusst)
 
 - Die ursprüngliche, geteilte Airtable-Base — NO-GO bleibt vollständig in
@@ -182,10 +302,30 @@ drei neuen Tabs #2/#3/#11 in beliebiger Reihenfolge je nach Priorität.
 
 ## Empfohlener Startprompt für die nächste Session
 
-> "Live-Wiring-Session 2: Lies HANDOFF_LIVE_WIRING_1.md. DemoSeed durch die
-> echten 31 Projekte aus docs/registry/projekte.json + kunden.json ersetzen
-> (Aufgabe 8), danach die hartkodierten Bugs in ProjectHeroView/FocusWidget/
-> CashWidget fixen (Aufgabe 9). Airtable Mastermind-Base ist bereits live
-> befüllt (69 Records) — RegistryStore.syncFromAirtable könnte testweise
-> gegen appuVMh3KDfKw4OoQ laufen, sobald die App-Settings auf diese Base-ID
-> zeigen."
+> "Live-Wiring-Session 2: Lies HANDOFF_LIVE_WIRING_1.md, Abschnitt 5a für den
+> detaillierten Plan. Starte mit Schritt A (DemoSeed → echte 31 Projekte/
+> 30 Kunden aus docs/registry/projekte.json + kunden.json, Option 1 =
+> Swift-Literale). Danach swift build + swift test + ./script/build_and_run.sh
+> für den ersten echten Live-Test. Schritt B (hartkodierte Bugs in
+> ProjectHeroView/FocusWidget/CashWidget) und Schritt C (Demo-Buttons →
+> Force-Poll) nur wenn noch Zeit/Budget übrig ist — beide sind unabhängig
+> von Schritt A, außer der ME-24-Referenz in TodayView.swift:144-146, die
+> nach Schritt A angepasst werden muss. Schritt D (neue Tabs) ist der
+> größte Einzelaufwand, eigene Session wert. Airtable Mastermind-Base ist
+> bereits live befüllt (69 Records) — RegistryStore.syncFromAirtable könnte
+> optional testweise gegen appuVMh3KDfKw4OoQ laufen, sobald die App-Settings
+> auf diese Base-ID zeigen."
+
+## Status dieses Plans (für spätere Sessions auf einen Blick)
+
+| Schritt | Aufgabe(n) | Status |
+|---|---|---|
+| A | #8 DemoSeed → echte Daten | ⬜ offen — **Voraussetzung für ersten Live-Test** |
+| B | #9 Hartkodierte Bugs | ⬜ offen |
+| C | #10 Force-Poll-Buttons | ⬜ offen |
+| D | #2/#3/#11 Neue Tabs | ⬜ offen — größter Aufwand |
+
+Wird ein Schritt in einer Folgesession umgesetzt: bitte hier den Status auf
+✅ setzen und kurz verlinken, in welchem Commit/Handoff er erledigt wurde —
+damit dieses Dokument dauerhaft der ehrliche Stand bleibt, nicht nur eine
+Momentaufnahme vom 2026-06-27.
