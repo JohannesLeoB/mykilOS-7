@@ -15,22 +15,29 @@ public struct CashWidget: View {
     public let projectID: String
     public let sevdeskRef: String?
     public let budget: Double?
+    public let auditStore: AuditStore?
 
-    public init(projectID: String, sevdeskRef: String?, budget: Double?) {
+    public init(projectID: String, sevdeskRef: String?, budget: Double?, auditStore: AuditStore? = nil) {
         self.projectID = projectID
         self.sevdeskRef = sevdeskRef
         self.budget = budget
+        self.auditStore = auditStore
     }
 
     @Environment(StudioContext.self) private var context
     @State private var reviewAccepted = false
+    @State private var auditError: String?
     @State private var loader = SevdeskInvoicesLoader()
 
-    private var hasReviewSignal: Bool {
-        context.signals(for: projectID).contains(where: {
+    // Das echte Signal hinter "hasReviewSignal" — trägt den realen Angebotstext
+    // (label) statt eines hartkodierten Platzhalters.
+    private var reviewSignal: WidgetSignal? {
+        context.signals(for: projectID).first {
             if case .reviewSuggested = $0 { return true }; return false
-        })
+        }
     }
+
+    private var hasReviewSignal: Bool { reviewSignal != nil }
 
     public var body: some View {
         WidgetContainer(
@@ -51,6 +58,14 @@ public struct CashWidget: View {
         .task(id: sevdeskRef) {
             await loader.load(contactRef: sevdeskRef)
         }
+        .task(id: projectID) {
+            // Schon mal bestätigt (vor einem Neustart)? Dann nicht erneut als
+            // "wartet auf Freigabe" zeigen — Quelle der Wahrheit ist der
+            // persistierte Audit-Eintrag, nicht nur der lokale @State.
+            reviewAccepted = auditStore?.entries.contains {
+                $0.projectID == projectID && $0.action == .offerImported
+            } ?? false
+        }
     }
 
     private var sourceLabel: String {
@@ -68,12 +83,16 @@ public struct CashWidget: View {
                     .font(.mykMono(9.5))
                     .foregroundStyle(MykColor.cash.color)
             }
-            Text("Lieferanten-PDF erkannt — **Arbeitsplatte Naturstein, 3 Positionen**. Liegt 8 % über dem aktuellen Bieterspiegel.")
+            Text(signalText)
                 .font(.mykSmall)
                 .foregroundStyle(MykColor.ink.color)
+            if let auditError {
+                Text(auditError)
+                    .font(.mykCaption)
+                    .foregroundStyle(MykColor.critical.color)
+            }
             Button {
-                withAnimation(.easeInOut(duration: 0.25)) { reviewAccepted = true }
-                // Demo-Slot für Sevdesk: echte Übernahme läuft später über Action-Card → Audit.
+                confirmReview()
             } label: {
                 Text("In Review übernehmen →")
                     .font(.mykSmall).fontWeight(.semibold)
@@ -85,6 +104,38 @@ public struct CashWidget: View {
         }
         .padding(MykSpace.s5)
         .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.cash.color.opacity(0.08)))
+    }
+
+    // Der echte Signal-Text (label aus .reviewSuggested) statt eines für jedes
+    // Projekt identischen, hartkodierten Platzhaltertexts.
+    private var signalText: String {
+        if case .reviewSuggested(_, let label) = reviewSignal {
+            return "Drive-PDF erkannt — **\(label)**."
+        }
+        return "Drive-PDF erkannt."
+    }
+
+    // Bestätigung läuft über AuditStore.append(...) statt nur lokalen @State —
+    // Schreibvorgänge kommen nie aus Views direkt, sondern über den Store, und
+    // überleben jetzt einen Neustart (siehe .task(id: projectID) oben).
+    private func confirmReview() {
+        auditError = nil
+        guard let auditStore else {
+            withAnimation(.easeInOut(duration: 0.25)) { reviewAccepted = true }
+            return
+        }
+        do {
+            let entry = AuditEntry(
+                actorUserID: "local-user",
+                projectID: projectID,
+                action: .offerImported,
+                summary: signalText
+            )
+            try auditStore.append(entry)
+            withAnimation(.easeInOut(duration: 0.25)) { reviewAccepted = true }
+        } catch {
+            auditError = "Konnte nicht gespeichert werden: \(error.localizedDescription)"
+        }
     }
 
     // MARK: - Budget-Balken (Ist aus sevdesk vs. Soll aus Airtable)

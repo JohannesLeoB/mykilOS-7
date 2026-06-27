@@ -9,6 +9,7 @@ import MykilosWidgets
 // Nicht "14 offene Aufgaben" — sondern die zwei, die heute Gewicht haben.
 struct FocusWidget: View {
     @Environment(StudioContext.self) private var context
+    @Environment(AppState.self) private var appState
 
     var body: some View {
         WidgetContainer(
@@ -65,23 +66,33 @@ struct FocusWidget: View {
     }
 
     // MARK: Synthese aus aktiven Signalen
+    // Jede Zeile nutzt die echte projectID des Signals (nicht den Signal-Typ
+    // an sich) und löst den echten Projekttitel über die Registry auf — vorher
+    // war hier unabhängig vom tatsächlichen Signal-Inhalt immer "Küche Meyer"/
+    // "Loft" hartkodiert.
+    private func title(for projectID: String) -> String {
+        appState.registry.projects.first { $0.projectNumber == projectID }?.title ?? projectID
+    }
+
     private var synthesized: [String] {
         var items: [String] = []
         let active = context.signals
 
-        if active.contains(where: { if case .reviewSuggested = $0 { return true }; return false }) {
-            items.append("Angebot Küche Meyer prüfen → Cash-Widget")
+        for signal in active {
+            switch signal {
+            case .reviewSuggested(let projectID, let label):
+                items.append("\(label) (\(title(for: projectID))) prüfen → Cash-Widget")
+            case .deadlineNear(let projectID, let days) where days <= 2:
+                items.append("\(title(for: projectID)): Deadline in \(days) Tagen")
+            case .budgetThresholdCrossed(let projectID, let ratio) where ratio > 0.7:
+                items.append("\(title(for: projectID)): Budget bei \(Int(ratio * 100)) % — im Blick behalten")
+            default:
+                break
+            }
         }
-        if active.contains(where: { if case .deadlineNear(_, let days) = $0, days <= 2 { return true }; return false }) {
-            items.append("Abnahme Meyer in 2 Tagen — Bartresen freigeben")
-        }
-        if active.contains(where: { if case .budgetThresholdCrossed(_, let r) = $0, r > 0.7 { return true }; return false }) {
-            items.append("Budget Meyer bei 72 % — im Blick behalten")
-        }
-        // Default wenn keine Signale
-        if items.isEmpty {
-            items = ["Küche Meyer — Bartresen-Detail freigeben", "Loft — Zeichnungen für Freitag"]
-        }
+        // Kein Fake-Fallback mehr — ohne passende Signale bleibt die Liste leer
+        // und noSignalHint greift (context.signals.isEmpty) bzw. die Sektion
+        // zeigt schlicht nichts, statt erfundene Projekte zu nennen.
         return items
     }
 }

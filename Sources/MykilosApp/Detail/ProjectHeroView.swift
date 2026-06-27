@@ -31,6 +31,8 @@ struct ProjectHeroView: View {
         .frame(height: 280)
     }
 
+    private var budget: Double? { project.links.budget }
+
     // MARK: Hintergrund
     private var heroBackground: some View {
         LinearGradient(
@@ -58,8 +60,11 @@ struct ProjectHeroView: View {
             }
             .buttonStyle(.plain)
             Spacer()
-            // Budget-Donut
-            budgetPill
+            // Budget-Anzeige nur, wenn ein echtes Budget hinterlegt ist (Airtable
+            // "Budget"-Feld) — kein Fake-Prozentwert ohne Datengrundlage.
+            if budget != nil {
+                budgetPill
+            }
         }
     }
 
@@ -71,7 +76,9 @@ struct ProjectHeroView: View {
                 .foregroundStyle(.white)
                 .lineLimit(2)
             metaRow
-            budgetLine
+            if let budget {
+                budgetLine(budget)
+            }
         }
     }
 
@@ -101,49 +108,34 @@ struct ProjectHeroView: View {
         }
     }
 
-    // MARK: Budget-Zeile (Demo 72 %)
-    private var budgetLine: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(.white.opacity(0.22))
-                        .frame(height: 3)
-                    Capsule()
-                        .fill(.white)
-                        .frame(width: geo.size.width * 0.72, height: 3)
-                }
-            }
-            .frame(height: 3)
-            .frame(maxWidth: 240)
-            Text("BUDGET 72 %  ·  4 H HEUTE")
-                .font(.mykMono(9.5))
-                .foregroundStyle(.white.opacity(0.72))
-        }
+    // MARK: Budget-Zeile
+    // Zeigt das echte Airtable-Budget (project.links.budget). Kein Ist-Umsatz-
+    // Vergleich hier — der lebt bereits live im CashWidget (Sevdesk-Abgleich).
+    // Ohne echtes Budget wird diese Zeile gar nicht angezeigt (kein Fake-Wert).
+    private func budgetLine(_ budget: Double) -> some View {
+        Text("BUDGET \(Self.budgetFormatter.string(from: budget as NSNumber) ?? "—")")
+            .font(.mykMono(9.5))
+            .foregroundStyle(.white.opacity(0.72))
     }
 
-    // MARK: Budget-Donut (oben rechts)
+    // MARK: Budget-Pille (oben rechts)
     private var budgetPill: some View {
-        HStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .stroke(.white.opacity(0.25), lineWidth: 3)
-                    .frame(width: 18, height: 18)
-                Circle()
-                    .trim(from: 0, to: 0.72)
-                    .stroke(.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                    .frame(width: 18, height: 18)
-                    .rotationEffect(.degrees(-90))
-            }
-            Text("72 %")
-                .font(.mykSmall)
-                .foregroundStyle(.white)
-                .fontWeight(.semibold)
-        }
-        .padding(.horizontal, MykSpace.s4)
-        .padding(.vertical, 7)
-        .background(Capsule().fill(.white.opacity(0.15)))
+        Text(Self.budgetFormatter.string(from: (budget ?? 0) as NSNumber) ?? "—")
+            .font(.mykSmall)
+            .foregroundStyle(.white)
+            .fontWeight(.semibold)
+            .padding(.horizontal, MykSpace.s4)
+            .padding(.vertical, 7)
+            .background(Capsule().fill(.white.opacity(0.15)))
     }
+
+    private static let budgetFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "EUR"
+        formatter.maximumFractionDigits = 0
+        return formatter
+    }()
 
     // MARK: Helfer
     private var heroGradient: [Color] {
