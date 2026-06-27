@@ -476,8 +476,9 @@ Angebote und Marken & Daten. Noch „ComingSoon": Projekt-Tabs Timeline und Mate
 - **✅ BLOCKER GELÖST (2026-06-28):** Alle Geschwister-Typen liegen in den 10
   KalkulationsCore-Dateien (`CarryforwardRule`=Review.swift:33 usw.). Kompletter verbatim Port.
   Reconciliation: `EstimateSession.id` ist `String` → Protokoll-IDs auf String. Siehe Handoff Teil 3.
-- **⚠️ Offene Entscheidung — Destillation:** 3.383→204 ist externer Python-Code (nicht im Repo);
-  V2-Swift-Pipeline oder extern+manuell? `gen_lexicon.py` fehlt → MaterialLexicon manuell.
+- **✅ Destillation ENTSCHIEDEN (Johannes): V2-Swift-Pipeline** — 3.383→204 wird in Swift
+  reimplementiert (geschlossener Lernkreis, Airtable-Beobachtungen destillieren nach). V1 nutzt
+  vorhandene CSVs. Offen bleibt: `gen_lexicon.py` fehlt → MaterialLexicon manuell.
 - **Korpus (V4_MoneyObservations, 3.383 Beobachtungen, 8 Lieferanten):** Heimat =
   beides — Tabelle `Preis-Beobachtungen` in Base `appuVMh3KDfKw4OoQ` (System-of-Record,
   alte Base stillgelegt) + destilliertes Seed-`sqlite` zur Laufzeit.
