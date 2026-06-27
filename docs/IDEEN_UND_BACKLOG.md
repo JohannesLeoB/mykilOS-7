@@ -16,6 +16,19 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Assistent-Ausbau (großer Block, eigenes Dokument)
+
+### 📋 Vollständiger Such-/Schreib-Ausbau des Assistenten
+**Quelle:** User-Wunsch 2026-06-27. Mail/Kalender/Drive komplett durchsuchen,
+Projektordner+Unterordner crawlen, Mail-Entwürfe, echtes Kalender-Schreiben,
+Notizen-Verwaltung, Clockodo-Vorbereitung, Kontakt-/Bild-/Angebots-Suche.
+Vollständig zerlegt in [ASSISTANT_CAPABILITIES_PLAN.md](ASSISTANT_CAPABILITIES_PLAN.md)
+(7 Lese-Punkte, 5 Schreib-Punkte, Reihenfolge-Empfehlung, zwei offene
+Entscheidungen: Google-Scope-Erweiterung für Mail/Kalender-Write, und ob
+Clockodo wirklich nur "vorbereiten" bleibt statt selbst zu buchen).
+
+---
+
 ## Architektur & Datenfluss
 
 ### 📋 ClickUp als Quelle für `ProjectKind`

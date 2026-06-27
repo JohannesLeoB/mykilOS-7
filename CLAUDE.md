@@ -12,7 +12,12 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 für alles, was angedacht aber noch nicht entschieden/umgesetzt ist. Anders
 als die Handoffs unten (die sind abgeschlossene Session-Protokolle) ist das
 hier der dauerhafte Sammelort für offene Ideen, egal in welcher Session sie
-entstanden sind.
+entstanden sind. Zwei thematische Vertiefungen liegen daneben:
+[docs/IDENTITY_LOGIN_PLAN.md](docs/IDENTITY_LOGIN_PLAN.md) (Keychain-Prompts,
+Single-Login-Frage) und
+[docs/ASSISTANT_CAPABILITIES_PLAN.md](docs/ASSISTANT_CAPABILITIES_PLAN.md)
+(voller Such-/Schreib-Ausbau des Assistenten — Mail, Kalender, Drive,
+Notizen, Clockodo, Kontakte, Bilder, Angebote).
 
 ---
 
