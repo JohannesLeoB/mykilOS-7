@@ -7,6 +7,7 @@ import MykilosServices
 // Sidebar-Modul "Marken & Daten": Integrations-Dashboard aller Datenquellen.
 struct BrandsView: View {
     @Environment(AppState.self) private var appState
+    @FocusedBinding(\.activeModule) private var activeModule
 
     var body: some View {
         ScrollView {
@@ -32,49 +33,62 @@ struct BrandsView: View {
                         icon: "person.crop.circle",
                         color: MykColor.drive.color,
                         state: googleState
-                    )
+                    ) { activeModule = .settings }
                     IntegrationCard(
                         name: "Claude",
                         detail: "Assistent · Chat · Analyse",
                         icon: "sparkles",
                         color: MykColor.personal.color,
                         state: claudeState
-                    )
+                    ) { activeModule = .settings }
                     IntegrationCard(
                         name: "Airtable",
                         detail: "Projektsync · System-of-Record",
                         icon: "table",
                         color: MykColor.tasks.color,
                         state: airtableState
-                    )
+                    ) { activeModule = .settings }
                     IntegrationCard(
                         name: "ClickUp",
                         detail: "Aufgaben · Tasks-Widget",
                         icon: "checklist",
                         color: MykColor.tasks.color,
                         state: clickUpState
-                    )
+                    ) { activeModule = .settings }
                     IntegrationCard(
                         name: "Clockodo",
                         detail: "Zeiterfassung",
                         icon: "clock",
                         color: MykColor.people.color,
                         state: clockodoState
-                    )
+                    ) { activeModule = .settings }
                     IntegrationCard(
                         name: "Sevdesk",
                         detail: "Rechnungen · Cash-Widget",
                         icon: "eurosign",
                         color: MykColor.cash.color,
                         state: sevdeskState
-                    )
+                    ) { activeModule = .settings }
                 }
 
                 Divider().overlay(MykColor.line.color)
 
-                Text("Verbindungen werden in den Einstellungen verwaltet.")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.faint.color)
+                Button {
+                    activeModule = .settings
+                } label: {
+                    HStack(spacing: MykSpace.s3) {
+                        Image(systemName: "gearshape")
+                            .font(.mykMono(10))
+                            .foregroundStyle(MykColor.muted.color)
+                        Text("Verbindungen in den Einstellungen verwalten")
+                            .font(.mykMono(10))
+                            .foregroundStyle(MykColor.muted.color)
+                        Image(systemName: "chevron.right")
+                            .font(.mykMono(9.5))
+                            .foregroundStyle(MykColor.faint.color)
+                    }
+                }
+                .buttonStyle(.plain)
             }
             .padding(MykSpace.s9)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -143,31 +157,42 @@ private struct IntegrationCard: View {
     let icon: String
     let color: Color
     let state: ConnectionDisplayState
+    let action: () -> Void
+
+    @State private var isHovered = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: MykSpace.s4) {
-            HStack(spacing: MykSpace.s3) {
-                Image(systemName: icon)
-                    .font(.mykCaption)
-                    .foregroundStyle(color)
-                    .frame(width: 20)
-                Text(name)
-                    .font(.mykHeadline)
-                    .foregroundStyle(MykColor.ink.color)
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: MykSpace.s4) {
+                HStack(spacing: MykSpace.s3) {
+                    Image(systemName: icon)
+                        .font(.mykCaption)
+                        .foregroundStyle(color)
+                        .frame(width: 20)
+                    Text(name)
+                        .font(.mykHeadline)
+                        .foregroundStyle(MykColor.ink.color)
+                }
+                Text(detail)
+                    .font(.mykMono(10))
+                    .foregroundStyle(MykColor.muted.color)
+                    .lineLimit(1)
+                ConnectionStatusView(state: state)
             }
-            Text(detail)
-                .font(.mykMono(10))
-                .foregroundStyle(MykColor.muted.color)
-                .lineLimit(1)
-            ConnectionStatusView(state: state)
+            .padding(MykSpace.s5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: MykRadius.md)
+                    .fill(MykColor.card.color)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: MykRadius.md)
+                    .stroke(isHovered ? color.opacity(0.4) : MykColor.line.color, lineWidth: 1)
+            )
+            .scaleEffect(isHovered ? 1.01 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: isHovered)
         }
-        .padding(MykSpace.s5)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1)
-        )
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
     }
 }
