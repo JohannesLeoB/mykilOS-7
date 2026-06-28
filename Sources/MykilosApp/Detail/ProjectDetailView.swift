@@ -58,6 +58,14 @@ struct ProjectDetailView: View {
         // (ProjectHeroView + TabBar haben eine eigene Idealbreite, die kleiner als
         // die des Gallery-Grids sein kann) → NSHostingView verschiebt das Fenster.
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Widget-Board-Drift: Widgets laden ihren Inhalt async (API-Runden
+        // 300–1800 ms) und verschieben das Fenster, nachdem der initiale
+        // 260-ms-Guard aus ProjectGalleryView bereits gefeuert hat.
+        // guardWindowPositionOnAppear holt das Fenster nach jedem Lade-Zyklus
+        // zurück. guardWindowPosition(on: activeTab) korrigiert beim
+        // Tab-Wechsel zurück zur Übersicht.
+        .guardWindowPositionOnAppear()
+        .guardWindowPosition(on: activeTab)
         .onAppear {
             context.focus(project: project.projectNumber)
             try? boardStore.load()

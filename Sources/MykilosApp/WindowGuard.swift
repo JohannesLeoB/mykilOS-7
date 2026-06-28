@@ -43,4 +43,19 @@ extension View {
             }
         }
     }
+
+    /// Feuert den Guard mehrfach nach dem Erscheinen der View — deckt
+    /// Widget-Boards ab, deren Inhalte über mehrere async API-Runden
+    /// eintreffen und den ersten onChange-Guard (260 ms) zeitlich
+    /// überholen können.
+    func guardWindowPositionOnAppear() -> some View {
+        onAppear {
+            for delay in [300, 800, 1800] {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(delay))
+                    WindowGuard.clampMainWindowToVisibleScreen()
+                }
+            }
+        }
+    }
 }
