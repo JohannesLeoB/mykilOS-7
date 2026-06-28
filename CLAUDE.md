@@ -79,9 +79,9 @@ Notizen, Clockodo, Kontakte, Bilder, Angebote).
 
 ## Wo wir stehen
 
-## 🚨 P0-HARD-GATE: Projekt-„Übersicht“ überlagert die Sidebar
+## ⚠️ P0-HARD-GATE: Projekt-„Übersicht” überlagert die Sidebar
 
-**Status: OFFEN · RIESIGER PRODUKTBUG · NICHT als behoben melden.**
+**Status: FIX COMMITTED (9ddf75a) · Live-Abnahme durch Johannes ausstehend.**
 
 Beim Öffnen eines Projekts funktioniert die Sidebar in den Tabs „Angebote“,
 „Timeline“ und „Material“ normal. Sobald der Tab **„Übersicht“** aktiv ist,
@@ -101,6 +101,11 @@ verwendet das intrinsisch vermessene SwiftUI-`Grid` mit flexiblen, asynchron
 ladenden Widgets und einem `Color.clear`-Filler. Der Commit `dd235ab` schützt
 zwar die sichtbare Sidebar-Breite, der Fehler ist durch die Live-Screenshots
 vom 2026-06-28 um 09:38/09:39 jedoch **nachweislich nicht behoben**.
+
+**Fix (2026-06-28):** `ZStack(.bottom)` → `.bottomLeading`, `VStack` bekommt
+`alignment: .leading`, Tab-Bar `+.frame(maxWidth: .infinity, alignment: .leading)`.
+Build + 192 Tests grün. **Live-Abnahme (3 Projekte, Sidebar klickbar bei Übersicht)
+steht noch aus — Johannes prüft nach nächstem Build.**
 
 **Harte Abschlussbedingung:** Der P0 darf erst geschlossen werden, wenn bei
 aktiver Übersicht Hero und Tabs vollständig sichtbar sind und alle
@@ -190,7 +195,8 @@ Signal-Leck, Loader-Races u. a.). **118 Tests grün.** Details in
 | UI-Bootcamp | ✅ | **Version 6.4.0**: ⌘⇧S Sidebar-Toggle (CommandMenu), `MykColor.brand` #EA5B25, SidebarIconButton, Sidebar-Footer entclustered, Brand-Logo solid Orange, neues App-Icon (MY orange Squircle, 10 Größen), GeometryReader-Pane-Boundary, stabile Row-IDs, Fallback-Tag `ui/sidebar-ci-stable`, Repo-Cleanup (27 Branches gelöscht). **192 Tests.** Details: [HANDOFF_UI_BOOTCAMP_SIDEBAR.md](docs/handoffs/HANDOFF_UI_BOOTCAMP_SIDEBAR.md) |
 | Phase A | ✅ | **Identity + Private Area** (2026-06-28): IdentityView „Wer bin ich?" (Avatar, Google-Domain read-only), 6-Dot Traffic-Light, Private Area Clockodo (Orange-Border, per-user Keychain), `clearLocalCache()`-Button, B2-Fix (GoogleUserInfo nach Neustart), GRDB-Migration v5, `UserProfile` + `clockodoUserID`/`googleDomain`. **192 Tests**, live verifiziert. Details: [HANDOFF_PHASE_A.md](docs/handoffs/HANDOFF_PHASE_A.md) |
 | Phase B | ✅ | **Wire-by-Wire Live-Verifikation** (2026-06-28): B1 Airtable (31 Projekte, Base-ID korrekt) ✅, B2 Drive (API verbunden, Poll aktiv) ✅, B3 Calendar (Tool-Use live) ✅, B4 Mail (Tool-Use live) ✅, B7 Claude (claude-sonnet-4-6 live, Tool-Use) ✅, B8 Kalkulation (Widget live, BaselineAnchors) ✅. B5 ClickUp + B6 Cash ausstehend (M3/M4 von Johannes). Details: [HANDOFF_PHASE_B.md](docs/handoffs/HANDOFF_PHASE_B.md) |
-| S18 | 📋 | **Kalkulations-Chat-Tool** im `ConversationEngine`: neues Tool in `AssistantToolRegistry`, projektID via scope-Threading, `schaetze` → strukturierte Antwort im Chat. |
+| S18 | ✅ | **Kalkulations-Chat-Tool**: `KostenSchaetzungTool` in `AssistantToolRegistry`, `_projektID` via scope-Threading, `KalkulationsSchaetzungCard` (Min/Mitte/Max amber, Konfidenz) in Chat. **192 Tests.** |
+| Drive Live Wiring | ✅ | **Dateien-Tab Finder-Baum** (lazy, Unterordner on-demand, 4 Spalten), **DriveFolderRefreshBar** (Heute-Tab, Status-Leiste + "Jetzt prüfen" Terrakotta), **P0-Fix** (`ZStack.bottomLeading` + `VStack.leading`). `GoogleDriveFile +fileSize/typeLabel`, `+getFileName()`. 192 Tests. Details: [HANDOFF_DRIVE_LIVE_WIRING.md](docs/handoffs/HANDOFF_DRIVE_LIVE_WIRING.md) |
 
 ---
 
