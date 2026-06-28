@@ -51,6 +51,16 @@ Tests:  ✅ 207 Tests grün (+6 neue: BrainSeedProviderTests)
 - `BrainSeedProviderTests.swift`: 6 Tests — CSV-Parse, Fallback, Smoke DoT > 0.
 - Commit: 51b8ed0. Polish-Log L1: done.
 
+**L3 — Geräte & Stundensätze:**
+- `StundensatzLoader.swift`: `merge(airtableRecords:base:)` merged Airtable-Werte
+  aus Clockodo-Leistungen gegen CostModel.stages-Hardcode (8 Keys). Name-Matching
+  für alle 8 Gewerk-Keys. Null-Raten und unbekannte Namen ignoriert. Beide Formate
+  (fieldName + fieldID) unterstützt.
+- `StundensatzLoaderTests`: 6 Tests — Hardcode, Leer, Override, Unbekannt, NullRate, fieldID.
+- `DeviceCatalog.loadDefault()` war bereits live seit L1. Weiche `DEVICE_CATALOG_LOAD`
+  in Airtable Datenstrom-Handbuch registriert.
+- 215 Tests grün. Commit: 573c16e. Polish-Log L3: done.
+
 **L2 — Schätzchat-Toggle:**
 - `AssistantTool.swift`: `schaetzDefinitions()` → nur `schaetze_projekt`.
 - `ConversationEngine.swift`: `schaetzModusEnabled: Bool` Parameter, isoliert Tool-Liste,
