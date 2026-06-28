@@ -41,6 +41,7 @@ struct SettingsView: View {
                 sevdeskSection
                 claudeSection
                 privateAreaSection
+                SchaltzentrumView()
                 Spacer()
             }
             .padding(MykSpace.s9)
