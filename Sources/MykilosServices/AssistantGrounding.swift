@@ -19,7 +19,8 @@ public enum AssistantGrounding {
         driveEnabled: Bool = false,
         contactsEnabled: Bool = false,
         clickUpEnabled: Bool = false,
-        studioBrainEnabled: Bool = false
+        studioBrainEnabled: Bool = false,
+        katalogEnabled: Bool = false
     ) -> String {
         var lines: [String] = []
         var intro = "Du bist der mykilOS-Projektassistent für ein Design-/Küchenstudio. "
@@ -74,6 +75,9 @@ public enum AssistantGrounding {
             }
             if studioBrainEnabled {
                 toolLines.append("- query_studio_knowledge: Studio-Wissensbasis aus der Projekthistorie (Projekte, Lieferanten, Team, Problem-Signale, Preis-Nennungen). Nutze sie für Fragen zu früheren/laufenden Projekten und Lieferanten.")
+            }
+            if katalogEnabled {
+                toolLines.append("- search_katalog: Artikel- und Gerätekatalog durchsuchen (Gaggenau, Miele, Blum, Häfele…). Gibt Hersteller, Beschreibung, Artikelnummer und MYKILOS-VK. Nützlich für Preisfragen zu konkreten Geräten.")
             }
             if kalkulationsEnabled {
                 toolLines.append("- schaetze_projekt: Kostenschätzung (Min/Mitte/Max-Netto) aus der lokalen Kalkulationsdatenbank.")
