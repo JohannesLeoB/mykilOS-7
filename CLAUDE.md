@@ -257,6 +257,9 @@ ist bitgenau roundtrip-sicher).
 ### Benutzerhandbuch (Eiserne Regel — ab 2026-06-28)
 - **Jede neue oder geänderte Funktion** wird sofort in `docs/BENUTZERHANDBUCH.md` dokumentiert.
 - Struktur je Funktion: **Name · Was es tut · Wo zu finden · Voraussetzungen · Einschränkungen**.
+- Das Handbuch enthält **immer die vollständige Datenstrom-Schaltzentrale** — alle Weichen-Tabellen,
+  Handshake-Protokoll, NO-GOs. Bei neuer Weiche: Airtable-Handbuch UND `docs/BENUTZERHANDBUCH.md`
+  gleichzeitig aktualisieren.
 - Das Handbuch wird mit dem Feature-Commit mitgepusht — kein separater Doku-Commit.
 - Entfernte Features → Abschnitt löschen. Keine veralteten "deprecated"-Einträge stehen lassen.
 - Zielgruppe: Johannes + Team. Klare, direkte Sprache.
