@@ -62,6 +62,22 @@ struct KalkulationsEngineTests {
     bora kochfeld abzug,B-PUR,BORA,Kochfeld,BORA Pure Kochfeldabzug,2450,1600,2190
     """
 
+    @Test func schaetzeMitBaselineAnkernLiefertEchteZahlen() async throws {
+        // Wie in der App verdrahtet: Baseline-Anker (eingebaut, keine externen Daten).
+        let engine = KalkulationsEngine(provider: BaselineAnchorProvider(), learningStore: try tempStore())
+
+        let s = try await engine.schaetze(
+            projektID: "P-1",
+            freitext: "5 laufmeter unterschränke mit linoleumfronten. 15 eichenschubkästen. Insel ca 2 x 1,2 m in Edelstahl."
+        )
+
+        // Echte, positive Schätzung mit Evidenz — nicht der leere Stub-Fall.
+        #expect(s.mitteNetto > 0)
+        #expect(s.evidenceCount > 0)
+        #expect(s.minNetto <= s.mitteNetto)
+        #expect(s.mitteNetto <= s.maxNetto)
+    }
+
     @Test func geraetepreisLiefertPreisAusInjiziertemKatalog() async throws {
         let catalog = try DeviceCatalog(csv: Self.syntheticCSV)
         let engine = KalkulationsEngine(

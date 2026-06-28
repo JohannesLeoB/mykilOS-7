@@ -15,6 +15,7 @@ excluded:
   - Sources/MykilosServices/Kalkulation/LearningStore.swift
   - Sources/MykilosServices/Kalkulation/CSVParser.swift
   - Sources/MykilosServices/Kalkulation/DeviceCatalog.swift
+  - Sources/MykilosServices/Kalkulation/BaselineAnchors.swift
 
 custom_rules:
   no_system_font_in_features:

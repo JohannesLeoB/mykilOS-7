@@ -53,6 +53,35 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+### 2026-06-28 · Claude Code (Opus 4.8) — Engine in AppState verdrahtet + Baseline-Anker (Schritt 5)
+
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Branch:** `feat/kalkulation-core-port`
+**Build:** ✅ | **Tests:** 194 grün (175 swift-testing + 19 XCTest)
+
+**Was gemacht wurde:**
+- `BaselineAnchors.swift` verbatim portiert (6 hartcodierte Regelanker, Foundation-only,
+  KEINE externen Daten) + eigener `BaselineAnchorProvider: PriceAnchorProviding`.
+- **`AppState.kalkulationsEngine` live verdrahtet** (konstruiertes `let`, Muster wie
+  `assistantLLM`): `KalkulationsEngine(provider: BaselineAnchorProvider(),
+  learningStore: LearningStore(), deviceCatalog: DeviceCatalog.loadDefault())`.
+  → Die Engine ist jetzt Teil der laufenden App und liefert echte konservative
+  Schätzungen ohne externe Datei; `geraetepreis` wird real, sobald die Preisbuch-CSV
+  in Application-Support liegt.
+- Test `schaetzeMitBaselineAnkernLiefertEchteZahlen`: mitteNetto > 0, evidenceCount > 0,
+  min ≤ mitte ≤ max — beweist den nicht-leeren Pfad.
+- SwiftLint-Ausnahme um `BaselineAnchors.swift` erweitert (vendored); `BaselineAnchorProvider`
+  ist eigener Code, voll gelintet.
+
+**Doku-Hinweis:** Johannes' Airtable-Entscheidung (1 Base bleibt, Airtable=Master/GRDB=Cache)
+in CLAUDE.md + IDEEN_UND_BACKLOG.md bleibt seine uncommittete Änderung — bewusst nicht in
+diesem Commit gemischt.
+
+**Adapter-Stand:** `schaetze` ✅ + `geraetepreis` ✅ live in der App. Stubs: `importPDF` (Drive),
+`recordAdjustment` (Bestätigungs-Flow). Kein Push ohne Freigabe.
+
+---
+
 ### 2026-06-28 · Claude Code (Opus 4.8) — DeviceCatalog + `geraetepreis` live (Schritt 4)
 
 **Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`

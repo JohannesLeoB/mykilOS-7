@@ -30,6 +30,11 @@ public final class AppState {
     public let claudeAuth: ClaudeAuthService
     public let assistantLLM: any AssistantLLMProviding
 
+    // Kalkulations-Engine: live mit Baseline-Ankern (keine externen Daten) +
+    // DeviceCatalog, falls die echte Preisbuch-CSV in Application-Support liegt
+    // (sonst nil-Lookup). Echter Seed-/Korpus-Provider folgt separat.
+    public let kalkulationsEngine: any KalkulationsEngineProviding
+
     // Projekt-Boards on-demand (pro geöffnetem Projekt)
     private var projectBoards: [String: WidgetBoardStore] = [:]
     private var projectNotes:  [String: NoteStore]        = [:]
@@ -79,6 +84,13 @@ public final class AppState {
         let claudeCredentials = KeychainClaudeCredentialsStore()
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
         self.assistantLLM = ClaudeMessagesClient(credentialsStore: claudeCredentials)
+        // Engine live: Baseline-Anker (eingebaut) + DeviceCatalog (lädt die echte
+        // Preisbuch-CSV aus Application-Support, falls vorhanden — sonst nil-Lookup).
+        self.kalkulationsEngine = KalkulationsEngine(
+            provider: BaselineAnchorProvider(),
+            learningStore: LearningStore(),
+            deviceCatalog: DeviceCatalog.loadDefault()
+        )
     }
 
     // MARK: Projekt-Board (lazy, gecached)
