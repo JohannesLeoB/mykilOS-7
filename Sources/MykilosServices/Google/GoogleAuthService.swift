@@ -11,20 +11,28 @@ import MykilosKit
 @Observable
 public final class GoogleAuthService {
     public private(set) var status: GoogleConnectionStatus
+    // Gecachte Identität aus dem letzten erfolgreichen Login (S17).
+    // nil = nie verbunden oder nach disconnect(). Non-fatal: fehlende
+    // userinfo blockiert weder Login noch App-Start.
+    public private(set) var currentUser: GoogleUserInfo?
 
     private let tokenStore: GoogleTokenStoring
     private let redirectServer: GoogleOAuthLoopbackRedirectServer
     private let scopes: [GoogleOAuthScope]
+    private let userInfoClient: GoogleUserInfoFetching
 
     public init(
         tokenStore: GoogleTokenStoring = KeychainGoogleTokenStore(),
         redirectServer: GoogleOAuthLoopbackRedirectServer = .shared,
-        scopes: [GoogleOAuthScope] = GoogleOAuthScope.readOnlyDefaults
+        scopes: [GoogleOAuthScope] = GoogleOAuthScope.readOnlyDefaults,
+        userInfoClient: GoogleUserInfoFetching = GoogleUserInfoClient()
     ) {
         self.tokenStore = tokenStore
         self.redirectServer = redirectServer
         self.scopes = scopes
+        self.userInfoClient = userInfoClient
         self.status = (try? tokenStore.load()) != nil ? .connected : .disconnected
+        self.currentUser = try? tokenStore.loadUserInfo()
     }
 
     public func storedClientID() throws -> String? {
@@ -79,6 +87,13 @@ public final class GoogleAuthService {
                 expiresAt: Date().addingTimeInterval(TimeInterval(response.expiresIn ?? 3600))
             )
             try tokenStore.store(tokens)
+            // Userinfo nicht-fatal: ein Profil-Hiccup darf den bereits
+            // abgeschlossenen Token-Tausch nie zurückrollen.
+            do {
+                let info = try await userInfoClient.fetchUserInfo(accessToken: response.accessToken)
+                try tokenStore.storeUserInfo(info)
+                currentUser = info
+            } catch {}
             status = .connected
         } catch {
             redirectServer.stop()
@@ -89,6 +104,7 @@ public final class GoogleAuthService {
 
     public func disconnect() throws {
         try tokenStore.clear()
+        currentUser = nil
         status = .disconnected
     }
 }

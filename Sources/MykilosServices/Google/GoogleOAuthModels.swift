@@ -10,9 +10,14 @@ public enum GoogleOAuthScope: String, CaseIterable, Codable, Sendable {
     // unter gmail.metadata lehnt Google die Inhaltssuche ab.
     case gmailReadonly          = "https://www.googleapis.com/auth/gmail.readonly"
     case contactsReadonly       = "https://www.googleapis.com/auth/contacts.readonly"
+    // Userinfo-Scopes: Name + E-Mail nach OAuth-Login anzeigen (S17).
+    // Erfordert einmaliges Re-Consent (prompt=consent ist bereits gesetzt).
+    case userinfoEmail          = "https://www.googleapis.com/auth/userinfo.email"
+    case userinfoProfile        = "https://www.googleapis.com/auth/userinfo.profile"
 
     public static let readOnlyDefaults: [GoogleOAuthScope] = [
         .driveMetadataReadonly, .calendarEventsReadonly, .gmailReadonly, .contactsReadonly,
+        .userinfoEmail, .userinfoProfile,
     ]
 }
 

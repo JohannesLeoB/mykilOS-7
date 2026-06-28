@@ -63,18 +63,17 @@ struct SidebarView: View {
         Button(action: onOpenProfile) {
             HStack(spacing: 10) {
                 Circle()
-                    .fill(appState.profile.profile?.isComplete == true ? MykColor.positive.color : MykColor.faint.color)
+                    .fill(footIndicatorColor)
                     .frame(width: 6, height: 6)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(appState.profile.profile?.displayName.isEmpty == false
-                         ? (appState.profile.profile?.displayName ?? "Profil")
-                         : "Profil einrichten")
+                    Text(footDisplayName)
                         .font(.mykSmall)
                         .foregroundStyle(MykColor.inkSoft.color)
                         .lineLimit(1)
-                    Text("Profil & Verbindungen")
+                    Text(footSubtitle)
                         .font(.mykMono(9))
                         .foregroundStyle(MykColor.faint.color)
+                        .lineLimit(1)
                 }
                 Spacer()
             }
@@ -88,6 +87,26 @@ struct SidebarView: View {
         .buttonStyle(.plain)
         .onHover { profileHovered = $0 }
         .padding(.bottom, MykSpace.s3)
+    }
+
+    private var footIndicatorColor: Color {
+        if appState.googleAuth.status == .connected { return MykColor.positive.color }
+        return appState.profile.profile?.isComplete == true ? MykColor.positive.color : MykColor.faint.color
+    }
+
+    private var footDisplayName: String {
+        if let google = appState.currentGoogleUser, !google.displayName.isEmpty {
+            return google.displayName
+        }
+        let manual = appState.profile.profile?.displayName ?? ""
+        return manual.isEmpty ? "Profil einrichten" : manual
+    }
+
+    private var footSubtitle: String {
+        if let google = appState.currentGoogleUser {
+            return google.email
+        }
+        return "Profil & Verbindungen"
     }
 }
 

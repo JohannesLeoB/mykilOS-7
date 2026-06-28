@@ -30,6 +30,40 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-28 · S17 — Security-Härtung + Google Identity (feat/security-haertung)
+
+```
+Branch: feat/security-haertung (von main)
+Build:  ✅ swift build grün
+Tests:  ✅ 209 Tests grün (190 swift-testing + 19 XCTest, +11 neue)
+```
+
+**Aufgabe 1 (No-Op bestätigt):** `AirtableSyncService.swift` existiert in keinem Swift-File/Ref. Guard-Grep leer (Exit 1).
+
+**Aufgabe 3 — baseID-Validierung:**
+- `AirtableError.invalidBaseID(String)` (neu in `AirtableClient.swift`)
+- `AirtableAuthService.connect` validiert: `hasPrefix("app") && (15...22).contains(count)`
+- 4 neue Tests in `AirtableAuthServiceTests.swift`
+- Bestehende Tests: `"appXYZ"` → `"appuVMh3KDfKw4OoQ"` (zu kurz für Validierung)
+
+**Aufgabe 4 — PAT-Cleanup:** Dokumentiert in `docs/PAT_CLEANUP_S17.md`.
+Manueller Schritt ausstehend (Johannes): SCHATZ-Workspace + Artikel-DB-Write aus PAT entfernen.
+Mastermind-Schreibrechte bleiben erhalten (Kalkulations-Port schreibt dort).
+
+**Aufgabe 2 — Google Identity:**
+- `GoogleUserInfo(email, displayName)` in `MykilosKit/Domain/`
+- `GoogleOAuthScope.readOnlyDefaults` + `userinfoEmail` + `userinfoProfile`
+- `GoogleTokenStoring`-Protokoll + `KeychainGoogleTokenStore` um userInfo erweitert
+- `GoogleUserInfoClient.swift` (neu): `GoogleHTTPClient`-Protokoll, testbar via FakeHTTP
+- `GoogleAuthService`: `currentUser`, userInfoClient injizierbar, Hook nach Token-Tausch (nicht-fatal)
+- `AppState.currentGoogleUser` (computed, forwarding)
+- `SidebarView` navFoot zeigt Google-Name + E-Mail wenn verbunden
+- 7 neue Tests in `GoogleUserInfoClientTests.swift`
+
+**Offen:** Re-Consent live verifizieren (Johannes neu verbinden für neue Scopes).
+
+---
+
 ## 2026-06-28 · S10 Learning — Tisch-Session: Architektur-Klärungen + S17 gestartet
 
 ```

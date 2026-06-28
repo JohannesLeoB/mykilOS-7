@@ -7,6 +7,7 @@ public enum AirtableError: Error, Sendable, Equatable {
     case invalidResponse
     case httpError(Int)
     case decodingFailed
+    case invalidBaseID(String)
 }
 
 // MARK: - AirtableFetching

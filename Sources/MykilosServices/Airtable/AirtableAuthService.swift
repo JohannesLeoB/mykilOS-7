@@ -82,6 +82,11 @@ public final class AirtableAuthService {
             status = .error("PAT oder Base-ID fehlt")
             throw AirtableError.notConnected
         }
+        guard trimmedBase.hasPrefix("app"), (15...22).contains(trimmedBase.count) else {
+            let msg = "Base-ID muss mit \u{201E}app\u{201C} beginnen (z.\u{202F}B. appuVMh3KDfKw4OoQ) \u{2013} vermutlich wurde der PAT ins Base-ID-Feld eingef\u{FC}gt."
+            status = .error(msg)
+            throw AirtableError.invalidBaseID(trimmedBase)
+        }
         do {
             try credentialsStore.store(AirtableCredentials(pat: trimmedPAT, baseID: trimmedBase))
             status = .connected

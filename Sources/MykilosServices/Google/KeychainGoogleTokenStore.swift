@@ -1,4 +1,5 @@
 import Foundation
+import MykilosKit
 
 // MARK: - GoogleTokenStoring
 // Implementierungen dürfen Token-WERTE nie loggen, drucken oder anderswo
@@ -14,6 +15,9 @@ public protocol GoogleTokenStoring: Sendable {
     // da reine "Installed App"-Clients ohne Secret funktionieren.
     func storeClientSecret(_ clientSecret: String) throws
     func loadClientSecret() throws -> String?
+    // Gecachte Nutzeridentität nach OAuth-Login (S17).
+    func storeUserInfo(_ userInfo: GoogleUserInfo) throws
+    func loadUserInfo() throws -> GoogleUserInfo?
 }
 
 // MARK: - KeychainGoogleTokenStore
@@ -22,6 +26,7 @@ public struct KeychainGoogleTokenStore: GoogleTokenStoring {
     private static let tokensAccount = "tokens"
     private static let clientIDAccount = "clientID"
     private static let clientSecretAccount = "clientSecret"
+    private static let userInfoAccount = "userInfo"
 
     private let keychain = KeychainStore()
     private let encoder: JSONEncoder
@@ -58,6 +63,7 @@ public struct KeychainGoogleTokenStore: GoogleTokenStoring {
 
     public func clear() throws {
         try keychain.delete(service: Self.service, account: Self.tokensAccount)
+        try keychain.delete(service: Self.service, account: Self.userInfoAccount)
     }
 
     public func storeClientID(_ clientID: String) throws {
@@ -74,5 +80,16 @@ public struct KeychainGoogleTokenStore: GoogleTokenStoring {
 
     public func loadClientSecret() throws -> String? {
         try keychain.load(service: Self.service, account: Self.clientSecretAccount)
+    }
+
+    public func storeUserInfo(_ userInfo: GoogleUserInfo) throws {
+        let data = try JSONEncoder().encode(userInfo)
+        guard let json = String(data: data, encoding: .utf8) else { throw KeychainStoreError.encodingFailed }
+        try keychain.store(json, service: Self.service, account: Self.userInfoAccount)
+    }
+
+    public func loadUserInfo() throws -> GoogleUserInfo? {
+        guard let json = try keychain.load(service: Self.service, account: Self.userInfoAccount) else { return nil }
+        return try JSONDecoder().decode(GoogleUserInfo.self, from: Data(json.utf8))
     }
 }

@@ -43,6 +43,10 @@ public final class AppState {
     // werden nie gemeldet).
     private var projectOfferWatchers: [String: DriveOfferWatcher] = [:]
 
+    // Google-Identität (S17): forwarding computed property damit SidebarView
+    // und andere Views direkt darauf zugreifen können ohne googleAuth zu kennen.
+    public var currentGoogleUser: GoogleUserInfo? { googleAuth.currentUser }
+
     // MARK: Navigations-Brücke
     // ContentView besitzt `module` (Sidebar-Auswahl), ProjectGalleryView besitzt
     // `selectedProject` (welches Projekt offen ist) — beide bewusst reine
