@@ -110,6 +110,116 @@ ist durch die S16-Kette subsumiert → geschlossen.
 
 ---
 
+### 2026-06-28 · Claude Sonnet 4.6 (angry-benz-2df776) — P0 Fix-Versuch 1 ABGEBROCHEN
+
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Branch:** `main` · HEAD: `dd235ab` (keine neuen Commits, alle Änderungen ungestaged)
+**Build:** ✅ (swift build + build_and_run.sh — alle uncommitted Changes eingebaut)
+**Tests:** nicht ausgeführt
+**Status:** 🚨 ABGEBROCHEN — Live-Test negativ
+
+**Änderungen (ungestaged, nicht committet):**
+- `ProjectGalleryView.swift`: `ZStack(alignment: .topLeading)` + `ProjectDetailView.frame(maxWidth: .infinity, maxHeight: .infinity)`
+- `ProjectDetailView.swift`: `Color.clear`-Filler aus Grid entfernt + Grid bekommt `.frame(maxWidth: .infinity, alignment: .topLeading)`
+- `CLAUDE.md`, `IDEEN_UND_BACKLOG.md`, `EREIGNISPROTOKOLL.md`, `TEAM_CHARTER.md`: P0-Dokumentation + Team-Rufname
+- `MykilOS6App.swift` (andere Session): `detailPane` → GeometryReader + `.frame(width: proxy.size.width, ...)` + `.contentShape(.interaction, Rectangle())`
+
+**Live-Test-Ergebnis:** Tab-Leiste zeigte nur `Angebote | Timeline | Material` — Tabs 1–3 verdeckt hinter Sidebar. Sidebar weiterhin nicht anklickbar. Inhalt ca. 1 Sidebar-Breite nach links verschoben. Kein Fortschritt gegenüber Vorstand.
+
+**Verbleibende Root-Cause-Hypothese (für Codex):**
+`ZStack(alignment: .bottom)` + `VStack(spacing: 0)` (ohne alignment, = center) in `ProjectDetailView.body` Zeile 25–26. Fix: beide auf `.bottomLeading` / `alignment: .leading` setzen. Details in `HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md` — Abschnitt „CRASH-REPORT: Gescheiterter Fix-Versuch 1".
+
+---
+
+### 2026-06-28 · Codex + Johannes — P0 bestätigt: Übersicht blockiert sichtbare Sidebar
+
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Branch:** `main` · HEAD bei Untersuchung: `dd235ab`
+**Build:** nicht neu ausgeführt (forensische Dokumentation, keine Codeänderung)
+**Tests:** 192 laut Commit `dd235ab`, in dieser Dokumentationsrunde nicht neu ausgeführt
+
+**Status: 🚨 OFFEN · P0 · RIESIGER PRODUKTBUG.**
+
+Johannes hat den Fehler mit fünf Live-Screenshots vom 2026-06-28 um
+09:38/09:39 eindeutig belegt:
+
+- `Bildschirmfoto 2026-06-28 um 09.38.54.png` — Tab „Angebote“, Sidebar und
+  Detailinhalt korrekt.
+- `Bildschirmfoto 2026-06-28 um 09.38.59.png` — Tab „Timeline“, Sidebar und
+  Detailinhalt korrekt.
+- `Bildschirmfoto 2026-06-28 um 09.39.02.png` — Tab „Material“, Sidebar und
+  Detailinhalt korrekt.
+- `Bildschirmfoto 2026-06-28 um 09.39.09.png` und `09.39.12.png` — Tab
+  „Übersicht“: Hero-/Tab-Inhalte links abgeschnitten, Sidebar sichtbar, aber
+  nicht anklickbar.
+
+**Forensischer Schluss:**
+
+Die Sidebar wird weder logisch ausgeblendet noch verliert sie ihren
+Navigations-State. Ausschließlich die Übersicht erzeugt über
+`ProjectWidgetBoardView` eine überbreite Detail-/Hit-Test-Fläche. Diese Fläche
+ragt unsichtbar über die Sidebar und fängt deren Klicks ab. Dass der Hero-Titel
+`SCHMIDT` nur noch als `DT` und `Assistent` nur noch als `sistent` sichtbar ist,
+belegt die horizontale Verschiebung des gesamten Detailinhalts.
+
+Der tab-spezifische Größen-Treiber ist das SwiftUI-`Grid` der Übersicht mit:
+
+```swift
+if row.needsFiller {
+    Color.clear.gridCellColumns(row.fillerSpan)
+}
+```
+
+`Color.clear` ist im Grid eine flexible Zelle. Zusammen mit intrinsisch breiten,
+asynchron wechselnden Widget-Inhalten kann das Board breiter als das rechte
+Content-Pane werden. Der in `dd235ab` ergänzte `.clipped()`-Schutz maskiert die
+überstehende Darstellung, begrenzt aber nicht zuverlässig die Interaktionsfläche.
+
+**Harter Fixvertrag:**
+
+1. `Color.clear`-Filler entfernen oder mindestens horizontal von der
+   Grid-Größenbestimmung ausschließen.
+2. Widget-Board-Breite explizit aus der verfügbaren Content-Pane-Breite ableiten;
+   Widget-Inhalte dürfen diese niemals vergrößern.
+3. Interaktionsfläche des rechten Panes ausdrücklich auf dessen sichtbaren Frame
+   begrenzen; Sidebar muss in der Trefferreihenfolge geschützt bleiben.
+4. `WindowGuard`, `.clipped()`, `.fixedSize` und Unit-Tests gelten allein nicht
+   als Abschlussbeweis.
+5. Live-Abnahme: Übersicht öffnen, unmittelbar sowie nach 300/800/1800 ms alle
+   Sidebar-Ziele anklicken; Hero `SCHMIDT`, Back-Button und komplette Tab-Leiste
+   müssen sichtbar bleiben.
+
+**Dauerhafte Regel:** Dieser Eintrag darf erst auf ✅ gesetzt werden, wenn die
+Live-Abnahme dokumentiert ist. „Build grün“ oder „192 Tests grün“ schließen den
+P0 nicht.
+
+**Handoff:** [HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md](handoffs/HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md)
+
+---
+
+### 2026-06-28 · S10 Learning — S20 Sprint-Vorbereitung (keen-williamson-ddb354)
+
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`  
+**Branch:** `claude/elegant-nobel-ee5ece` (Zielbranch für S20)  
+**Build:** kein Build (Learning-Session)
+
+**Root Causes aufgedeckt und dokumentiert:**
+- Keychain-Prompts (18×): ACL gebunden an Binary-Hash des jeweiligen Builds
+- Board-Layout-Bug (AssistantWidget Pos 0): alte GRDB-Daten, kein Migration-Reset
+- Drive permissionRequired: S17 hat neue userinfo-Scopes hinzugefügt → Re-Consent nötig
+- Airtable-Sync still: `baseID`-Feld im Keychain enthält zweiten PAT statt `appuVMh3KDfKw4OoQ`
+- Airtable-Writes (Eingehende-Angebote, Kalkulations-Positionen): nie gebaut
+
+**Was gemacht wurde:**
+- `AssistantGrounding.swift` Ton-Fix: Emojis, Floskeln, KI-Selbstbezug unterdrückt
+- `docs/handoffs/STARTPROMPT_S20.md` vollständig geschrieben (8 Aufgaben, Reihenfolge, NO-GOs)
+- `docs/erfahrungstraeger/S10_Learning_S20_Prep.md` verfasst
+
+**Offen (S20):** Keychain-ACL-Migration, Board-Layout-Reset, Zeichnungen-Tab,
+Timeline-Tab, Airtable `createRecord`, BaseID-Fehleranzeige.
+
+---
+
 ### 2026-06-28 · Claude Code (Opus 4.8, S16) — Lern-Loop sichtbar: Kalibrierungs-Kandidaten + Promote-Flow (Schritt 8)
 
 **Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`

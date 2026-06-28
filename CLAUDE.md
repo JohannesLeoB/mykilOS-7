@@ -79,6 +79,37 @@ Notizen, Clockodo, Kontakte, Bilder, Angebote).
 
 ## Wo wir stehen
 
+## 🚨 P0-HARD-GATE: Projekt-„Übersicht“ überlagert die Sidebar
+
+**Status: OFFEN · RIESIGER PRODUKTBUG · NICHT als behoben melden.**
+
+Beim Öffnen eines Projekts funktioniert die Sidebar in den Tabs „Angebote“,
+„Timeline“ und „Material“ normal. Sobald der Tab **„Übersicht“** aktiv ist,
+verschiebt beziehungsweise verbreitert das Widget-Board die gesamte
+`ProjectDetailView` nach links:
+
+- Hero-Titel und Tab-Leiste werden am linken Rand abgeschnitten
+  (`SCHMIDT` erscheint nur noch als `DT`, `Assistent` nur noch als `sistent`).
+- Die Sidebar bleibt sichtbar, ihre Buttons reagieren aber nicht mehr.
+- Das ist **kein Sidebar-Ausblendzustand**. Eine unsichtbare, überbreite
+  Hit-Test-Fläche der Übersicht liegt über der Sidebar und fängt Klicks ab.
+- `.clipped()` begrenzt nur die sichtbare Ausgabe; es ist kein ausreichender
+  Hit-Testing-/Layout-Fix.
+
+Der tab-spezifische Trigger liegt in `ProjectWidgetBoardView`: Nur die Übersicht
+verwendet das intrinsisch vermessene SwiftUI-`Grid` mit flexiblen, asynchron
+ladenden Widgets und einem `Color.clear`-Filler. Der Commit `dd235ab` schützt
+zwar die sichtbare Sidebar-Breite, der Fehler ist durch die Live-Screenshots
+vom 2026-06-28 um 09:38/09:39 jedoch **nachweislich nicht behoben**.
+
+**Harte Abschlussbedingung:** Der P0 darf erst geschlossen werden, wenn bei
+aktiver Übersicht Hero und Tabs vollständig sichtbar sind und alle
+Sidebar-Einträge vor sowie nach den asynchronen Widget-Ladevorgängen live
+anklickbar bleiben. Build/Unit-Tests allein reichen nicht.
+
+Vollständiger Befund und Fixvertrag:
+[HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md](docs/handoffs/HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md)
+
 **🟢 Release 6.3.0 — App-Vollständigkeit + Phase 3 CalendarActionCard + BrandsView-Fix (Branch `sprint/shared-drive-widget-oauth`).**
 Alle ursprünglichen „in Vorbereitung"-Oberflächen sind live. **Sidebar:** Angebote
 (`GlobalOffersView`) und Marken & Daten (`BrandsView`, Integrations-Dashboard).

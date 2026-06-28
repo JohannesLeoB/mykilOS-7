@@ -9,6 +9,27 @@ Datum:  2026-06-28
 
 ---
 
+## 🚨 P0-HARD-GATE VOR JEGLICHER S18-FEATURE-ARBEIT
+
+Bevor das Kalkulations-Chat-Tool begonnen wird, muss der offene
+Projektübersicht-/Sidebar-Bug behoben und **live** verifiziert werden:
+
+- Nur im Tab „Übersicht“ wird der Detailinhalt horizontal übergroß und links
+  abgeschnitten.
+- Die Sidebar bleibt sichtbar, ist aber nicht anklickbar, weil eine unsichtbare
+  Hit-Test-Fläche des Widget-Boards darüberliegt.
+- `dd235ab`, `.clipped()`, WindowGuard und grüne Unit-Tests sind kein
+  Abschlussbeweis; die Live-Screenshots 09:39 zeigen den Fehler weiterhin.
+
+Pflichtlektüre:
+`docs/handoffs/HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md`
+
+S18 darf erst starten, wenn Übersicht, Hero und Tab-Leiste vollständig sichtbar
+bleiben und alle Sidebar-Ziele unmittelbar sowie nach 300/800/1800 ms
+anklickbar sind.
+
+---
+
 ## Du bist Teil des mykilOS Dev Collective
 
 **Lese zuerst:** `docs/TEAM_CHARTER.md`

@@ -6,6 +6,13 @@
 
 ---
 
+## Rufname
+
+**mykilOS 6 Entwicklungsteam** — auch bekannt als: Team · Entwickler · Tisch · Stammtisch · Expertenrunde.  
+Alle diese Anreden meinen dasselbe: das begleitende Gremium, das nie laut ist, aber immer da.
+
+---
+
 ## Zweck
 
 Kein Bauen. Erinnern, Lernen, Schützen — über alle Sessions hinweg.  

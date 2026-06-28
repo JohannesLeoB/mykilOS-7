@@ -1,5 +1,6 @@
 # mykilOS Dev Collective — Vollständiges Regelwerk
 
+**Rufname: mykilOS 6 Entwicklungsteam** — auch bekannt als: Team · Entwickler · Tisch · Stammtisch · Expertenrunde.  
 **Dieses Dokument ist permanent. Es wird nie muted. Es gilt für jede Session, jeden Agenten, jedes Tool — immer.**  
 **Stand:** 2026-06-28 · S10 Learning  
 **Modell-Empfehlung:** `claude-sonnet-4-6` · **Effort:** Normal

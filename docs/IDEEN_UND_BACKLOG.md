@@ -6,6 +6,13 @@ entschieden, geplant oder umgesetzt ist — unabhängig davon, in welcher
 Session die Idee entstanden ist. Wird bei jeder Session zuerst gelesen und
 am Ende aktualisiert, damit nichts in einzelnen Handoffs verloren geht.
 
+> **⚠️ MUTED — Hinweis für alle Sessions:**
+> Dieses Dokument ist standardmäßig stumm. Lesen ist erlaubt, aber keine Session
+> darf Einträge hieraus aufgreifen, priorisieren oder umsetzen — außer Johannes
+> verweist explizit darauf ("schau ins IdeenLog", "Punkt X aus dem Backlog").
+> Dieses Dokument wächst kontinuierlich durch verschiedene Sessions und
+> Koordinations-Runden. Mehr Einträge als erwartet = normal, kein Handlungsbedarf.
+
 **Format:** Jeder Eintrag hat Status, Quelle (wann/wodurch entstanden) und
 Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 - 💡 **Idee** — nur angedacht, noch nicht bewertet/entschieden
@@ -13,6 +20,44 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 - 🚧 **Begonnen** — teilweise umgesetzt
 - ✅ **Erledigt** — umgesetzt, bleibt hier als Historie mit Verweis stehen
 - ❌ **Verworfen** — bewusst nicht weiterverfolgt, mit Begründung
+
+---
+
+## 🚨 P0-BLOCKER — Projektübersicht überlagert und blockiert die Sidebar
+
+### 🚨 OFFEN: Unsichtbare Overview-Hit-Test-Fläche liegt über der Sidebar
+**Quelle:** Live-Screenshots von Johannes, 2026-06-28 um 09:38/09:39;
+forensische Auswertung durch Codex.
+**Priorität:** P0 — vor S18/S20-Feature-Arbeit beheben und live abnehmen.
+**Handoff:** [HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md](handoffs/HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md)
+
+**Reproduktion:**
+1. Projekt öffnen.
+2. „Angebote“, „Timeline“ oder „Material“ aktivieren: Sidebar funktioniert.
+3. „Übersicht“ aktivieren: Hero-/Tab-Inhalte werden links abgeschnitten; Sidebar
+   bleibt sichtbar, nimmt aber keine Klicks mehr an.
+
+**Kein Sidebar-Toggle:** Die Sidebar wird nicht absichtlich ausgeblendet. Das
+Overview-Widget-Board wird horizontal übergroß; seine unsichtbare
+Interaktionsfläche überlagert die Sidebar. Der Fehler ist deshalb gleichzeitig
+Layout-, Navigation- und Accessibility-Blocker.
+
+**Root Cause:** `ProjectWidgetBoardView` verwendet als einziger Tab ein
+intrinsisch vermessenes SwiftUI-`Grid` mit flexiblen/asynchron wechselnden
+Widgets und einem `Color.clear`-Filler. `.clipped()` versteckt Überstand nur
+optisch und löst das Hit-Testing nicht.
+
+**Nicht als Fix akzeptieren:**
+- nur `.clipped()`, `.fixedSize`, `.layoutPriority` oder `WindowGuard`
+- nur Build-/Unit-Test-Erfolg
+- Prüfung ausschließlich in anderen Projekttabs
+
+**Definition of Done:**
+- Übersicht, Hero und alle Tabs bleiben vollständig innerhalb des rechten Panes.
+- Sidebar bleibt vor, während und nach allen Widget-Ladevorgängen anklickbar.
+- Prüfung unmittelbar und nach 300/800/1800 ms.
+- Mehrere Projekte und Fenstergrößen live geprüft.
+- Ergebnis mit Screenshots im Ereignisprotokoll/Handoff dokumentiert.
 
 ---
 
@@ -171,6 +216,38 @@ Clockodo wirklich nur "vorbereiten" bleibt statt selbst zu buchen).
 
 ---
 
+## Airtable-Infrastruktur
+
+### ✅ Workspace-Plan: Team (bezahlt) — kein Handlungsbedarf
+**Quelle:** Live-Check 2026-06-28 (Airtable-Bereinigungssession).
+**Status:** "Mein erster Workspace" läuft auf **Team-Plan (monatlich)** mit AmEx ****3007.
+Limits: 50.000 Records/Base (aktuell 13.444), 20 GB Anhänge, 100.000 API-Calls/Monat.
+Kein Verschieben der Mastermind-Base nötig. Kein Upgrade nötig.
+
+### ✅ Zulieferpreise (3.383 Beobachtungen): lokal in SQLite — nicht in Airtable
+**Quelle:** Expertise-Entscheidung 2026-06-28 (Airtable-Bereinigungssession).
+**Entscheidung:** Die mykilO$$-Rohbeobachtungen bleiben lokal. Die V2-Swift-
+Destillationspipeline verarbeitet sie in `learning.sqlite` → App liest daraus.
+Die existierende `Preis-Beobachtungen`-Tabelle in Mastermind bleibt als Archiv,
+ist aber kein operativer Datenpfad.
+**Grund:** Rohdaten für ML-Pipeline gehören nicht in Airtable. 3.383 Records × Sync-
+Logik × kein Edit-Bedarf = unnötige Komplexität. SQLite ist direkt und schnell.
+
+### ✅ Stundensätze + Bases-Struktur entschieden
+**Quelle:** Airtable-Bereinigungssession 2026-06-28.
+**Stundensätze:** Airtable als Master (`Clockodo-Leistungen.Stundensatz`), GRDB als Cache.
+App sync't beim Start, Kalkulationsmodul liest lokal. Keine doppelte Pflege.
+**Bases:** 1 Base bleibt — Mastermind `appuVMh3KDfKw4OoQ`. Kein Split geplant.
+Alte Base `appkPzoEiI5eSMkNK` ist stillgelegt — nie anfassen.
+
+### 📋 Stundensätze manuell eintragen (Johannes-Aktion)
+**Quelle:** PARTNER_APP_SCHEMA.md offener Punkt, bestätigt 2026-06-28.
+**Problem:** `Clockodo-Leistungen.Stundensatz (€/h)` ist in Airtable noch leer (8 Leistungsarten).
+**Aktion:** Johannes trägt Büro-Stundensätze direkt in Airtable ein, bevor
+das Kalkulationsmodul live geht. Bürogeheimnis, nicht in Code/Docs.
+
+---
+
 ## Architektur & Datenfluss
 
 ### 📋 ClickUp als Quelle für `ProjectKind`
@@ -293,6 +370,70 @@ aktuellen Connector-Toolset nicht (nur Schema-Tools). Workaround per
 Personal-Access-Token + lokalem `curl`-Skript funktioniert, ist aber kein
 dauerhaft eingebauter App-Mechanismus. Falls der Connector das später
 nachrüstet: Workaround obsolet, aber unkritisch.
+
+---
+
+## Security & Onboarding
+
+### 📋 User-Identität nach Google-Login
+**Quelle:** Team-Review 2026-06-28 (S10 Learning Session).
+**Problem:** Nach erfolgreichem Google-Login weiß die App nicht wer eingeloggt ist.
+Kein Name, keine E-Mail, kein Avatar sichtbar. Nutzer kann nicht erkennen ob er mit
+dem richtigen Account verbunden ist — Onboarding-Killer und latentes Sicherheitsproblem.
+**Plan (Session A aus MASTER_HANDOFF_CODEX.md):**
+`GoogleAuthService` → nach Token-Tausch `GET /oauth2/v2/userinfo` → `GoogleUserInfo(email, displayName)`
+→ Keychain-Cache → `AppState.currentGoogleUser` → Anzeige in `SidebarView` unten.
+Test: `GoogleUserInfoTests` — JSON-Parsing ohne Netzwerk.
+
+### 🔴 Keychain-Bug: `baseID` enthält PAT statt Base-ID
+**Quelle:** Bekannt seit Post-Akt-5, bestätigt 2026-06-28.
+**Problem:** Im Keychain-Feld `baseID` (Service `com.mykilos6.airtable`) steht
+fälschlicherweise ein zweites PAT-Token statt der Base-ID `appuVMh3KDfKw4OoQ`.
+Airtable-Sync schlägt still fehl — kein Nutzer kann das selbst debuggen.
+**Fix:** Validierung beim Speichern in Settings (`baseID` muss mit `app` beginnen) +
+klare Fehlermeldung. Sofortmaßnahme: manuell in App-Einstellungen → Airtable
+Base-ID-Feld → `appuVMh3KDfKw4OoQ` eintragen.
+
+### 📋 `AirtableSyncService.swift` löschen
+**Quelle:** Code-Audit S10/S12 2026-06-28.
+**Problem:** `Sources/MykilosServices/Airtable/AirtableSyncService.swift` enthält
+drei Regelverstöße: ENV-Secrets, falsche Base `appkPzoEiI5eSMkNK`, `DispatchSemaphore`.
+Datei ist als obsolet markiert, aber noch nicht entfernt.
+**Plan:** Datei löschen, sicherstellen dass nichts darauf referenziert, Build grün.
+
+### 💡 Onboarding-Flow für neue Nutzer
+**Quelle:** Team-Review 2026-06-28 (S10 Learning Session).
+**Problem:** Neuer Nutzer öffnet die App → sieht Demo-Projekte → weiß nicht was er
+verbinden soll oder in welcher Reihenfolge. Kein geführter Einstieg.
+**Idee:** "Erste Schritte"-Checklist in Settings oder Launch-Screen beim ersten Start:
+1. Google-Account verbinden → 2. Airtable-Base eintragen → 3. Clockodo-Key (optional)
+→ 4. Claude API-Key (optional). Fortschrittsanzeige pro Schritt.
+
+### 💡 SQLite-Backup / Archiv-Log
+**Quelle:** Team-Review 2026-06-28.
+**Problem:** GRDB-Datenbank liegt in `Application Support` — kein automatisches Backup.
+Wenn jemand die App löscht oder die DB korrupt wird, ist der gesamte Audit-Log weg.
+**Idee:** Täglicher automatischer SQLite-Snapshot nach
+`~/Library/Application Support/mykilOS/Backups/YYYY-MM-DD.sqlite`.
+Maximal 30 Snapshots behalten (älteste löschen). "Backup wiederherstellen"-Option in Settings.
+
+### 💡 Crash-Reporting
+**Quelle:** Team-Review 2026-06-28.
+**Problem:** Kein Crash-Reporting-System vorhanden. Abstürze werden nur bekannt wenn
+der Nutzer sie meldet.
+**Idee:** Optionen abwiegen — macOS-native (`NSApplication.shared.reportException` +
+lokales Crash-Log in `Application Support`) vs. leichtgewichtiger externer Dienst
+(Sentry o.ä.). Wichtig: local-first-Prinzip — keine Daten nach außen ohne explizite
+Nutzer-Zustimmung. Mindestlösung: Crash-Log lokal schreiben + "Fehlerprotokoll zeigen"-
+Button in Settings.
+
+### 💡 Cache-Management
+**Quelle:** Team-Review 2026-06-28.
+**Problem:** Google/Airtable-Daten werden in GRDB gecacht, aber kein TTL definiert,
+kein "Cache leeren"-Button in Settings. Kein explizites Cache-Management.
+**Idee:** "Cache leeren"-Option in Settings pro Integration (Google / Airtable).
+TTL pro Datentyp definieren (z.B. Drive-Dateiliste: 5 Min, Kalender: 15 Min,
+Kontakte: 1 Stunde). Offline-Indikator wenn Cache veraltet ist.
 
 ---
 
