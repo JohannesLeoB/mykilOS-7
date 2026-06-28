@@ -64,20 +64,28 @@ enum AppModule: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - FocusedValues — Navigation
+// MARK: - FocusedValues — Navigation + Sidebar
 private struct ActiveModuleKey: FocusedValueKey {
     typealias Value = Binding<AppModule>
+}
+private struct SidebarCollapsedKey: FocusedValueKey {
+    typealias Value = Binding<Bool>
 }
 extension FocusedValues {
     var activeModule: Binding<AppModule>? {
         get { self[ActiveModuleKey.self] }
         set { self[ActiveModuleKey.self] = newValue }
     }
+    var sidebarCollapsed: Binding<Bool>? {
+        get { self[SidebarCollapsedKey.self] }
+        set { self[SidebarCollapsedKey.self] = newValue }
+    }
 }
 
 // MARK: - ContentView
 struct ContentView: View {
     @State private var module: AppModule = .today
+    @AppStorage("ui.sidebarCollapsed") private var sidebarCollapsed = false
     @Environment(AppState.self) private var appState
     @AppStorage("onboarding.hasCompleted") private var hasCompleted = false
     @State private var showOnboarding = false
@@ -104,6 +112,7 @@ struct ContentView: View {
             }
         }
         .focusedValue(\.activeModule, $module)
+        .focusedValue(\.sidebarCollapsed, $sidebarCollapsed)
         // Navigations-Brücke (siehe AppState.pendingProjectSelection): sobald ein
         // anderes Modul "öffne Projekt X" anfordert, wechselt hier nur das Modul
         // — das tatsächliche Öffnen übernimmt ProjectGalleryView selbst.
@@ -115,37 +124,47 @@ struct ContentView: View {
 
     private var shell: some View {
         HStack(spacing: 0) {
-            SidebarView(selection: $module, onOpenProfile: {
-                // Profil vollständig → direkt zu Einstellungen; sonst Wizard.
-                if appState.profile.profile?.isComplete == true { module = .settings }
-                else { showOnboarding = true }
-            })
-            // fixedSize(horizontal:) verhindert, dass der HStack die Sidebar
-            // komprimiert, wenn die Detail-Pane eine große intrinsische Breite
-            // propagiert. layoutPriority(1) stellt sicher, dass die Sidebar
-            // zuerst ihren Platz einfordert.
-            .fixedSize(horizontal: true, vertical: false)
-            .layoutPriority(1)
-            // Die Sidebar bleibt immer die oberste Interaktionsschicht. Selbst
-            // wenn ein Kind der Detail-Pane vorübergehend über seine Bounds
-            // hinaus layoutet, darf dessen Hit-Test-Fläche keine Sidebar-Klicks
-            // abfangen.
-            .zIndex(1)
-            Divider()
-                .overlay(MykColor.line.color)
+            if !sidebarCollapsed {
+                SidebarView(selection: $module, onOpenProfile: {
+                    if appState.profile.profile?.isComplete == true { module = .settings }
+                    else { showOnboarding = true }
+                })
+                .fixedSize(horizontal: true, vertical: false)
+                .layoutPriority(1)
                 .zIndex(1)
+                .transition(.move(edge: .leading))
+                Divider()
+                    .overlay(MykColor.line.color)
+                    .zIndex(1)
+                    .transition(.move(edge: .leading))
+            }
             detailPane
+                .overlay(alignment: .topLeading) { sidebarToggleButton }
         }
         .background(MykColor.paper.color)
-        // Nur MIN/MAX, KEIN idealWidth/idealHeight: der Mindestrahmen gibt der
-        // NSHostingView eine feste, endliche untere Schranke (verhindert die
-        // Fenster-Extrema-Endlosschleife → Crash). Ein idealWidth ließ das
-        // Fenster bei jeder Navigation Richtung Ideal „springen" und aus dem Bild
-        // driften — darum bewusst weggelassen. Die Startgröße kommt aus
-        // .defaultSize(1340×860), die laufende Größe behält der Nutzer.
-        .frame(minWidth: 1100, maxWidth: .infinity,
+        // minWidth schrumpft wenn Sidebar eingeklappt (212 px weniger).
+        .frame(minWidth: sidebarCollapsed ? 888 : 1100,
+               maxWidth: .infinity,
                minHeight: 720, maxHeight: .infinity)
+        .animation(.easeInOut(duration: 0.22), value: sidebarCollapsed)
         .disabled(isOnboardingUp)
+    }
+
+    private var sidebarToggleButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.22)) { sidebarCollapsed.toggle() }
+        } label: {
+            Image(systemName: sidebarCollapsed ? "sidebar.left" : "sidebar.left")
+                .symbolVariant(sidebarCollapsed ? .none : .slash)
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(MykColor.faint.color)
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, MykSpace.s5)
+        .padding(.leading, MykSpace.s5)
+        .help(sidebarCollapsed ? "Sidebar einblenden (⌘\\)" : "Sidebar ausblenden (⌘\\)")
     }
 
     /// Harte Layout-Grenze zwischen Sidebar und Modulinhalt.
@@ -314,7 +333,8 @@ struct AboutMykilOSView: View {
 
 struct AppCommands: Commands {
     @Environment(\.openWindow) private var openWindow
-    @FocusedBinding(\.activeModule) private var activeModule
+    @FocusedBinding(\.activeModule)           private var activeModule
+    @AppStorage("ui.sidebarCollapsed") private var sidebarCollapsed = false
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {}
@@ -325,6 +345,11 @@ struct AppCommands: Commands {
             .keyboardShortcut(",", modifiers: .command)
         }
         CommandMenu("Navigation") {
+            Button(sidebarCollapsed ? "Sidebar einblenden" : "Sidebar ausblenden") {
+                withAnimation(.easeInOut(duration: 0.22)) { sidebarCollapsed.toggle() }
+            }
+            .keyboardShortcut("s", modifiers: [.command, .shift])
+            Divider()
             Button("Heute")           { activeModule = .today }
                 .keyboardShortcut("1", modifiers: .command)
             Button("Projekte")        { activeModule = .projects }
