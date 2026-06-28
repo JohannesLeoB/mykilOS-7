@@ -61,7 +61,7 @@ NICHT IN DIESER SESSION:
 | Feld          | Wert                                         |
 |---------------|----------------------------------------------|
 | **App-Modell** | claude-sonnet-4-6 (Anthropic Messages API)  |
-| **App-Version** | 6.3.0                                       |
+| **App-Version** | 6.4.0 (Build 4)                             |
 | **Level**      | Beta-bereit                                 |
 | **UI-Status**  | Stabil + Fallback-Tag gesetzt               |
 | **Daten**      | Seed-Daten (JSON) — Airtable-Sync ausstehend |

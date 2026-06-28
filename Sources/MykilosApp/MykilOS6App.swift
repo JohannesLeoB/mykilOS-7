@@ -170,7 +170,7 @@ struct ContentView: View {
         .buttonStyle(.plain)
         .padding(.top, MykSpace.s5)
         .padding(.leading, MykSpace.s5)
-        .help(sidebarCollapsed ? "Sidebar einblenden (⌘\\)" : "Sidebar ausblenden (⌘\\)")
+        .help(sidebarCollapsed ? "Sidebar einblenden (⌘⇧S)" : "Sidebar ausblenden (⌘⇧S)")
     }
 
     /// Harte Layout-Grenze zwischen Sidebar und Modulinhalt.
@@ -314,7 +314,7 @@ struct AboutMykilOSView: View {
                     Text("mykilOS 6")
                         .font(.mykDisplay)
                         .foregroundStyle(MykColor.ink.color)
-                    Text("Version 6.3.0 · CalendarAction + Vollständigkeit")
+                    Text("Version 6.4.0 · Sidebar CI + Brand Orange")
                         .font(.mykMono(11))
                         .foregroundStyle(MykColor.muted.color)
                 }
