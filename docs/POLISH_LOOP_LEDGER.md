@@ -46,7 +46,7 @@ Reihenfolge = Priorität. Status: `pending` | `done` | `blocked`.
 | ID | Titel | Status | Commit | Tests | Notiz |
 |----|-------|--------|--------|-------|-------|
 | L16 | Drive-Scope + downloadFileContent | done | e0f0df3 | 233 | thumbnailLink + downloadContent + driveReadonly (inaktiv) + 3 Tests |
-| L17 | Preview-Bausteine (FilePreviewView / Renderer) | pending | — | — | |
+| L17 | Preview-Bausteine (FilePreviewView / Renderer) | done | 049f696 | 233 | AsyncImage(thumbnailLink) + SF-Fallback + Browser-Open-Button |
 | L18 | Preview verdrahten in Files/Angebote/Material | pending | — | — | |
 | L19 | Mail-Anhänge (format=full + downloadAttachment) | pending | — | — | |
 

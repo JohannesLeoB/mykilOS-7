@@ -201,11 +201,17 @@ private struct DriveTreeRow: View {
     let store: DriveTreeStore
 
     @State private var isHovered = false
+    @State private var showPreview = false
 
     var body: some View {
         Button { handleTap() } label: { rowContent }
             .buttonStyle(.plain)
             .onHover { isHovered = $0 }
+            .popover(isPresented: $showPreview, arrowEdge: .trailing) {
+                FilePreviewView(file: node.file)
+                    .frame(width: 300)
+                    .padding(MykSpace.s2)
+            }
     }
 
     private var rowContent: some View {
@@ -309,8 +315,8 @@ private struct DriveTreeRow: View {
             } else {
                 Task { await store.expand(node) }
             }
-        } else if let link = node.file.webViewLink, let url = URL(string: link) {
-            NSWorkspace.shared.open(url)
+        } else {
+            showPreview.toggle()
         }
     }
 }
