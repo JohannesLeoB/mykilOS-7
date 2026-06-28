@@ -106,7 +106,12 @@ public struct SearchGmailTool: AssistantTool {
             let lines = messages.map { m -> String in
                 let date = m.receivedAt.map { toolDateFormatter.string(from: $0) } ?? "ohne Datum"
                 let place = Self.placement(from: m.labels)
-                return "• \(m.subject) — von \(m.from) (\(date))\(place.isEmpty ? "" : " · Ablage: \(place)")\n  \(m.snippet)"
+                var line = "• \(m.subject) — von \(m.from) (\(date))\(place.isEmpty ? "" : " · Ablage: \(place)")"
+                if m.attachments.isEmpty == false {
+                    line += " · Anhänge: \(m.attachments.map(\.filename).joined(separator: ", "))"
+                }
+                line += "\n  \(m.snippet)"
+                return line
             }
             return ToolRunResult(text: lines.joined(separator: "\n"))
         } catch GoogleGmailError.notConnected {

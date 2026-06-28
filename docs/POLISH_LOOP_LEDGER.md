@@ -47,8 +47,8 @@ Reihenfolge = Priorität. Status: `pending` | `done` | `blocked`.
 |----|-------|--------|--------|-------|-------|
 | L16 | Drive-Scope + downloadFileContent | done | e0f0df3 | 233 | thumbnailLink + downloadContent + driveReadonly (inaktiv) + 3 Tests |
 | L17 | Preview-Bausteine (FilePreviewView / Renderer) | done | 049f696 | 233 | AsyncImage(thumbnailLink) + SF-Fallback + Browser-Open-Button |
-| L18 | Preview verdrahten in Files/Angebote/Material | pending | — | — | |
-| L19 | Mail-Anhänge (format=full + downloadAttachment) | pending | — | — | |
+| L18 | Preview verdrahten in Files/Angebote/Material | done | be138dc | 233 | DriveTreeRow Popover → FilePreviewView mit Browser-Open-Button |
+| L19 | Mail-Anhänge (format=full + downloadAttachment) | done | 98b956d | 237 | GmailAttachment + format=full + extractAttachments rekursiv + 4 Tests |
 
 ## Block 6 — Angebote
 
