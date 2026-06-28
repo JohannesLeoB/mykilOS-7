@@ -188,6 +188,7 @@ Signal-Leck, Loader-Races u. a.). **118 Tests grün.** Details in
 | S10 Learning (Tisch) | ✅ | **mykilOS Dev Collective gegründet**: Team Charter (14 Statuten + Kulturregel), Roadmap S17–S20, Artikel-DB `appdxTeT6bhSBmwx5` entdeckt + READ ONLY-Tabu verankert, PAT-Sicherheitsanalyse, ConversationEngine-Architektur als Tool-Use-Schleife bestätigt (kein Intent-Switch), Studio-Stundensätze von KalkulationsEngine getrennt, S18-Architektur entschieden (scope-Threading für projektID, schaetze darf schreiben). Erfahrungsträger-Archiv für alle Sessions unter `docs/erfahrungstraeger/`. TEAM_BRIEFING.md erstellt. |
 | S17 | ✅ | **Security-Härtung** (`feat/security-haertung`): AirtableSyncService No-Op bestätigt, `AirtableError.invalidBaseID` + Validierung, `GoogleUserInfo` (Domain) + `GoogleUserInfoClient` + Scopes (`userinfo.email/profile`), `GoogleAuthService.currentUser` + Hook (nicht-fatal), `AppState.currentGoogleUser`, Sidebar zeigt Google-Name + E-Mail, PAT-Cleanup dokumentiert. Offen: Re-Consent live + PAT-Cleanup manuell (Johannes). |
 | UI-Bootcamp | ✅ | **Version 6.4.0**: ⌘⇧S Sidebar-Toggle (CommandMenu), `MykColor.brand` #EA5B25, SidebarIconButton, Sidebar-Footer entclustered, Brand-Logo solid Orange, neues App-Icon (MY orange Squircle, 10 Größen), GeometryReader-Pane-Boundary, stabile Row-IDs, Fallback-Tag `ui/sidebar-ci-stable`, Repo-Cleanup (27 Branches gelöscht). **192 Tests.** Details: [HANDOFF_UI_BOOTCAMP_SIDEBAR.md](docs/handoffs/HANDOFF_UI_BOOTCAMP_SIDEBAR.md) |
+| Phase A | ✅ | **Identity + Private Area** (2026-06-28): IdentityView „Wer bin ich?" (Avatar, Google-Domain read-only), 6-Dot Traffic-Light, Private Area Clockodo (Orange-Border, per-user Keychain), `clearLocalCache()`-Button, B2-Fix (GoogleUserInfo nach Neustart), GRDB-Migration v5, `UserProfile` + `clockodoUserID`/`googleDomain`. **192 Tests**, live verifiziert. Details: [HANDOFF_PHASE_A.md](docs/handoffs/HANDOFF_PHASE_A.md) |
 | S18 | 📋 | **Kalkulations-Chat-Tool** im `ConversationEngine`: neues Tool in `AssistantToolRegistry`, projektID via scope-Threading, `schaetze` → strukturierte Antwort im Chat. |
 
 ---
@@ -685,6 +686,7 @@ und Session-Regeln: `docs/codex/WORKFLOW.md`.
 - `docs/handoffs/HANDOFF_LIVE_WIRING_3.md` — Live-Wiring Session 3: BrandsView-Navigationsbug, 169 Tests, Live-App-Tour
 - `docs/handoffs/HANDOFF_LIVE_WIRING_4.md` — Live-Wiring Session 4 (geplant): Clockodo Zuhörer
 - `docs/handoffs/HANDOFF_LIVE_WIRING_5.md` — Live-Wiring Session 5 (geplant): mykilO$$ Vollintegration
+- `docs/handoffs/HANDOFF_PHASE_A.md` — Phase A: IdentityView, Private Area, clearLocalCache, B2-Fix, GRDB-Migration v5 (192 Tests, live verifiziert)
 - `docs/handoffs/HANDOFF_S17.md` — Security-Härtung: GoogleUserInfo, AirtableError.invalidBaseID, PAT-Cleanup
 - `docs/handoffs/HANDOFF_UI_BOOTCAMP_SIDEBAR.md` — UI-Bootcamp: Sidebar-CI, Brand-Orange, App-Icon 6.4.0
 - `docs/handoffs/HANDOFF_IDENTITY_AND_WIRE_CHECK.md` — Identitätsmodell + Wire-by-Wire Checkliste
