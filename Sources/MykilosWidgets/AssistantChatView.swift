@@ -290,6 +290,7 @@ public struct AssistantChatView: View {
 // MARK: - ChatMessageBubble
 struct ChatMessageBubble: View {
     let message: ChatMessage
+    @State private var cursorVisible = true
 
     var body: some View {
         HStack {
@@ -348,14 +349,10 @@ struct ChatMessageBubble: View {
     private var bubble: some View {
         let isStreaming = message.role == .assistant && message.status == .streaming
         if isStreaming, message.text.isEmpty {
-            HStack(spacing: 6) {
-                ProgressView().scaleEffect(0.6).tint(MykColor.muted.color)
-                Text("denkt nach …").font(.mykSmall).foregroundStyle(MykColor.muted.color)
-            }
-            .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s4)
-            .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
+            ThinkingIndicator()
         } else {
-            let displayText = isStreaming ? message.text + "▌" : message.text
+            let cursor: String = (isStreaming && cursorVisible) ? "\u{2588}" : ""
+            let displayText = isStreaming ? message.text + cursor : message.text
             Text(Self.rendered(displayText))
                 .font(.mykBody)
                 .foregroundStyle(message.role == .user ? MykColor.paper.color : MykColor.ink.color)
@@ -365,6 +362,10 @@ struct ChatMessageBubble: View {
                     RoundedRectangle(cornerRadius: MykRadius.md)
                         .fill(message.role == .user ? MykColor.ink.color : MykColor.card.color)
                 )
+                .onAppear {
+                    guard isStreaming else { return }
+                    withAnimation(.easeInOut(duration: 0.5).repeatForever()) { cursorVisible.toggle() }
+                }
         }
     }
 
@@ -415,6 +416,28 @@ struct CalendarActionCard: View {
         }
         .buttonStyle(.plain)
         .frame(maxWidth: 360)
+    }
+}
+
+// MARK: - ThinkingIndicator (L14)
+// Animierte 3-Punkt-Ladeanzeige während Claude denkt (keine Antwort-Tokens bisher).
+struct ThinkingIndicator: View {
+    @State private var phase: Int = 0
+    private let timer = Timer.publish(every: 0.42, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<3) { i in
+                Circle()
+                    .fill(MykColor.muted.color)
+                    .frame(width: 6, height: 6)
+                    .scaleEffect(phase == i ? 1.35 : 0.85)
+                    .animation(.easeInOut(duration: 0.38), value: phase)
+            }
+        }
+        .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s4)
+        .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
+        .onReceive(timer) { _ in phase = (phase + 1) % 3 }
     }
 }
 
