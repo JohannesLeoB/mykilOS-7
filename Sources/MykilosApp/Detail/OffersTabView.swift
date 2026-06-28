@@ -86,12 +86,12 @@ struct OffersTabView: View {
         .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.line.color.opacity(0.18)))
     }
 
-    private func filtered(_ files: [GoogleDriveFile]) -> [GoogleDriveFile] {
+    private func filtered(_ offers: [ClassifiedOffer]) -> [ClassifiedOffer] {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let base = q.isEmpty ? files : files.filter { $0.name.localizedCaseInsensitiveContains(q) }
+        let base = q.isEmpty ? offers : offers.filter { $0.file.name.localizedCaseInsensitiveContains(q) }
         return sortByDate
-            ? base.sorted { ($0.modifiedAt ?? .distantPast) > ($1.modifiedAt ?? .distantPast) }
-            : base.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+            ? base.sorted { ($0.file.modifiedAt ?? .distantPast) > ($1.file.modifiedAt ?? .distantPast) }
+            : base.sorted { $0.file.name.localizedCompare($1.file.name) == .orderedAscending }
     }
 
     private var refreshButton: some View {
@@ -117,132 +117,93 @@ struct OffersTabView: View {
 
     private var columns: some View {
         HStack(alignment: .top, spacing: MykSpace.s7) {
-            OfferColumn(title: "Eingehende Angebote", files: filtered(loader.incoming), folderFound: loader.incomingFolderFound)
+            OfferColumn(
+                title: "Eingehende Angebote",
+                offers: filtered(loader.incoming),
+                folderFound: loader.incomingFolderFound
+            )
             Divider().overlay(MykColor.line.color.opacity(0.6))
-            OfferColumn(title: "Ausgehende Angebote", files: filtered(loader.outgoing), folderFound: loader.outgoingFolderFound)
+            OfferColumn(
+                title: "Ausgehende Angebote",
+                offers: filtered(loader.outgoing),
+                folderFound: loader.outgoingFolderFound
+            )
         }
         .frame(maxWidth: .infinity)
     }
 }
 
 // MARK: - OfferColumn
+// Zeigt Belege gruppiert nach Dokumenttyp (Angebote / Aufträge / Rechnungen / …).
 private struct OfferColumn: View {
     let title: String
-    let files: [GoogleDriveFile]
+    let offers: [ClassifiedOffer]
     let folderFound: Bool
 
+    // Gruppiert nach Typ, in stabiler Anzeigereihenfolge (OfferDocumentType.rawValue).
+    private var groups: [(type: OfferDocumentType, offers: [ClassifiedOffer])] {
+        Dictionary(grouping: offers, by: \.type)
+            .sorted { $0.key.rawValue < $1.key.rawValue }
+            .map { (type: $0.key, offers: $0.value) }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: MykSpace.s3) {
-            Text("\(title) · \(files.count)")
+        VStack(alignment: .leading, spacing: MykSpace.s4) {
+            Text("\(title) · \(offers.count)")
                 .font(.mykCaption)
                 .foregroundStyle(MykColor.muted.color)
             if folderFound == false {
                 Text("Ordner nicht gefunden")
                     .font(.mykSmall)
                     .foregroundStyle(MykColor.muted.color)
-            } else if files.isEmpty {
+            } else if offers.isEmpty {
                 Text("Keine Belege")
                     .font(.mykSmall)
                     .foregroundStyle(MykColor.muted.color)
             } else {
-                VStack(spacing: 0) {
-                    ForEach(files) { file in
-                        OfferRow(file: file)
-                        if file.id != files.last?.id {
-                            Divider().overlay(MykColor.line.color.opacity(0.6))
-                        }
-                    }
+                ForEach(groups, id: \.type) { group in
+                    typeSection(group.type, group.offers)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+
+    private func typeSection(_ type: OfferDocumentType, _ offers: [ClassifiedOffer]) -> some View {
+        VStack(alignment: .leading, spacing: MykSpace.s2) {
+            Text("\(type.label) · \(offers.count)")
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.cash.color)
+                .padding(.top, MykSpace.s2)
+            VStack(spacing: 0) {
+                ForEach(offers) { offer in
+                    OfferRow(file: offer.file, meta: offer)
+                    if offer.id != offers.last?.id {
+                        Divider().overlay(MykColor.line.color.opacity(0.6))
+                    }
+                }
+            }
+        }
+    }
 }
 
-// MARK: - OffersLoader
-// Pro Tab-Instanz, reiner Lesefetch. Löst zuerst die zwei realen Unterordner
-// ("...ausgehende Angebote" / "...eingehende Angebote") unterhalb des Projekt-
-// Drive-Ordners tolerant über den Namen auf, dann werden deren Inhalte separat
-// gelistet — alles über den bestehenden read-only `GoogleDriveClient`.
-@MainActor
-@Observable
-private final class OffersLoader {
-    private(set) var incoming: [GoogleDriveFile] = []
-    private(set) var outgoing: [GoogleDriveFile] = []
-    private(set) var incomingFolderFound = true
-    private(set) var outgoingFolderFound = true
-    private(set) var renderState: WidgetRenderState = .loading
-
-    private let client: GoogleDriveFetching
-    // Generation-Token: nur das jüngste load() committet (Projektwechsel/Retry).
-    private var loadGeneration = 0
-
-    init(client: GoogleDriveFetching = GoogleDriveClient()) {
-        self.client = client
-    }
-
-    func load(rootFolderID: String?) async {
-        loadGeneration &+= 1
-        let generation = loadGeneration
-        guard let rootFolderID, rootFolderID.isEmpty == false else {
-            incoming = []
-            outgoing = []
-            renderState = .empty
-            return
-        }
-        renderState = .loading
-        do {
-            let rootChildren = try await client.listFolder(folderID: rootFolderID)
-            guard generation == loadGeneration else { return }
-
-            let incomingFolder = Self.subfolder(in: rootChildren, matching: "eingehende")
-            let outgoingFolder = Self.subfolder(in: rootChildren, matching: "ausgehende")
-            incomingFolderFound = incomingFolder != nil
-            outgoingFolderFound = outgoingFolder != nil
-
-            async let incomingFiles = Self.files(in: incomingFolder, client: client)
-            async let outgoingFiles = Self.files(in: outgoingFolder, client: client)
-            let (resolvedIncoming, resolvedOutgoing) = try await (incomingFiles, outgoingFiles)
-            guard generation == loadGeneration else { return }
-
-            incoming = resolvedIncoming
-            outgoing = resolvedOutgoing
-            renderState = (resolvedIncoming.isEmpty && resolvedOutgoing.isEmpty) ? .empty : .content
-        } catch GoogleDriveError.notConnected {
-            guard generation == loadGeneration else { return }
-            incoming = []
-            outgoing = []
-            renderState = .permissionRequired
-        } catch {
-            guard generation == loadGeneration else { return }
-            incoming = []
-            outgoing = []
-            renderState = .error(String(describing: error))
-        }
-    }
-
-    // Tolerant: echte Ordner heißen z.B. "04 ausgehende Angebote" /
-    // "05 eingehende Angebote" — Nummerierung und Großschreibung ignorieren wir,
-    // nur das Schlüsselwort muss im Namen vorkommen.
-    private static func subfolder(in children: [GoogleDriveFile], matching keyword: String) -> GoogleDriveFile? {
-        children.first {
-            $0.mimeType == "application/vnd.google-apps.folder"
-                && $0.name.lowercased().contains(keyword)
-        }
-    }
-
-    private static func files(in folder: GoogleDriveFile?, client: GoogleDriveFetching) async throws -> [GoogleDriveFile] {
-        guard let folder else { return [] }
-        let children = try await client.listFolder(folderID: folder.id)
-        return children.filter { $0.mimeType != "application/vnd.google-apps.folder" }
-    }
-}
+// OffersLoader ist in OffersLoader.swift — intern, testbar.
 
 // MARK: - OfferRow
 private struct OfferRow: View {
     let file: GoogleDriveFile
+    var meta: ClassifiedOffer? = nil
 
     @State private var showPreview = false
+
+    // Belegnummer + Version als kompakte Kennung (z.B. "2026-0151 · v3").
+    private var metaLine: String? {
+        guard let meta else { return nil }
+        var parts: [String] = []
+        if let nr = meta.belegNummer { parts.append(nr) }
+        if let v = meta.version { parts.append(v) }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
 
     var body: some View {
         HStack(spacing: MykSpace.s4) {
@@ -270,10 +231,17 @@ private struct OfferRow: View {
                             .font(.mykSmall)
                             .foregroundStyle(MykColor.ink.color)
                             .lineLimit(1)
-                        if let modifiedAt = file.modifiedAt {
-                            Text(modifiedAt.formatted(.relative(presentation: .named)))
-                                .font(.mykMono(9.5))
-                                .foregroundStyle(MykColor.muted.color)
+                        HStack(spacing: MykSpace.s2) {
+                            if let metaLine {
+                                Text(metaLine)
+                                    .font(.mykMono(9.5))
+                                    .foregroundStyle(MykColor.cash.color)
+                            }
+                            if let modifiedAt = file.modifiedAt {
+                                Text(modifiedAt.formatted(.relative(presentation: .named)))
+                                    .font(.mykMono(9.5))
+                                    .foregroundStyle(MykColor.muted.color)
+                            }
                         }
                     }
                     Spacer()

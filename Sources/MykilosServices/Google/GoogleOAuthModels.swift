@@ -19,7 +19,10 @@ public enum GoogleOAuthScope: String, CaseIterable, Codable, Sendable {
     case userinfoProfile        = "https://www.googleapis.com/auth/userinfo.profile"
 
     public static let readOnlyDefaults: [GoogleOAuthScope] = [
-        .driveMetadataReadonly, .calendarEventsReadonly, .gmailReadonly, .contactsReadonly,
+        // drive.readonly: nötig für downloadContent (PDF-Vorschau) + thumbnailLink.
+        // Erfordert einmaliges Re-Consent von Johannes nach diesem Update.
+        .driveReadonly, .driveMetadataReadonly,
+        .calendarEventsReadonly, .gmailReadonly, .contactsReadonly,
         .userinfoEmail, .userinfoProfile,
     ]
 }

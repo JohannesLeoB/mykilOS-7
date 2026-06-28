@@ -38,6 +38,18 @@ public final class GRDBDatabase: Sendable {
         try queue.write(block)
     }
 
+    /// WAL-Checkpoint: schreibt alle ausstehenden WAL-Transaktionen in die Hauptdatei.
+    /// Muss vor einem konsistenten Backup aufgerufen werden.
+    /// Nach dem Checkpoint ist db.sqlite allein ein gültiges Backup (db.sqlite-wal ist leer/klein).
+    public func checkpoint() throws {
+        try queue.write { db in
+            try db.execute(sql: "PRAGMA wal_checkpoint(TRUNCATE)")
+        }
+    }
+
+    /// Gibt den Dateipfad der Hauptdatenbank zurück (für Backup-Service).
+    public var dbPath: String { queue.path }
+
     // MARK: - Migrations (niemals ändern, nur anhängen)
     private func runMigrations() throws {
         var migrator = DatabaseMigrator()

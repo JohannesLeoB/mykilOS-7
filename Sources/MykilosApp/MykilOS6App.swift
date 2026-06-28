@@ -317,6 +317,24 @@ struct ComingSoonView: View {
 }
 
 struct AboutMykilOSView: View {
+    // Bundle-Informationen — lesbar ohne Netzwerk, ohne Keychain.
+    private var version: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–"
+    }
+    private var build: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "–"
+    }
+    private var bundlePath: String { Bundle.main.bundlePath }
+    private var gitCommit: String {
+        // Compile-Zeit-Konstante via -D GIT_COMMIT=<hash> im Build-Skript.
+        // Fallback: "unbekannt" wenn nicht gesetzt.
+        #if GIT_COMMIT
+        return "\(GIT_COMMIT)"
+        #else
+        return "unbekannt"
+        #endif
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s6) {
             HStack(alignment: .center, spacing: MykSpace.s5) {
@@ -333,7 +351,7 @@ struct AboutMykilOSView: View {
                     Text("mykilOS 6")
                         .font(.mykDisplay)
                         .foregroundStyle(MykColor.ink.color)
-                    Text("Version 6.4.0 · Sidebar CI + Brand Orange")
+                    Text("Version \(version) · Build \(build)")
                         .font(.mykMono(11))
                         .foregroundStyle(MykColor.muted.color)
                 }
@@ -346,13 +364,59 @@ struct AboutMykilOSView: View {
 
             Divider().overlay(MykColor.line.color)
 
+            // Diagnose-Informationen — kein Keychain, keine Tokens
+            VStack(alignment: .leading, spacing: MykSpace.s3) {
+                DiagRow(label: "Commit", value: gitCommit)
+                DiagRow(label: "Bundle", value: bundlePath)
+                DiagRow(label: "DB", value: AppIdentity.dbPath)
+            }
+
+            Divider().overlay(MykColor.line.color)
+
             Text("Copyright MYKILOS")
                 .font(.mykCaption)
                 .foregroundStyle(MykColor.muted.color)
         }
         .padding(MykSpace.s7)
-        .frame(width: 440, alignment: .leading)
+        .frame(width: 540, alignment: .leading)
         .background(MykColor.paper.color)
+    }
+}
+
+private struct DiagRow: View {
+    let label: String
+    let value: String
+    var body: some View {
+        HStack(alignment: .top, spacing: MykSpace.s3) {
+            Text(label)
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.muted.color)
+                .frame(width: 48, alignment: .trailing)
+            Text(value)
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.inkSoft.color)
+                .lineLimit(2)
+                .truncationMode(.middle)
+                .textSelection(.enabled)
+        }
+    }
+}
+
+// MARK: - AppIdentity
+// Statische Diagnose-Informationen ohne Keychain/Netzwerk.
+public enum AppIdentity {
+    public static var dbPath: String {
+        let dir = FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask)
+            .first?.appendingPathComponent("mykilOS6/db.sqlite")
+        return dir?.path ?? "–"
+    }
+    public static var bundlePath: String { Bundle.main.bundlePath }
+    public static var version: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "–"
+    }
+    public static var build: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "–"
     }
 }
 

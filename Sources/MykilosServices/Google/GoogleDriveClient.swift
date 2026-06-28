@@ -98,18 +98,24 @@ public struct GoogleDriveClient: GoogleDriveFetching {
         guard let accessToken = try? await tokenProvider.validAccessToken() else {
             throw GoogleDriveError.notConnected
         }
-        guard let url = Self.buildListFolderURL(folderID: folderID, baseURL: baseURL) else {
-            throw GoogleDriveError.invalidResponse
+        var allFiles: [GoogleDriveFile] = []
+        var pageToken: String? = nil
+        // Sicherheitsgrenze: maximal 20 Seiten (2.000 Einträge) pro Ordner.
+        for _ in 0..<20 {
+            guard let url = Self.buildListFolderURL(folderID: folderID, pageToken: pageToken, baseURL: baseURL) else {
+                throw GoogleDriveError.invalidResponse
+            }
+            var request = URLRequest(url: url)
+            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else { throw GoogleDriveError.invalidResponse }
+            guard (200...299).contains(http.statusCode) else { throw GoogleDriveError.httpError(http.statusCode) }
+            let page = try Self.parseFilesPage(from: data)
+            allFiles.append(contentsOf: page.files)
+            guard let next = page.nextPageToken else { break }
+            pageToken = next
         }
-
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw GoogleDriveError.invalidResponse }
-        guard (200...299).contains(http.statusCode) else { throw GoogleDriveError.httpError(http.statusCode) }
-
-        return try Self.parseFiles(from: data)
+        return allFiles
     }
 
     /// Lädt rohe Bytes einer binären Datei (PDF, Bild) — erfordert drive.readonly-Scope.
@@ -150,11 +156,11 @@ public struct GoogleDriveClient: GoogleDriveFetching {
 
     // MARK: - Reine, testbare Bausteine (kein Netzwerk/Keychain)
 
-    static func buildListFolderURL(folderID: String, baseURL: String) -> URL? {
+    static func buildListFolderURL(folderID: String, pageToken: String? = nil, baseURL: String) -> URL? {
         var components = URLComponents(string: baseURL)
-        components?.queryItems = [
+        var items: [URLQueryItem] = [
             URLQueryItem(name: "q", value: "'\(folderID)' in parents and trashed=false"),
-            URLQueryItem(name: "fields", value: "files(id,name,mimeType,modifiedTime,webViewLink,size,thumbnailLink)"),
+            URLQueryItem(name: "fields", value: "nextPageToken,files(id,name,mimeType,modifiedTime,webViewLink,size,thumbnailLink)"),
             URLQueryItem(name: "pageSize", value: "100"),
             URLQueryItem(name: "orderBy", value: "folder,name"),
             // Shared Drive (Team Drive) Support — ohne diese zwei Parameter liefert
@@ -162,15 +168,20 @@ public struct GoogleDriveClient: GoogleDriveFetching {
             URLQueryItem(name: "supportsAllDrives", value: "true"),
             URLQueryItem(name: "includeItemsFromAllDrives", value: "true"),
         ]
+        if let token = pageToken {
+            items.append(URLQueryItem(name: "pageToken", value: token))
+        }
+        components?.queryItems = items
         return components?.url
     }
 
-    static func parseFiles(from data: Data) throws -> [GoogleDriveFile] {
+    // Gibt Dateien + optionalen nextPageToken zurück.
+    static func parseFilesPage(from data: Data) throws -> (files: [GoogleDriveFile], nextPageToken: String?) {
         do {
             let decoded = try JSONDecoder().decode(GoogleDriveListResponse.self, from: data)
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            return decoded.files.map { entry in
+            let files = decoded.files.map { entry in
                 GoogleDriveFile(
                     id: entry.id,
                     name: entry.name,
@@ -181,14 +192,21 @@ public struct GoogleDriveClient: GoogleDriveFetching {
                     thumbnailLink: entry.thumbnailLink
                 )
             }
+            return (files, decoded.nextPageToken)
         } catch {
             throw GoogleDriveError.decodingFailed
         }
+    }
+
+    // Rückwärtskompatibel: gibt nur Dateien zurück (ignoriert nextPageToken).
+    static func parseFiles(from data: Data) throws -> [GoogleDriveFile] {
+        try parseFilesPage(from: data).files
     }
 }
 
 private struct GoogleDriveListResponse: Decodable {
     var files: [GoogleDriveFileEntry]
+    var nextPageToken: String?
 }
 
 private struct GoogleDriveFileEntry: Decodable {

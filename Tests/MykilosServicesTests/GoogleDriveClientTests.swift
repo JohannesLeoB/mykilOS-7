@@ -13,9 +13,45 @@ struct GoogleDriveClientTests {
         let items = Dictionary(uniqueKeysWithValues: (components?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
 
         #expect(items["q"] == "'ABC123' in parents and trashed=false")
-        #expect(items["fields"] == "files(id,name,mimeType,modifiedTime,webViewLink,size,thumbnailLink)")
+        // fields muss nextPageToken enthalten (Pagination-Fix)
+        #expect(items["fields"]?.contains("nextPageToken") == true)
+        #expect(items["fields"]?.contains("files(id") == true)
         #expect(items["supportsAllDrives"] == "true")
         #expect(items["includeItemsFromAllDrives"] == "true")
+        #expect(items["pageToken"] == nil)
+    }
+
+    @Test func urlEnthaeltPageTokenWennGesetzt() {
+        let url = GoogleDriveClient.buildListFolderURL(
+            folderID: "ABC123",
+            pageToken: "TOKEN_XYZ",
+            baseURL: "https://www.googleapis.com/drive/v3/files"
+        )
+        let components = url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+        let items = Dictionary(uniqueKeysWithValues: (components?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        #expect(items["pageToken"] == "TOKEN_XYZ")
+    }
+
+    @Test func parseFilesPageDekodiertNextPageToken() throws {
+        let json = """
+        {
+          "nextPageToken": "NEXT_TOKEN_ABC",
+          "files": [
+            { "id": "1", "name": "A.pdf", "mimeType": "application/pdf" }
+          ]
+        }
+        """
+        let page = try GoogleDriveClient.parseFilesPage(from: Data(json.utf8))
+        #expect(page.files.count == 1)
+        #expect(page.nextPageToken == "NEXT_TOKEN_ABC")
+    }
+
+    @Test func parseFilesPageOhneNextPageTokenLiefertNil() throws {
+        let json = """
+        { "files": [{ "id": "1", "name": "A.pdf", "mimeType": "application/pdf" }] }
+        """
+        let page = try GoogleDriveClient.parseFilesPage(from: Data(json.utf8))
+        #expect(page.nextPageToken == nil)
     }
 
     @Test func parseFilesDekodiertResponse() throws {
