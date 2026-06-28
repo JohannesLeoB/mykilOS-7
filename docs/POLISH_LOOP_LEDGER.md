@@ -61,7 +61,7 @@ Reihenfolge = Priorität. Status: `pending` | `done` | `blocked`.
 
 | ID | Titel | Status | Commit | Tests | Notiz |
 |----|-------|--------|--------|-------|-------|
-| L22 | Signal-Monitore: Budget/Deadline/DriveFile echte Emitter | pending | — | — | |
+| L22 | Signal-Monitore: Budget/Deadline/DriveFile echte Emitter | done | 3e5c60e | 237 | CashWidget emittiert budgetThresholdCrossed nach Sevdesk-Load (ratio >= 90%); DriveFile bereits live |
 | L23 | Mail-Vollcache (GmailCacheStore + GmailSyncService) | pending | — | — | |
 | L24 | Kontakt-Kontext im Assistenten (Airtable Kontakte) | pending | — | — | |
 

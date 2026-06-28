@@ -190,6 +190,26 @@ ist durch die S16-Kette subsumiert → geschlossen.
 
 ---
 
+### 2026-06-28 · Claude Sonnet 4.6 (Dampflok) — L16–L22 abgeschlossen (polish/dampflok)
+
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Branch:** `polish/dampflok` · HEAD: `3e5c60e`
+**Build:** ✅ swift build grün
+**Tests:** ✅ 237 Tests grün (37 Suites)
+**Status:** ✅ L16–L22 fertig, auf origin gepusht
+
+**Was gebaut wurde:**
+- L16/L17/L18: Bereits vollständig implementiert (parallel agent) — `downloadContent`, `FilePreviewView`, DriveTreeRow-Popover
+- L19: `format=full`, `GmailAttachment`-Struct, `extractAttachments` (rekursiv), Tool-Output mit Dateinamen (+4 Tests)
+- L20: Angebote-Tab Suchfeld + Datum/Name-Sortierung + Preview-Popover (Icon-Klick → FilePreviewView)
+- L21: `GlobalOffersView` bereits vollständig implementiert
+- L22: `CashWidget` emittiert `budgetThresholdCrossed` nach Sevdesk-Load (ratio ≥ 90%)
+- Fix: zip-Dateien (files.zip, skills/) aus Tracking entfernt + .gitignore ergänzt
+
+**Offen (L23–L30):** GmailCacheStore, Kontakt-Kontext, Favoriten, Timeline, Leerzustände, Test-Decke, Abschluss-Handoff
+
+---
+
 ### 2026-06-28 · Claude Sonnet 4.6 (Dampflok) — L6–L15 abgeschlossen (polish/dampflok)
 
 **Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
