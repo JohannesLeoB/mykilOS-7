@@ -53,6 +53,37 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+### 2026-06-28 · Claude Code (Sonnet 4.6) — Session-Abschluss Kalkulations-Port + App-Preview
+
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Branch:** `feat/kalkulation-core-port`
+**Build:** ✅ | **Tests:** 194 grün
+
+**Was gemacht wurde:**
+- **App-Preview** via `./script/build_and_run.sh` — App gestartet, Heute-Board mit
+  personalisierten Begrüßung + Projekten + Navigation + Dark Mode vollständig funktionsfähig.
+  Kein Crash durch die neu verdrahtete `KalkulationsEngine` in `AppState`. ✅
+- **Handoff-Dokument** `docs/handoffs/HANDOFF_KALKULATION_CORE_PORT.md` erstellt:
+  vollständige Dokumentation aller 5 Schritte (Verbatim-Prinzip, Cold-Start-Gate,
+  Architektur-Entscheidungen, offene Stubs, Nächste Schritte).
+- **CLAUDE.md** aktualisiert: Kalkulations-Port Schritt 5 in die Fortschritts-Tabelle
+  eingetragen, Link auf Handoff gesetzt.
+- **Session-Modus geändert:** Modell auf `claude-sonnet-4-6` für Abschluss-Session.
+
+**Status:** Branch `feat/kalkulation-core-port` ist sauber, 194 Tests grün,
+kein Push ohne Johannes' Freigabe.
+
+**Offene Stubs (bewusst, kein Merge-Blocker):**
+- `importPDF` → braucht `GoogleDriveClient.downloadFile()`
+- `recordAdjustment` → braucht ActionCard → Bestätigungs-Flow (UI-Schritt)
+
+**Nächste natürliche Schritte (nach Freigabe):**
+1. Kalkulations-Widget / UI (`KalkulationsView`-Tab, `KalkulationsActionCard`)
+2. Seed-Provider mit destillierten Ankern (SQLite + CSVs aus mykilO$ App-Support)
+3. PREISLISTEN CSV nach Application-Support kopieren (explizite Freigabe)
+
+---
+
 ### 2026-06-28 · Claude Code (Opus 4.8) — Engine in AppState verdrahtet + Baseline-Anker (Schritt 5)
 
 **Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`

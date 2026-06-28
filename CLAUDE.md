@@ -150,7 +150,8 @@ Daten sind heilig; bei Datenverlust-Gefahr warnen.
 | Kalkulations-Port, Schritt 1 | ✅ | Target `MykilosKalkulationsCore` (Foundation-only): 10 Dateien verbatim aus mykilO$$ portiert + 16 Core-Tests (`MykilosKalkulationsCoreTests`). Branch `feat/kalkulation-core-port`. |
 | Kalkulations-Port, Schritt 2 | ✅ | GRDB-Lern-Schicht `MykilosServices/Kalkulation/` (LearningDatabase/Records/Store verbatim) + **Cold-Start-Test (Merge-Gate)** `KalkulationsLearningStoreTests`. **187 Tests**. |
 | Kalkulations-Port, Schritt 3 | ✅ | Contract `KalkulationsEngineProviding` (aus PR #1, `recordAdjustment` → String) + Engine-Adapter `KalkulationsEngine` (`actor`): `schaetze` live (parse→estimate→Mapping). **189 Tests**. |
-| Kalkulations-Port, Schritt 4 | ✅ | `DeviceCatalog` + `CSVParser` portiert; **`geraetepreis` live** (injizierter Katalog, MYKILOS-VK). +3 DeviceCatalog-Tests +1 Engine-Test. **193 Tests**. Adapter-Stubs übrig: `importPDF` (Drive), `recordAdjustment` (Flow). Nächstes: Seed-Provider/Destillation (externe Daten) + echtes Katalog-/Anker-Laden. |
+| Kalkulations-Port, Schritt 4 | ✅ | `DeviceCatalog` + `CSVParser` portiert; **`geraetepreis` live** (injizierter Katalog, MYKILOS-VK). +3 DeviceCatalog-Tests +1 Engine-Test. **193 Tests**. Adapter-Stubs übrig: `importPDF` (Drive), `recordAdjustment` (Flow). |
+| Kalkulations-Port, Schritt 5 | ✅ | `BaselineAnchors` + `BaselineAnchorProvider` portiert; **`AppState.kalkulationsEngine` live verdrahtet** (echte Schätzungen ohne externe Daten). App-Preview bestätigt: kein Crash, Heute-Board/Projekte/Navigation in Ordnung. **194 Tests**. Details: [HANDOFF_KALKULATION_CORE_PORT.md](docs/handoffs/HANDOFF_KALKULATION_CORE_PORT.md). Offen: Kalkulations-Widget-UI, Seed-Provider, `recordAdjustment`-Flow, `importPDF`. |
 
 ---
 
@@ -542,6 +543,12 @@ Angebote und Marken & Daten. Noch „ComingSoon": Projekt-Tabs Timeline und Mate
 - **Korpus (V4_MoneyObservations, 3.383 Beobachtungen, 8 Lieferanten):** Heimat =
   beides — Tabelle `Preis-Beobachtungen` in Base `appuVMh3KDfKw4OoQ` (System-of-Record,
   alte Base stillgelegt) + destilliertes Seed-`sqlite` zur Laufzeit.
+- **✅ ENTSCHIEDEN (2026-06-28):** Workspace = Team-Plan (bezahlt), kein Verschieben nötig.
+  Bases-Struktur: 1 Base (`appuVMh3KDfKw4OoQ`), kein Split geplant.
+  Zulieferpreise (3.383 Beobachtungen) → **lokal in `learning.sqlite`**, nicht Airtable.
+  Stundensätze (`Clockodo-Leistungen.Stundensatz`) → Airtable als Master, GRDB als Cache.
+  Details: [IDEEN_UND_BACKLOG.md → Airtable-Infrastruktur](docs/IDEEN_UND_BACKLOG.md).
+- **⚠️ OFFEN (Johannes-Aktion):** Stundensätze für 8 Leistungsarten manuell in Airtable eintragen.
 
 **Bekannte offene Punkte aus Schritt 1 (noch nicht relevant geworden):**
 - Ob Google "Desktop App"-OAuth-Clients bei PKCE zusätzlich ein `client_secret`
