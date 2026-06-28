@@ -189,6 +189,7 @@ Signal-Leck, Loader-Races u. a.). **118 Tests grün.** Details in
 | S17 | ✅ | **Security-Härtung** (`feat/security-haertung`): AirtableSyncService No-Op bestätigt, `AirtableError.invalidBaseID` + Validierung, `GoogleUserInfo` (Domain) + `GoogleUserInfoClient` + Scopes (`userinfo.email/profile`), `GoogleAuthService.currentUser` + Hook (nicht-fatal), `AppState.currentGoogleUser`, Sidebar zeigt Google-Name + E-Mail, PAT-Cleanup dokumentiert. Offen: Re-Consent live + PAT-Cleanup manuell (Johannes). |
 | UI-Bootcamp | ✅ | **Version 6.4.0**: ⌘⇧S Sidebar-Toggle (CommandMenu), `MykColor.brand` #EA5B25, SidebarIconButton, Sidebar-Footer entclustered, Brand-Logo solid Orange, neues App-Icon (MY orange Squircle, 10 Größen), GeometryReader-Pane-Boundary, stabile Row-IDs, Fallback-Tag `ui/sidebar-ci-stable`, Repo-Cleanup (27 Branches gelöscht). **192 Tests.** Details: [HANDOFF_UI_BOOTCAMP_SIDEBAR.md](docs/handoffs/HANDOFF_UI_BOOTCAMP_SIDEBAR.md) |
 | Phase A | ✅ | **Identity + Private Area** (2026-06-28): IdentityView „Wer bin ich?" (Avatar, Google-Domain read-only), 6-Dot Traffic-Light, Private Area Clockodo (Orange-Border, per-user Keychain), `clearLocalCache()`-Button, B2-Fix (GoogleUserInfo nach Neustart), GRDB-Migration v5, `UserProfile` + `clockodoUserID`/`googleDomain`. **192 Tests**, live verifiziert. Details: [HANDOFF_PHASE_A.md](docs/handoffs/HANDOFF_PHASE_A.md) |
+| Phase B | ✅ | **Wire-by-Wire Live-Verifikation** (2026-06-28): B1 Airtable (31 Projekte, Base-ID korrekt) ✅, B2 Drive (API verbunden, Poll aktiv) ✅, B3 Calendar (Tool-Use live) ✅, B4 Mail (Tool-Use live) ✅, B7 Claude (claude-sonnet-4-6 live, Tool-Use) ✅, B8 Kalkulation (Widget live, BaselineAnchors) ✅. B5 ClickUp + B6 Cash ausstehend (M3/M4 von Johannes). Details: [HANDOFF_PHASE_B.md](docs/handoffs/HANDOFF_PHASE_B.md) |
 | S18 | 📋 | **Kalkulations-Chat-Tool** im `ConversationEngine`: neues Tool in `AssistantToolRegistry`, projektID via scope-Threading, `schaetze` → strukturierte Antwort im Chat. |
 
 ---
@@ -328,27 +329,28 @@ in geteilten Logs, nie in Airtable-Tabellen ohne expliziten User-Scope-Filter.
 
 ## Nächste Schritte
 
-**Version 6.4.0 ist die aktuelle stabile Version.** UI stabil, Fallback-Tag
-`ui/sidebar-ci-stable` gesetzt, Repo aufgeräumt. Code-Basis ready für Live-Wiring.
+**Version 6.4.0 ist die aktuelle stabile Version.** UI stabil, alle Integrationen
+live verifiziert (Phase A + B abgeschlossen). Nächste Code-Session: S18.
 
-**🎯 Nächste Session — Identitätsmodell + Wire-by-Wire (Checkliste in
-[HANDOFF_IDENTITY_AND_WIRE_CHECK.md](docs/handoffs/HANDOFF_IDENTITY_AND_WIRE_CHECK.md)):**
+**✅ Phase A + B abgeschlossen (2026-06-28):**
+- Phase A: IdentityView, Private Area, clearLocalCache, B2-Fix, GRDB-v5 → 192 Tests
+- Phase B Wire-by-Wire: B1 Airtable, B2 Drive, B3 Calendar, B4 Mail, B7 Claude, B8 Kalkulation — alle live bestätigt
+- B5 ClickUp + B6 Cash ausstehend bis Johannes M3/M4 in Airtable einträgt
 
-**PHASE A — Code (alleine, ~90 min):**
-1. `UserProfile` um `clockodoUserID: String?` + `googleDomain: String?` erweitern
-2. `IdentityView` in Settings (ganz oben: „Wer bin ich?" mit Google read-only + lokale Felder)
-3. `IntegrationStatusView` — alle 6 Services Traffic-Light in Settings
-4. `GoogleUserInfo` in UserDefaults persistieren (kein Sidebar-Flackern nach Neustart)
-
-**PHASE B — Live mit Johannes (Wire-by-Wire):**
+**🎯 Nächste Code-Session: S18 — Kalkulations-Chat-Tool**
 ```
-Voraussetzung: Settings → Airtable → Base-ID = appuVMh3KDfKw4OoQ (nicht der PAT!)
-B1: Airtable-Sync  → 31 echte Projekte in Galerie
-B2: Drive          → DriveWidget + FilesTab + OffersTab
-B3: Kalender       → CalendarWidget
-B4: Mail           → MailWidget
-B5: ClickUp        → erst wenn Listen-IDs in Airtable eingetragen
-B6: Cash/Sevdesk   → erst wenn sevdeskRef + Budget in Airtable
+AssistantToolRegistry → neues schaetze-Tool
+KalkulationsEngine → AppState.kalkulationsEngine?.schaetze(beschreibung:)
+Output: strukturierte Min/Mitte/Max Karte im Chat
+Kein Auto-Write, Bestätigung via Action-Card
+```
+
+**Offene manuelle Aktionen (Johannes):**
+```
+M1: Google Re-Consent (Trennen → Verbinden) — neue userinfo-Scopes
+M2: Clockodo-Stundensätze in Airtable Clockodo-Leistungen
+M3: ClickUp-Listen-IDs in Airtable Projekte (→ B5 live)
+M4: sevdeskRef + Budget in Airtable Projekte (→ B6 live)
 ```
 
 **Aus Post-Akt-5 Aufgabe 10 (Angebote-Tab):**
@@ -687,6 +689,7 @@ und Session-Regeln: `docs/codex/WORKFLOW.md`.
 - `docs/handoffs/HANDOFF_LIVE_WIRING_4.md` — Live-Wiring Session 4 (geplant): Clockodo Zuhörer
 - `docs/handoffs/HANDOFF_LIVE_WIRING_5.md` — Live-Wiring Session 5 (geplant): mykilO$$ Vollintegration
 - `docs/handoffs/HANDOFF_PHASE_A.md` — Phase A: IdentityView, Private Area, clearLocalCache, B2-Fix, GRDB-Migration v5 (192 Tests, live verifiziert)
+- `docs/handoffs/HANDOFF_PHASE_B.md` — Phase B: Wire-by-Wire Live-Verifikation (B1–B4, B7, B8 grün; B5/B6 ausstehend)
 - `docs/handoffs/HANDOFF_S17.md` — Security-Härtung: GoogleUserInfo, AirtableError.invalidBaseID, PAT-Cleanup
 - `docs/handoffs/HANDOFF_UI_BOOTCAMP_SIDEBAR.md` — UI-Bootcamp: Sidebar-CI, Brand-Orange, App-Icon 6.4.0
 - `docs/handoffs/HANDOFF_IDENTITY_AND_WIRE_CHECK.md` — Identitätsmodell + Wire-by-Wire Checkliste
