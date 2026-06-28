@@ -15,13 +15,12 @@ struct GoogleGmailClientTests {
         #expect(items["maxResults"] == "5")
     }
 
-    @Test func buildDetailURLEnthaeltFormatUndMetadataHeaders() {
+    @Test func buildDetailURLEnthaeltFormatFull() {
         let url = GoogleGmailClient.buildDetailURL(messageID: "abc123", baseURL: baseURL)
         let urlString = url?.absoluteString ?? ""
 
         #expect(urlString.contains("abc123"))
-        #expect(urlString.contains("format=metadata"))
-        #expect(urlString.contains("metadataHeaders"))
+        #expect(urlString.contains("format=full"))
     }
 
     @Test func parseMessageIDsDekodiertListe() throws {
@@ -106,5 +105,82 @@ struct GoogleGmailClientTests {
         } catch {
             #expect(error as? GoogleGmailError == .notConnected)
         }
+    }
+
+    // MARK: - L19: Anhänge-Parsing (format=full)
+
+    @Test func detailURLNutztFormatFull() {
+        let url = GoogleGmailClient.buildDetailURL(
+            messageID: "msg_abc", baseURL: "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+        )
+        let query = url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+            .flatMap { c in c.queryItems }
+            .map { $0.reduce(into: [:]) { $0[$1.name] = $1.value } } ?? [:]
+        #expect(query["format"] == "full")
+    }
+
+    @Test func parseMessageMitAnhangLiefertAttachment() throws {
+        let json = """
+        {
+          "id": "m1",
+          "snippet": "Datei im Anhang",
+          "labelIds": ["INBOX"],
+          "payload": {
+            "headers": [
+              {"name": "Subject", "value": "Angebot PDF"},
+              {"name": "From",    "value": "gesa@test.de"},
+              {"name": "Date",    "value": "Mon, 2 Jun 2025 10:00:00 +0200"}
+            ],
+            "parts": [
+              {"mimeType": "text/plain", "body": {"size": 50}},
+              {
+                "mimeType": "application/pdf",
+                "filename": "Angebot_2025.pdf",
+                "body": {"attachmentId": "att_xyz", "size": 102400}
+              }
+            ]
+          }
+        }
+        """.data(using: .utf8)!
+        let msg = try GoogleGmailClient.parseMessage(from: json)
+        #expect(msg.attachments.count == 1)
+        #expect(msg.attachments.first?.filename == "Angebot_2025.pdf")
+        #expect(msg.attachments.first?.mimeType == "application/pdf")
+        #expect(msg.attachments.first?.attachmentID == "att_xyz")
+        #expect(msg.attachments.first?.sizeBytes == 102400)
+    }
+
+    @Test func parseMessageOhneAnhangGibtLeereArray() throws {
+        let json = """
+        {"id":"m2","snippet":"","labelIds":["INBOX"],"payload":{"headers":[{"name":"Subject","value":"S"}]}}
+        """.data(using: .utf8)!
+        let msg = try GoogleGmailClient.parseMessage(from: json)
+        #expect(msg.attachments.isEmpty)
+    }
+
+    @Test func parseMessageVerschachtelterAnhang() throws {
+        let json = """
+        {
+          "id": "m3", "snippet": "",
+          "payload": {
+            "headers": [{"name": "Subject", "value": "Multi"}],
+            "mimeType": "multipart/mixed",
+            "parts": [{
+              "mimeType": "multipart/alternative",
+              "parts": [
+                {"mimeType": "text/plain", "body": {"size": 10}},
+                {
+                  "mimeType": "image/png",
+                  "filename": "logo.png",
+                  "body": {"attachmentId": "att_img", "size": 4096}
+                }
+              ]
+            }]
+          }
+        }
+        """.data(using: .utf8)!
+        let msg = try GoogleGmailClient.parseMessage(from: json)
+        #expect(msg.attachments.count == 1)
+        #expect(msg.attachments.first?.filename == "logo.png")
     }
 }

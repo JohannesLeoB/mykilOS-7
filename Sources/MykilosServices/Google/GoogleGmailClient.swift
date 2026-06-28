@@ -1,5 +1,21 @@
 import Foundation
 
+// MARK: - GmailAttachment
+/// Metadaten eines Mail-Anhangs (kein Inhalt — nur Name, Typ, ID für späteren Download).
+public struct GmailAttachment: Equatable, Sendable {
+    public var attachmentID: String
+    public var filename: String
+    public var mimeType: String
+    public var sizeBytes: Int
+
+    public init(attachmentID: String, filename: String, mimeType: String, sizeBytes: Int) {
+        self.attachmentID = attachmentID
+        self.filename = filename
+        self.mimeType = mimeType
+        self.sizeBytes = sizeBytes
+    }
+}
+
 // MARK: - GoogleGmailMessage
 public struct GoogleGmailMessage: Identifiable, Equatable, Sendable {
     public var id: String
@@ -7,15 +23,17 @@ public struct GoogleGmailMessage: Identifiable, Equatable, Sendable {
     public var from: String
     public var snippet: String
     public var receivedAt: Date?
-    public var labels: [String]   // Gmail-Label-IDs (Ablageort), z. B. INBOX, SENT, Label_123
+    public var labels: [String]
+    public var attachments: [GmailAttachment]
 
-    public init(id: String, subject: String, from: String, snippet: String, receivedAt: Date?, labels: [String] = []) {
+    public init(id: String, subject: String, from: String, snippet: String, receivedAt: Date?, labels: [String] = [], attachments: [GmailAttachment] = []) {
         self.id = id
         self.subject = subject
         self.from = from
         self.snippet = snippet
         self.receivedAt = receivedAt
         self.labels = labels
+        self.attachments = attachments
     }
 }
 
@@ -95,11 +113,9 @@ public struct GoogleGmailClient: GoogleGmailFetching {
 
     static func buildDetailURL(messageID: String, baseURL: String) -> URL? {
         var components = URLComponents(string: baseURL + "/\(messageID)")
+        // format=full: liefert Header + Parts (inkl. Anhänge) statt nur metadata.
         components?.queryItems = [
-            URLQueryItem(name: "format", value: "metadata"),
-            URLQueryItem(name: "metadataHeaders", value: "Subject"),
-            URLQueryItem(name: "metadataHeaders", value: "From"),
-            URLQueryItem(name: "metadataHeaders", value: "Date"),
+            URLQueryItem(name: "format", value: "full"),
         ]
         return components?.url
     }
@@ -128,14 +144,38 @@ public struct GoogleGmailClient: GoogleGmailFetching {
         let fromRaw = headers.first(where: { $0.name == "From" })?.value ?? ""
         let dateString = headers.first(where: { $0.name == "Date" })?.value
 
+        let attachments = extractAttachments(from: resource.payload?.parts ?? [])
+
         return GoogleGmailMessage(
             id: resource.id,
             subject: subject,
             from: extractSenderName(from: fromRaw),
             snippet: resource.snippet ?? "",
             receivedAt: dateString.flatMap { parseEmailDate($0) },
-            labels: resource.labelIds ?? []
+            labels: resource.labelIds ?? [],
+            attachments: attachments
         )
+    }
+
+    private static func extractAttachments(from parts: [GmailPart]) -> [GmailAttachment] {
+        var result: [GmailAttachment] = []
+        for part in parts {
+            // Rekursiv in verschachtelten Multipart-Teilen suchen
+            if let subParts = part.parts {
+                result += extractAttachments(from: subParts)
+            }
+            guard
+                let filename = part.filename, !filename.isEmpty,
+                let attachmentID = part.body?.attachmentId, !attachmentID.isEmpty
+            else { continue }
+            result.append(GmailAttachment(
+                attachmentID: attachmentID,
+                filename: filename,
+                mimeType: part.mimeType ?? "application/octet-stream",
+                sizeBytes: part.body?.size ?? 0
+            ))
+        }
+        return result
     }
 
     static func extractSenderName(from raw: String) -> String {
@@ -181,6 +221,19 @@ private struct GmailMessageResource: Decodable {
 
 private struct GmailPayload: Decodable {
     var headers: [GmailHeader]?
+    var parts: [GmailPart]?
+}
+
+private struct GmailPart: Decodable {
+    var filename: String?
+    var mimeType: String?
+    var body: GmailPartBody?
+    var parts: [GmailPart]?    // verschachtelte Multipart-Teile
+}
+
+private struct GmailPartBody: Decodable {
+    var attachmentId: String?
+    var size: Int?
 }
 
 private struct GmailHeader: Decodable {
