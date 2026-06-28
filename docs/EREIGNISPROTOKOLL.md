@@ -30,6 +30,29 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-28 · Dampflok Iter. 0 + L1 — polish/dampflok Branch Setup + BrainSeedProvider
+
+```
+Branch: polish/dampflok (von main)
+Build:  ✅ swift build grün
+Tests:  ✅ 207 Tests grün (+6 neue: BrainSeedProviderTests)
+```
+
+**Iteration 0 (Setup):**
+- Branch `polish/dampflok` angelegt + gepusht.
+- `docs/POLISH_LOOP_LEDGER.md` erstellt (L1–L30, alle pending).
+- Airtable-Tabelle `Polish-Log` (`tblberJMgRArGSypE`) in `appuVMh3KDfKw4OoQ` angelegt.
+- `SCHALTZENTRUM_DATENSTROM.md`: Weiche `POLISH_LOG_WRITE` eingetragen.
+
+**L1 — Kalkulation echt:**
+- `AppState.swift`: `BaselineAnchorProvider()` → `BrainSeedProvider()` (Fallback bleibt).
+- `BrainSeedProvider.swift` in MykilosServices tracked und wirksam.
+- `Parsing.swift`: `parseRun` um Küche-Pattern erweitert (`5m Eichenküche` → 5 lfm).
+- `BrainSeedProviderTests.swift`: 6 Tests — CSV-Parse, Fallback, Smoke DoT > 0.
+- Commit: 51b8ed0. Polish-Log L1: done.
+
+---
+
 ## 2026-06-28 · S17 — Security-Härtung + Google Identity (feat/security-haertung)
 
 ```
