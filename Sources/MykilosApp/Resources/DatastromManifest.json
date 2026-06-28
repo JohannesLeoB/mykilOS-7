@@ -1,0 +1,156 @@
+[
+  {
+    "integrationID": "AIRTABLE_KUNDEN_PROJEKTE",
+    "name": "Airtable Kunden & Projekte",
+    "system": "Airtable",
+    "direction": "READ",
+    "link": "mykilos://datastream/AIRTABLE_KUNDEN_PROJEKTE"
+  },
+  {
+    "integrationID": "DATAFLOW_LOG_WRITE",
+    "name": "Schaltzentrum Sync-Log",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/DATAFLOW_LOG_WRITE"
+  },
+  {
+    "integrationID": "DATAFLOW_HANDBOOK_WRITE",
+    "name": "Schaltzentrum Handbuch",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/DATAFLOW_HANDBOOK_WRITE"
+  },
+  {
+    "integrationID": "POLISH_LOG_WRITE",
+    "name": "Dampflok Polish-Log",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/POLISH_LOG_WRITE"
+  },
+  {
+    "integrationID": "DRIVE_POLL_OFFERS",
+    "name": "Drive Angebots-PDF-Watcher",
+    "system": "Google Drive",
+    "direction": "READ",
+    "link": "mykilos://datastream/DRIVE_POLL_OFFERS"
+  },
+  {
+    "integrationID": "DRIVE_FILES_TAB",
+    "name": "Drive Dateien-Tab (Finder-Baum)",
+    "system": "Google Drive",
+    "direction": "READ",
+    "link": "mykilos://datastream/DRIVE_FILES_TAB"
+  },
+  {
+    "integrationID": "DRIVE_OFFERS_TAB",
+    "name": "Drive Angebote-Tab",
+    "system": "Google Drive",
+    "direction": "READ",
+    "link": "mykilos://datastream/DRIVE_OFFERS_TAB"
+  },
+  {
+    "integrationID": "DRIVE_MATERIAL_TAB",
+    "name": "Drive Material-Tab",
+    "system": "Google Drive",
+    "direction": "READ",
+    "link": "mykilos://datastream/DRIVE_MATERIAL_TAB"
+  },
+  {
+    "integrationID": "GMAIL_SEARCH",
+    "name": "Gmail Suche (Assistent)",
+    "system": "Google Gmail",
+    "direction": "READ",
+    "link": "mykilos://datastream/GMAIL_SEARCH"
+  },
+  {
+    "integrationID": "GMAIL_FULL_CACHE",
+    "name": "Postfach-Vollcache",
+    "system": "Google Gmail",
+    "direction": "READ",
+    "link": "mykilos://datastream/GMAIL_FULL_CACHE"
+  },
+  {
+    "integrationID": "CALENDAR_LIST",
+    "name": "Google Kalender Termine",
+    "system": "Google Calendar",
+    "direction": "READ",
+    "link": "mykilos://datastream/CALENDAR_LIST"
+  },
+  {
+    "integrationID": "CONTACTS_QUERY",
+    "name": "Google Kontakte-Suche",
+    "system": "Google Contacts",
+    "direction": "READ",
+    "link": "mykilos://datastream/CONTACTS_QUERY"
+  },
+  {
+    "integrationID": "GOOGLE_USERINFO",
+    "name": "Google Identität",
+    "system": "Google Identity",
+    "direction": "READ",
+    "link": "mykilos://datastream/GOOGLE_USERINFO"
+  },
+  {
+    "integrationID": "CLAUDE_MESSAGES",
+    "name": "Claude Assistent (LLM)",
+    "system": "Claude",
+    "direction": "BIDIRECTIONAL",
+    "link": "mykilos://datastream/CLAUDE_MESSAGES"
+  },
+  {
+    "integrationID": "ASSISTANT_TOOL_CALL",
+    "name": "Assistent Tool-Call Logging",
+    "system": "Lokal",
+    "direction": "READ",
+    "link": "mykilos://datastream/ASSISTANT_TOOL_CALL"
+  },
+  {
+    "integrationID": "CLICKUP_TASKS",
+    "name": "ClickUp Aufgaben",
+    "system": "ClickUp",
+    "direction": "READ",
+    "link": "mykilos://datastream/CLICKUP_TASKS"
+  },
+  {
+    "integrationID": "CLOCKODO_TODAY",
+    "name": "Clockodo heutige Einträge",
+    "system": "Clockodo",
+    "direction": "READ",
+    "link": "mykilos://datastream/CLOCKODO_TODAY"
+  },
+  {
+    "integrationID": "SEVDESK_INVOICES",
+    "name": "Sevdesk Rechnungen (Ist-Umsatz)",
+    "system": "Sevdesk",
+    "direction": "READ",
+    "link": "mykilos://datastream/SEVDESK_INVOICES"
+  },
+  {
+    "integrationID": "KALKULATION_LOCAL",
+    "name": "Kostenschätzung (lokal)",
+    "system": "Kalkulation",
+    "direction": "READ",
+    "link": "mykilos://datastream/KALKULATION_LOCAL"
+  },
+  {
+    "integrationID": "LOCAL_BRAINSEED_PRICE_ANCHORS",
+    "name": "Kalkulations-Preis-Anker (BrainSeed)",
+    "system": "Lokal",
+    "direction": "READ",
+    "link": "mykilos://datastream/LOCAL_BRAINSEED_PRICE_ANCHORS"
+  },
+  {
+    "integrationID": "LOCAL_DEVICECATALOG_ARTIKEL",
+    "name": "Geräte- & Artikel-Preisbuch (DeviceCatalog)",
+    "system": "Lokal",
+    "direction": "READ",
+    "link": "mykilos://datastream/LOCAL_DEVICECATALOG_ARTIKEL"
+  },
+  {
+    "integrationID": "DEVICE_CATALOG_LOAD",
+    "name": "Gerätekatalog laden (CSV)",
+    "system": "Lokal",
+    "direction": "READ",
+    "link": "mykilos://datastream/DEVICE_CATALOG_LOAD"
+  }
+]
