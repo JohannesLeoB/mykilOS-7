@@ -4,6 +4,9 @@ import Foundation
 // mykilOS 6 plant keine Schreibzugriffe — daher ausschließlich Readonly-Scopes.
 public enum GoogleOAuthScope: String, CaseIterable, Codable, Sendable {
     case driveMetadataReadonly  = "https://www.googleapis.com/auth/drive.metadata.readonly"
+    // Für Datei-Vorschau (L16): Vollständiges read-only auf Drive-Inhalt.
+    // Erst nach manuellem Re-Consent von Johannes aktivieren (M5).
+    case driveReadonly          = "https://www.googleapis.com/auth/drive.readonly"
     case calendarEventsReadonly = "https://www.googleapis.com/auth/calendar.events.readonly"
     // gmail.readonly (statt gmail.metadata): nur read-only, aber zwingend nötig,
     // damit die Gmail-Volltextsuche (q über Betreff UND Mail-Inhalt) funktioniert —

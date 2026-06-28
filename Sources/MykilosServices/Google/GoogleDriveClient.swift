@@ -9,14 +9,17 @@ public struct GoogleDriveFile: Identifiable, Equatable, Sendable {
     public var webViewLink: String?
     /// Dateigröße in Bytes (nil für Ordner oder wenn nicht vorhanden).
     public var fileSize: Int64?
+    /// Vorschau-Thumbnail-URL (nur wenn drive.readonly-Scope erteilt, sonst nil).
+    public var thumbnailLink: String?
 
-    public init(id: String, name: String, mimeType: String, modifiedAt: Date?, webViewLink: String?, fileSize: Int64? = nil) {
+    public init(id: String, name: String, mimeType: String, modifiedAt: Date?, webViewLink: String?, fileSize: Int64? = nil, thumbnailLink: String? = nil) {
         self.id = id
         self.name = name
         self.mimeType = mimeType
         self.modifiedAt = modifiedAt
         self.webViewLink = webViewLink
         self.fileSize = fileSize
+        self.thumbnailLink = thumbnailLink
     }
 
     public var isFolder: Bool { mimeType == "application/vnd.google-apps.folder" }
@@ -68,6 +71,9 @@ public enum GoogleDriveError: Error, Sendable, Equatable {
 public protocol GoogleDriveFetching: Sendable {
     func listFolder(folderID: String) async throws -> [GoogleDriveFile]
     func getFileName(folderID: String) async throws -> String
+    /// Lädt Dateiinhalt als rohe Bytes (erfordert drive.readonly-Scope — M5).
+    /// Für Google-native Formate (Docs/Sheets) nicht nutzbar — nur binäre Dateien (PDF, Bilder).
+    func downloadContent(fileID: String) async throws -> Data
 }
 
 // MARK: - GoogleDriveClient
@@ -106,6 +112,24 @@ public struct GoogleDriveClient: GoogleDriveFetching {
         return try Self.parseFiles(from: data)
     }
 
+    /// Lädt rohe Bytes einer binären Datei (PDF, Bild) — erfordert drive.readonly-Scope.
+    public func downloadContent(fileID: String) async throws -> Data {
+        guard let accessToken = try? await tokenProvider.validAccessToken() else {
+            throw GoogleDriveError.notConnected
+        }
+        guard let url = URL(string: "\(baseURL)/\(fileID)?alt=media&supportsAllDrives=true") else {
+            throw GoogleDriveError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse,
+              (200...299).contains(http.statusCode) else {
+            throw GoogleDriveError.httpError((response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+        return data
+    }
+
     /// Holt nur den Namen einer Datei/eines Ordners (für den Breadcrumb-Header).
     public func getFileName(folderID: String) async throws -> String {
         guard let accessToken = try? await tokenProvider.validAccessToken() else {
@@ -130,7 +154,7 @@ public struct GoogleDriveClient: GoogleDriveFetching {
         var components = URLComponents(string: baseURL)
         components?.queryItems = [
             URLQueryItem(name: "q", value: "'\(folderID)' in parents and trashed=false"),
-            URLQueryItem(name: "fields", value: "files(id,name,mimeType,modifiedTime,webViewLink,size)"),
+            URLQueryItem(name: "fields", value: "files(id,name,mimeType,modifiedTime,webViewLink,size,thumbnailLink)"),
             URLQueryItem(name: "pageSize", value: "100"),
             URLQueryItem(name: "orderBy", value: "folder,name"),
             // Shared Drive (Team Drive) Support — ohne diese zwei Parameter liefert
@@ -153,7 +177,8 @@ public struct GoogleDriveClient: GoogleDriveFetching {
                     mimeType: entry.mimeType,
                     modifiedAt: entry.modifiedTime.flatMap { isoFormatter.date(from: $0) },
                     webViewLink: entry.webViewLink,
-                    fileSize: entry.size.flatMap { Int64($0) }
+                    fileSize: entry.size.flatMap { Int64($0) },
+                    thumbnailLink: entry.thumbnailLink
                 )
             }
         } catch {
@@ -173,4 +198,5 @@ private struct GoogleDriveFileEntry: Decodable {
     var modifiedTime: String?
     var webViewLink: String?
     var size: String?
+    var thumbnailLink: String?
 }

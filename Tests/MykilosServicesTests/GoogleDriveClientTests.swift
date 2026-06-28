@@ -13,7 +13,7 @@ struct GoogleDriveClientTests {
         let items = Dictionary(uniqueKeysWithValues: (components?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
 
         #expect(items["q"] == "'ABC123' in parents and trashed=false")
-        #expect(items["fields"] == "files(id,name,mimeType,modifiedTime,webViewLink,size)")
+        #expect(items["fields"] == "files(id,name,mimeType,modifiedTime,webViewLink,size,thumbnailLink)")
         #expect(items["supportsAllDrives"] == "true")
         #expect(items["includeItemsFromAllDrives"] == "true")
     }
@@ -68,6 +68,31 @@ struct GoogleDriveClientTests {
         } catch {
             #expect(error as? GoogleDriveError == .notConnected)
         }
+    }
+
+    @Test func downloadContentURLEnthaeltAltMedia() {
+        let base = "https://www.googleapis.com/drive/v3/files"
+        let fileID = "pdf_123"
+        let url = URL(string: "\(base)/\(fileID)?alt=media&supportsAllDrives=true")
+        #expect(url != nil)
+        #expect(url?.absoluteString.contains("alt=media") == true)
+        #expect(url?.absoluteString.contains(fileID) == true)
+    }
+
+    @Test func parseDateiEnthaeltThumbnailLink() throws {
+        let json = """
+        {"files":[{"id":"f1","name":"Plan.pdf","mimeType":"application/pdf","webViewLink":"https://drive.google.com/x","thumbnailLink":"https://lh3.google.com/thumb"}]}
+        """.data(using: .utf8)!
+        let files = try GoogleDriveClient.parseFiles(from: json)
+        #expect(files.first?.thumbnailLink == "https://lh3.google.com/thumb")
+    }
+
+    @Test func parseOhneThumbNilBleibt() throws {
+        let json = """
+        {"files":[{"id":"f2","name":"Kein.pdf","mimeType":"application/pdf"}]}
+        """.data(using: .utf8)!
+        let files = try GoogleDriveClient.parseFiles(from: json)
+        #expect(files.first?.thumbnailLink == nil)
     }
 
     @Test func iconNameMapptMimeTypes() {
