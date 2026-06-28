@@ -71,6 +71,12 @@ Tests:  ✅ 207 Tests grün (+6 neue: BrainSeedProviderTests)
   in Airtable Datenstrom-Handbuch registriert.
 - 215 Tests grün. Commit: 573c16e. Polish-Log L3: done.
 
+**Datenpfad-Fix (5b955b6) — BrainSeedProvider + DeviceCatalog:**
+- `BrainSeedProvider.defaultURL`: sucht zuerst `~/Claude/Projects/mykilOS/MYKILOS 6/_Daten/Kalkulation/Brain/active_price_anchors.csv`, dann Application Support als Fallback.
+- `DeviceCatalog.defaultURL()`: analog für `Devices/catalog.csv`.
+- Beide CSVs liegen bereits bereit (203 echte Tischler-Anker, 5.565 Geräte/Beschläge). Keine Test-Änderung nötig.
+- 217 Tests grün. Commit: 5b955b6.
+
 **L5 — Alle Ströme instrumentieren (DataFlowLogger):**
 - `ConversationEngine.swift`: `dataFlowLogger: DataFlowLogger?` in `init` aufgenommen.
   `runLoop`: nach jedem `registry.run(...)` → `dataFlowLogger?.log(integrationID: toolUse.name, ...)`.
