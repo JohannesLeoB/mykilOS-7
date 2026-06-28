@@ -99,6 +99,15 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v4_reconciled_boards — merkt sich je boardID, ob der einmalige
+        // canonicalLayout-Reconcile bereits gelaufen ist. Danach respektiert
+        // der Store User-Entscheidungen (Widget entfernen bleibt permanent).
+        migrator.registerMigration("v4_reconciled_boards") { db in
+            try db.create(table: "reconciledBoards") { t in
+                t.primaryKey("boardID", .text)
+            }
+        }
+
         try migrator.migrate(queue)
     }
 

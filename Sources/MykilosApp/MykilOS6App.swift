@@ -120,9 +120,20 @@ struct ContentView: View {
                 if appState.profile.profile?.isComplete == true { module = .settings }
                 else { showOnboarding = true }
             })
+            // fixedSize(horizontal:) verhindert, dass der HStack die Sidebar
+            // komprimiert, wenn die Detail-Pane eine große intrinsische Breite
+            // propagiert. layoutPriority(1) stellt sicher, dass die Sidebar
+            // zuerst ihren Platz einfordert.
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(1)
             Divider().overlay(MykColor.line.color)
             moduleView
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // minWidth: 0 verhindert, dass die Pane eine Mindestbreite
+                // propagiert, die das Fenster aufzieht. .clipped() klemmt
+                // transiente Übergrößen während Layout-Pässen ab.
+                .frame(minWidth: 0, maxWidth: .infinity,
+                       minHeight: 0, maxHeight: .infinity)
+                .clipped()
         }
         .background(MykColor.paper.color)
         // Nur MIN/MAX, KEIN idealWidth/idealHeight: der Mindestrahmen gibt der
@@ -228,7 +239,7 @@ struct ComingSoonView: View {
     let module: AppModule
     var body: some View {
         ZStack {
-            MykColor.paper.color.ignoresSafeArea()
+            MykColor.paper.color
             Text("\(module.rawValue) — kommt in einem späteren Akt")
                 .font(.mykBody).foregroundStyle(MykColor.muted.color)
         }

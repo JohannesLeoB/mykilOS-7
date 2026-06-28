@@ -43,26 +43,38 @@ public final class WidgetBoardStore {
             try save()
         } else {
             instances = records.map(\.toDomain)
-            // Nicht-destruktive Migration: fehlende kanonische Widgets anhängen,
-            // vorhandene Reihenfolge/Einstellungen bleiben unberührt.
-            try reconcileCanonicalWidgets()
+            // Einmalige Migration: fehlende kanonische Widgets anhängen.
+            // Nach dem ersten Lauf ist boardID in reconciledBoards; danach
+            // respektiert der Store User-Entscheidungen (entfernte Widgets
+            // kommen nicht zurück).
+            try reconcileCanonicalWidgetsOnce()
         }
     }
 
-    // Hängt jede Widget-Art aus dem board-spezifischen defaultLayout ans Ende,
-    // die noch nicht im Board ist. Idempotent — safe, auch mehrfach aufgerufen.
-    // Nutzt defaultLayout() statt einer harten Referenz auf canonicalLayout,
-    // damit Home-Boards keine Projekt-Widgets erhalten.
-    private func reconcileCanonicalWidgets() throws {
+    // Läuft genau einmal je boardID. Danach ist boardID in `reconciledBoards`
+    // gespeichert und User-Entscheidungen (Widget entfernt) bleiben permanent.
+    private func reconcileCanonicalWidgetsOnce() throws {
+        let alreadyDone = try db.read { dbConn in
+            try Row.fetchOne(dbConn,
+                sql: "SELECT 1 FROM reconciledBoards WHERE boardID = ?",
+                arguments: [boardID]) != nil
+        }
+        guard !alreadyDone else { return }
         let presentKinds = Set(instances.map(\.kind))
         let missing = defaultLayout().filter { !presentKinds.contains($0.kind) }
-        guard !missing.isEmpty else { return }
-        var nextPosition = (instances.map(\.position).max() ?? -1) + 1
-        for template in missing {
-            instances.append(WidgetInstance(kind: template.kind, size: template.size, position: nextPosition))
-            nextPosition += 1
+        if !missing.isEmpty {
+            var nextPosition = (instances.map(\.position).max() ?? -1) + 1
+            for template in missing {
+                instances.append(WidgetInstance(kind: template.kind, size: template.size, position: nextPosition))
+                nextPosition += 1
+            }
+            try save()
         }
-        try save()
+        try db.write { dbConn in
+            try dbConn.execute(
+                sql: "INSERT OR IGNORE INTO reconciledBoards (boardID) VALUES (?)",
+                arguments: [boardID])
+        }
     }
 
     // MARK: Speichern — Der Vertrag (throws, SaveState sichtbar)

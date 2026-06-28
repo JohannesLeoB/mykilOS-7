@@ -14,7 +14,7 @@ struct TodayView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            MykColor.paper.color.ignoresSafeArea()
+            MykColor.paper.color
             VStack(spacing: 0) {
                 commandBar
                 Divider().overlay(MykColor.line.color)
