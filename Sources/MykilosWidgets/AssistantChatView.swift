@@ -188,22 +188,32 @@ public struct AssistantChatView: View {
 
             // Live-Zugriffe (nur wenn nicht im Schätzchat-Modus)
             if !schaetzModus {
-                HStack(spacing: MykSpace.s4) {
-                    Image(systemName: toolsEnabled ? "bolt.fill" : "bolt.slash")
-                        .font(.mykCaption)
-                        .foregroundStyle(toolsEnabled ? MykColor.positive.color : MykColor.faint.color)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(toolsEnabled ? "Live-Zugriffe aktiv" : "Live-Zugriffe aus")
-                            .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
-                        Text(toolsEnabled
-                             ? "Mail, Kalender, Drive, Aufgaben, Kontakte & Studio-Wissen werden bei Bedarf gelesen und an Anthropic gesendet."
-                             : "Aktivieren, damit der Assistent Mail, Kalender, Drive, Aufgaben & Kontakte lesen darf.")
-                            .font(.mykMono(9)).foregroundStyle(MykColor.faint.color).lineLimit(2)
+                VStack(spacing: 0) {
+                    HStack(spacing: MykSpace.s4) {
+                        Image(systemName: toolsEnabled ? "bolt.fill" : "bolt.slash")
+                            .font(.mykCaption)
+                            .foregroundStyle(toolsEnabled ? MykColor.positive.color : MykColor.faint.color)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(toolsEnabled ? "Live-Zugriffe aktiv" : "Live-Zugriffe aus")
+                                .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+                            Text(toolsEnabled
+                                 ? "Lesen bei Bedarf, senden an Anthropic."
+                                 : "Aktivieren f\u{00FC}r Mail, Kalender, Drive, Aufgaben & Kontakte.")
+                                .font(.mykMono(9)).foregroundStyle(MykColor.faint.color).lineLimit(1)
+                        }
+                        Spacer()
+                        Toggle("", isOn: $toolsEnabled).labelsHidden().toggleStyle(.switch).scaleEffect(0.8)
                     }
-                    Spacer()
-                    Toggle("", isOn: $toolsEnabled).labelsHidden().toggleStyle(.switch).scaleEffect(0.8)
+                    .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s3)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: MykSpace.s2) {
+                            ForEach(AssistantCapability.allCases, id: \.label) { cap in
+                                AssistantCapabilityChip(cap: cap, active: toolsEnabled)
+                            }
+                        }
+                        .padding(.horizontal, MykSpace.s9).padding(.bottom, MykSpace.s3)
+                    }
                 }
-                .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s3)
                 .overlay(alignment: .top) { Divider().overlay(MykColor.line.color) }
             }
         }
@@ -438,6 +448,64 @@ struct ThinkingIndicator: View {
         .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s4)
         .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
         .onReceive(timer) { _ in phase = (phase + 1) % 3 }
+    }
+}
+
+// MARK: - AssistantCapability + AssistantCapabilityChip (L15)
+// Zeigt welche Live-Tools verfügbar sind — sichtbare Capability-Chips im optInBar.
+enum AssistantCapability: CaseIterable {
+    case gmail, kalender, drive, aufgaben, kontakte, studio, kalkulation
+
+    var label: String {
+        switch self {
+        case .gmail:       "Gmail"
+        case .kalender:    "Kalender"
+        case .drive:       "Drive"
+        case .aufgaben:    "Aufgaben"
+        case .kontakte:    "Kontakte"
+        case .studio:      "Studio-Wissen"
+        case .kalkulation: "Kalkulation"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .gmail:       "envelope"
+        case .kalender:    "calendar"
+        case .drive:       "folder"
+        case .aufgaben:    "checkmark.square"
+        case .kontakte:    "person.2"
+        case .studio:      "building.2"
+        case .kalkulation: "eurosign.square"
+        }
+    }
+
+    var color: MykColor {
+        switch self {
+        case .gmail, .kalender, .kontakte: .people
+        case .drive:       .drive
+        case .aufgaben:    .tasks
+        case .studio:      .brand
+        case .kalkulation: .tasks
+        }
+    }
+}
+
+struct AssistantCapabilityChip: View {
+    let cap: AssistantCapability
+    let active: Bool
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: cap.icon)
+            Text(cap.label)
+        }
+        .font(.mykMono(8.5))
+        .foregroundStyle(active ? cap.color.color : MykColor.faint.color)
+        .padding(.horizontal, MykSpace.s3)
+        .padding(.vertical, 3)
+        .background(Capsule().fill(active ? cap.color.color.opacity(0.1) : MykColor.faint.color.opacity(0.06)))
+        .overlay(Capsule().stroke(active ? cap.color.color.opacity(0.25) : MykColor.line.color, lineWidth: 1))
     }
 }
 
