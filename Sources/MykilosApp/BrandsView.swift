@@ -12,7 +12,7 @@ struct BrandsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: MykSpace.s7) {
-                Text("Marken & Daten")
+                Text("Integrationen")
                     .font(.mykDisplay)
                     .foregroundStyle(MykColor.ink.color)
                 Text("Datenquellen und Verbindungen dieses Studios.")

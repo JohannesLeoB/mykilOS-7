@@ -62,7 +62,7 @@ enum AppModule: String, CaseIterable, Identifiable {
     case today        = "Heute"
     case projects     = "Projekte"
     case assistant    = "Assistent"
-    case brands       = "Marken & Daten"
+    case brands       = "Integrationen"
     case offers       = "Angebote"
     case kalkulation  = "Kalkulation"
     case settings     = "Einstellungen"
@@ -378,7 +378,7 @@ struct AppCommands: Commands {
                 .keyboardShortcut("2", modifiers: .command)
             Button("Assistent")       { activeModule = .assistant }
                 .keyboardShortcut("3", modifiers: .command)
-            Button("Marken & Daten")  { activeModule = .brands }
+            Button("Integrationen")   { activeModule = .brands }
                 .keyboardShortcut("4", modifiers: .command)
             Button("Angebote")        { activeModule = .offers }
                 .keyboardShortcut("5", modifiers: .command)
