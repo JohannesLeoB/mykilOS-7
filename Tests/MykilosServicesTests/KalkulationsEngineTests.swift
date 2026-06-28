@@ -122,4 +122,48 @@ struct KalkulationsEngineTests {
         let none = await engine.geraetepreis(suchbegriff: "nichtvorhandenerbegriffxyz")
         #expect(none == nil)
     }
+
+    // MARK: L4 — Lern-Loop Audit-Pfad (promote schreibt AuditEntry)
+    @Test @MainActor func promoteSchreibtAuditEntry() async throws {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("mykilos-l4-audit-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let db = try GRDBDatabase(url: dir.appendingPathComponent("test.sqlite"))
+        let auditStore = AuditStore(db: db)
+        let learningStore = LearningStore(directory: dir)
+        let engine = KalkulationsEngine(
+            provider: BaselineAnchorProvider(),
+            learningStore: learningStore,
+            auditStore: auditStore
+        )
+
+        // 3× Anpassung mit lernen: true → Kandidat entsteht.
+        let freitext = "5 laufmeter unterschränke"
+        for _ in 0..<3 {
+            let s = try await engine.schaetze(projektID: "P-audit", freitext: freitext)
+            try await engine.recordAdjustment(schaetzungsID: s.schaetzungsID, faktor: 1.1, grund: "Markt", lernen: true)
+        }
+
+        // Kandidat promoten → AuditEntry(.calibrationPromoted) wird geschrieben.
+        let stand = try await engine.lernUebersicht()
+        if let kandidat = stand.kandidaten.first {
+            try await engine.promote(candidateID: kandidat.id)
+            let entries = await auditStore.entries
+            let promoted = entries.filter {
+                if case .calibrationPromoted = $0.action { return true }
+                return false
+            }
+            #expect(!promoted.isEmpty, "promote() muss AuditEntry(.calibrationPromoted) schreiben")
+            #expect(promoted.first?.projectID == "kalkulation")
+        }
+
+        // recordAdjustment schreibt AuditEntry(.estimateAdjusted) — 3 Stück.
+        let adjustEntries = await auditStore.entries.filter {
+            if case .estimateAdjusted = $0.action { return true }
+            return false
+        }
+        #expect(adjustEntries.count == 3)
+    }
 }

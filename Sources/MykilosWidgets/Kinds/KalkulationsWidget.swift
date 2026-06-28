@@ -355,6 +355,13 @@ public struct KalkulationsWidget: View {
                 await ladeLernStand()
                 lernExpanded = true
             }
+            // Card nach 2,5 s in Ruhestand zurückversetzen (inkl. Felder zurücksetzen),
+            // damit der Nutzer sofort eine weitere Anpassung erfassen kann.
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            adjustmentState = .idle
+            faktor = 1.0
+            grund = ""
+            lernen = false
         } catch {
             adjustmentState = .failed(error.localizedDescription)
         }
@@ -379,6 +386,10 @@ public struct KalkulationsWidget: View {
             try await engine.promote(candidateID: kandidat.id)
             promoteBestaetigung = "Kalibrierung übernommen: \(kandidat.grundLabel) · \(kandidat.zielLabel)"
             await ladeLernStand()
+            // Bestätigungszeile nach 3 s ausblenden — der Kandidat ist nun als
+            // aktiver Faktor in der Liste sichtbar, die Meldung nicht mehr nötig.
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            promoteBestaetigung = nil
         } catch {
             lernState = .error(error.localizedDescription)
         }
