@@ -61,8 +61,8 @@ Reihenfolge = Priorität. Status: `pending` | `done` | `blocked`.
 
 | ID | Titel | Status | Commit | Tests | Notiz |
 |----|-------|--------|--------|-------|-------|
-| L22 | Signal-Monitore: Budget/Deadline/DriveFile echte Emitter | done | 3e5c60e | 237 | CashWidget emittiert budgetThresholdCrossed nach Sevdesk-Load (ratio >= 90%); DriveFile bereits live |
-| L23 | Mail-Vollcache (GmailCacheStore + GmailSyncService) | pending | — | — | |
+| L22 | Signal-Monitore: Budget/Deadline/DriveFile echte Emitter | done | f8f27e3 | 238 | CashWidget budgetThresholdCrossed ≥0.9; TasksWidget deadlineNear ≤7 Tage; DriveOfferWatcher driveFileAdded für Nicht-Angebote; +1 GATE-Test |
+| L23 | Mail-Vollcache (GmailCacheStore + GmailSyncService) | done | ef09d76 | 243 | GmailCacheStore actor + TTL; SearchGmailTool Cache-Hit vor API; 5 GATE-Tests |
 | L24 | Kontakt-Kontext im Assistenten (Airtable Kontakte) | pending | — | — | |
 
 ## Block 8 — UI-Politur
