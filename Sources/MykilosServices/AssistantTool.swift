@@ -84,7 +84,11 @@ private let toolDateFormatter: DateFormatter = {
 // MARK: - SearchGmailTool (read-only) — beantwortet „Wo ist die Mail an …?"
 public struct SearchGmailTool: AssistantTool {
     private let client: GoogleGmailFetching
-    public init(client: GoogleGmailFetching = GoogleGmailClient()) { self.client = client }
+    private let cache: GmailCacheStore?
+    public init(client: GoogleGmailFetching = GoogleGmailClient(), cache: GmailCacheStore? = nil) {
+        self.client = client
+        self.cache = cache
+    }
 
     public let name = "search_gmail"
     public let description =
@@ -99,7 +103,14 @@ public struct SearchGmailTool: AssistantTool {
         let query = (input["query"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard query.isEmpty == false else { return ToolRunResult(text: "Leere Suchabfrage.", isError: true) }
         do {
-            let messages = try await client.searchMessages(query: query, maxResults: 10)
+            let messages: [GoogleGmailMessage]
+            if let hit = await cache?.cached(for: query) {
+                messages = hit
+            } else {
+                let fresh = try await client.searchMessages(query: query, maxResults: 10)
+                await cache?.store(fresh, for: query)
+                messages = fresh
+            }
             guard messages.isEmpty == false else {
                 return ToolRunResult(text: "Keine Mails für „\(query)“ gefunden.")
             }
@@ -491,6 +502,7 @@ public struct AssistantToolRegistry: Sendable {
     /// `kalkulationsEngine` ergänzt `schaetze_projekt`, `drive` ergänzt `list_drive_folder`.
     public static func standard(
         gmail: GoogleGmailFetching = GoogleGmailClient(),
+        gmailCache: GmailCacheStore? = nil,
         calendar: GoogleCalendarFetching = GoogleCalendarClient(),
         drive: GoogleDriveFetching = GoogleDriveClient(),
         contacts: GoogleContactsFetching = GoogleContactsClient(),
@@ -500,7 +512,7 @@ public struct AssistantToolRegistry: Sendable {
         deviceCatalog: DeviceCatalog? = DeviceCatalog.loadDefault()
     ) -> AssistantToolRegistry {
         var tools: [any AssistantTool] = [
-            SearchGmailTool(client: gmail),
+            SearchGmailTool(client: gmail, cache: gmailCache),
             ListCalendarTool(client: calendar),
             SuggestCalendarEventTool(),
             ListDriveFolderTool(client: drive),
