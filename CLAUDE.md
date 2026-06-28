@@ -110,17 +110,15 @@ anklickbar bleiben. Build/Unit-Tests allein reichen nicht.
 Vollständiger Befund und Fixvertrag:
 [HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md](docs/handoffs/HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md)
 
-**🟢 Release 6.3.0 — App-Vollständigkeit + Phase 3 CalendarActionCard + BrandsView-Fix (Branch `sprint/shared-drive-widget-oauth`).**
-Alle ursprünglichen „in Vorbereitung"-Oberflächen sind live. **Sidebar:** Angebote
-(`GlobalOffersView`) und Marken & Daten (`BrandsView`, Integrations-Dashboard).
-**Projekt-Tabs:** Assistent (Chat scoped auf Projektnummer) und Dateien (`FilesTabView`).
-**Phase 3 (Aufgabe 20):** `SuggestCalendarEventTool` + `CalendarActionCard` — wenn
-Claude einen Termin empfiehlt, erscheint eine klickbare Karte die Google Kalender im
-Browser öffnet (kein API-Write, nur URL). `.calendarAction`-Block in `ChatContentBlock`,
-nie an die API gesendet. **169 Tests grün.** Offen: Google live verifizieren.
-**Session 3 (Bugfix):** `BrandsView`-Navigationsbug behoben — `@FocusedBinding` → Callback.
-**Aufgabe 14 (Bugfixes + Streaming):** SSE-Streaming live tippend, UserProfile im Prompt,
-dynamische Beispielfragen, Chat-Verlauf-Löschen, 2 Bugfixes (Integer-Decode, Wizard-X).
+**🟢 Release 6.4.0 — UI-Bootcamp: Sidebar-Collapse, MYKILOS Orange CI, neues App-Icon.**
+⌘⇧S Sidebar-Toggle live (via `CommandMenu("Navigation")`, zuverlässig). `MykColor.brand`
+(`#EA5B25`) als neuer Design-Token. Sidebar-Footer entclustered: ein HStack, Settings-Icon +
+Toggle-Icon. Brand-Logo solid Orange, kein Gradient. `SidebarIconButton`-Komponente. Neues
+App-Icon: orange Squircle + „MY" bold weiß (alle 10 macOS-Dock-Größen). `GeometryReader`
+als harte Pane-Grenze (verhindert Widget-Grid-Drift). Stabile `RowID`s in Galerie-Listen.
+Fallback-Tag `ui/sidebar-ci-stable` gesetzt. Drive-Ordner `1Q-H_3JsZfiXosFmxtNgoy0hI3cvZLgST`
+= PROJEKTE-Root verifiziert ✅ (31 Ordner). Repo aufgeräumt: 13 claude/*-Branches + 14
+alte Feature-Branches gelöscht. **192 Tests grün (30 Suites).**
 
 **Akt 5 abgeschlossen.** Politur, Dark Mode, DMG. Aufgabe 9/10: `DriveOfferWatcher`
 als Live-Quelle für `offerDetected` + Angebote-Tab. **Aufgabe 11 (Stabilisierung)**
@@ -187,7 +185,8 @@ Daten sind heilig; bei Datenverlust-Gefahr warnen.
 | Kalkulations-Port, Schritt 7 | ✅ | **`recordAdjustment`-Flow live**: bestätigte Anpassung → `LearningStore.appendAdjustment` (append-only) + `AuditEntry` (`.estimateAdjusted`). `schaetze` persistiert Session → `KostenSchaetzung.schaetzungsID`. `KalkulationsActionCard` (Faktor-Slider + Grund + Bestätigung, kein Auto-Write). Neuer Cold-Start-Test `recordAdjustmentUeberlebtNeustart`. Branch `feat/kalkulation-record-adjustment`. **197 Tests**. |
 | Kalkulations-Port, Schritt 8 | ✅ | **Lern-Loop sichtbar**: `recordAdjustment` bekommt `lernen: Bool` (3-Arg-Convenience via Protokoll-Extension hält Schritt-7-Aufrufer grün). Neue Engine-/Protokoll-Methoden `lernUebersicht() -> KalkulationsLernStand` (neue MykilosKit-Value-Types, kein Core-Leak) + `promote(candidateID:)` → `AuditEntry(.calibrationPromoted)`. Widget: Lern-Toggle an der ActionCard + ausklappbare Sektion „Gelernte Kalibrierung" (aktive Faktoren + Promote-Button, alle Renderstates). Neuer Cold-Start-Test `lernLoopUeberlebtNeustartUndVerschiebtSchaetzung` (3× learn → promote → Neustart → Estimator verschiebt mitteNetto). Branch `feat/kalkulation-calibration-loop`. **198 Tests**. Nur noch `importPDF` ist Stub. |
 | S10 Learning (Tisch) | ✅ | **mykilOS Dev Collective gegründet**: Team Charter (14 Statuten + Kulturregel), Roadmap S17–S20, Artikel-DB `appdxTeT6bhSBmwx5` entdeckt + READ ONLY-Tabu verankert, PAT-Sicherheitsanalyse, ConversationEngine-Architektur als Tool-Use-Schleife bestätigt (kein Intent-Switch), Studio-Stundensätze von KalkulationsEngine getrennt, S18-Architektur entschieden (scope-Threading für projektID, schaetze darf schreiben). Erfahrungsträger-Archiv für alle Sessions unter `docs/erfahrungstraeger/`. TEAM_BRIEFING.md erstellt. |
-| S17 | ✅ | **Security-Härtung** (`feat/security-haertung`): AirtableSyncService No-Op bestätigt, `AirtableError.invalidBaseID` + Validierung, `GoogleUserInfo` (Domain) + `GoogleUserInfoClient` + Scopes (`userinfo.email/profile`), `GoogleAuthService.currentUser` + Hook (nicht-fatal), `AppState.currentGoogleUser`, Sidebar zeigt Google-Name + E-Mail, PAT-Cleanup dokumentiert. **209 Tests**. Offen: Re-Consent live + PAT-Cleanup manuell (Johannes). |
+| S17 | ✅ | **Security-Härtung** (`feat/security-haertung`): AirtableSyncService No-Op bestätigt, `AirtableError.invalidBaseID` + Validierung, `GoogleUserInfo` (Domain) + `GoogleUserInfoClient` + Scopes (`userinfo.email/profile`), `GoogleAuthService.currentUser` + Hook (nicht-fatal), `AppState.currentGoogleUser`, Sidebar zeigt Google-Name + E-Mail, PAT-Cleanup dokumentiert. Offen: Re-Consent live + PAT-Cleanup manuell (Johannes). |
+| UI-Bootcamp | ✅ | **Version 6.4.0**: ⌘⇧S Sidebar-Toggle (CommandMenu), `MykColor.brand` #EA5B25, SidebarIconButton, Sidebar-Footer entclustered, Brand-Logo solid Orange, neues App-Icon (MY orange Squircle, 10 Größen), GeometryReader-Pane-Boundary, stabile Row-IDs, Fallback-Tag `ui/sidebar-ci-stable`, Repo-Cleanup (27 Branches gelöscht). **192 Tests.** Details: [HANDOFF_UI_BOOTCAMP_SIDEBAR.md](docs/handoffs/HANDOFF_UI_BOOTCAMP_SIDEBAR.md) |
 | S18 | 📋 | **Kalkulations-Chat-Tool** im `ConversationEngine`: neues Tool in `AssistantToolRegistry`, projektID via scope-Threading, `schaetze` → strukturierte Antwort im Chat. |
 
 ---
@@ -296,6 +295,7 @@ Tests/
 ```
 --paper    #FAF8F3   Grund
 --ink      #1A1814   Tinte
+--brand    #EA5B25   MYKILOS Orange  → Sidebar-Icons, Brand-Elemente
 --drive    #C26B4A   Terrakotta  → Dateien/Drive
 --people   #6E8B6A   Salbei      → Menschen/Kalender
 --tasks    #C99A3E   Ocker       → Aufgaben/ClickUp
@@ -318,32 +318,28 @@ Kein Sync-Backend in V1.
 
 ## Nächste Schritte
 
-Akt 0–5 und alle dokumentierten Post-Akt-5-Verfeinerungen sind abgeschlossen.
-Die App ist feature-complete für Beta. **Beide ursprünglichen Stub-Widgets sind
-jetzt live** — Tasks (ClickUp, Aufgabe 7) und Cash (Sevdesk, Aufgabe 8) — und
-mit Aufgabe 9 hat auch `offerDetected` eine echte Live-Quelle. Alle Widgets
-lesen echte Daten, die Integrations-Landkarte ist vollständig.
+**Version 6.4.0 ist die aktuelle stabile Version.** UI stabil, Fallback-Tag
+`ui/sidebar-ci-stable` gesetzt, Repo aufgeräumt. Code-Basis ready für Live-Wiring.
 
-**Was nach Plan noch offen ist:** Mit Aufgaben 15–18 sind alle ursprünglich geplanten
-„in Vorbereitung"-Oberflächen live: Projekt-Tabs Assistent und Dateien, Sidebar-Module
-Angebote und Marken & Daten. Noch „ComingSoon": Projekt-Tabs Timeline und Material
-(keine Datenquelle vorhanden). Offen: Google live verifizieren, Phase 3 ChatActionCard.
+**🎯 Nächste Session — Identitätsmodell + Wire-by-Wire (Checkliste in
+[HANDOFF_IDENTITY_AND_WIRE_CHECK.md](docs/handoffs/HANDOFF_IDENTITY_AND_WIRE_CHECK.md)):**
 
-**🎯 Nächste Session (Live-Wiring 2) — konkreter Plan, siehe
-[HANDOFF_LIVE_WIRING_1.md](docs/handoffs/HANDOFF_LIVE_WIRING_1.md):**
-1. `DemoSeed` durch die echten 31 Projekte/30 Kunden aus
-   `docs/registry/projekte.json`/`kunden.json` ersetzen (größter Hebel —
-   macht Budget-/Phase-Anzeigen automatisch real statt hartkodiert).
-2. Verbleibende hartkodierte Demo-Bugs fixen: `ProjectHeroView` (72%-Budget-
-   Balken fix), `FocusWidget` (Text ignoriert echtes Signal-Projekt),
-   `CashWidget` (Angebotstext hartkodiert).
-3. Demo-Signal-Buttons (`SignalDemoView`, `HomeDemoSignalButton`) zu echten
-   "Jetzt prüfen"-Force-Polls gegen `DriveOfferWatcher` umbauen.
-4. Neue Tabs: Zeichnungen (PDF-Vorschau, Quelle `02 CAD`), Material
-   (Quelle `03 PRÄSENTATION`), Abnahme-Bereich.
-5. Optional: `RegistryStore.syncFromAirtable` testweise gegen die neue
-   Mastermind-Base (`appuVMh3KDfKw4OoQ`, bereits mit 69 Records befüllt)
-   laufen lassen, sobald Settings auf diese Base-ID zeigen.
+**PHASE A — Code (alleine, ~90 min):**
+1. `UserProfile` um `clockodoUserID: String?` + `googleDomain: String?` erweitern
+2. `IdentityView` in Settings (ganz oben: „Wer bin ich?" mit Google read-only + lokale Felder)
+3. `IntegrationStatusView` — alle 6 Services Traffic-Light in Settings
+4. `GoogleUserInfo` in UserDefaults persistieren (kein Sidebar-Flackern nach Neustart)
+
+**PHASE B — Live mit Johannes (Wire-by-Wire):**
+```
+Voraussetzung: Settings → Airtable → Base-ID = appuVMh3KDfKw4OoQ (nicht der PAT!)
+B1: Airtable-Sync  → 31 echte Projekte in Galerie
+B2: Drive          → DriveWidget + FilesTab + OffersTab
+B3: Kalender       → CalendarWidget
+B4: Mail           → MailWidget
+B5: ClickUp        → erst wenn Listen-IDs in Airtable eingetragen
+B6: Cash/Sevdesk   → erst wenn sevdeskRef + Budget in Airtable
+```
 
 **Aus Post-Akt-5 Aufgabe 10 (Angebote-Tab):**
 - Der Projekt-Tab „Angebote" (`OffersTabView`, in `MykilosApp/Detail/`) war ein
@@ -680,6 +676,11 @@ und Session-Regeln: `docs/codex/WORKFLOW.md`.
 - `docs/handoffs/HANDOFF_LIVE_WIRING_3.md` — Live-Wiring Session 3: BrandsView-Navigationsbug, 169 Tests, Live-App-Tour
 - `docs/handoffs/HANDOFF_LIVE_WIRING_4.md` — Live-Wiring Session 4 (geplant): Clockodo Zuhörer
 - `docs/handoffs/HANDOFF_LIVE_WIRING_5.md` — Live-Wiring Session 5 (geplant): mykilO$$ Vollintegration
+- `docs/handoffs/HANDOFF_S17.md` — Security-Härtung: GoogleUserInfo, AirtableError.invalidBaseID, PAT-Cleanup
+- `docs/handoffs/HANDOFF_UI_BOOTCAMP_SIDEBAR.md` — UI-Bootcamp: Sidebar-CI, Brand-Orange, App-Icon 6.4.0
+- `docs/handoffs/HANDOFF_IDENTITY_AND_WIRE_CHECK.md` — Identitätsmodell + Wire-by-Wire Checkliste
+- `docs/handoffs/HANDOFF_SESSION_ABSCHLUSS_2026-06-28.md` — Master-Status 2026-06-28: alle Baustellen, Verzeichnisse
+- `docs/handoffs/HANDOFF_SESSION_640.md` — Session 6.4.0 Abschluss: vollständiger Zustand, Bugs B1–B7, Startprompt
 
 ---
 
