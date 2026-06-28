@@ -295,9 +295,9 @@ struct ChatMessageBubble: View {
         HStack {
             if message.role == .user { Spacer(minLength: 40) }
             VStack(alignment: message.role == .user ? .trailing : .leading, spacing: MykSpace.s2) {
-                // Tool-Spuren (Quelle sichtbar) über der Antwort.
+                // Tool-Spuren (Quelle sichtbar, L12: mit Zeitstempel) über der Antwort.
                 ForEach(Array(toolActivities.enumerated()), id: \.offset) { _, activity in
-                    ToolCallRow(label: activity.label, isError: activity.isError)
+                    ToolCallRow(label: activity.label, isError: activity.isError, timestamp: message.createdAt)
                 }
                 bubble
                 // Kalender-Aktionskarten nach der Antwort.
@@ -346,7 +346,8 @@ struct ChatMessageBubble: View {
 
     @ViewBuilder
     private var bubble: some View {
-        if message.role == .assistant, message.status == .streaming, message.text.isEmpty {
+        let isStreaming = message.role == .assistant && message.status == .streaming
+        if isStreaming, message.text.isEmpty {
             HStack(spacing: 6) {
                 ProgressView().scaleEffect(0.6).tint(MykColor.muted.color)
                 Text("denkt nach …").font(.mykSmall).foregroundStyle(MykColor.muted.color)
@@ -354,7 +355,8 @@ struct ChatMessageBubble: View {
             .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s4)
             .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
         } else {
-            Text(Self.rendered(message.text))
+            let displayText = isStreaming ? message.text + "▌" : message.text
+            Text(Self.rendered(displayText))
                 .font(.mykBody)
                 .foregroundStyle(message.role == .user ? MykColor.paper.color : MykColor.ink.color)
                 .textSelection(.enabled)
@@ -417,10 +419,11 @@ struct CalendarActionCard: View {
 }
 
 // MARK: - ToolCallRow
-// Sichtbare Spur eines gelaufenen read-only Tools („Quelle ist immer sichtbar").
+// Sichtbare Spur eines gelaufenen read-only Tools (L12: welches Tool, wann).
 struct ToolCallRow: View {
     let label: String
     let isError: Bool
+    var timestamp: Date? = nil
 
     var body: some View {
         HStack(spacing: 6) {
@@ -429,11 +432,24 @@ struct ToolCallRow: View {
             Text(label)
                 .font(.mykMono(9.5))
                 .lineLimit(1)
+            if let ts = timestamp {
+                Text(relativeTime(ts))
+                    .font(.mykMono(9))
+                    .foregroundStyle(MykColor.faint.color)
+            }
         }
         .foregroundStyle(isError ? MykColor.critical.color : MykColor.muted.color)
         .padding(.horizontal, MykSpace.s4)
         .padding(.vertical, 3)
         .background(Capsule().fill(MykColor.card.color))
+    }
+
+    private func relativeTime(_ date: Date) -> String {
+        let diff = -date.timeIntervalSinceNow
+        if diff < 60   { return "gerade eben" }
+        if diff < 3600 { return "vor \(Int(diff / 60)) min" }
+        let h = Int(diff / 3600)
+        return "vor \(h) \(h == 1 ? "Std" : "Std")"
     }
 }
 
