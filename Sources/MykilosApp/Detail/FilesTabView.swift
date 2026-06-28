@@ -11,14 +11,16 @@ import MykilosWidgets
 @MainActor
 @Observable
 final class DriveTreeNode: Identifiable {
+    nonisolated let id: String   // nonisolated: Identifiable erfordert zugänglich ohne Actor-Hop
     let file: GoogleDriveFile
     var children: [DriveTreeNode]?
     var isExpanded = false
     var isLoading = false
 
-    var id: String { file.id }
-
-    init(file: GoogleDriveFile) { self.file = file }
+    init(file: GoogleDriveFile) {
+        self.id = file.id
+        self.file = file
+    }
 }
 
 // MARK: - DriveTreeStore

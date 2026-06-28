@@ -22,8 +22,8 @@ struct ProjectDetailView: View {
     private var noteStore:  NoteStore        { appState.notes(for: project.projectNumber) }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
+        ZStack(alignment: .bottomLeading) {
+            VStack(alignment: .leading, spacing: 0) {
                 // Fester Header (Hero + Tabs) — immer sichtbar, nicht scrollbar.
                 ProjectHeroView(
                     project:  project,
@@ -91,6 +91,8 @@ struct ProjectDetailView: View {
     }
 
     // MARK: Tab-Leiste
+    // frame(maxWidth: .infinity) verhindert, dass der HStack eine zu große
+    // preferred width nach oben meldet und den ZStack verschiebt (P0-Fix).
     private var tabBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
@@ -103,6 +105,7 @@ struct ProjectDetailView: View {
             .padding(.horizontal, MykSpace.s9)
             .padding(.top, MykSpace.s5)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
