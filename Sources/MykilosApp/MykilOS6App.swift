@@ -63,6 +63,7 @@ enum AppModule: String, CaseIterable, Identifiable {
     case projects     = "Projekte"
     case assistant    = "Assistent"
     case brands       = "Integrationen"
+    case kataloge     = "Kataloge"
     case offers       = "Angebote"
     case kalkulation  = "Kalkulation"
     case settings     = "Einstellungen"
@@ -73,6 +74,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .projects:    "square.grid.2x2"
         case .assistant:   "sparkles"
         case .brands:      "building.2"
+        case .kataloge:    "books.vertical"
         case .offers:      "doc.text"
         case .kalkulation: "eurosign.square"
         case .settings:    "gearshape"
@@ -222,6 +224,7 @@ struct ContentView: View {
         case .assistant:   AssistantPageView()
         case .offers:      GlobalOffersView()
         case .brands:      BrandsView(onNavigateToSettings: { module = .settings })
+        case .kataloge:    KatalogeView()
         case .kalkulation: KalkulationsPageView()
         case .settings:    SettingsView()
         }
@@ -380,6 +383,8 @@ struct AppCommands: Commands {
                 .keyboardShortcut("3", modifiers: .command)
             Button("Integrationen")   { activeModule = .brands }
                 .keyboardShortcut("4", modifiers: .command)
+            Button("Kataloge")        { activeModule = .kataloge }
+                .keyboardShortcut("8", modifiers: .command)
             Button("Angebote")        { activeModule = .offers }
                 .keyboardShortcut("5", modifiers: .command)
             Button("Kalkulation")     { activeModule = .kalkulation }
