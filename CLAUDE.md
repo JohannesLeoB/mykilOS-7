@@ -130,11 +130,12 @@ verifiziert**. Dazu kam ein Multi-Agent-Bug-Audit mit Fixes (Notiz-Datenverlust,
 Signal-Leck, Loader-Races u. a.). **118 Tests grün.** Details in
 [HANDOFF_POST_AKT5_11.md](docs/handoffs/HANDOFF_POST_AKT5_11.md).
 
-**⚠️ Externe Daten — harte NO-GOs (User, 2026-06-27):** Sevdesk nie lesen/schreiben;
-die geteilte Airtable-Base nie schreiben/editieren/löschen/verschieben; der
-verlinkte Google-Drive-Ordner (`0AOeReQBQKkKBUk9PVA`) **read-only** — Kopie nur zu
-ausdrücklich genanntem Ziel, Änderung nur per schriftlicher Chat-Erlaubnis. Externe
-Daten sind heilig; bei Datenverlust-Gefahr warnen.
+**⚠️ Externe Daten — harte NO-GOs (User, 2026-06-27/28):**
+- Sevdesk nie lesen/schreiben.
+- Die geteilte Airtable-Base (`appkPzoEiI5eSMkNK`) nie anfassen; Artikel-DB (`appdxTeT6bhSBmwx5`) read-only.
+- Google-Drive-Ordner (`0AOeReQBQKkKBUk9PVA`) **read-only** — Kopie nur zu ausdrücklich genanntem Ziel.
+- **Airtable-Einträge dürfen NIEMALS gelöscht oder direkt überschrieben werden** (auch nicht in `appuVMh3KDfKw4OoQ`). Inaktivierung erfolgt ausschließlich per Status-/Archiv-Feld (z. B. `Status = "Archived"`). Kein DELETE-Endpoint, niemals.
+- Externe Daten sind heilig; bei Datenverlust-Gefahr sofort warnen.
 
 | Akt | Status | Inhalt |
 |---|---|---|
