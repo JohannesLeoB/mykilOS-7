@@ -13,7 +13,7 @@ struct GoogleDriveClientTests {
         let items = Dictionary(uniqueKeysWithValues: (components?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
 
         #expect(items["q"] == "'ABC123' in parents and trashed=false")
-        #expect(items["fields"] == "files(id,name,mimeType,modifiedTime,webViewLink)")
+        #expect(items["fields"] == "files(id,name,mimeType,modifiedTime,webViewLink,size)")
     }
 
     @Test func parseFilesDekodiertResponse() throws {

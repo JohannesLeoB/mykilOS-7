@@ -101,4 +101,9 @@ final class FakeDriveClient: GoogleDriveFetching, @unchecked Sendable {
         if let error { throw error }
         return files
     }
+
+    func getFileName(folderID: String) async throws -> String {
+        if let error { throw error }
+        return "TestOrdner"
+    }
 }
