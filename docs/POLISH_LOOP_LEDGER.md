@@ -20,7 +20,7 @@ Reihenfolge = Priorität. Status: `pending` | `done` | `blocked`.
 | ID | Titel | Status | Commit | Tests | Notiz |
 |----|-------|--------|--------|-------|-------|
 | L5 | Alle Ströme instrumentieren (DataFlowLogger) | done | 5d50c26 | 217 | ConversationEngine.runLoop loggt jeden Tool-Call (success/error); AppState injiziert dataFlow; GATE-Test dataFlowLoggerLogtJedesToolRun |
-| L6 | Knoten-Link (mykilos://datastream/<ID>) im Handbuch | pending | — | — | |
+| L6 | Knoten-Link (mykilos://datastream/<ID>) im Handbuch | done | e17d07e | 223 | DatastromManifest.json (22 Weichen) + 6 GATE-Tests (Existenz/JSON/Count/IDs/Felder/Link-Format) |
 | L7 | SchaltzentrumView — Live-Anzeige Weichen + letzter Handshake | pending | — | — | |
 | L8 | Vollständigkeits-Audit (SCHALTZENTRUM_DATENSTROM.md) | pending | — | — | |
 

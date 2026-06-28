@@ -71,6 +71,13 @@ Tests:  ✅ 207 Tests grün (+6 neue: BrainSeedProviderTests)
   in Airtable Datenstrom-Handbuch registriert.
 - 215 Tests grün. Commit: 573c16e. Polish-Log L3: done.
 
+**L6 — Knoten-Link + DatastromManifest (e17d07e):**
+- `Sources/MykilosApp/Resources/DatastromManifest.json`: 22 Weichen als JSON-Array mit
+  `integrationID`, `name`, `system`, `direction`, `link` (`mykilos://datastream/<ID>`).
+- `DatastromManifestTests.swift`: 6 GATE-Tests — Datei vorhanden, gültiges JSON, count ≥ 3,
+  alle integrationIDs gesetzt, alle Pflichtfelder, Link-Format korrekt.
+- 223 Tests grün (+6). Commit: e17d07e.
+
 **Datenpfad-Fix (5b955b6) — BrainSeedProvider + DeviceCatalog:**
 - `BrainSeedProvider.defaultURL`: sucht zuerst `~/Claude/Projects/mykilOS/MYKILOS 6/_Daten/Kalkulation/Brain/active_price_anchors.csv`, dann Application Support als Fallback.
 - `DeviceCatalog.defaultURL()`: analog für `Devices/catalog.csv`.
