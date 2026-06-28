@@ -25,6 +25,8 @@ public struct AssistantChatView: View {
     // Datenschutz-Opt-in: Tools (Gmail/Kalender lesen) gehen erst nach bewusster
     // Aktivierung an die Anthropic-API. Default AUS, persistent.
     @AppStorage("assistant.toolsEnabled") private var toolsEnabled = false
+    // Schätzchat-Modus: nur schaetze_projekt aktiv, projektlose Eingabe erlaubt.
+    @AppStorage("assistant.schaetzModus") private var schaetzModus = false
 
     public init(
         scope: ChatScope,
@@ -161,45 +163,75 @@ public struct AssistantChatView: View {
         }
     }
 
-    // MARK: Datenschutz-Opt-in für Live-Tools
+    // MARK: Datenschutz-Opt-in für Live-Tools + Schätzchat-Toggle
     private var optInBar: some View {
-        HStack(spacing: MykSpace.s4) {
-            Image(systemName: toolsEnabled ? "bolt.fill" : "bolt.slash")
-                .font(.mykCaption)
-                .foregroundStyle(toolsEnabled ? MykColor.positive.color : MykColor.faint.color)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(toolsEnabled ? "Live-Zugriffe aktiv" : "Live-Zugriffe aus")
-                    .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
-                Text(toolsEnabled
-                     ? "Mail, Kalender, Drive, Aufgaben, Kontakte & Studio-Wissen werden bei Bedarf gelesen und an Anthropic gesendet."
-                     : "Aktivieren, damit der Assistent Mail, Kalender, Drive, Aufgaben & Kontakte lesen darf.")
-                    .font(.mykMono(9)).foregroundStyle(MykColor.faint.color).lineLimit(2)
+        VStack(spacing: 0) {
+            // Schätzchat-Modus
+            HStack(spacing: MykSpace.s4) {
+                Image(systemName: schaetzModus ? "function" : "function")
+                    .font(.mykCaption)
+                    .foregroundStyle(schaetzModus ? MykColor.tasks.color : MykColor.faint.color)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(schaetzModus ? "Schätzchat aktiv" : "Chat")
+                        .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+                    Text(schaetzModus
+                         ? "Nur Kostenschätzung aktiv. Eingabe: z. B. '5m Eichenküche'. Kein Mail/Kalender/Drive."
+                         : "Schätzchat aktivieren für projektlose Kostenschätzungen per KI.")
+                        .font(.mykMono(9)).foregroundStyle(MykColor.faint.color).lineLimit(2)
+                }
+                Spacer()
+                Toggle("", isOn: $schaetzModus).labelsHidden().toggleStyle(.switch).scaleEffect(0.8)
+                    .tint(MykColor.tasks.color)
             }
-            Spacer()
-            Toggle("", isOn: $toolsEnabled).labelsHidden().toggleStyle(.switch).scaleEffect(0.8)
+            .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s3)
+            .overlay(alignment: .top) { Divider().overlay(MykColor.line.color) }
+
+            // Live-Zugriffe (nur wenn nicht im Schätzchat-Modus)
+            if !schaetzModus {
+                HStack(spacing: MykSpace.s4) {
+                    Image(systemName: toolsEnabled ? "bolt.fill" : "bolt.slash")
+                        .font(.mykCaption)
+                        .foregroundStyle(toolsEnabled ? MykColor.positive.color : MykColor.faint.color)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(toolsEnabled ? "Live-Zugriffe aktiv" : "Live-Zugriffe aus")
+                            .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+                        Text(toolsEnabled
+                             ? "Mail, Kalender, Drive, Aufgaben, Kontakte & Studio-Wissen werden bei Bedarf gelesen und an Anthropic gesendet."
+                             : "Aktivieren, damit der Assistent Mail, Kalender, Drive, Aufgaben & Kontakte lesen darf.")
+                            .font(.mykMono(9)).foregroundStyle(MykColor.faint.color).lineLimit(2)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $toolsEnabled).labelsHidden().toggleStyle(.switch).scaleEffect(0.8)
+                }
+                .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s3)
+                .overlay(alignment: .top) { Divider().overlay(MykColor.line.color) }
+            }
         }
-        .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s3)
-        .overlay(alignment: .top) { Divider().overlay(MykColor.line.color) }
     }
 
     // MARK: Eingabe
     private var composer: some View {
-        HStack(alignment: .bottom, spacing: MykSpace.s4) {
-            TextField("Nachricht an den Assistenten …", text: $draft, axis: .vertical)
+        let placeholder = schaetzModus
+            ? "Schätze mir: z. B. '5m Eichenküche' ..."
+            : "Nachricht an den Assistenten ..."
+        return HStack(alignment: .bottom, spacing: MykSpace.s4) {
+            TextField(placeholder, text: $draft, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.mykBody)
                 .lineLimit(1...5)
                 .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s4)
                 .background(
                     RoundedRectangle(cornerRadius: MykRadius.md)
-                        .fill(MykColor.card.color)
-                        .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
+                        .fill(schaetzModus ? MykColor.tasks.color.opacity(0.07) : MykColor.card.color)
+                        .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(
+                            schaetzModus ? MykColor.tasks.color.opacity(0.4) : MykColor.line.color,
+                            lineWidth: 1))
                 )
                 .onSubmit { send(draft) }
             Button { send(draft) } label: {
                 Image(systemName: engine.isResponding ? "ellipsis" : "arrow.up.circle.fill")
                     .font(.mykHeadline)
-                    .foregroundStyle(canSend ? MykColor.ink.color : MykColor.faint.color)
+                    .foregroundStyle(canSend ? (schaetzModus ? MykColor.tasks.color : MykColor.ink.color) : MykColor.faint.color)
             }
             .buttonStyle(.plain)
             .disabled(canSend == false)
@@ -223,6 +255,7 @@ public struct AssistantChatView: View {
                 focusedDriveFolderID: focusedDriveFolderID,
                 focusedClickUpListID: focusedClickUpListID,
                 signals: signals, projects: projects, toolsEnabled: toolsEnabled,
+                schaetzModusEnabled: schaetzModus,
                 profile: profile
             )
         }

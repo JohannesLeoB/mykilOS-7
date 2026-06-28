@@ -475,6 +475,11 @@ public struct AssistantToolRegistry: Sendable {
         tools.map { $0.wireDefinition() }
     }
 
+    /// Nur `schaetze_projekt` — für den Schätzchat-Modus (kein Mail/Kalender/Drive-Leak).
+    public func schaetzDefinitions() -> [ClaudeToolDefinition] {
+        tools.filter { $0.name == "schaetze_projekt" }.map { $0.wireDefinition() }
+    }
+
     /// Führt ein Tool aus. Unbekannter/nicht erlaubter Name → Deny-Ergebnis.
     /// `projektID` → `_projektID`, `driveFolderID` → `_driveFolderID` (injiziert,
     /// kein Protokollbruch: `_`-Präfix-Keys sendet Claude nicht selbst).

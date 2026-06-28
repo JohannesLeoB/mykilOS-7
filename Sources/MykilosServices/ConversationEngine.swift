@@ -72,6 +72,7 @@ public final class ConversationEngine {
         signals: [WidgetSignal],
         projects: [Project],
         toolsEnabled: Bool = false,
+        schaetzModusEnabled: Bool = false,
         now: Date = Date(),
         profile: UserProfile? = nil
     ) async {
@@ -89,25 +90,35 @@ public final class ConversationEngine {
             return   // Persistenzfehler ist über chatStore.saveState sichtbar.
         }
 
+        // Schätzchat: nur schaetze_projekt, projektlose Eingabe erlaubt.
+        let effectiveProjectID = focusedProjectID ?? (schaetzModusEnabled ? "schaetzung" : nil)
+
         // API-Konversation: persistierter Verlauf (ohne den leeren Platzhalter),
         // plus die transienten tool_use/tool_result-Turns dieser Runde.
         var convo = chatStore.messages(for: scope).filter { $0.id != placeholder.id }
-        let has: (String) -> Bool = { name in toolsEnabled && (self.registry?.toolNames.contains(name) == true) }
+        let effectiveToolsEnabled = toolsEnabled || schaetzModusEnabled
+        let has: (String) -> Bool = { name in effectiveToolsEnabled && (self.registry?.toolNames.contains(name) == true) }
         let kalkulationsEnabled = has("schaetze_projekt")
         // Werkzeuge nennen wir dem Modell nur, wenn sie a) registriert UND b) im
         // aktuellen Scope sinnvoll sind (Drive/ClickUp brauchen eine Projekt-Handle).
-        let driveEnabled      = has("list_drive_folder")   && (focusedDriveFolderID?.isEmpty == false)
-        let clickUpEnabled    = has("list_clickup_tasks")  && (focusedClickUpListID?.isEmpty == false)
-        let contactsEnabled   = has("search_contacts")
-        let studioBrainEnabled = has("query_studio_knowledge")
+        let driveEnabled      = !schaetzModusEnabled && has("list_drive_folder") && (focusedDriveFolderID?.isEmpty == false)
+        let clickUpEnabled    = !schaetzModusEnabled && has("list_clickup_tasks") && (focusedClickUpListID?.isEmpty == false)
+        let contactsEnabled   = !schaetzModusEnabled && has("search_contacts")
+        let studioBrainEnabled = !schaetzModusEnabled && has("query_studio_knowledge")
         let system = AssistantGrounding.systemPrompt(
-            profile: profile, focusedProjectID: focusedProjectID,
-            signals: signals, projects: projects, now: now, toolsEnabled: toolsEnabled,
+            profile: profile, focusedProjectID: effectiveProjectID,
+            signals: signals, projects: projects, now: now, toolsEnabled: effectiveToolsEnabled,
             kalkulationsEnabled: kalkulationsEnabled,
             driveEnabled: driveEnabled, contactsEnabled: contactsEnabled,
             clickUpEnabled: clickUpEnabled, studioBrainEnabled: studioBrainEnabled
         )
-        let tools = (toolsEnabled ? registry?.definitions() : nil) ?? []
+        // Schätzchat bekommt NUR schaetze_projekt — kein Mail/Kalender/Drive-Leak.
+        let tools: [ClaudeToolDefinition]
+        if schaetzModusEnabled {
+            tools = registry?.schaetzDefinitions() ?? []
+        } else {
+            tools = (toolsEnabled ? registry?.definitions() : nil) ?? []
+        }
 
         do {
             var activities: [ChatContentBlock] = []
@@ -115,7 +126,7 @@ public final class ConversationEngine {
             let onTextDelta: (String) -> Void = { [chatStore] text in
                 chatStore.updateStreamingText(id: placeholderID, text: text, in: scope)
             }
-            let finalText = try await runLoop(convo: &convo, activities: &activities, system: system, tools: tools, focusedProjectID: focusedProjectID, focusedDriveFolderID: focusedDriveFolderID, focusedClickUpListID: focusedClickUpListID, onTextDelta: onTextDelta)
+            let finalText = try await runLoop(convo: &convo, activities: &activities, system: system, tools: tools, focusedProjectID: effectiveProjectID, focusedDriveFolderID: focusedDriveFolderID, focusedClickUpListID: focusedClickUpListID, onTextDelta: onTextDelta)
             // Tool-Spuren (Transparenz) vor die Antwort; nur Anzeige, nicht an die API.
             try chatStore.updateAssistantTurn(
                 id: placeholder.id, blocks: activities + [.text(finalText)], status: .complete, in: scope

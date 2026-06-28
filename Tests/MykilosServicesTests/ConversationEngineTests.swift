@@ -127,6 +127,39 @@ struct ConversationEngineTests {
         await engine.send("frage", scope: .home, focusedProjectID: nil, signals: [], projects: [], toolsEnabled: false)
         #expect(provider.lastTools.isEmpty)   // Opt-in aus → keine Tools an die API
     }
+
+    // MARK: L2 — Schätzchat-Modus GATE
+    @Test func schaetzchatToolNichtImNormalModus() async throws {
+        let store = ChatStore(db: try GRDBDatabase.inMemory())
+        let engine = FakeKalkulationsEngine()
+        let registry = AssistantToolRegistry.standard(kalkulationsEngine: engine)
+        let provider = ScriptedProvider(responses: [textResponse("Ich kalkule nicht.")])
+        let conv = ConversationEngine(chatStore: store, provider: provider, registry: registry)
+        // Normal-Modus, toolsEnabled = false → schaetze_projekt NICHT in Tools
+        let noSignals: [WidgetSignal] = []
+        let noProjects: [Project] = []
+        await conv.send("frage", scope: ChatScope.home, focusedProjectID: nil, signals: noSignals, projects: noProjects,
+                        toolsEnabled: false, schaetzModusEnabled: false)
+        let names = provider.lastTools.map(\.name)
+        #expect(names.contains("schaetze_projekt") == false)
+    }
+
+    @Test func schaetzchatToolNurImSchaetzModus() async throws {
+        let store = ChatStore(db: try GRDBDatabase.inMemory())
+        let engine = FakeKalkulationsEngine()
+        let registry = AssistantToolRegistry.standard(kalkulationsEngine: engine)
+        let provider = ScriptedProvider(responses: [textResponse("Schätzung folgt.")])
+        let conv = ConversationEngine(chatStore: store, provider: provider, registry: registry)
+        // Schätz-Modus → schaetze_projekt in Tools; KEIN anderes Tool
+        let noSignals: [WidgetSignal] = []
+        let noProjects: [Project] = []
+        await conv.send("4m Eichenschränke", scope: ChatScope.home, focusedProjectID: nil, signals: noSignals, projects: noProjects,
+                        toolsEnabled: false, schaetzModusEnabled: true)
+        let names = provider.lastTools.map(\.name)
+        #expect(names.contains("schaetze_projekt"))
+        // Nur schaetze_projekt — kein Mail/Kalender/Drive
+        #expect(names.allSatisfy { $0 == "schaetze_projekt" })
+    }
 }
 
 // Provider, der streamText mit mehreren Deltas simuliert (kein respond()-Aufruf).
@@ -158,4 +191,20 @@ private final class FakeGmailForEngine: GoogleGmailFetching, @unchecked Sendable
     func searchMessages(query: String, maxResults: Int) async throws -> [GoogleGmailMessage] {
         lastQuery = query; return messages
     }
+}
+
+private final class FakeKalkulationsEngine: KalkulationsEngineProviding, @unchecked Sendable {
+    func schaetze(projektID: String, freitext: String) async throws -> KostenSchaetzung {
+        KostenSchaetzung(schaetzungsID: "fake-id", projektID: projektID,
+                         minNetto: 1000, maxNetto: 2000, mitteNetto: 1500,
+                         confidence: 0.7, evidenceCount: 3,
+                         kostenboden: 800, kostenbodenRatio: 0.5, topEvidences: [])
+    }
+    func geraetepreis(suchbegriff: String) async -> Double? { nil }
+    func importPDF(driveFileID: String, projektID: String) async throws {}
+    func recordAdjustment(schaetzungsID: String, faktor: Double, grund: String, lernen: Bool) async throws {}
+    func lernUebersicht() async throws -> KalkulationsLernStand {
+        KalkulationsLernStand(sessions: 0, adjustments: 0, outliers: 0, aktiveFaktoren: [], kandidaten: [])
+    }
+    func promote(candidateID: String) async throws {}
 }
