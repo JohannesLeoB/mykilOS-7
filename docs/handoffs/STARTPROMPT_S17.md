@@ -2,7 +2,7 @@
 
 ```
 Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
-Branch: feat/kalkulation-calibration-loop (oder main nach Merge von S16)
+Branch: main (S16-Kette ist als Fast-Forward nach main gemergt — main = aktueller Stand)
 Build:  ✅ 198 Tests grün (179 swift-testing + 19 XCTest)
 Datum:  2026-06-28
 ```
@@ -60,62 +60,101 @@ git log --oneline -3
 swift build && swift test 2>&1 | tail -5
 ```
 
-Falls S16 gemergt: `git checkout main && git pull`. Sonst auf
-`feat/kalkulation-calibration-loop` bleiben und neuen Branch abzweigen:
+S16 ist als Fast-Forward nach `main` gemergt (main enthält die ganze Linie inkl.
+`stabilize` + Kalkulation 1–8, 198 Tests). Starte sauber von `main`:
 ```bash
+git checkout main && git pull
 git checkout -b feat/security-haertung
 ```
+Hinweis: Die Forks `claude/musing-sammet-3abd94` (PR #1, aktiv) und
+`sprint/shared-drive-widget-oauth` (+70, divergent) sind bewusst NICHT in `main` —
+das sind eigene Entscheidungen von Johannes, nicht S17s Aufgabe.
 
 ---
 
-## ⚠️ Wichtiger Vorab-Check (S16-Finding, ehrlich gemeldet)
+## ⚠️ Aufgabe 1 ist ein No-Op (verifiziert in S16 — über ALLE Refs geprüft)
 
-Die Roadmap nennt als S17-Aufgabe 1 das **Löschen von `AirtableSyncService.swift`**
-(3 Regelverstöße: ENV-Secrets, fremde Base `appkPzoEiI5eSMkNK`, `DispatchSemaphore`).
+Die Roadmap nennt als Aufgabe 1 das Löschen von `AirtableSyncService.swift`
+(angeblich 3 Regelverstöße: ENV-Secrets, fremde Base `appkPzoEiI5eSMkNK`, `DispatchSemaphore`).
 
-**Befund aus S16:** Diese Datei existiert auf dem aktuellen Branch
-(`feat/kalkulation-calibration-loop` ← `…-record-adjustment` ← `…-core-port`) **NICHT**:
+**Befund (4-Agenten-Forensik in S16, gegen `git rev-list --all` geprüft):** Die Datei
+existiert in **KEINEM Ref dieses Repos** — nicht auf `feat/kalkulation-calibration-loop`,
+nicht auf `main`, in keinem erreichbaren Commit, keinem Blob im Object-Store. Beweis:
 ```bash
-find Sources -name "AirtableSyncService.swift"      # → leer
-grep -rln "AirtableSyncService\|appkPzoEiI5eSMkNK\|DispatchSemaphore" Sources Tests
-                                                     # → nur Doku-Treffer, kein Code
+git grep -lI 'AirtableSyncService|appkPzoEiI5eSMkNK|DispatchSemaphore' -- '*.swift'
+# → leer (Exit 1). MUSS leer bleiben.
 ```
-Sie liegt vermutlich auf einer anderen Branch-Linie (z. B. `main`/`stabilize` oder
-einem Live-Wiring-Branch). **Bevor du Aufgabe 1 angehst:** kläre mit dem Tisch/Johannes,
-auf welchem Branch der echte Integrationsstand liegt und ob die Kalkulations-Branches
-zuerst nach `main` gemergt werden. Sonst löschst du etwas, das hier gar nicht liegt,
-oder die Härtung landet auf dem falschen Fundament (Statut 14).
+Die „3 Verstöße" sind **doc-only** — sie stammen aus `HANDOFF_LIVE_WIRING_5.md:220-221`
+und beschreiben einen **V5-/mykilO$$-Fremdcodebase**-Artefakt, der hier nie eingecheckt
+wurde. Auch ein Merge der Kalkulations-Branches nach `main` bringt die Datei NICHT mit.
+
+**Konsequenz:** Aufgabe 1 ist **erledigt**. Kein Löschen nötig. Stattdessen den
+Guard-Grep als Beweis in den Bericht aufnehmen und sicherstellen, dass künftige
+Kalkulations-Ports **nie** ENV-Secret-/Fremd-Base-/`DispatchSemaphore`-Muster einführen
+(nur `AirtableClient.createRecord` gegen die Mastermind-Base `appuVMh3KDfKw4OoQ`).
 
 ---
 
 ## Dein Auftrag: Security-Härtung + technische Schulden
 
-Scope bewusst klein halten — kein Feature-Bloat.
+Scope bewusst klein halten — kein Feature-Bloat. **Empfohlene Reihenfolge: 1 → 3 → 2.**
 
-### 1) `AirtableSyncService.swift` löschen (NUR falls vorhanden, siehe Vorab-Check)
-- 3 Regelverstöße: ENV-Secrets statt Keychain, fremde Base `appkPzoEiI5eSMkNK`
-  (stillgelegt, NIE anfassen), `DispatchSemaphore` (blockierend).
-- Sicherstellen, dass nichts mehr darauf referenziert; `swift build` grün halten.
+### 1) `AirtableSyncService.swift` — bestätigt abwesend (No-Op, ~5 Min)
+- Guard-Grep oben laufen lassen (muss leer bleiben), abhaken, Roadmap-/Bericht-Wortlaut
+  von „löschen" auf „bestätigt abwesend" korrigieren. Kein Code-Change.
 
-### 2) Google-Identität nach Login anzeigen
-- Nach dem Token-Tausch `GET https://www.googleapis.com/oauth2/v2/userinfo`
-  (mit Access-Token) → `GoogleUserInfo(email, displayName)`.
-- Keychain-Cache (gleiches Muster wie `KeychainGoogleTokenStore`).
-- `AppState.currentGoogleUser` → Anzeige in der Sidebar (`SidebarView`).
-- **Test (Merge-Gate-tauglich):** JSON-Parsing des userinfo-Response OHNE Netzwerk
-  (injizierbarer HTTP-Client, gleiches Muster wie `ClaudeMessagesClient`/`GoogleDriveClient`).
-- Relevante Dateien: `Sources/MykilosServices/Google/` (neue `GoogleUserInfoClient`),
-  `GoogleAuthService.swift`, `Sources/MykilosApp/Data/AppState.swift`,
-  `Sources/MykilosApp/.../SidebarView.swift`.
+### 3) Airtable baseID-Validierung in Settings (klein, isoliert, hoher Sicherheitswert)
+- **Einziger Validierungspunkt:** `AirtableAuthService.connect(pat:baseID:)`
+  (`Sources/MykilosServices/Airtable/AirtableAuthService.swift:78-92`), direkt nach dem
+  Trim/Empty-Guard. Es ist der **einzige** Caller-Pfad (`SettingsView.swift:486`) und
+  gatet die Keychain-Persistenz (Zeile 86) vor jedem Sync.
+- **Regel:** `trimmedBase.hasPrefix("app")` **plus loser Längen-Sanity-Check** (Base-IDs =
+  „app" + 14 = 17 Zeichen; Range statt exakter Gleichheit → vorwärtskompatibel). Optional
+  defensiv `pat`-Prefix ablehnen für schärfere Meldung.
+- **Fehler:** neuer Case `AirtableError.invalidBaseID(String)` (`AirtableClient.swift:5-10`).
+  Meldung z. B. „Base-ID muss mit ‚app' beginnen (z. B. `appuVMh3KDfKw4OoQ`) — vermutlich
+  wurde der PAT ins Base-ID-Feld eingefügt." Rendert bereits über `airtableError`
+  (`SettingsView.swift:432-436`) + Status-Badge — `status=.error(...)` und geworfene
+  Message konsistent halten.
+- **Test:** `AirtableAuthServiceTests` mit Fake-Store: `pat`-förmig/kurz → abgelehnt,
+  `appuVMh3KDfKw4OoQ` → akzeptiert.
+- ⚠️ **Kein Auto-Repair:** Die Validierung verhindert nur künftige Fehl-Speicherungen.
+  Der bereits korrupte Keychain-Eintrag bleibt — **separater manueller Schritt für
+  Johannes:** `appuVMh3KDfKw4OoQ` einmal in den Einstellungen neu eintragen.
 
-### 3) Airtable baseID-Validierung in Settings
-- `baseID` muss mit `app` beginnen (Airtable-Konvention) — klare Fehlermeldung
-  statt stillem 404 beim Sync.
-- Relevante Dateien: `Sources/MykilosApp/.../SettingsView.swift`,
-  `Sources/MykilosServices/Airtable/AirtableAuthService.swift`.
-- Hinweis: Es gibt einen bekannten Keychain-Bug, bei dem die gespeicherte `baseID`
-  versehentlich den PAT enthielt statt `appuVMh3KDfKw4OoQ`. Die Validierung hilft,
-  das künftig früh zu fangen.
+### 2) Google-Identität nach Login anzeigen (größte Aufgabe)
+- 🟢 **ENTSCHEIDUNG GETROFFEN (Johannes, S16-Abschluss): VOLL umsetzen.** `userinfo.email`
+  **und** `userinfo.profile` ergänzen (Name + E-Mail in der Sidebar). Re-Consent
+  (einmaliges Neuverbinden) ist **akzeptiert** — Johannes ist faktisch der einzige Nutzer.
+  Also direkt umsetzen, nicht erneut fragen.
+- 🔴 **PFLICHT-SCHRITT (sonst 401/403):** `GoogleOAuthScope.readOnlyDefaults`
+  (`GoogleOAuthModels.swift:14-16`) enthält **keine** `userinfo`-Scopes. Beide Scopes
+  (`userinfo.email` + `userinfo.profile`) zu `GoogleOAuthScope` + `readOnlyDefaults`
+  hinzufügen, sonst liefert der userinfo-Endpoint nichts. `prompt=consent` ist bereits
+  gesetzt (`GoogleOAuthPKCEService.swift:63`) → ein Reconnect zieht die neuen Scopes
+  automatisch.
+- **Hook-Point:** `GoogleAuthService.swift:81`, direkt nach `try tokenStore.store(tokens)`
+  und vor `status = .connected`. Dort liegt `response.accessToken` frisch im Scope.
+  userinfo holen → `GoogleUserInfo` im Keychain cachen → `.connected`. **userinfo-Fehler
+  nicht-fatal** (do/catch, trotzdem `.connected` — ein Profil-Hiccup darf den Login nie
+  zurückrollen).
+- **Zu spiegelndes Muster:** `ClaudeMessagesClient.swift` (injizierbares HTTP-Client-
+  Protokoll + `URLSession`-Conformance + statische `buildRequest`/`parse…`) — **NICHT**
+  `GoogleDriveClient` (nimmt `URLSession` direkt, schlechter stubbar).
+- **Neue Dateien:** `GoogleUserInfoClient.swift` (definiert `GoogleUserInfo(email,
+  displayName)`, `GoogleHTTPClient`-Protokoll, Client gegen `…/oauth2/v2/userinfo`,
+  statisches `parseUserInfo(from:)`, Mapping `name`→`displayName`, `email`→`email`)
+  + `GoogleUserInfoClientTests.swift` (FakeHTTP wie `ClaudeChatClientTests.swift:128-131`).
+- **Modulgrenze:** `GoogleUserInfo` gehört nach **`MykilosKit/Domain`** (Präzedenz:
+  `GoogleConnectionStatus`), darf kein SwiftUI importieren — so referenzieren Services
+  UND App es sauber.
+- **Touch-Points:** `GoogleAuthService.swift` (Fetch + Init-Rehydrierung aus Cache),
+  `KeychainGoogleTokenStore.swift` (`storeUserInfo`/`loadUserInfo` + Löschung in `clear()`
+  Zeile 59), `AppState.swift` (`public var currentGoogleUser: GoogleUserInfo?`, befüllt in
+  `bootstrap()` ~160-181 + nach Connect), `Sources/MykilosApp/Shell/SidebarView.swift`
+  (navFoot-Button 62-91 zeigt Google-Identität statt/neben dem manuellen Profilnamen).
+- **Test (Merge-Gate):** statisches `parseUserInfo(from: Data)` mit literalem JSON,
+  kein Netzwerk — wie alle bestehenden Google-Client-Tests.
 
 ---
 

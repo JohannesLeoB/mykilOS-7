@@ -34,8 +34,8 @@ nie dauerhafter Arbeitsort.
 
 | Branch | Basis | Tests | Zweck |
 |---|---|---|---|
-| `main` | älteste Basis | ~97 | Post-Akt-5 Aufgaben 1–5 |
-| `stabilize/from-0b7c366-2026-06-28` | `0b7c366` | **169** ✅ | Codex Recovery — aktuell sauberster Stand |
+| `main` | — | **198** ✅ | **Aktueller Stand (S16-FF, 2026-06-28):** Live-Wiring + Assistent + Kalkulation 1–8. Subsumiert `stabilize` + die gesamte Kalkulations-Branch-Kette. |
+| `stabilize/from-0b7c366-2026-06-28` | `0b7c366` | 169 | Codex Recovery — **jetzt in `main` enthalten** (Vorfahre der S16-Kette) |
 | `sprint/shared-drive-widget-oauth` | `0b7c366` | 169 | Aktive Features (Wiring-Sessions 1–3) + Session-Docs |
 | `feat/conversational-assistant` | älter | 163 | Konversationeller Assistent Phase 1–2 |
 | `clickup-integration` | älter | 103 | ClickUp-Widget (gemergt in sprint?) |
@@ -44,8 +44,11 @@ nie dauerhafter Arbeitsort.
 | `claude/hungry-ardinghelli-8e798a` | sehr alt | ? | Claude Code Desktop Worktree — VERALTET |
 | `claude/loving-shamir-c7ff05` | sehr alt | ? | Claude Code Desktop Worktree — VERALTET |
 
-**Aktiver Entwicklungs-Branch:** `stabilize/from-0b7c366-2026-06-28`
-(oder nach Merge: `main`)
+**Aktiver Entwicklungs-Branch:** `main` (S16-Kette als Fast-Forward gemergt, 2026-06-28).
+Verbleibende Abzweigungen, bewusst NICHT in `main` (eigene Entscheidung von Johannes):
+`claude/musing-sammet-3abd94` (PR #1, läuft aktiv — Statut 2, nicht anfassen),
+`sprint/shared-drive-widget-oauth` (+70, divergent). PR #2 `feat/kalkulation-core-port`
+ist durch die S16-Kette subsumiert → geschlossen.
 
 ---
 
