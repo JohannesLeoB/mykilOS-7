@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import MykilosKit
 import MykilosDesign
@@ -8,6 +9,21 @@ import MykilosWidgets
 struct MykilOS6App: App {
     @State private var appState = AppState(database: AppDatabase.production)
     @State private var context  = StudioContext()
+
+    init() {
+        // Single-Instance-Guard: läuft bereits eine andere Instanz, diese aktivieren
+        // und die neue sofort beenden. build_and_run.sh killt via pkill vor dem Build,
+        // sodass beim Entwickeln immer die frischeste Version läuft; dieser Guard
+        // verhindert zusätzlich Doppelstarts aus Finder oder Dock.
+        let bundleID = Bundle.main.bundleIdentifier ?? "de.mykilos.mykilos6"
+        let current = NSRunningApplication.current
+        let others = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+            .filter { $0 != current }
+        if !others.isEmpty {
+            others.first?.activate(options: [.activateIgnoringOtherApps])
+            exit(0)
+        }
+    }
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {

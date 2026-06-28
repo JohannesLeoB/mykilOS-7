@@ -47,6 +47,7 @@ chmod +x "$APP_BINARY"
 /usr/bin/plutil -insert LSMinimumSystemVersion -string "$MIN_SYSTEM_VERSION" "$INFO_PLIST"
 /usr/bin/plutil -insert NSPrincipalClass -string "NSApplication" "$INFO_PLIST"
 /usr/bin/plutil -insert NSHumanReadableCopyright -string "Copyright MYKILOS" "$INFO_PLIST"
+/usr/bin/plutil -insert LSMultipleInstancesProhibited -bool true "$INFO_PLIST"
 printf "APPL????" > "$PKG_INFO"
 
 /usr/bin/xattr -cr "$APP_BUNDLE" >/dev/null 2>&1 || true
