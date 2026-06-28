@@ -94,6 +94,11 @@ Tests:  ✅ 207 Tests grün (+6 neue: BrainSeedProviderTests)
   action==.success.
 - 217 Tests grün. Commit: 5d50c26. Polish-Log L5: done.
 
+**L7 — SchaltzentrumView in Settings (1af4888):**
+- `SettingsView.swift`: `SchaltzentrumView()` nach `privateAreaSection` eingefügt.
+- `KatalogeView.swift`: Quote-Fix — unterminated string literal durch deutsche „"-Anführungszeichen → escapte ASCII-Quotes.
+- 225 Tests grün. Commit: 1af4888. Polish-Log L7: done.
+
 **L2 — Schätzchat-Toggle:**
 - `AssistantTool.swift`: `schaetzDefinitions()` → nur `schaetze_projekt`.
 - `ConversationEngine.swift`: `schaetzModusEnabled: Bool` Parameter, isoliert Tool-Liste,
