@@ -108,7 +108,8 @@ public final class AppState {
         self.conversation = ConversationEngine(
             chatStore: chatStore,
             provider: ClaudeChatClient(),
-            registry: .standard(kalkulationsEngine: kalkulationsEngine)
+            registry: .standard(kalkulationsEngine: kalkulationsEngine),
+            dataFlowLogger: dataFlow
         )
     }
 

@@ -49,6 +49,7 @@ public final class ConversationEngine {
     private let chatStore: ChatStore
     private let provider: any AssistantConversing
     private let registry: AssistantToolRegistry?
+    private let dataFlowLogger: DataFlowLogger?
     private static let maxToolRounds = 6
 
     public private(set) var isResponding = false
@@ -56,11 +57,13 @@ public final class ConversationEngine {
     public init(
         chatStore: ChatStore,
         provider: any AssistantConversing,
-        registry: AssistantToolRegistry? = nil
+        registry: AssistantToolRegistry? = nil,
+        dataFlowLogger: DataFlowLogger? = nil
     ) {
         self.chatStore = chatStore
         self.provider = provider
         self.registry = registry
+        self.dataFlowLogger = dataFlowLogger
     }
 
     public func send(
@@ -181,6 +184,13 @@ public final class ConversationEngine {
             for toolUse in response.toolUses {
                 let result = await (registry?.run(name: toolUse.name, inputJSON: toolUse.inputJSON, projektID: focusedProjectID, driveFolderID: focusedDriveFolderID, clickUpListID: focusedClickUpListID)
                     ?? ToolRunResult(text: "Keine Tools verfügbar.", isError: true))
+                dataFlowLogger?.log(
+                    integrationID: toolUse.name,
+                    actorUserID: "assistant",
+                    action: result.isError ? .error : .success,
+                    errorMessage: result.isError ? result.text : nil,
+                    summary: "Tool-Call: \(toolUse.name)"
+                )
                 resultBlocks.append(.toolResult(toolUseID: toolUse.id, summary: result.text, isError: result.isError))
                 activities.append(.toolActivity(
                     label: Self.activityLabel(name: toolUse.name, inputJSON: toolUse.inputJSON),

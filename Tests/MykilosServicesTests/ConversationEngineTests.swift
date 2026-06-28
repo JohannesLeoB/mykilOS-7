@@ -160,6 +160,37 @@ struct ConversationEngineTests {
         // Nur schaetze_projekt — kein Mail/Kalender/Drive
         #expect(names.allSatisfy { $0 == "schaetze_projekt" })
     }
+
+    // MARK: L5 — DataFlowLogger instrumentiert Tool-Calls
+    @Test @MainActor func dataFlowLoggerLogtJedesToolRun() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let logger = DataFlowLogger(db: db, airtable: nil)
+        let kalk = FakeKalkulationsEngine()
+        let registry = AssistantToolRegistry.standard(kalkulationsEngine: kalk)
+
+        // Provider simuliert: erst tool_use (schaetze_projekt), dann Textantwort.
+        let toolInput = Data(#"{"beschreibung":"5 lfm Unterschränke"}"#.utf8)
+        let toolUse = ClaudeToolUse(id: "tu_l5", name: "schaetze_projekt", inputJSON: toolInput)
+        let provider = ScriptedProvider(responses: [
+            ClaudeChatResponse(text: "", toolUses: [toolUse], stopReason: "tool_use"),
+            textResponse("Die Schätzung liegt bei ca. 15.000 €."),
+        ])
+
+        let conv = ConversationEngine(
+            chatStore: ChatStore(db: db),
+            provider: provider,
+            registry: registry,
+            dataFlowLogger: logger
+        )
+        await conv.send("Schätz mal", scope: .home, focusedProjectID: "P-L5",
+                        signals: [], projects: [], toolsEnabled: true, schaetzModusEnabled: false)
+
+        // GATE: Logger hat genau einen Eintrag für das schaetze_projekt-Tool.
+        #expect(logger.entries.count == 1)
+        #expect(logger.entries.first?.integrationID == "schaetze_projekt")
+        #expect(logger.entries.first?.actorUserID == "assistant")
+        #expect(logger.entries.first?.action == .success)
+    }
 }
 
 // Provider, der streamText mit mehreren Deltas simuliert (kein respond()-Aufruf).
