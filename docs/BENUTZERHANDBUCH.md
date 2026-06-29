@@ -18,7 +18,6 @@ Hauptbereiche. Tastenkürzel:
 | ⌘3 | Assistent |
 | ⌘4 | Dateien |
 | ⌘5 | Angebote |
-| ⌘6 | Kalkulation |
 | ⌘7 | Integrationen |
 | ⌘8 | Kataloge |
 | ⌘⇧S | Sidebar ein-/ausblenden |
@@ -138,11 +137,11 @@ Zeigt Drive-Unterordner `05 Material` (tolerant per Name gematcht).
 
 ### Assistent (global)
 Konversationeller Chat ohne Projektscope. Zeigt alle Projekte als Kontext.
-Tools (Mail, Kalender, Drive) nur bei aktivem Opt-in (Schalter in der Chat-UI).
 
-**Schätzchat-Modus**: Separater Toggle (amber). Aktiviert ausschließlich das
-`schaetze_projekt`-Tool — kein Mail/Kalender/Drive-Datenzufluss. Erlaubt
-Schätzungen ohne verbundenes Projekt.
+**Immer live (S27):** Tools (Mail, Kalender, Drive, Aufgaben, Kontakte) und die
+Kostenschätzung sind fester Teil des Chats — **kein Opt-in-Toggle, kein separater
+Schätzchat-Modus** mehr. Frag einfach (z. B. „was kostet eine 4,5 m Eiche-Küche?")
+→ die Schätz-Engine antwortet direkt als Karte im Chat.
 
 ### Dateien (global)
 Alle Drive-Dateien des Accounts, nach Änderungszeit sortiert.
@@ -192,9 +191,10 @@ Vier **umsortierbare Unter-Tabs** (Tab mit der Maus ziehen → Reihenfolge wird 
 - **Aufgaben** — die lokale Aufgabenliste (S6): To-dos/Erinnerungen abhaken, anlegen,
   löschen — hier oder im Assistenten-Chat. Offene zuerst, Fälligkeit sichtbar. Rein lokal.
 
-### Kalkulation
-Kostenschätzungs-Engine (mykilO$$-Integration). Freitext-Eingabe einer
-Projektbeschreibung → Min/Mitte/Max-Netto-Schätzung mit Konfidenz-Badge.
+### Kalkulation (jetzt im Assistenten, S27)
+Der eigene „Kalkulation"-Sidebar-Tab ist **entfernt** — die Kostenschätzungs-Engine
+ist fester Teil des **Assistenten** (frag im Chat, z. B. „was kostet …"). Ergebnis:
+Min/Mitte/Max-Netto mit Konfidenz, direkt als Karte. Datenquellen unverändert:
 
 **Datenquellen (lokal, kein Netzwerk):**
 - `_Daten/Kalkulation/Brain/active_price_anchors.csv` — 203 Tischler-Preisanker

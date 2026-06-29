@@ -8,7 +8,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/mykilOS 7.5.app"
-DMG_NAME="mykilOS-7.5"
+DMG_NAME="mykilOS-7.5.1"
 DMG_PATH="$DIST_DIR/$DMG_NAME.dmg"
 VOLUME_NAME="mykilOS 7.5"
 
