@@ -51,10 +51,14 @@ offene Aufgaben und Kalender-Ereignisse auf einen Blick.
 **Wo:** Sidebar → Projekte (⌘2)
 
 **Funktionen:**
-- Projekte nach Nummer (`JJJJ-NR`) sortiert
+- **Sortieren (S21):** Menü „Sortieren" — Nummer · Name · Datum (neueste zuerst) ·
+  Kategorie · **Eigene**. Die Wahl wird gemerkt (`@AppStorage`).
+- **Filtern (S21):** Menü „Kategorie" — alle vorkommenden Kategorien (Küche/Licht/…).
+- **Frei sortieren per Drag&Drop (S21):** Karte auf eine andere ziehen → eigene Reihenfolge;
+  aktiviert automatisch die „Eigene"-Sortierung, persistent.
 - **Favoriten-Stern** auf jeder Karte (und im Projekt-Detail-Header): pinnt das Projekt
   ins Heute-Board. Persistent (GRDB), überlebt Neustart. Stern erneut tippen = entfernen.
-- Klick öffnet Projektdetailseite
+- Suche (Name/Nummer/Kundennr.). Klick öffnet Projektdetailseite.
 
 ---
 

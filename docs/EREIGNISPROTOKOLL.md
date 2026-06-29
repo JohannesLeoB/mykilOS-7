@@ -30,6 +30,26 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-29 · Claude Code (Opus) — S20/S21: Notiz-Editor + Projekt-Galerie filtern/sortieren
+
+```
+Branch: polish/dampflok; 389 → 397 Tests grün · Build grün · Token-Regeln clean
+```
+
+Zwei Live-Wünsche umgesetzt:
+- **S20 Notizen bearbeiten + 4-Farb-Picker:** `AssistantNote.color` (GRDB v11, additiv) +
+  `update(id:body:color:)`; `NoteEditorSheet` (TextEditor + 4 Farb-Swatches) per Klick auf
+  Zettel/Zeile; StickyNoteCard nutzt gewählte Farbe. Farben „bunter". +2 Tests.
+- **S21 Projekte filtern/sortieren/Drag-Reorder:** Galerie-Menüs Sortieren (Nummer/Name/
+  Datum/Kategorie/Eigene) + Kategorie-Filter (beide `@AppStorage`); Karten per Drag&Drop frei
+  umsortierbar (persistente Eigene-Reihenfolge). Sortier-Logik testbar nach `ProjectSorter`
+  (MykilosServices) ausgelagert. +6 Tests.
+
+Offen (Nutzer-Wunsch, nächster Schritt): S22 — Assistenten-Ergebnisse (find_offers/Dateien)
+klickbar + In-App-Vorschau (DocumentViewerView).
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — S19: Kontakte-Tab → Google-Workspace-Verzeichnis
 
 ```
