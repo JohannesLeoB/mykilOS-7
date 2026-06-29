@@ -61,6 +61,22 @@ durch ältere überschrieben. Das Ereignisprotokoll dokumentiert den genauen Her
 
 ---
 
+## 🔒 EISERNE REGEL: Safe State mykilOS 7 (v7.0.0) ist unantastbar
+
+**mykilOS 7 = Goldstand. Tag `v7.0.0` (Commit `e629e84`) ist die Rückfallebene
+für immer.** Alles, was wir weiterentwickeln (7.5, Mail-Client, Experimente),
+läuft auf Branches daneben und darf diesen Stand **niemals** zerstören. Manche
+Versuche verlaufen im Sande — genau dafür gibt es den Safe State.
+
+- Tag `v7.0.0` liegt in **beiden** Remotes (mykilOS-7 + mykilOS-6) + als GitHub-Release.
+- **NIE** den Tag verschieben/löschen, **NIE** `main` force-pushen.
+- Neue Arbeit nur auf Branches (`release/7.5`, `feat/…`, `experiment/…`).
+- Frisch aufrufen: `./script/recall_safe_state.sh` (separater Worktree, stört die
+  laufende Arbeit nicht) oder `git checkout v7.0.0`.
+- Vollständiger Vertrag: **[docs/SAFE_STATE.md](docs/SAFE_STATE.md)**.
+
+---
+
 ## Ideen & Backlog
 
 **Vor jeder Session lesen, am Ende aktualisieren:**
