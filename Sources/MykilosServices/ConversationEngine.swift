@@ -117,6 +117,7 @@ public final class ConversationEngine {
         let katalogEnabled    = !schaetzModusEnabled && has("search_katalog")
         let notesEnabled      = !schaetzModusEnabled && has("create_note")
         let offersEnabled     = !schaetzModusEnabled && has("find_offers")
+        let fileReadEnabled   = !schaetzModusEnabled && has("read_drive_file")
         let system = AssistantGrounding.systemPrompt(
             profile: profile, focusedProjectID: effectiveProjectID,
             signals: signals, projects: projects, now: now, toolsEnabled: effectiveToolsEnabled,
@@ -124,7 +125,7 @@ public final class ConversationEngine {
             driveEnabled: driveEnabled, contactsEnabled: contactsEnabled,
             clickUpEnabled: clickUpEnabled, studioBrainEnabled: studioBrainEnabled,
             katalogEnabled: katalogEnabled, notesEnabled: notesEnabled,
-            offersEnabled: offersEnabled
+            offersEnabled: offersEnabled, fileReadEnabled: fileReadEnabled
         )
         // Schätzchat bekommt NUR schaetze_projekt — kein Mail/Kalender/Drive-Leak.
         let tools: [ClaudeToolDefinition]

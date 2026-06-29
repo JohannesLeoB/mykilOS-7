@@ -22,7 +22,8 @@ public enum AssistantGrounding {
         studioBrainEnabled: Bool = false,
         katalogEnabled: Bool = false,
         notesEnabled: Bool = false,
-        offersEnabled: Bool = false
+        offersEnabled: Bool = false,
+        fileReadEnabled: Bool = false
     ) -> String {
         var lines: [String] = []
         var intro = "Du bist der mykilOS-Projektassistent für ein Design-/Küchenstudio. "
@@ -71,6 +72,9 @@ public enum AssistantGrounding {
             }
             if offersEnabled {
                 toolLines.append("- find_offers: Angebote & Rechnungen im Drive finden (eingehend/ausgehend, auch verschachtelt in '01 INFOS'). Im Projekt-Chat automatisch; sonst Projekt per 'projekt' nennen. Nutze DIESES Werkzeug für Angebots-/Rechnungsfragen statt zu sagen, Drive sei außer Reichweite.")
+            }
+            if fileReadEnabled {
+                toolLines.append("- read_drive_file: liest den INHALT einer Drive-Datei (PDF, Google Docs/Sheets/Slides, Text) als Klartext. Nutze es, um z. B. einen Fragebogen oder ein Angebot auszuwerten — du hast also sehr wohl Lesezugriff auf Dateiinhalte, behaupte nicht das Gegenteil. 'datei' = (Teil des) Dateinamens.")
             }
             if contactsEnabled {
                 toolLines.append("- search_contacts: Kontakte des verbundenen Accounts per Freitext suchen.")

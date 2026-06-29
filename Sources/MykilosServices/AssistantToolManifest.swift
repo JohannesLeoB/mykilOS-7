@@ -24,6 +24,7 @@ public enum AssistantToolManifest {
         "suggest_calendar_event": "CALENDAR_SUGGEST",
         "list_drive_folder":      "DRIVE_ASSISTANT_LIST",
         "find_offers":            "DRIVE_OFFERS_FIND",
+        "read_drive_file":        "DRIVE_FILE_READ",
         "search_contacts":        "CONTACTS_QUERY",
         "list_clickup_tasks":     "CLICKUP_TASKS",
         "search_katalog":         "LOCAL_DEVICECATALOG_ARTIKEL",

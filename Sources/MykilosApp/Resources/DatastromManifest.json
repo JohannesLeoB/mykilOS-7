@@ -168,6 +168,13 @@
     "link": "mykilos://datastream/DRIVE_OFFERS_FIND"
   },
   {
+    "integrationID": "DRIVE_FILE_READ",
+    "name": "Drive-Dateiinhalt lesen (Assistent)",
+    "system": "Google Drive",
+    "direction": "READ",
+    "link": "mykilos://datastream/DRIVE_FILE_READ"
+  },
+  {
     "integrationID": "CALENDAR_SUGGEST",
     "name": "Kalender-Termin-Vorschlag (nur Link)",
     "system": "Google Calendar",

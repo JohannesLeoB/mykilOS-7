@@ -36,7 +36,7 @@ struct AssistantToolManifestTests {
     @Test func mapDecktKanonischeToolNamenAb() {
         let erwartet: Set<String> = [
             "search_gmail", "list_calendar_events", "suggest_calendar_event",
-            "list_drive_folder", "find_offers", "search_contacts", "list_clickup_tasks",
+            "list_drive_folder", "find_offers", "read_drive_file", "search_contacts", "list_clickup_tasks",
             "search_katalog", "query_studio_knowledge", "lookup_kunde",
             "create_note", "list_notes", "update_note", "delete_note",
             "schaetze_projekt",

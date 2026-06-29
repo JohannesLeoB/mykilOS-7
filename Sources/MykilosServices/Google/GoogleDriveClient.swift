@@ -74,6 +74,17 @@ public protocol GoogleDriveFetching: Sendable {
     /// Lädt Dateiinhalt als rohe Bytes (erfordert drive.readonly-Scope — M5).
     /// Für Google-native Formate (Docs/Sheets) nicht nutzbar — nur binäre Dateien (PDF, Bilder).
     func downloadContent(fileID: String) async throws -> Data
+    /// Exportiert ein Google-natives Format (Docs/Sheets/Slides) in ein Zielformat
+    /// (z. B. text/plain, text/csv). Erfordert drive.readonly.
+    func exportFile(fileID: String, exportMimeType: String) async throws -> Data
+}
+
+// Default, damit bestehende Fakes/Conformer nicht brechen (nur GoogleDriveClient
+// implementiert den echten Export).
+public extension GoogleDriveFetching {
+    func exportFile(fileID: String, exportMimeType: String) async throws -> Data {
+        throw GoogleDriveError.invalidResponse
+    }
 }
 
 // MARK: - GoogleDriveClient
@@ -126,6 +137,24 @@ public struct GoogleDriveClient: GoogleDriveFetching {
         guard let url = URL(string: "\(baseURL)/\(fileID)?alt=media&supportsAllDrives=true") else {
             throw GoogleDriveError.invalidResponse
         }
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse,
+              (200...299).contains(http.statusCode) else {
+            throw GoogleDriveError.httpError((response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+        return data
+    }
+
+    /// Exportiert ein Google-natives Format in z. B. text/plain oder text/csv.
+    public func exportFile(fileID: String, exportMimeType: String) async throws -> Data {
+        guard let accessToken = try? await tokenProvider.validAccessToken() else {
+            throw GoogleDriveError.notConnected
+        }
+        var comps = URLComponents(string: "\(baseURL)/\(fileID)/export")
+        comps?.queryItems = [URLQueryItem(name: "mimeType", value: exportMimeType)]
+        guard let url = comps?.url else { throw GoogleDriveError.invalidResponse }
         var request = URLRequest(url: url)
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         let (data, response) = try await session.data(for: request)

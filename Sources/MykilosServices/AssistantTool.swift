@@ -620,6 +620,59 @@ struct FindOffersTool: AssistantTool {
     }
 }
 
+// MARK: - ReadDriveFileTool (S5, read-only) — Drive-DateiINHALT lesen
+// Schließt die Lücke aus dem CIRNAVUK-Chat: der Assistent konnte Ordner listen, aber
+// keinen Dateiinhalt lesen (Kundenname im Fragebogen). Liest PDF/Docs/Sheets/Text als
+// Klartext. Im Projekt-Chat über _driveFolderID, global über 'projekt'.
+struct ReadDriveFileTool: AssistantTool {
+    private let client: GoogleDriveFetching
+    private let directory: ProjectDirectory?
+    init(client: GoogleDriveFetching = GoogleDriveClient(), directory: ProjectDirectory? = nil) {
+        self.client = client
+        self.directory = directory
+    }
+
+    var name: String { "read_drive_file" }
+    var description: String {
+        "Liest den INHALT einer Datei im Google-Drive-Projektordner (PDF, Google Docs/"
+        + "Sheets/Slides, Textdateien) als Klartext. Nutze es, um z. B. einen Fragebogen, "
+        + "ein Angebot oder eine Notiz im Drive auszuwerten. 'datei' = Dateiname (Teil reicht). "
+        + "Im Projekt-Chat automatisch; sonst Projekt über 'projekt' angeben. Nur lesen."
+    }
+    var parameters: [ToolParameter] {
+        [ToolParameter(name: "datei", description: "Dateiname oder Teil davon (z. B. 'Fragebogen')"),
+         ToolParameter(name: "projekt", description: "Projekt (Name/Nummer/Kunde) — nur ohne offenes Projekt nötig", required: false)]
+    }
+
+    func run(input: [String: String]) async -> ToolRunResult {
+        let datei = (input["datei"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard datei.isEmpty == false else {
+            return ToolRunResult(text: "Welche Datei? Nenne (einen Teil) des Dateinamens.", isError: true)
+        }
+        var folderID = (input["_driveFolderID"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if folderID.isEmpty {
+            let q = (input["projekt"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard q.isEmpty == false, let entry = directory?.resolve(q), let fid = entry.driveFolderID, fid.isEmpty == false else {
+                return ToolRunResult(text: "Kein Projekt im Fokus. Nenne das Projekt (Name/Nummer).", isError: true)
+            }
+            folderID = fid
+        }
+        do {
+            guard let file = try await DriveFileReader.findFile(named: datei, in: folderID, client: client) else {
+                return ToolRunResult(text: "Datei mit \(datei) im Projektordner nicht gefunden.", isError: true)
+            }
+            guard let text = try await DriveFileReader.text(of: file, client: client) else {
+                return ToolRunResult(text: "\(file.name): kein lesbarer Textinhalt (Bild/Binärformat).")
+            }
+            return ToolRunResult(text: "Inhalt von \(file.name):\n\n\(text)")
+        } catch GoogleDriveError.notConnected {
+            return ToolRunResult(text: "Drive-Lesezugriff fehlt. Google in den Einstellungen (neu) verbinden — der drive.readonly-Scope wird für Dateiinhalte gebraucht.", isError: true)
+        } catch {
+            return ToolRunResult(text: "Datei konnte nicht gelesen werden: \(error.localizedDescription)", isError: true)
+        }
+    }
+}
+
 // MARK: - Notiz-Tools (S4) — die EINZIGEN Schreib-Tools des Assistenten.
 // Bewusst nur lokale, nutzer-eigene Notizen (kein externer Schreibzugriff). Jeder
 // Lauf wird von der ConversationEngine als DataFlow-Handshake protokolliert.
@@ -745,6 +798,7 @@ public struct AssistantToolRegistry: Sendable {
             SuggestCalendarEventTool(),
             ListDriveFolderTool(client: drive),
             FindOffersTool(client: drive, directory: projectDirectory),
+            ReadDriveFileTool(client: drive, directory: projectDirectory),
             SearchContactsTool(client: contacts),
             ListClickUpTasksTool(client: clickUp),
             SearchKatalogTool(catalog: deviceCatalog),

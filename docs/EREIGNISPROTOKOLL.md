@@ -30,6 +30,36 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-29 · Claude Code (Opus) — Proof-of-Function-Sprint S1–S5 (Live-Tour-Befunde)
+
+```
+Branch: polish/dampflok; 320 → 334 Tests grün (58 Suites)
+Build:  ✅ swift build grün   ·   alle Schritte build+test grün
+```
+
+Die Live-Durchführung der App deckte echte Funktionslücken auf, die grüne Tests übersehen
+hatten. Jeder Schritt schließt eine **real beobachtete** Lücke (Proof of Function statt
+Proof of Existence).
+
+- **S1** Schaltzentrale zeigte „0 Weichen": `loadManifest` lädt jetzt `Bundle.module` zuerst
+  (+ korrigierter `#filePath`-Fallback); Build-Skript kopiert SPM-Resource-Bundles ins `.app`
+  (sonst Schaltzentrum/StudioBrain leer im DMG). `f7048ee`
+- **S2** Assistent fand keine Drive-Angebote: `find_offers`-Tool (wraps `OffersCollector`,
+  rekursiv 04/05 in „01 INFOS") + `ProjectDirectory.resolve` (global per Projektnummer/Name
+  → driveFolderID). Weiche DRIVE_OFFERS_FIND. `a1f9f61`
+- **S4** Notiz-Funktion: `AssistantNotesStore` (actor, GRDB v8) + `create/list/update/delete_note`
+  — die einzigen Schreib-Tools, rein lokal. Weiche ASSISTANT_NOTES. Dazu Kalender-Link-Fix
+  (-50: LLM fabrizierte Inline-Link → Tool gibt URL nur an die Karte, kanonischer Google-Link). `288554a`
+- **S5** Drive-Dateiinhalt lesen: `DriveFileReader` (PDF via PDFKit, Google Docs/Sheets/Slides
+  via Export, Text via utf8, 6000-Zeichen-Cap) + `GoogleDriveClient.exportFile`; `read_drive_file`-Tool
+  findet die Datei rekursiv per (Teil-)Name. Weiche DRIVE_FILE_READ. +3 Tests → 334. (dieser Commit)
+- **S3** Volle Dokumentenvorschau (QuickLook/Voll-PDF) bleibt **offen** — braucht M2 (Google
+  Re-Consent für `drive.readonly`).
+
+Read-only gewahrt, kein externer Schreibzugriff (Notizen sind rein lokal). Kein Merge ohne Johannes' Freigabe.
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — Polish-Loop L24–L30 abgeschlossen
 
 ```

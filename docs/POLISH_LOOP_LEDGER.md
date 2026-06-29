@@ -80,3 +80,17 @@ Reihenfolge = Priorität. Status: `pending` | `done` | `blocked`.
 |----|-------|--------|--------|-------|-------|
 | L29 | Test-Decke (Cold-Start + Unit für alle neuen Stores/Tools) | done | 6b1b77e | 320 | KundenBrain/LookupKunde/FavoritesStore(Cold-Start)/TimelineMerger/RecentActivityFeed + RecentActivity-Cold-Start-Integration |
 | L30 | Abschluss: EREIGNISPROTOKOLL + Handoff + DMG | done | — | 320 | Ledger/Protokoll/Benutzerhandbuch final; DMG-Pipeline verifiziert (dist/mykilOS-6.dmg, Commit 6b1b77e in Info.plist injiziert) |
+
+## Block 10 — Proof-of-Function-Sprint (Live-Tour-Befunde)
+
+Befunde aus der Live-Durchführung: grüne Tests hatten echte Lücken übersehen
+(04/05-Verschachtelung, Schaltzentrale „0 Weichen", Kalender -50, kein Datei-Inhalt-Lesen).
+Jeder Schritt schließt eine real beobachtete Funktionslücke.
+
+| ID | Titel | Status | Commit | Tests | Notiz |
+|----|-------|--------|--------|-------|-------|
+| S1 | Schaltzentrale lädt 0 Weichen → Manifest aus Bundle | done | f7048ee | 320 | `loadManifest` Bundle.module zuerst (+ korrigierter #filePath-Fallback); Build-Skript kopiert SPM-Resource-Bundles ins .app (sonst Schaltzentrum/StudioBrain leer im DMG) |
+| S2 | `find_offers`-Tool + globaler Projekt-Resolver | done | a1f9f61 | 331 | FindOffersTool (wraps OffersCollector, rekursiv 04/05); ProjectDirectory.resolve (Projektnummer/Substring→driveFolderID); Weiche DRIVE_OFFERS_FIND |
+| S3 | Volle Dokumentenvorschau (QuickLook/Voll-PDF) | open | — | — | Braucht M2 (Google Re-Consent, drive.readonly). Noch offen. |
+| S4 | Notiz-Funktion im Assistenten | done | 288554a | 328 | AssistantNotesStore (actor, GRDB v8) + create/list/update/delete_note (einzige Schreib-Tools, lokal); Weiche ASSISTANT_NOTES; Kalender-Link-Fix (-50: kein fabrizierter Inline-Link) |
+| S5 | Drive-Dateiinhalt lesen (`read_drive_file`) | done | (dieser Commit) | 334 | DriveFileReader (PDFKit für PDF, Export für Google Docs/Sheets/Slides, utf8 für Text, 6000-Zeichen-Cap) + GoogleDriveClient.exportFile; ReadDriveFileTool; Weiche DRIVE_FILE_READ; +3 Tests |
