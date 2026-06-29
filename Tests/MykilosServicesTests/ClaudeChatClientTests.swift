@@ -58,6 +58,53 @@ struct ClaudeChatClientTests {
         let rBlocks = msgs?[1]["content"] as? [[String: Any]]
         #expect(rBlocks?[0]["type"] as? String == "tool_result")
         #expect(rBlocks?[0]["tool_use_id"] as? String == "tu_1")
+        // S24-Regression: eine Tool-Use-Nachricht als erste Nachricht wird NICHT
+        // als „führende Begrüßung" verworfen (Tool-Semantik bleibt intakt).
+        #expect(msgs?.count == 2)
+        #expect(msgs?[0]["role"] as? String == "assistant")
+    }
+
+    // MARK: S24 — sanitize() hält die messages[]-Liste API-gültig (Anti-400)
+    private func messages(of request: URLRequest) throws -> [[String: Any]] {
+        let json = try JSONSerialization.jsonObject(with: #require(request.httpBody)) as? [String: Any]
+        return (json?["messages"] as? [[String: Any]]) ?? []
+    }
+
+    @Test func sanitizeVerwirftLeereTextNachrichtUndFusioniertRest() throws {
+        // Ein leerer/Whitespace-Assistenten-Turn (z.B. ein Fehl-Turn) darf nie an die API:
+        // er wird verworfen, die umgebenden user-Turns werden zu einem fusioniert.
+        let msgs = try messages(of: try ClaudeChatClient.buildRequest(
+            url: url, credentials: creds,
+            messages: [.text("hi", role: .user), .text("   ", role: .assistant), .text("weiter", role: .user)],
+            system: "s", tools: [], maxTokens: 100))
+        #expect(msgs.count == 1)
+        #expect(msgs[0]["role"] as? String == "user")
+        #expect((msgs[0]["content"] as? [[String: Any]])?.count == 2)
+    }
+
+    @Test func sanitizeVerwirftFuehrendeAssistentenBegruessung() throws {
+        let msgs = try messages(of: try ClaudeChatClient.buildRequest(
+            url: url, credentials: creds,
+            messages: [.text("Willkommen!", role: .assistant), .text("meine frage", role: .user)],
+            system: "s", tools: [], maxTokens: 100))
+        #expect(msgs.count == 1)
+        #expect(msgs[0]["role"] as? String == "user")
+    }
+
+    @Test func sanitizeFusioniertAufeinanderfolgendeGleicheRollen() throws {
+        let msgs = try messages(of: try ClaudeChatClient.buildRequest(
+            url: url, credentials: creds,
+            messages: [.text("a", role: .user), .text("b", role: .user)],
+            system: "s", tools: [], maxTokens: 100))
+        #expect(msgs.count == 1)
+        #expect((msgs[0]["content"] as? [[String: Any]])?.count == 2)
+    }
+
+    @Test func sanitizeNotfallLiefertGueltigeUserNachricht() {
+        // Alles leer → genau eine gültige (nicht-leere) user-Nachricht, nie ein leeres Array.
+        let result = ClaudeChatClient.sanitize([])
+        #expect(result.count == 1)
+        #expect(result[0].role == "user")
     }
 
     // MARK: Response-Parsing (Text + tool_use + stop_reason)

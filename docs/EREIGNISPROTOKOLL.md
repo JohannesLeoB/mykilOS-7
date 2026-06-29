@@ -30,6 +30,30 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-29 · Claude Code (Opus) — S24: Assistent-„Fehler 400" behoben (Verlauf-Sanitizer)
+
+```
+Branch: polish/dampflok; 405 → 409 Tests grün · Build grün · Token-Regeln clean
+```
+
+Live beobachteter Bug (Screenshot Johannes): der Assistent antwortete in einem Thread nur
+noch mit „Die Anfrage ist fehlgeschlagen (Fehler 400)" — jedes „Erneut senden" erneut 400.
+
+- **Ursache:** Sobald ein gespeicherter Gesprächs-Turn eine API-ungültige Form hatte
+  (leerer/Whitespace-Textblock, führende reine Assistenten-Begrüßung, oder zwei gleiche
+  Rollen in Folge), lehnte die Anthropic Messages API **jede** weitere Anfrage mit 400 ab —
+  weil der vollständige (kaputte) Verlauf bei jedem Senden erneut mitgeschickt wird. Der
+  Thread war damit dauerhaft „vergiftet", bis man den Verlauf leerte.
+- **Fix:** `ClaudeChatClient.sanitize(_:)` läuft jetzt im Request-Bau (non-streaming UND
+  streaming) und erzwingt drei harte API-Invarianten: (1) kein leerer/Whitespace-Textblock,
+  (2) erste Nachricht hat Rolle `user` (führende reine Text-Begrüßung wird verworfen,
+  Tool-Use-Turns NIE), (3) Rollen alternieren (aufeinanderfolgende gleiche Rolle → Inhalt
+  fusioniert). Tool-Use/Tool-Result-Semantik bleibt intakt.
+- +4 Tests (leerer Turn verworfen+fusioniert, führende Begrüßung verworfen, gleiche Rollen
+  fusioniert, Notfall-Fallback; plus Regression: Tool-Use-Erstnachricht bleibt). **409 grün.**
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — S23: „Alle Angebote" (globale Aggregation) · Start MYKILOS 7
 
 ```

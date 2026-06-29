@@ -106,7 +106,7 @@ public struct ClaudeChatClient: AssistantConversing {
     ) throws -> URLRequest {
         let payload = ClaudeChatRequestPayload(
             model: credentials.model, maxTokens: maxTokens, system: system,
-            messages: messages.map(wire(from:)),
+            messages: sanitize(messages.map(wire(from:))),
             tools: tools.isEmpty ? nil : tools,
             stream: stream ? true : nil
         )
@@ -139,6 +139,56 @@ public struct ClaudeChatClient: AssistantConversing {
         }
         if blocks.isEmpty { blocks = [.text(" ")] }   // API lehnt leere content-Blöcke ab
         return ClaudeWireMessage(role: message.role.rawValue, content: blocks)
+    }
+
+    // MARK: - sanitize (S24 — die messages[]-Liste ist IMMER API-gültig)
+    // Verhindert das „vergiftete" Gespräch: sobald ein gespeicherter Turn einen
+    // leeren/Whitespace-Textblock, eine reine Begrüßung als erste Assistenten-
+    // Nachricht oder zwei gleiche Rollen in Folge enthielt, wies die Anthropic-API
+    // JEDE weitere Anfrage mit 400 ab (der kaputte Verlauf wird ja erneut gesendet).
+    // Drei harte API-Invarianten werden hier erzwungen, ohne Tool-Semantik zu brechen:
+    //   1. kein leerer/Whitespace-Textblock (Nachricht ohne Inhalt → verworfen),
+    //   2. die erste Nachricht hat Rolle „user" (führende reine Text-Assistenten-
+    //      Begrüßung wird verworfen — Tool-Use-Turns NIE),
+    //   3. Rollen alternieren (aufeinanderfolgende gleiche Rolle → Inhalt fusioniert).
+    static func sanitize(_ messages: [ClaudeWireMessage]) -> [ClaudeWireMessage] {
+        // 1. Leere/Whitespace-Textblöcke raus; leere Nachrichten verwerfen.
+        var cleaned: [ClaudeWireMessage] = []
+        for message in messages {
+            let content = message.content.filter { isBlankText($0) == false }
+            guard content.isEmpty == false else { continue }
+            cleaned.append(ClaudeWireMessage(role: message.role, content: content))
+        }
+        // 2. Führende reine Text-Assistenten-Nachrichten verwerfen (erste muss user
+        //    sein). Tool-Use/Tool-Result-Nachrichten bleiben unangetastet.
+        while let first = cleaned.first,
+              first.role != "user",
+              first.content.allSatisfy(isTextBlock) {
+            cleaned.removeFirst()
+        }
+        // 3. Aufeinanderfolgende gleiche Rollen zu einer Nachricht fusionieren.
+        var merged: [ClaudeWireMessage] = []
+        for message in cleaned {
+            if var last = merged.last, last.role == message.role {
+                last.content += message.content
+                merged[merged.count - 1] = last
+            } else {
+                merged.append(message)
+            }
+        }
+        // 4. Degenerierter Fall (alles verworfen) → eine minimale gültige user-Nachricht.
+        if merged.isEmpty { return [ClaudeWireMessage(role: "user", content: [.text("…")])] }
+        return merged
+    }
+
+    private static func isBlankText(_ block: ClaudeWireBlock) -> Bool {
+        if case .text(let t) = block { return t.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        return false
+    }
+
+    private static func isTextBlock(_ block: ClaudeWireBlock) -> Bool {
+        if case .text = block { return true }
+        return false
     }
 
     // Tool-aware Parsing über JSONSerialization (tool_use.input ist beliebiges Objekt).
