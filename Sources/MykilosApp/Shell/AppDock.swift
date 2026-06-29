@@ -42,7 +42,7 @@ struct AppDockStrip: View {
     private let heartbeat = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        VStack(spacing: MykSpace.s2) {
+        VStack(alignment: .leading, spacing: 2) {
             ForEach(store.paths, id: \.self) { path in
                 AppDockIcon(
                     path: path,
@@ -54,23 +54,27 @@ struct AppDockStrip: View {
             }
             if store.paths.count < AppShortcutStore.maxCount {
                 Button { if let new = Self.pickApp() { store.add(new) } } label: {
-                    Image(systemName: "plus")
-                        .font(.mykSmall)
-                        .foregroundStyle(MykColor.faint.color)
-                        .frame(width: 34, height: 30)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .strokeBorder(MykColor.line.color, style: StrokeStyle(lineWidth: 1, dash: [3]))
-                        )
+                    HStack(spacing: 12) {
+                        Circle().fill(Color.clear).frame(width: 6, height: 6)
+                        Image(systemName: "plus")
+                            .font(.mykSmall)
+                            .foregroundStyle(MykColor.faint.color)
+                            .frame(width: 31, height: 31)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .strokeBorder(MykColor.line.color, style: StrokeStyle(lineWidth: 1, dash: [3]))
+                            )
+                        Spacer()
+                    }
+                    .padding(.horizontal, MykSpace.s4)
                 }
                 .buttonStyle(.plain)
                 .help("App hinzufügen")
             }
         }
-        .padding(.vertical, MykSpace.s3)
-        .frame(maxWidth: .infinity)
-        .background(RoundedRectangle(cornerRadius: 14).fill(MykColor.paper2.color.opacity(0.55)))
-        .padding(.horizontal, MykSpace.s5)
+        .padding(.vertical, MykSpace.s2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(MykColor.paper2.color.opacity(0.5)))
         .padding(.bottom, MykSpace.s4)
         .animation(.spring(response: 0.35, dampingFraction: 0.72), value: store.paths)
         .onReceive(heartbeat) { _ in tick &+= 1 }
@@ -113,16 +117,18 @@ private struct AppDockIcon: View {
 
     var body: some View {
         Button { launch() } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: 12) {
                 Circle()
                     .fill(isRunning ? MykColor.positive.color : Color.clear)
-                    .frame(width: 4, height: 4)
+                    .frame(width: 6, height: 6)
                 Image(nsImage: NSWorkspace.shared.icon(forFile: path))
                     .resizable().interpolation(.high)
-                    .frame(width: 28, height: 28)
-                    .scaleEffect(hovered ? 1.14 : 1.0)
+                    .frame(width: 31, height: 31)
+                    .scaleEffect(hovered ? 1.12 : 1.0)
+                Spacer()
             }
-            .frame(width: 44, height: 34)
+            .padding(.vertical, 3)
+            .padding(.horizontal, MykSpace.s4)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
