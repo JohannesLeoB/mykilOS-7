@@ -67,14 +67,26 @@ struct SchaltzentrumView: View {
     }
 
     private static func loadManifest() -> [ManifestEntry] {
-        let testPath = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appendingPathComponent("Resources/DatastromManifest.json")
-        guard
-            FileManager.default.fileExists(atPath: testPath.path),
-            let data = try? Data(contentsOf: testPath),
-            let entries = try? JSONDecoder().decode([ManifestEntry].self, from: data)
+        // 1) Aus dem App-Bundle laden (ausgelieferte App). Resources werden via
+        //    .copy("Resources") gebündelt → Bundle.module kennt sie. DAS ist der
+        //    Live-Pfad; vorher lud die View nur über #filePath und zeigte deshalb
+        //    im Bundle „0 Weichen".
+        var data: Data?
+        if let url = Bundle.module.url(forResource: "DatastromManifest", withExtension: "json", subdirectory: "Resources")
+            ?? Bundle.module.url(forResource: "DatastromManifest", withExtension: "json") {
+            data = try? Data(contentsOf: url)
+        }
+        // 2) Dev/Test-Fallback: relativ zur Quelldatei. EINMAL hochnavigieren
+        //    (SchaltzentrumView.swift → MykilosApp/), dann Resources/… — die frühere
+        //    Variante navigierte eine Ebene zu weit (Sources/Resources/…, existiert nicht).
+        if data == nil {
+            let devPath = URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .appendingPathComponent("Resources/DatastromManifest.json")
+            data = try? Data(contentsOf: devPath)
+        }
+        guard let data,
+              let entries = try? JSONDecoder().decode([ManifestEntry].self, from: data)
         else { return [] }
         return entries
     }

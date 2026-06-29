@@ -41,6 +41,16 @@ cp "$BUILD_BINARY" "$APP_BINARY"
 cp "$APP_ICON_SOURCE" "$APP_RESOURCES/$APP_ICON"
 chmod +x "$APP_BINARY"
 
+# SPM-Resource-Bundles (Bundle.module) mit ins App-Bundle nehmen. Ohne sie fehlen
+# der ausgelieferten App zur Laufzeit u.a. DatastromManifest.json (Schaltzentrum →
+# „0 Weichen") und studio_brain.json (Assistenten-Wissensbasis). swift build legt
+# sie neben dem Binary unter <bin>/<Paket>_<Target>.bundle ab.
+BUILD_BIN_DIR="$(dirname "$BUILD_BINARY")"
+for bundle in "$BUILD_BIN_DIR"/*.bundle; do
+  [ -e "$bundle" ] || continue
+  cp -R "$bundle" "$APP_RESOURCES/"
+done
+
 /usr/bin/plutil -create xml1 "$INFO_PLIST"
 /usr/bin/plutil -insert CFBundleExecutable -string "$EXECUTABLE_NAME" "$INFO_PLIST"
 /usr/bin/plutil -insert CFBundleInfoDictionaryVersion -string "6.0" "$INFO_PLIST"
