@@ -10,6 +10,7 @@ struct SidebarView: View {
     var onToggleSidebar: () -> Void = {}
     @Environment(AppState.self) private var appState
     @State private var profileHovered = false
+    @State private var appShortcuts = AppShortcutStore()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -17,6 +18,7 @@ struct SidebarView: View {
             Spacer().frame(height: MykSpace.s8)
             navItems
             Spacer()
+            AppDockStrip(store: appShortcuts)
             navFoot
         }
         .padding(.horizontal, MykSpace.s4)
