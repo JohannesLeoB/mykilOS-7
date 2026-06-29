@@ -237,8 +237,17 @@ API-Token (Private Area). Liest Ist-Umsatz für das Cash-Widget.
 **NIE als Assistenten-Tool — nur Widget.**
 
 ### Claude (Anthropic)
-API-Key in Keychain. Modell: `claude-sonnet-4-6`. Powers den konversationellen
-Assistenten. Tool-Daten fließen nur bei aktivem Opt-in an die API.
+API-Key in Keychain. Powers den konversationellen Assistenten. Tool-Daten fließen
+nur bei aktivem Opt-in an die API.
+
+**Auto-Modell-Routing (S26):** Der Assistent wählt jetzt **selbstständig pro Anfrage
+das günstigste Modell**, das der Aufgabe gewachsen ist — statt fix `claude-sonnet-4-6`:
+- **Haiku** — einfache, kurze Konversation (günstigste).
+- **Sonnet** — Tool-Use (Mail/Drive/Kalender/Kontakte) oder komplexe/lange Freitext-Fragen.
+- **Opus** — Kostenschätzung/Kalkulation (Schätzmodus oder Kosten-/Budget-/Marge-Fragen) — bestes Reasoning.
+
+Das gewählte Modell steht live in der Quellzeile unter dem Chat („CLAUDE · AUTO · HAIKU/SONNET/OPUS").
+Spart Kosten ohne Qualitätsverlust im Alltag. Logik: `AssistantModelRouter`.
 
 ---
 

@@ -80,9 +80,17 @@ public struct ClaudeChatClient: AssistantConversing {
     public func respond(
         messages: [ChatMessage], system: String, tools: [ClaudeToolDefinition], maxTokens: Int
     ) async throws -> ClaudeChatResponse {
+        try await respond(messages: messages, system: system, tools: tools, maxTokens: maxTokens, model: nil)
+    }
+
+    // S26 — modellbewusst: `model` überschreibt das Credentials-Default für diesen Aufruf.
+    public func respond(
+        messages: [ChatMessage], system: String, tools: [ClaudeToolDefinition], maxTokens: Int, model: String?
+    ) async throws -> ClaudeChatResponse {
         guard let credentials = try credentialsStore.load() else { throw ClaudeClientError.notConnected }
         let request = try Self.buildRequest(
-            url: baseURL, credentials: credentials, messages: messages, system: system, tools: tools, maxTokens: maxTokens
+            url: baseURL, credentials: credentials, messages: messages, system: system, tools: tools,
+            maxTokens: maxTokens, modelOverride: model
         )
         let (data, response) = try await httpClient.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw ClaudeClientError.invalidResponse }
@@ -102,10 +110,10 @@ public struct ClaudeChatClient: AssistantConversing {
     static func buildRequest(
         url: URL, credentials: ClaudeCredentials, messages: [ChatMessage],
         system: String, tools: [ClaudeToolDefinition], maxTokens: Int,
-        stream: Bool = false
+        stream: Bool = false, modelOverride: String? = nil
     ) throws -> URLRequest {
         let payload = ClaudeChatRequestPayload(
-            model: credentials.model, maxTokens: maxTokens, system: system,
+            model: modelOverride ?? credentials.model, maxTokens: maxTokens, system: system,
             messages: sanitize(messages.map(wire(from:))),
             tools: tools.isEmpty ? nil : tools,
             stream: stream ? true : nil
@@ -226,6 +234,13 @@ public struct ClaudeChatClient: AssistantConversing {
     public func streamText(
         messages: [ChatMessage], system: String, tools: [ClaudeToolDefinition], maxTokens: Int
     ) -> AsyncThrowingStream<String, Error> {
+        streamText(messages: messages, system: system, tools: tools, maxTokens: maxTokens, model: nil)
+    }
+
+    // S26 — modellbewusstes SSE-Streaming (`model` überschreibt das Credentials-Default).
+    public func streamText(
+        messages: [ChatMessage], system: String, tools: [ClaudeToolDefinition], maxTokens: Int, model: String?
+    ) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             Task {
                 do {
@@ -236,7 +251,7 @@ public struct ClaudeChatClient: AssistantConversing {
                     let request = try Self.buildRequest(
                         url: baseURL, credentials: credentials,
                         messages: messages, system: system, tools: tools,
-                        maxTokens: maxTokens, stream: true
+                        maxTokens: maxTokens, stream: true, modelOverride: model
                     )
                     let (bytes, response) = try await URLSession.shared.bytes(for: request, delegate: nil)
                     guard let http = response as? HTTPURLResponse else {

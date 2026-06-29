@@ -15,9 +15,33 @@ public protocol AssistantConversing: Sendable {
     func streamText(
         messages: [ChatMessage], system: String, tools: [ClaudeToolDefinition], maxTokens: Int
     ) -> AsyncThrowingStream<String, Error>
+
+    // S26 — modellbewusste Varianten (Auto-Routing). Protokoll-Anforderungen, damit
+    // `any AssistantConversing` dynamisch zur konkreten Impl (ClaudeChatClient) dispatcht.
+    // Default-Impls unten ignorieren `model` → Test-Provider/ScriptedProvider unberührt.
+    func respond(
+        messages: [ChatMessage], system: String, tools: [ClaudeToolDefinition], maxTokens: Int, model: String?
+    ) async throws -> ClaudeChatResponse
+    func streamText(
+        messages: [ChatMessage], system: String, tools: [ClaudeToolDefinition], maxTokens: Int, model: String?
+    ) -> AsyncThrowingStream<String, Error>
 }
 
 extension AssistantConversing {
+    /// Default für modellbewusstes respond(): ignoriert `model` (Provider ohne
+    /// Modellwahl, z. B. Test-Doubles), ruft die Basis-Variante.
+    public func respond(
+        messages: [ChatMessage], system: String, tools: [ClaudeToolDefinition], maxTokens: Int, model: String?
+    ) async throws -> ClaudeChatResponse {
+        try await respond(messages: messages, system: system, tools: tools, maxTokens: maxTokens)
+    }
+    /// Default für modellbewusstes streamText(): ignoriert `model`.
+    public func streamText(
+        messages: [ChatMessage], system: String, tools: [ClaudeToolDefinition], maxTokens: Int, model: String?
+    ) -> AsyncThrowingStream<String, Error> {
+        streamText(messages: messages, system: system, tools: tools, maxTokens: maxTokens)
+    }
+
     /// Default: respond() als Einzel-Delta-Stream (ScriptedProvider/Fallback ohne Netz).
     /// ClaudeChatClient überschreibt das mit echtem SSE.
     public func streamText(
@@ -59,6 +83,9 @@ public final class ConversationEngine {
     private static let maxToolRounds = 6
 
     public private(set) var isResponding = false
+
+    // S26 — das in der letzten Runde per Auto-Routing gewählte Modell (für die UI-Quellzeile).
+    public private(set) var lastRoutedModel: String?
 
     public init(
         chatStore: ChatStore,
@@ -106,6 +133,11 @@ public final class ConversationEngine {
         // plus die transienten tool_use/tool_result-Turns dieser Runde.
         var convo = chatStore.messages(for: scope).filter { $0.id != placeholder.id }
         let effectiveToolsEnabled = toolsEnabled || schaetzModusEnabled
+        // S26 — Auto-Routing: günstigstes Modell, das der Aufgabe gewachsen ist.
+        let routedModel = AssistantModelRouter.model(
+            latestUserText: trimmed, toolsEnabled: effectiveToolsEnabled, schaetzModus: schaetzModusEnabled
+        )
+        lastRoutedModel = routedModel
         let has: (String) -> Bool = { name in effectiveToolsEnabled && (self.registry?.toolNames.contains(name) == true) }
         let kalkulationsEnabled = has("schaetze_projekt")
         // Werkzeuge nennen wir dem Modell nur, wenn sie a) registriert UND b) im
@@ -151,7 +183,11 @@ public final class ConversationEngine {
             let onTextDelta: (String) -> Void = { [chatStore] text in
                 chatStore.updateStreamingText(id: placeholderID, text: text, in: scope)
             }
-            let finalText = try await runLoop(convo: &convo, activities: &activities, system: system, tools: tools, focusedProjectID: effectiveProjectID, focusedDriveFolderID: focusedDriveFolderID, focusedClickUpListID: focusedClickUpListID, onTextDelta: onTextDelta)
+            let finalText = try await runLoop(
+                convo: &convo, activities: &activities, system: system, tools: tools, model: routedModel,
+                focusedProjectID: effectiveProjectID, focusedDriveFolderID: focusedDriveFolderID,
+                focusedClickUpListID: focusedClickUpListID, onTextDelta: onTextDelta
+            )
             // Tool-Spuren (Transparenz) vor die Antwort; nur Anzeige, nicht an die API.
             try chatStore.updateAssistantTurn(
                 id: placeholder.id, blocks: activities + [.text(finalText)], status: .complete, in: scope
@@ -175,6 +211,7 @@ public final class ConversationEngine {
         activities: inout [ChatContentBlock],
         system: String,
         tools: [ClaudeToolDefinition],
+        model: String,
         focusedProjectID: String? = nil,
         focusedDriveFolderID: String? = nil,
         focusedClickUpListID: String? = nil,
@@ -183,13 +220,13 @@ public final class ConversationEngine {
         // Tool-loses Streaming: Claude gibt garantiert keinen tool_use zurück →
         // direkt streamen, kein Round-Trip nötig.
         if tools.isEmpty, let onTextDelta {
-            return try await streamingFinalAnswer(convo: convo, system: system, onTextDelta: onTextDelta)
+            return try await streamingFinalAnswer(convo: convo, system: system, model: model, onTextDelta: onTextDelta)
         }
 
         var rounds = 0
         while true {
             rounds += 1
-            let response = try await provider.respond(messages: convo, system: system, tools: tools, maxTokens: 1024)
+            let response = try await provider.respond(messages: convo, system: system, tools: tools, maxTokens: 1024, model: model)
 
             if response.toolUses.isEmpty || rounds >= Self.maxToolRounds {
                 let text = response.text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -257,9 +294,9 @@ public final class ConversationEngine {
     // Streamt die finale Textantwort via SSE. Akkumuliert Deltas und ruft
     // onTextDelta mit dem jeweils gewachsenen Gesamttext auf (→ UI tippt mit).
     private func streamingFinalAnswer(
-        convo: [ChatMessage], system: String, onTextDelta: (String) -> Void
+        convo: [ChatMessage], system: String, model: String, onTextDelta: (String) -> Void
     ) async throws -> String {
-        let stream = provider.streamText(messages: convo, system: system, tools: [], maxTokens: 1024)
+        let stream = provider.streamText(messages: convo, system: system, tools: [], maxTokens: 1024, model: model)
         var accumulated = ""
         for try await delta in stream {
             accumulated += delta

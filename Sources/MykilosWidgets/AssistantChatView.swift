@@ -298,7 +298,7 @@ public struct AssistantChatView: View {
     private var sourceLine: some View {
         HStack(spacing: 8) {
             Circle().fill(isConnected ? MykColor.positive.color : MykColor.faint.color).frame(width: 5, height: 5)
-            Text(isConnected ? "CLAUDE  ·  \(modelName.uppercased())" : "CLAUDE  ·  NICHT VERBUNDEN")
+            Text(isConnected ? "CLAUDE  ·  AUTO  ·  \(AssistantModelRouter.tierLabel(engine.lastRoutedModel ?? modelName))" : "CLAUDE  ·  NICHT VERBUNDEN")
                 .font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
             Spacer()
         }
