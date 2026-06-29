@@ -8,6 +8,7 @@ struct AssistantNoteRecord: Codable, FetchableRecord, PersistableRecord {
     var id: String
     var body: String
     var projectID: String?
+    var color: String?
     var createdAt: Double   // timeIntervalSince1970
     var updatedAt: Double
 
@@ -15,12 +16,13 @@ struct AssistantNoteRecord: Codable, FetchableRecord, PersistableRecord {
         id = note.id
         body = note.body
         projectID = note.projectID
+        color = note.color
         createdAt = note.createdAt.timeIntervalSince1970
         updatedAt = note.updatedAt.timeIntervalSince1970
     }
 
     var toDomain: AssistantNote {
-        AssistantNote(id: id, body: body, projectID: projectID,
+        AssistantNote(id: id, body: body, projectID: projectID, color: color,
                       createdAt: Date(timeIntervalSince1970: createdAt),
                       updatedAt: Date(timeIntervalSince1970: updatedAt))
     }
@@ -81,6 +83,17 @@ public actor AssistantNotesStore {
     public func delete(matching query: String, scopedTo projectID: String? = nil) throws -> AssistantNote? {
         guard let note = try find(matching: query, scopedTo: projectID) else { return nil }
         _ = try db.write { conn in try AssistantNoteRecord.deleteOne(conn, key: note.id) }
+        return note
+    }
+
+    /// Bearbeitet eine Notiz per exakter ID (Body + Farbe) — für den UI-Editor. nil, wenn nicht gefunden.
+    @discardableResult
+    public func update(id: String, body: String, color: String?, now: Date = Date()) throws -> AssistantNote? {
+        guard var note = try all().first(where: { $0.id == id }) else { return nil }
+        note.body = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        note.color = color
+        note.updatedAt = now
+        try db.write { conn in try AssistantNoteRecord(from: note).update(conn) }
         return note
     }
 

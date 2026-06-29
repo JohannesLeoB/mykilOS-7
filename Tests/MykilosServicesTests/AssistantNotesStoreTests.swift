@@ -80,6 +80,27 @@ struct AssistantNotesStoreTests {
         let fresh = AssistantNotesStore(db: db)
         #expect(try await fresh.all().first?.projectID == "2026-024")
     }
+
+    // S20: Bearbeiten (Body + Farbe) per ID; Farbe überlebt den Neustart (Cold-Start).
+    @Test func bearbeitenSetztBodyUndFarbe() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let store = AssistantNotesStore(db: db)
+        let n = try await store.create("alt")
+        #expect(n.color == nil)
+        let updated = try await store.update(id: n.id, body: "neu", color: "personal")
+        #expect(updated?.body == "neu")
+        #expect(updated?.color == "personal")
+
+        let fresh = AssistantNotesStore(db: db)
+        let loaded = try await fresh.all().first
+        #expect(loaded?.body == "neu")
+        #expect(loaded?.color == "personal")
+    }
+
+    @Test func updateUnbekannteIDLiefertNil() async throws {
+        let store = AssistantNotesStore(db: try GRDBDatabase.inMemory())
+        #expect(try await store.update(id: "gibtsnicht", body: "x", color: nil) == nil)
+    }
 }
 
 // MARK: - Notiz-Tools über die Registry

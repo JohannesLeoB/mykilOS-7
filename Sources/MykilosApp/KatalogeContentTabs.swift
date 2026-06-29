@@ -105,6 +105,7 @@ struct NotizenKatalogTab: View {
     @State private var notes: [AssistantNote] = []
     @State private var draft: String = ""
     @State private var errorText: String?
+    @State private var editing: AssistantNote?
     @AppStorage("kataloge.notizen.view") private var viewModeRaw = NotizenView.liste.rawValue
     private var viewMode: NotizenView { NotizenView(rawValue: viewModeRaw) ?? .liste }
 
@@ -129,6 +130,13 @@ struct NotizenKatalogTab: View {
             }
         }
         .task { await reload() }
+        .sheet(item: $editing) { note in
+            NoteEditorSheet(
+                note: note,
+                onSave: { body, color in save(note, body: body, color: color) },
+                onDelete: { delete(note); editing = nil },
+                onClose: { editing = nil })
+        }
     }
 
     // MARK: Ansicht-Umschalter
@@ -175,12 +183,20 @@ struct NotizenKatalogTab: View {
                                 }
                             }
                         }
+                        if let key = note.color, let c = NoteColorPalette.mykColor(key) {
+                            Circle().fill(c.color).frame(width: 9, height: 9)
+                        }
                         Spacer()
+                        Button { editing = note } label: {
+                            Image(systemName: "pencil").font(.mykCaption).foregroundStyle(MykColor.muted.color)
+                        }.buttonStyle(.plain)
                         Button { delete(note) } label: {
                             Image(systemName: "trash").font(.mykCaption).foregroundStyle(MykColor.critical.color)
                         }.buttonStyle(.plain)
                     }
                     .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s3)
+                    .contentShape(Rectangle())
+                    .onTapGesture { editing = note }
                     Divider().overlay(MykColor.line.color)
                 }
             }
@@ -195,6 +211,7 @@ struct NotizenKatalogTab: View {
                       alignment: .leading, spacing: MykSpace.s5) {
                 ForEach(notes) { note in
                     StickyNoteCard(note: note, dateText: Self.stamp.string(from: note.updatedAt),
+                                   onTap: { editing = note },
                                    onDelete: { delete(note) })
                 }
             }
@@ -247,21 +264,117 @@ struct NotizenKatalogTab: View {
             catch { errorText = "Notiz konnte nicht gelöscht werden: \(error.localizedDescription)" }
         }
     }
+    private func save(_ note: AssistantNote, body: String, color: String?) {
+        editing = nil
+        Task {
+            do { try await appState.assistantNotes.update(id: note.id, body: body, color: color); await reload() }
+            catch { errorText = "Notiz konnte nicht gespeichert werden: \(error.localizedDescription)" }
+        }
+    }
+}
+
+// MARK: - NoteEditorSheet — Notiz bearbeiten + 4-Farb-Picker
+private struct NoteEditorSheet: View {
+    let note: AssistantNote
+    let onSave: (_ body: String, _ color: String?) -> Void
+    let onDelete: () -> Void
+    let onClose: () -> Void
+
+    @State private var text: String
+    @State private var color: String?
+
+    init(note: AssistantNote, onSave: @escaping (String, String?) -> Void,
+         onDelete: @escaping () -> Void, onClose: @escaping () -> Void) {
+        self.note = note; self.onSave = onSave; self.onDelete = onDelete; self.onClose = onClose
+        _text = State(initialValue: note.body)
+        _color = State(initialValue: note.color)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            Text("Notiz bearbeiten").font(.mykHeadline).foregroundStyle(MykColor.ink.color)
+
+            TextEditor(text: $text)
+                .font(.mykBody).foregroundStyle(MykColor.ink.color)
+                .scrollContentBackground(.hidden)
+                .padding(MykSpace.s3)
+                .frame(minHeight: 140)
+                .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.card.color))
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+
+            HStack(spacing: MykSpace.s4) {
+                Text("Farbe").font(.mykSmall).foregroundStyle(MykColor.muted.color)
+                ForEach(NoteColorPalette.pickKeys, id: \.self) { key in
+                    let c = NoteColorPalette.mykColor(key) ?? .personal
+                    Circle()
+                        .fill(c.color.opacity(0.5))
+                        .frame(width: 26, height: 26)
+                        .overlay(Circle().stroke(color == key ? MykColor.ink.color : c.color.opacity(0.7),
+                                                 lineWidth: color == key ? 2 : 1))
+                        .overlay {
+                            if color == key {
+                                Image(systemName: "checkmark").font(.mykMono(10)).foregroundStyle(MykColor.ink.color)
+                            }
+                        }
+                        .onTapGesture { color = (color == key) ? nil : key }
+                }
+                Spacer()
+            }
+
+            HStack {
+                Button(role: .destructive) { onDelete() } label: {
+                    Label("Löschen", systemImage: "trash").font(.mykSmall).foregroundStyle(MykColor.critical.color)
+                }.buttonStyle(.plain)
+                Spacer()
+                Button("Abbrechen") { onClose() }.font(.mykSmall).buttonStyle(.plain).foregroundStyle(MykColor.muted.color)
+                Button("Speichern") { onSave(text, color) }
+                    .font(.mykSmall).foregroundStyle(MykColor.paper.color)
+                    .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s2)
+                    .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.personal.color))
+                    .buttonStyle(.plain)
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(MykSpace.s7)
+        .frame(width: 460)
+        .background(MykColor.paper.color)
+    }
+}
+
+// MARK: - NoteColorPalette — 4 wählbare Farben + Auto-Palette (Token-Disziplin: nur MykColor)
+enum NoteColorPalette {
+    /// Die 4 wählbaren Farb-Schlüssel für den Picker.
+    static let pickKeys = ["tasks", "people", "personal", "cash"]
+    /// Schlüssel → MykColor; unbekannt/nil → nil (dann Auto-Farbe).
+    static func mykColor(_ key: String?) -> MykColor? {
+        switch key {
+        case "tasks":    return .tasks
+        case "people":   return .people
+        case "personal": return .personal
+        case "cash":     return .cash
+        default:         return nil
+        }
+    }
+    /// Automatische Palette (für Notizen ohne gewählte Farbe).
+    static let auto: [MykColor] = [.tasks, .people, .personal, .drive, .cash, .brand]
+    static func autoColor(forID id: String) -> MykColor {
+        let seed = id.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
+        return auto[seed % auto.count]
+    }
 }
 
 // MARK: - StickyNoteCard — bunter Notizzettel für die Wand-Ansicht
 private struct StickyNoteCard: View {
     let note: AssistantNote
     let dateText: String
+    let onTap: () -> Void
     let onDelete: () -> Void
     @State private var isHovered = false
 
-    // Bunte Zettel-Palette aus Design-Tokens (Token-Disziplin: nur MykColor).
-    private static let palette: [MykColor] = [.tasks, .people, .personal, .drive, .cash, .brand]
-
-    // Stabiler Index/Winkel aus der Notiz-ID → Farbe & Neigung bleiben an der Notiz.
+    // Stabiler Winkel aus der Notiz-ID → Neigung bleibt an der Notiz.
     private var seed: Int { note.id.unicodeScalars.reduce(0) { $0 &+ Int($1.value) } }
-    private var accent: MykColor { Self.palette[seed % Self.palette.count] }
+    // Gewählte Farbe gewinnt, sonst automatische aus der ID.
+    private var accent: MykColor { NoteColorPalette.mykColor(note.color) ?? NoteColorPalette.autoColor(forID: note.id) }
     private var tilt: Double { Double((seed % 5) - 2) * 1.1 }   // ca. -2.2° … +2.2°
 
     var body: some View {
@@ -295,6 +408,8 @@ private struct StickyNoteCard: View {
         .shadow(color: MykColor.ink.color.opacity(0.10), radius: 3, x: 0, y: 2)
         .onHover { isHovered = $0 }
         .animation(.easeInOut(duration: 0.15), value: isHovered)
+        .contentShape(Rectangle())
+        .onTapGesture { onTap() }
     }
 }
 

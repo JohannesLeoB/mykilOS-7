@@ -192,6 +192,14 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v11_assistant_note_color (S20) — optionaler Farb-Schlüssel je Notiz (Zettel-Wand).
+        // Additiv: bestehende Notizen bleiben ohne Farbe (NULL → Auto-Farbe).
+        migrator.registerMigration("v11_assistant_note_color") { db in
+            try db.alter(table: "assistantNotes") { t in
+                t.add(column: "color", .text)
+            }
+        }
+
         try migrator.migrate(queue)
     }
 

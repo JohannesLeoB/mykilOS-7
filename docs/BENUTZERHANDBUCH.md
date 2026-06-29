@@ -160,7 +160,8 @@ Vier **umsortierbare Unter-Tabs** (Tab mit der Maus ziehen → Reihenfolge wird 
 - **Notizen** — die lokalen Assistenten-Notizen (S4). Direkt hier anlegen (Sichern) und
   löschen, oder über den Assistenten-Chat. Rein lokal. **Zwei Ansichten umschaltbar (S18):**
   *Liste* (clean) oder *Wand* (bunte Notizzettel, je nach Notiz eingefärbt & leicht geneigt);
-  die Wahl wird gemerkt.
+  die Wahl wird gemerkt. **Bearbeiten (S20):** Klick auf einen Zettel/eine Zeile öffnet den
+  Editor (Text ändern, **4-Farb-Picker**, Speichern/Löschen); die Farbe bleibt an der Notiz.
 - **Aufgaben** — die lokale Aufgabenliste (S6): To-dos/Erinnerungen abhaken, anlegen,
   löschen — hier oder im Assistenten-Chat. Offene zuerst, Fälligkeit sichtbar. Rein lokal.
 
