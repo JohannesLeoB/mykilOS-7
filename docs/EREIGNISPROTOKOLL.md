@@ -58,6 +58,30 @@ voller `GmailSyncService`-Postfach-Sync (auf Ansage). Kein Push/Merge ohne Freig
 
 ---
 
+## 2026-06-29 · Claude Code (Opus) — S18: Notizen-Wand (Liste ↔ bunte Zettel) + Live-Verifikation
+
+```
+Branch: polish/dampflok; 386 Tests grün
+Build:  ✅ swift build grün · Token-Regeln clean · LIVE am Gerät verifiziert
+```
+
+Auf Wunsch: zwei Notiz-Ansichten umschaltbar. `NotizenKatalogTab` bekommt einen
+Ansicht-Toggle (`NotizenView` liste/wand, persistent in `@AppStorage`):
+- **Liste** = die bisherige cleane Zeilenliste.
+- **Wand** = `LazyVGrid` aus `StickyNoteCard` — bunte Notizzettel (6-Farb-Palette rein aus
+  MykColor-Tokens, stabile Farbe + leichte Neigung pro Notiz-ID, Hover richtet gerade +
+  zeigt Löschen). Farb-Sättigung nach Wunsch „bunt" erhöht (0.32/0.42).
+
+**Live verifiziert** (stabile Signatur → kein Keychain-Prompt mehr): App startet sauber,
+4 Notizen angelegt, Wand zeigt sie farbig versetzt, Toggle Liste/Wand persistent.
+Nebenbefund live bestätigt: `AIRTABLE_KONTAKTE_LOOKUP · 901 gelesen`, `AIRTABLE_KUNDEN_PROJEKTE · 31`,
+Geräte-Katalog 5.565 Artikel, Drive-Dateien-Tab (VONBOCH) listet echten lokalen Ordnerbaum.
+
+Offen (Nutzer-Wunsch, nächster Schritt): Kontakte-Tab auf **Google-Workspace-Verzeichnis**
+(`searchDirectoryPeople`, `directory.readonly`, Domain mykilos.com) umstellen.
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — Release 6.5.0: sauberer Build + DMG + Packaging
 
 ```

@@ -155,7 +155,9 @@ Vier **umsortierbare Unter-Tabs** (Tab mit der Maus ziehen → Reihenfolge wird 
 - **Kontakte** — Freitextsuche über die Google-Kontakte des verbundenen Accounts
   (read-only, People API). Voraussetzung: Google verbunden.
 - **Notizen** — die lokalen Assistenten-Notizen (S4). Direkt hier anlegen (Sichern) und
-  löschen, oder über den Assistenten-Chat. Rein lokal.
+  löschen, oder über den Assistenten-Chat. Rein lokal. **Zwei Ansichten umschaltbar (S18):**
+  *Liste* (clean) oder *Wand* (bunte Notizzettel, je nach Notiz eingefärbt & leicht geneigt);
+  die Wahl wird gemerkt.
 - **Aufgaben** — die lokale Aufgabenliste (S6): To-dos/Erinnerungen abhaken, anlegen,
   löschen — hier oder im Assistenten-Chat. Offene zuerst, Fälligkeit sichtbar. Rein lokal.
 
