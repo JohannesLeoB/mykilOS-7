@@ -119,19 +119,9 @@ private struct MiniProjectCard: View {
 
     private var heroGradient: some View {
         LinearGradient(
-            colors: kindGradient,
+            colors: project.kind.heroGradient,   // L26: geteilter, token-basierter Verlauf
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-    }
-
-    private var kindGradient: [Color] {
-        switch project.kind {
-        case .kitchen:       [MykColor.drive.color.opacity(0.7), MykColor.drive.color.opacity(0.3)]
-        case .lighting:      [MykColor.people.color.opacity(0.7), MykColor.people.color.opacity(0.3)]
-        case .addendum:      [MykColor.cash.color.opacity(0.7), MykColor.cash.color.opacity(0.3)]
-        case .lead, .quote:  [MykColor.tasks.color.opacity(0.7), MykColor.tasks.color.opacity(0.3)]
-        default:             [MykColor.faint.color, MykColor.bone.color]
-        }
     }
 }

@@ -272,8 +272,8 @@ private struct DriveTreeRow: View {
 
             // Icon
             Image(systemName: node.file.iconName)
-                .font(.system(size: 13))
-                .foregroundStyle(node.file.isFolder ? folderBlue : MykColor.drive.color)
+                .font(.mykSmall)
+                .foregroundStyle(node.file.isFolder ? MykColor.folderIcon.color : MykColor.drive.color)
                 .frame(width: 18)
                 .padding(.trailing, MykSpace.s3)
 
@@ -287,7 +287,7 @@ private struct DriveTreeRow: View {
 
             // Cloud-Sync-Icon
             Image(systemName: "arrow.down.circle")
-                .font(.system(size: 10))
+                .font(.mykMono(10))
                 .foregroundStyle(MykColor.faint.color)
                 .frame(width: 20)
 
@@ -325,17 +325,12 @@ private struct DriveTreeRow: View {
                     .scaleEffect(0.7)
             } else {
                 Image(systemName: node.isExpanded ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.mykMono(9))
                     .foregroundStyle(MykColor.muted.color)
             }
         } else {
             Color.clear
         }
-    }
-
-    // Macintosh-typisches Ordner-Blau
-    private var folderBlue: Color {
-        Color(red: 0.28, green: 0.54, blue: 0.90)
     }
 
     private var dateLabel: String {

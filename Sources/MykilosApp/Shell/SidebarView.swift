@@ -123,7 +123,7 @@ private struct SidebarIconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 14, weight: .regular))
+                .font(.mykBody)
                 .foregroundStyle(isHovered ? MykColor.brand.color.opacity(0.7) : MykColor.brand.color)
                 .frame(width: 36, height: 36)
                 .background(

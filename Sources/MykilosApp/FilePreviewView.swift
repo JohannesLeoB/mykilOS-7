@@ -74,7 +74,7 @@ public struct FilePreviewView: View {
 
     private var typeIcon: some View {
         Image(systemName: file.iconName)
-            .font(.system(size: 40))
+            .font(.mykHero)
             .foregroundStyle(MykColor.drive.color)
             .frame(height: 60)
     }

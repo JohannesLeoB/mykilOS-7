@@ -19,6 +19,10 @@ public enum MykColor {
     case positive, critical
     // Brand-Akzent — MYKILOS Orange #EA5B25 (Sidebar-Actions, Home-Button)
     case brand
+    // L26 — zusätzliche adaptive Tokens (ersetzen hartkodierte Hex/RGB)
+    case folderIcon   // Mac-Ordner-Blau (Dateien-Baum) — dunkel angehoben für Kontrast
+    case notesPaper   // Notiz-Pergament-Hintergrund (dark = warmes Dunkelpapier)
+    case notesInk     // Notiz-Tinte auf Pergament (dark = warmes Cremé, lesbar)
 
     public var color: Color {
         switch self {
@@ -39,6 +43,9 @@ public enum MykColor {
         case .positive: Self.adaptive(light: 0x3E7A4E, dark: 0x5A9A68)
         case .critical: Self.adaptive(light: 0xB4503C, dark: 0xCC6854)
         case .brand:    Self.adaptive(light: 0xEA5B25, dark: 0xEA5B25)
+        case .folderIcon: Self.adaptive(light: 0x478AE6, dark: 0x5A9CF0)
+        case .notesPaper: Self.adaptive(light: 0xFBF3DA, dark: 0x2E2A1E)
+        case .notesInk:   Self.adaptive(light: 0x6B5A2F, dark: 0xE6D9B0)
         }
     }
 

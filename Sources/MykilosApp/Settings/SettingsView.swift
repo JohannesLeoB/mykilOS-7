@@ -507,7 +507,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
             HStack(spacing: MykSpace.s3) {
                 Image(systemName: "lock.fill")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.mykMono(11))
                     .foregroundStyle(MykColor.brand.color)
                 Text("PRIVATE AREA")
                     .font(.mykMono(10))

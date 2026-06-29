@@ -40,14 +40,14 @@ public struct NotesWidget: View {
                         }
                     ))
                     .font(.mykBody)
-                    .foregroundStyle(Color(hex: 0x6B5A2F))
+                    .foregroundStyle(MykColor.notesInk.color)   // L26: dark-mode-sicher
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 72)
                     .padding(MykSpace.s3)
                     .background(
                         RoundedRectangle(cornerRadius: MykRadius.sm)
                             .fill(LinearGradient(
-                                colors: [Color(hex: 0xFBF3DA), Color(hex: 0xF6EAD0)],
+                                colors: [MykColor.notesPaper.color, MykColor.notesPaper.color.opacity(0.92)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ))
@@ -94,10 +94,10 @@ public struct NotesWidget: View {
                 ProgressView().scaleEffect(0.6).tint(MykColor.muted.color)
                 Text("Speichern…").font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
             case .saved(let d):
-                Image(systemName: "checkmark.circle.fill").font(.system(size: 10)).foregroundStyle(MykColor.positive.color)
+                Image(systemName: "checkmark.circle.fill").font(.mykMono(10)).foregroundStyle(MykColor.positive.color)
                 Text("Gespeichert \(d.formatted(.dateTime.hour().minute()))").font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
             case .failed(let msg):
-                Image(systemName: "exclamationmark.circle").font(.system(size: 10)).foregroundStyle(MykColor.critical.color)
+                Image(systemName: "exclamationmark.circle").font(.mykMono(10)).foregroundStyle(MykColor.critical.color)
                 Text(msg).font(.mykMono(9.5)).foregroundStyle(MykColor.critical.color).lineLimit(1)
                 Button("Erneut") { try? noteStore.save() }
                     .font(.mykMono(9.5)).foregroundStyle(MykColor.critical.color).buttonStyle(.plain)

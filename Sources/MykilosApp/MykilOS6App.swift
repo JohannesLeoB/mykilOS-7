@@ -108,7 +108,7 @@ struct DatabaseRecoveryView: View {
         VStack(alignment: .leading, spacing: MykSpace.s6) {
             HStack(spacing: MykSpace.s4) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 26))
+                    .font(.mykDisplay)
                     .foregroundStyle(MykColor.critical.color)
                 Text("Datenbank konnte nicht geöffnet werden")
                     .font(.mykDisplay)
@@ -275,7 +275,7 @@ struct ContentView: View {
         } label: {
             Image(systemName: sidebarCollapsed ? "sidebar.left" : "sidebar.left")
                 .symbolVariant(sidebarCollapsed ? .none : .slash)
-                .font(.system(size: 13, weight: .regular))
+                .font(.mykSmall)
                 .foregroundStyle(MykColor.faint.color)
                 .frame(width: 28, height: 28)
                 .contentShape(Rectangle())

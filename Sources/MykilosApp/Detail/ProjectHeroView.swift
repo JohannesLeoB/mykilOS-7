@@ -155,15 +155,9 @@ struct ProjectHeroView: View {
     }()
 
     // MARK: Helfer
-    private var heroGradient: [Color] {
-        switch project.kind {
-        case .kitchen:       [Color(hex: 0xD9B9A4), Color(hex: 0xC9A98F), Color(hex: 0x9A8F7E), Color(hex: 0x6F7A72)]
-        case .lighting:      [Color(hex: 0xA8C4A8), Color(hex: 0x7A9A7A)]
-        case .addendum:      [Color(hex: 0xA8B8C8), Color(hex: 0x6A7A8F)]
-        case .lead, .quote:  [Color(hex: 0xC8BCA8), Color(hex: 0x8A7A6A)]
-        case .studioInternal:[Color(hex: 0xC0C0C0), Color(hex: 0x808080)]
-        }
-    }
+    // L26: token-basiert + adaptiv (siehe ProjectKind.heroGradient) — ersetzt die
+    // hartkodierten Color(hex:)-Verläufe, dark-mode-sicher.
+    private var heroGradient: [Color] { project.kind.heroGradient }
 }
 
 // Raster-Textur (geteilt zwischen Card und Hero)

@@ -132,7 +132,7 @@ struct KatalogeView: View {
     private var emptyState: some View {
         VStack(spacing: MykSpace.s4) {
             Image(systemName: "tray.slash")
-                .font(.system(size: 32))
+                .font(.mykDisplay)
                 .foregroundStyle(MykColor.faint.color)
             Text("Kein Gerätekatalog gefunden")
                 .font(.mykHeadline)
