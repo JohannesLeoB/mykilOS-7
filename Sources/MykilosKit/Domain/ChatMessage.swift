@@ -86,6 +86,9 @@ public enum ChatContentBlock: Codable, Sendable, Equatable {
     // Aktionskarte für einen vorgeschlagenen Mail-Entwurf (S14). Legt erst nach
     // Bestätigung einen Gmail-ENTWURF an — versendet NIE (+ Audit).
     case draftAction(draft: EmailDraft)
+    // Anklickbare Datei-Ergebnisse eines Tools (S22), z. B. find_offers. Nur Anzeige —
+    // Klick öffnet die In-App-Vorschau (DocumentViewerView), nie an die API gesendet.
+    case driveFiles(label: String, files: [DriveFileRef])
     // Kostenschätzungs-Karte (S18). Nur Anzeige — die Werte kommen aus der
     // lokalen KalkulationsEngine, werden nie an die API zurückgespielt.
     case kalkulationsSchaetzung(schaetzungsID: String, projektID: String, minNetto: Double, maxNetto: Double, mitteNetto: Double, confidence: Double, evidenceCount: Int)

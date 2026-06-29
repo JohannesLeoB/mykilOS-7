@@ -31,12 +31,15 @@ public struct ToolRunResult: Sendable, Equatable {
     /// Optionaler Mail-Entwurf (S14) — die Engine speichert ihn als `.draftAction`-Block.
     /// Schreibt NICHTS; erst die Bestätigung legt einen Gmail-Entwurf an (versendet nie).
     public let emailDraft: EmailDraft?
+    /// Optionale anklickbare Datei-Ergebnisse (S22) — die Engine speichert sie als
+    /// `.driveFiles`-Block (In-App-Vorschau). Nur Anzeige, nie an die API gesendet.
+    public let driveFiles: [DriveFileRef]
     public init(text: String, isError: Bool = false, actionURL: String? = nil,
                 schaetzung: KostenSchaetzung? = nil, contactDraft: ContactDraft? = nil,
-                emailDraft: EmailDraft? = nil) {
+                emailDraft: EmailDraft? = nil, driveFiles: [DriveFileRef] = []) {
         self.text = text; self.isError = isError; self.actionURL = actionURL
         self.schaetzung = schaetzung; self.contactDraft = contactDraft
-        self.emailDraft = emailDraft
+        self.emailDraft = emailDraft; self.driveFiles = driveFiles
     }
 }
 
@@ -718,12 +721,26 @@ struct FindOffersTool: AssistantTool {
         }
         do {
             let result = try await OffersCollector.load(rootFolderID: folderID, client: client)
-            return ToolRunResult(text: Self.format(result, label: label))
+            return ToolRunResult(text: Self.format(result, label: label), driveFiles: Self.refs(result))
         } catch GoogleDriveError.notConnected {
             return ToolRunResult(text: "Google Drive nicht verbunden. In den Einstellungen verbinden.", isError: true)
         } catch {
             return ToolRunResult(text: "Angebots-Suche fehlgeschlagen: \(error.localizedDescription)", isError: true)
         }
+    }
+
+    // S22: anklickbare Datei-Referenzen (ausgehend zuerst, dann eingehend), für die In-App-Vorschau.
+    private static func refs(_ r: OffersCollector.Result) -> [DriveFileRef] {
+        let fmt = DateFormatter(); fmt.dateFormat = "dd.MM.yy"; fmt.locale = Locale(identifier: "de_DE")
+        func map(_ offers: [ClassifiedOffer], _ richtung: String) -> [DriveFileRef] {
+            offers.prefix(40).map { o in
+                var sub = "\(richtung) · \(o.type.label)"
+                if let d = o.file.modifiedAt { sub += " · \(fmt.string(from: d))" }
+                return DriveFileRef(id: o.file.id, name: o.file.name, mimeType: o.file.mimeType,
+                                    webViewLink: o.file.webViewLink, subtitle: sub)
+            }
+        }
+        return map(r.outgoing, "ausgehend") + map(r.incoming, "eingehend")
     }
 
     private static func format(_ r: OffersCollector.Result, label: String) -> String {

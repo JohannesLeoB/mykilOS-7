@@ -79,6 +79,13 @@ Konversationeller Chat, scoped auf dieses Projekt. Claude hat Kontext über
 Projektnummer, verknüpfte Drive-Ordner, ClickUp-Liste und Kalender-Suche.
 Tool-Use (Drive/Mail/Kalender/Kalkulation) nur bei aktiviertem Opt-in.
 
+**Anklickbare Datei-Ergebnisse (S22):** Findet der Assistent über `find_offers`
+Angebote/Rechnungen, erscheinen sie als anklickbare Karte (Symbol + Dateiname +
+„ausgehend/eingehend · Typ · Datum"). Ein Klick öffnet die **In-App-Vorschau**
+(derselbe Voll-Viewer wie unter „Dateien": PDF/Bild/QuickLook). Read-only —
+lokal materialisierte Dateien sofort, der Drive-Inhalt braucht `drive.readonly`
+(M2). Über „Im Browser" bleibt der `webViewLink`-Fallback.
+
 ### Dateien
 Datei-Baum des verknüpften Google-Drive-Projektordners. Unterordner werden
 lazy geladen (on-demand). Ist der Ordner über **Google Drive für Desktop** lokal
@@ -337,7 +344,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `DRIVE_OFFERS_TAB` | Angebote-Tab | READ | onDemand (Tab öffnen) | read-only | Gleiche Erkennungslogik wie `DriveOfferWatcher.detectOffers`. |
 | `DRIVE_MATERIAL_TAB` | Material-Tab | READ | onDemand (Tab öffnen) | read-only | Tolerant per Ordnername gematcht (`05 Material` o.ä.). |
 | `DRIVE_ASSISTANT_LIST` | Drive-Ordner-Listing (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `list_drive_folder`. Nur Metadaten, nie Dateiinhalte. Eigene Weiche (Mandate E). |
-| `DRIVE_OFFERS_FIND` | Angebote-Suche (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `find_offers` über `OffersCollector` (rekursiv, klassifiziert). Findet 04/05 auch verschachtelt in „01 INFOS"; global per Projektname auflösbar (S2). |
+| `DRIVE_OFFERS_FIND` | Angebote-Suche (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `find_offers` über `OffersCollector` (rekursiv, klassifiziert). Findet 04/05 auch verschachtelt in „01 INFOS"; global per Projektname auflösbar (S2). Ergebnisse erscheinen als **anklickbare** Karte mit In-App-Vorschau (S22, reine UI — keine eigene Weiche). |
 | `DRIVE_FILE_READ` | Dateiinhalt lesen (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `read_drive_file` über `DriveFileReader`: findet die Datei per (Teil-)Name rekursiv und liest den **Inhalt** als Klartext (PDF→PDFKit, Google Docs/Sheets/Slides→Export, Text→utf8, gekürzt auf 6000 Zeichen). Braucht `drive.readonly` Scope. Eigene Weiche (S5). |
 
 #### Google Gmail

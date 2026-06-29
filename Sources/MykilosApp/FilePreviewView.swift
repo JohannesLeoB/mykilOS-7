@@ -3,6 +3,7 @@ import PDFKit
 import AppKit
 import MykilosDesign
 import MykilosServices
+import MykilosWidgets
 
 // MARK: - FilePreviewView
 // Datei-Vorschau für Drive-Dateien.

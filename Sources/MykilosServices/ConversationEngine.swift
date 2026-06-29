@@ -233,6 +233,10 @@ public final class ConversationEngine {
                     // Mail-Entwurf-Bestätigungskarte — legt erst auf Bestätigung in Gmail ab.
                     activities.append(.draftAction(draft: mailDraft))
                 }
+                if result.driveFiles.isEmpty == false {
+                    // Anklickbare Datei-Ergebnisse (In-App-Vorschau) — nur Anzeige.
+                    activities.append(.driveFiles(label: "Gefundene Dokumente", files: result.driveFiles))
+                }
                 if let s = result.schaetzung {
                     // Schätzungskarte — nur Anzeige, nie an die API gesendet.
                     activities.append(.kalkulationsSchaetzung(

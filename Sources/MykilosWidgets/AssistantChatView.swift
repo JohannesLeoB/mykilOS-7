@@ -313,6 +313,7 @@ struct ChatMessageBubble: View {
     var onCreateContact: ((ContactDraft) async -> ContactCreateOutcome)? = nil
     var onCreateDraft: ((EmailDraft) async -> DraftCreateOutcome)? = nil
     @State private var cursorVisible = true
+    @State private var previewFile: DriveFileRef?
 
     var body: some View {
         HStack {
@@ -342,12 +343,30 @@ struct ChatMessageBubble: View {
                 ForEach(Array(emailDrafts.enumerated()), id: \.offset) { _, draft in
                     DraftActionCard(draft: draft, onConfirm: onCreateDraft)
                 }
+                // Anklickbare Datei-Ergebnisse mit In-App-Vorschau (S22).
+                ForEach(Array(driveFileBlocks.enumerated()), id: \.offset) { _, block in
+                    DriveFilesCard(label: block.label, files: block.files,
+                                   onOpen: { previewFile = $0 })
+                }
                 if case .failed = message.status {
                     Label("Erneut versuchen über erneutes Senden", systemImage: "exclamationmark.triangle")
                         .font(.mykMono(9.5)).foregroundStyle(MykColor.critical.color)
                 }
             }
             if message.role == .assistant { Spacer(minLength: 40) }
+        }
+        .sheet(item: $previewFile) { ref in
+            DocumentViewerView(
+                file: GoogleDriveFile(id: ref.id, name: ref.name, mimeType: ref.mimeType,
+                                      modifiedAt: nil, webViewLink: ref.webViewLink),
+                remoteContent: { let id = ref.id; return try? await GoogleDriveClient().downloadContent(fileID: id) },
+                onClose: { previewFile = nil })
+        }
+    }
+
+    private var driveFileBlocks: [(label: String, files: [DriveFileRef])] {
+        message.blocks.compactMap {
+            if case let .driveFiles(label, files) = $0 { (label, files) } else { nil }
         }
     }
 
@@ -613,6 +632,52 @@ struct DraftActionCard: View {
             Label(msg, systemImage: "exclamationmark.triangle")
                 .font(.mykMono(9.5)).foregroundStyle(MykColor.critical.color)
         }
+    }
+}
+
+// MARK: - DriveFilesCard (S22) — anklickbare Datei-Ergebnisse mit In-App-Vorschau
+struct DriveFilesCard: View {
+    let label: String
+    let files: [DriveFileRef]
+    var onOpen: (DriveFileRef) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s2) {
+            HStack(spacing: MykSpace.s2) {
+                Image(systemName: "folder").font(.mykCaption).foregroundStyle(MykColor.drive.color)
+                Text("\(label) (\(files.count))").font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
+            }
+            ForEach(files) { file in
+                Button { onOpen(file) } label: {
+                    HStack(spacing: MykSpace.s3) {
+                        Image(systemName: icon(for: file.mimeType))
+                            .font(.mykSmall).foregroundStyle(MykColor.drive.color).frame(width: 18)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(file.name).font(.mykSmall).foregroundStyle(MykColor.ink.color).lineLimit(1)
+                            if let sub = file.subtitle {
+                                Text(sub).font(.mykMono(8.5)).foregroundStyle(MykColor.faint.color)
+                            }
+                        }
+                        Spacer()
+                        Image(systemName: "eye").font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                    }
+                    .padding(.horizontal, MykSpace.s3).padding(.vertical, MykSpace.s2)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(MykSpace.s4)
+        .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color)
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.drive.color.opacity(0.3), lineWidth: 1)))
+        .frame(maxWidth: 460)
+    }
+
+    private func icon(for mimeType: String) -> String {
+        if mimeType == "application/pdf" { return "doc.richtext" }
+        if mimeType.hasPrefix("image/") { return "photo" }
+        if mimeType.hasPrefix("application/vnd.google-apps") { return "globe" }
+        return "doc"
     }
 }
 

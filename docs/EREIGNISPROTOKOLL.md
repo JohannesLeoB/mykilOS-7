@@ -30,6 +30,34 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-29 · Claude Code (Opus) — S22: Assistenten-Ergebnisse klickbar + In-App-Vorschau
+
+```
+Branch: polish/dampflok; 397 Tests grün (unverändert) · Build grün · Token-Regeln clean
+```
+
+Letzter offener Live-Wunsch geschlossen: gefundene Dateien des Assistenten sind jetzt
+anklickbar mit In-App-Vorschau.
+
+- **Kit:** `DriveFileRef` (id/name/mimeType/webViewLink/subtitle, Codable/Identifiable);
+  neuer Anzeige-Block `ChatContentBlock.driveFiles(label:files:)`.
+- **Services:** `ToolRunResult.driveFiles` (Default leer); `FindOffersTool` mappt die
+  klassifizierten Belege (ausgehend/eingehend) auf `DriveFileRef`s. `ConversationEngine`
+  hängt sie als `.driveFiles`-Block an die Antwort. `ClaudeChatClient.wire` behandelt den
+  Block als reine Anzeige (nie an die API).
+- **Widgets:** `DocumentViewerView` von `MykilosApp` nach `MykilosWidgets` verschoben
+  (`public`), damit Chat + Dateien-Tab denselben Voll-Viewer nutzen. Neue
+  `DriveFilesCard` mit anklickbaren Zeilen → Klick öffnet `DocumentViewerView` als Sheet
+  (read-only: lokale Datei bevorzugt, sonst Drive-Bytes → Temp-Datei).
+- **App:** `FilePreviewView` importiert jetzt `MykilosWidgets` (Viewer-Quelle verschoben).
+
+Keine neue Daten-Weiche — die Anzeige sitzt auf der bestehenden `DRIVE_OFFERS_FIND`.
+Kein neuer Test (reine UI-Anzeige); Build + 397 Tests grün, Token-Regeln clean.
+Volle Bytes-Vorschau live erst mit M2 (Google Re-Consent, drive.readonly); lokal
+materialisierte Dateien werden ohne M2 angezeigt.
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — S20/S21: Notiz-Editor + Projekt-Galerie filtern/sortieren
 
 ```

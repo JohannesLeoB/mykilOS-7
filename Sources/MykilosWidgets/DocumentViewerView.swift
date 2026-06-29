@@ -12,11 +12,20 @@ import MykilosServices
 // braucht drive.readonly → M2). Alle Zustände sind sichtbar: laden / fertig / leer / Fehler /
 // Verbindung-nötig. Schreibt NIE; öffnet zur Not im Browser.
 @MainActor
-struct DocumentViewerView: View {
+public struct DocumentViewerView: View {
     let file: GoogleDriveFile
-    var localURL: URL? = nil
-    var remoteContent: (@Sendable () async -> Data?)? = nil
-    var onClose: () -> Void = {}
+    var localURL: URL?
+    var remoteContent: (@Sendable () async -> Data?)?
+    var onClose: () -> Void
+
+    public init(file: GoogleDriveFile, localURL: URL? = nil,
+                remoteContent: (@Sendable () async -> Data?)? = nil,
+                onClose: @escaping () -> Void = {}) {
+        self.file = file
+        self.localURL = localURL
+        self.remoteContent = remoteContent
+        self.onClose = onClose
+    }
 
     private enum Phase: Equatable {
         case loading
@@ -29,7 +38,7 @@ struct DocumentViewerView: View {
     }
     @State private var phase: Phase = .loading
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 0) {
             header
             Divider().overlay(MykColor.line.color)
