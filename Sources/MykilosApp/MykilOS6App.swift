@@ -52,7 +52,7 @@ struct MykilOS6App: App {
         // Damit bleibt die normale, stabile .automatic-Fensterlogik erhalten.
         .commands { AppCommands() }
 
-        WindowGroup("Über mykilOS 6", id: "about") {
+        WindowGroup("Über mykilOS 7", id: "about") {
             AboutMykilOSView()
         }
         .defaultSize(width: 440, height: 300)
@@ -428,14 +428,14 @@ struct AboutMykilOSView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: MykRadius.md)
                         .fill(MykColor.ink.color)
-                    Text("6")
+                    Text("7")
                         .font(.mykDisplay)
                         .foregroundStyle(MykColor.paper.color)
                 }
                 .frame(width: 64, height: 64)
 
                 VStack(alignment: .leading, spacing: MykSpace.s2) {
-                    Text("mykilOS 6")
+                    Text("mykilOS 7")
                         .font(.mykDisplay)
                         .foregroundStyle(MykColor.ink.color)
                     Text("Version \(version) · Build \(build)")
@@ -523,7 +523,7 @@ struct AppCommands: Commands {
     var body: some Commands {
         CommandGroup(replacing: .newItem) {}
         CommandGroup(replacing: .appInfo) {
-            Button("Über mykilOS 6") {
+            Button("Über mykilOS 7") {
                 openWindow(id: "about")
             }
             .keyboardShortcut(",", modifiers: .command)

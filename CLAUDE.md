@@ -1,4 +1,4 @@
-# mykilOS 6 — Claude Code Projektgedächtnis
+# mykilOS 7 — Claude Code Projektgedächtnis
 
 **Smarte Projektplanung und Management mit intelligenten Automationen und Integrationen.**
 Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
@@ -15,7 +15,7 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
 ```
 
-**GitHub:** https://github.com/JohannesLeoB/mykilOS-6 (privat)
+**GitHub:** https://github.com/JohannesLeoB/mykilOS-7 (privat) — Nachfolger von mykilOS-6
 
 Der Desktop-Ordner `~/Desktop/CLAUDE/` enthält NUR temporäre Worktrees von Claude Code-Sessions.
 Diese sind WEGWERFKOPIEN. Nie dauerhaft darin arbeiten. Immer in den gelben MYKILOS-6-Ordner.
@@ -680,7 +680,7 @@ swift run                      # App starten (ohne Bundle)
 swiftlint --strict              # Token-Disziplin prüfen
 ```
 
-**Repo:** https://github.com/JohannesLeoB/mykilOS-6 (privat). Codex-Workflow
+**Repo:** https://github.com/JohannesLeoB/mykilOS-7 (privat). Codex-Workflow
 und Session-Regeln: `docs/codex/WORKFLOW.md`.
 
 ---

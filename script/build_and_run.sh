@@ -3,10 +3,10 @@ set -euo pipefail
 
 PRODUCT_NAME="mykilOS6"
 EXECUTABLE_NAME="mykilOS6"
-APP_NAME="mykilOS 6"
-DISPLAY_NAME="mykilOS 6"
+APP_NAME="mykilOS 7"
+DISPLAY_NAME="mykilOS 7"
 BUNDLE_ID="de.mykilos.mykilos6"
-APP_VERSION="6.5.0"
+APP_VERSION="7.0.0"
 BUILD_VERSION="5"
 MIN_SYSTEM_VERSION="14.0"
 APP_ICON="AppIcon.icns"
