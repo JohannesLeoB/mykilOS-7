@@ -114,6 +114,7 @@ public final class ConversationEngine {
         let clickUpEnabled    = !schaetzModusEnabled && has("list_clickup_tasks") && (focusedClickUpListID?.isEmpty == false)
         let contactsEnabled   = !schaetzModusEnabled && has("search_contacts")
         let contactsWriteEnabled = !schaetzModusEnabled && has("create_contact")
+        let kontaktVerzeichnisEnabled = !schaetzModusEnabled && has("lookup_kontakt")
         let studioBrainEnabled = !schaetzModusEnabled && has("query_studio_knowledge")
         let katalogEnabled    = !schaetzModusEnabled && has("search_katalog")
         let notesEnabled      = !schaetzModusEnabled && has("create_note")
@@ -126,6 +127,7 @@ public final class ConversationEngine {
             kalkulationsEnabled: kalkulationsEnabled,
             driveEnabled: driveEnabled, contactsEnabled: contactsEnabled,
             clickUpEnabled: clickUpEnabled, contactsWriteEnabled: contactsWriteEnabled,
+            kontaktVerzeichnisEnabled: kontaktVerzeichnisEnabled,
             studioBrainEnabled: studioBrainEnabled,
             katalogEnabled: katalogEnabled, notesEnabled: notesEnabled,
             tasksEnabled: tasksEnabled,

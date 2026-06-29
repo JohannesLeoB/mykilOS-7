@@ -173,6 +173,28 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating {
         }
     }
 
+    // S13: Mappt die Airtable-Tabelle „Kontakte" → StudioContact (read-only). Erfordert
+    // einen Namen; alle anderen Felder optional. Pure/testbar.
+    public static func mapContacts(from records: [[String: AirtableFieldValue]]) -> [StudioContact] {
+        records.compactMap { fields in
+            let name = (fields["Name"]?.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard name.isEmpty == false else { return nil }
+            let recordID = fields["_airtableRecordID"]?.stringValue ?? name
+            func nonEmpty(_ key: String) -> String? {
+                let v = fields[key]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines)
+                return (v?.isEmpty == false) ? v : nil
+            }
+            return StudioContact(
+                id: recordID, name: name,
+                organisation: nonEmpty("Organisation"),
+                email: nonEmpty("E-Mail"),
+                telefon: nonEmpty("Telefon"),
+                adresse: nonEmpty("Adresse"),
+                projekt: nonEmpty("Projekt") ?? fields["Projekt"]?.firstArrayValue,
+                kategorie: nonEmpty("Kategorie"))
+        }
+    }
+
     static func mapProjects(from records: [[String: AirtableFieldValue]]) -> [Project] {
         records.compactMap { fields in
             guard let number = fields["Projektnummer"]?.stringValue,

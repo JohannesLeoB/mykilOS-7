@@ -37,7 +37,7 @@ struct AssistantToolManifestTests {
         let erwartet: Set<String> = [
             "search_gmail", "list_calendar_events", "suggest_calendar_event",
             "list_drive_folder", "find_offers", "read_drive_file", "search_contacts", "create_contact", "list_clickup_tasks",
-            "search_katalog", "query_studio_knowledge", "lookup_kunde",
+            "search_katalog", "query_studio_knowledge", "lookup_kunde", "lookup_kontakt",
             "create_note", "list_notes", "update_note", "delete_note",
             "create_task", "list_tasks", "complete_task", "delete_task",
             "schaetze_projekt",
@@ -52,6 +52,7 @@ struct AssistantToolManifestTests {
         let registry = AssistantToolRegistry.standard(
             kalkulationsEngine: StubKalkEngine(),
             kundenDirectory: KundenBrain(customers: []),
+            contactDirectory: ContactDirectory(contacts: []),
             notesStore: AssistantNotesStore(db: db),
             tasksStore: AssistantTasksStore(db: db))
         for name in registry.toolNames {

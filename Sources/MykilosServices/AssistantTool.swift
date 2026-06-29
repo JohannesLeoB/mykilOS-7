@@ -556,6 +556,47 @@ struct LookupKundeTool: AssistantTool {
     }
 }
 
+// MARK: - LookupKontaktTool (read-only, lokal) — Airtable-Kontakte-Verzeichnis (S13)
+// Durchsucht die lokal synchronisierte Airtable-Tabelle „Kontakte" (Kunden, Lieferanten,
+// Handwerker, Team): Name, Organisation, Telefon, E-Mail, ADRESSE, Projekt. Beantwortet
+// „Adresse Familie Cirnavuk?" ohne Google/M2. KEIN Live-Airtable-Zugriff — nur Snapshot.
+struct LookupKontaktTool: AssistantTool {
+    private let directory: ContactDirectory
+    init(directory: ContactDirectory) { self.directory = directory }
+
+    var name: String { "lookup_kontakt" }
+    var description: String {
+        "Durchsucht das Airtable-Kontaktverzeichnis (Kunden, Lieferanten, Handwerker, Team): "
+        + "liefert Name, Organisation, Telefon, E-Mail, ADRESSE und Projekt. Nutze DIESES "
+        + "Werkzeug für Adress-/Telefon-/E-Mail-Fragen zu Personen (z. B. „Adresse Cirnavuk?“)."
+    }
+    var parameters: [ToolParameter] {
+        [ToolParameter(name: "query", description: "Name, Organisation oder Projekt")]
+    }
+
+    func run(input: [String: String]) async -> ToolRunResult {
+        let query = (input["query"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard query.isEmpty == false else {
+            return ToolRunResult(text: "Wonach soll ich im Kontaktverzeichnis suchen? (Name/Firma/Projekt)", isError: true)
+        }
+        let hits = directory.search(query)
+        guard hits.isEmpty == false else {
+            return ToolRunResult(text: "Keine Kontakte für „\(query)“ gefunden.")
+        }
+        let lines = hits.map { contact -> String in
+            var head = contact.name
+            if let org = contact.organisation { head += " · \(org)" }
+            var detail: [String] = []
+            if let tel = contact.telefon { detail.append("☎ \(tel)") }
+            if let mail = contact.email { detail.append("✉ \(mail)") }
+            if let adr = contact.adresse { detail.append("⌂ \(adr)") }
+            if let proj = contact.projekt { detail.append("Projekt \(proj)") }
+            return detail.isEmpty ? head : "\(head)\n  " + detail.joined(separator: " · ")
+        }
+        return ToolRunResult(text: lines.joined(separator: "\n"))
+    }
+}
+
 // MARK: - FindOffersTool (S2, read-only) — Angebote im Drive finden
 // Kapselt OffersCollector (rekursiv, klassifiziert eingehend/ausgehend). Im Projekt-
 // Chat nutzt es den injizierten _driveFolderID; im globalen Chat löst es ein per
@@ -1011,6 +1052,7 @@ public struct AssistantToolRegistry: Sendable {
         kalkulationsEngine: (any KalkulationsEngineProviding)? = nil,
         deviceCatalog: DeviceCatalog? = DeviceCatalog.loadDefault(),
         kundenDirectory: KundenBrain? = nil,
+        contactDirectory: ContactDirectory? = nil,
         notesStore: AssistantNotesStore? = nil,
         tasksStore: AssistantTasksStore? = nil,
         projectDirectory: ProjectDirectory? = nil
@@ -1032,6 +1074,9 @@ public struct AssistantToolRegistry: Sendable {
         }
         if let kundenDirectory {
             tools.append(LookupKundeTool(brain: kundenDirectory))
+        }
+        if let contactDirectory {
+            tools.append(LookupKontaktTool(directory: contactDirectory))
         }
         if let notesStore {
             tools.append(CreateNoteTool(store: notesStore))

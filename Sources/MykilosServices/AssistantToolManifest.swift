@@ -31,6 +31,7 @@ public enum AssistantToolManifest {
         "search_katalog":         "LOCAL_DEVICECATALOG_ARTIKEL",
         "query_studio_knowledge": "STUDIO_KNOWLEDGE_QUERY",
         "lookup_kunde":           "AIRTABLE_KUNDEN_LOOKUP",
+        "lookup_kontakt":         "AIRTABLE_KONTAKTE_LOOKUP",
         "create_note":            "ASSISTANT_NOTES",
         "list_notes":             "ASSISTANT_NOTES",
         "update_note":            "ASSISTANT_NOTES",

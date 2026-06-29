@@ -46,6 +46,9 @@ public final class AppState {
     // S6: vom Assistenten verwaltete Aufgaben/Erinnerungen (lokal, persistent).
     public let assistantTasks: AssistantTasksStore
 
+    // S13: Snapshot der Airtable-Tabelle „Kontakte" (Adresse/Telefon/E-Mail) für lookup_kontakt.
+    private var studioContacts: [StudioContact] = []
+
     // Projekt-Boards on-demand (pro geöffnetem Projekt)
     private var projectBoards: [String: WidgetBoardStore] = [:]
     private var projectNotes:  [String: NoteStore]        = [:]
@@ -266,10 +269,29 @@ public final class AppState {
                 dataFlow.log(integrationID: "AIRTABLE_KUNDEN_PROJEKTE", actorUserID: actorUserID,
                              action: .success, recordsRead: registry.projects.count,
                              summary: "Projekte/Kunden aus Mastermind synchronisiert")
-                refreshAssistantKundenWissen()   // frische Kunden → Assistent
+                await syncKontakte(baseID: credentials.baseID)   // S13: Adress-/Telefonverzeichnis
+                refreshAssistantKundenWissen()   // frische Kunden + Kontakte → Assistent
             }
         } catch {
             airtableAuth.setError(String(describing: error))
+        }
+    }
+
+    // S13: lädt die Airtable-Tabelle „Kontakte" einmalig (read-only) in den lokalen
+    // Snapshot für lookup_kontakt. Fehler werden geschluckt (Verzeichnis bleibt leer,
+    // sichtbar via os.Logger) — Kontakte sind ein Komfort-Feature, kein Boot-Blocker.
+    private func syncKontakte(baseID: String) async {
+        do {
+            let records = try await AirtableClient().fetchRecords(baseID: baseID, table: "Kontakte")
+            studioContacts = AirtableClient.mapContacts(from: records)
+            dataFlow.log(integrationID: "AIRTABLE_KONTAKTE_LOOKUP", actorUserID: actorUserID,
+                         action: .success, recordsRead: studioContacts.count,
+                         summary: "Kontaktverzeichnis synchronisiert")
+        } catch {
+            MykLog.lifecycle.error("Kontakte-Sync fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            dataFlow.log(integrationID: "AIRTABLE_KONTAKTE_LOOKUP", actorUserID: actorUserID,
+                         action: .error, errorMessage: String(describing: error),
+                         summary: "Kontakte-Sync fehlgeschlagen")
         }
     }
 
@@ -279,8 +301,10 @@ public final class AppState {
     private func refreshAssistantKundenWissen() {
         let brain = KundenBrain(customers: registry.customers, projects: registry.projects)
         let dir = ProjectDirectory(projects: registry.projects, customers: registry.customers)
+        let contactDir = ContactDirectory(contacts: studioContacts)
         conversation.updateRegistry(.standard(
             kalkulationsEngine: kalkulationsEngine, kundenDirectory: brain,
+            contactDirectory: contactDir,
             notesStore: assistantNotes, tasksStore: assistantTasks, projectDirectory: dir))
     }
 

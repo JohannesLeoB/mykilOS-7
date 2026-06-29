@@ -262,6 +262,7 @@ Wenn Tools aktiviert sind, kann der Assistent folgende Aktionen ausführen
 | `query_studio_knowledge` | Fragt Slack-Brain | toolsEnabled |
 | `search_katalog` | Sucht Gerätekatalog (Hersteller, Artikelnr., VK) | toolsEnabled, kein SchaetzModus |
 | `lookup_kunde` | Sucht Airtable-Kunden (Name/Kundennr./Projektanzahl, lokaler Sync-Cache) | toolsEnabled |
+| `lookup_kontakt` | Sucht im **Airtable-Kontaktverzeichnis** (Kunden/Lieferanten/Handwerker/Team): Name, Organisation, **Telefon**, E-Mail, **Adresse**, Projekt. Beantwortet „Adresse Cirnavuk?" lokal, ohne Google/M2 | toolsEnabled (+ Airtable verbunden) |
 | `create_note` / `list_notes` / `update_note` / `delete_note` | **Notizen/Erinnerungen** anlegen, auflisten, ändern, löschen (lokal, persistent). Im Projekt-Chat automatisch dem Projekt zugeordnet; `list_notes` zeigt Projekt+global (`alle=true` = alle) | toolsEnabled |
 | `create_task` / `list_tasks` / `complete_task` / `delete_task` | **Aufgaben/To-dos** anlegen, auflisten, abhaken, löschen (lokal, persistent, optionales Fälligkeitsdatum). Im Projekt-Chat automatisch dem Projekt zugeordnet | toolsEnabled |
 
@@ -295,14 +296,15 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 
 ---
 
-### Alle Weichen (Stand 2026-06-29 · 31 Weichen)
+### Alle Weichen (Stand 2026-06-29 · 32 Weichen)
 
 #### Airtable
 
 | Integrations-ID | Name | Richtung | Trigger | NO-GO | Notiz |
 |---|---|---|---|---|---|
 | `AIRTABLE_KUNDEN_PROJEKTE` | Kunden & Projekte | READ | App-Start + manuell | read-only | System-of-Record für Projekte/Kunden. Paginiert (offset). Schreibt nie zurück. |
-| `AIRTABLE_KUNDEN_LOOKUP` | Kunden-Lookup (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `lookup_kunde` über den **lokalen** Sync-Cache (kein Live-Call): Name, Kundennummer, Projektanzahl. Keine E-Mail/Telefon (→ search_contacts). Eigene Weiche (L24). |
+| `AIRTABLE_KUNDEN_LOOKUP` | Kunden-Lookup (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `lookup_kunde` über den **lokalen** Sync-Cache (kein Live-Call): Name, Kundennummer, Projektanzahl. Adresse/Telefon → `lookup_kontakt`. Eigene Weiche (L24). |
+| `AIRTABLE_KONTAKTE_LOOKUP` | Kontakte-Lookup (Assistent) | READ | App-Start (Sync) + Tool-Call | read-only | Read-only Sync der Mastermind-Tabelle `Kontakte` (~914 Records) in lokalen `ContactDirectory`-Snapshot; Tool `lookup_kontakt` liefert Name/Organisation/**Telefon**/E-Mail/**Adresse**/Projekt. Beantwortet „Adresse Cirnavuk?" ohne Google/M2. Eigene Weiche (S13). |
 | `DATAFLOW_LOG_WRITE` | Datenstrom-Log | WRITE | Ereignisgesteuert | append-only (Mastermind) | Jeder Sync-Handshake landet hier. Harte Whitelist im AirtableClient: nur diese Tabelle + Handbuch. |
 | `DATAFLOW_HANDBOOK_WRITE` | Datenstrom-Handbuch | WRITE | onDemand (Session) | append-only (Mastermind) | Diese Karte selbst. Jede neue Weiche wird hier registriert. |
 | `POLISH_LOG_WRITE` | Dampflok Polish-Log | WRITE | onDemand (Session) | append-only (Mastermind) | Nur Claude-Code-Agent, nicht die App. Tabelle `tblberJMgRArGSypE`. |

@@ -30,6 +30,31 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-29 · Claude Code (Opus) — S13: Airtable-Kontaktverzeichnis (lookup_kontakt)
+
+```
+Branch: polish/dampflok; 351 → 357 Tests grün
+Build:  ✅ swift build grün
+```
+
+Memo P1 „Adresse Familie Cirnavuk?". Befund: Die Airtable-**Kunden**-Tabelle hat nur
+Name/Nummer — aber es gibt eine eigene **`Kontakte`**-Tabelle (`tblncfQzQa8TzCZQC`,
+**914 Records**) mit Name/Organisation/Telefon/E-Mail/**Adresse**/Projekt. Das beantwortet
+die Frage **lokal, ohne Google/M2**.
+
+- `StudioContact` (Kit) + `AirtableClient.mapContacts` (pure/testbar) + `ContactDirectory`
+  (Snapshot, rang-sortierte Freitextsuche Name/Org/Projekt).
+- `LookupKontaktTool` (`lookup_kontakt`) liefert Name·Organisation + Telefon/E-Mail/Adresse/
+  Projekt. Grounding-Hinweis: Adress-/Telefon-Fragen → dieses Tool (lokal, nicht auf Google warten).
+- `AppState.syncKontakte` lädt die `Kontakte`-Tabelle einmalig read-only beim Start in den
+  Snapshot (Fehler nicht-fatal, os.Logger), Registry wird mit `ContactDirectory` neu gebaut.
+- Weiche AIRTABLE_KONTAKTE_LOOKUP (Manifest + Map + Airtable-Handbuch, jetzt 32 Weichen).
+- +6 Tests (mapContacts, Suche/Ranking, Tool liefert Adresse, Fehlerpfade).
+
+Read-only, erlaubte Mastermind-Base. Kein externer Schreibzugriff.
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — Memo-Reconciliation + S10: Notizen/Aufgaben pro Projekt
 
 ```

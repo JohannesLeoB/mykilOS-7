@@ -203,6 +203,13 @@
     "link": "mykilos://datastream/AIRTABLE_KUNDEN_LOOKUP"
   },
   {
+    "integrationID": "AIRTABLE_KONTAKTE_LOOKUP",
+    "name": "Airtable Kontakte-Lookup (Adresse/Telefon, lokaler Sync-Cache)",
+    "system": "Airtable",
+    "direction": "READ",
+    "link": "mykilos://datastream/AIRTABLE_KONTAKTE_LOOKUP"
+  },
+  {
     "integrationID": "ASSISTANT_NOTES",
     "name": "Assistenten-Notizen (lokal, anlegen/ändern/löschen)",
     "system": "Lokal",

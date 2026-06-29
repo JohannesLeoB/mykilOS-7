@@ -20,6 +20,7 @@ public enum AssistantGrounding {
         contactsEnabled: Bool = false,
         clickUpEnabled: Bool = false,
         contactsWriteEnabled: Bool = false,
+        kontaktVerzeichnisEnabled: Bool = false,
         studioBrainEnabled: Bool = false,
         katalogEnabled: Bool = false,
         notesEnabled: Bool = false,
@@ -83,6 +84,9 @@ public enum AssistantGrounding {
             }
             if contactsWriteEnabled {
                 toolLines.append("- create_contact: schlägt einen NEUEN Google-Kontakt vor. Du schreibst NICHT selbst — es entsteht eine Bestätigungskarte, der Nutzer legt den Kontakt an. Nenne die Kontaktdaten, behaupte aber nie, der Kontakt sei schon gespeichert.")
+            }
+            if kontaktVerzeichnisEnabled {
+                toolLines.append("- lookup_kontakt: Airtable-Kontaktverzeichnis (Kunden, Lieferanten, Handwerker, Team) mit Telefon, E-Mail und ADRESSE. Nutze DIESES Werkzeug für Adress-/Telefon-/E-Mail-Fragen zu Personen (z. B. „Adresse Cirnavuk?“) — es ist lokal verfügbar, du musst dafür nicht auf Google warten.")
             }
             if clickUpEnabled {
                 toolLines.append("- list_clickup_tasks: offene ClickUp-Aufgaben dieses Projekts (Status, Fälligkeit).")
