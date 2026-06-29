@@ -1,4 +1,4 @@
-# mykilOS 7 — Claude Code Projektgedächtnis
+# mykilOS 7.5 — Claude Code Projektgedächtnis
 
 **Smarte Projektplanung und Management mit intelligenten Automationen und Integrationen.**
 Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.

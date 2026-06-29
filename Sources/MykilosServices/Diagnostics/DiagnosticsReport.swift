@@ -31,7 +31,7 @@ public enum DiagnosticsReport {
                              handshakeLines: [String],
                              generatedAt: String) -> String {
         var out = """
-        mykilOS 7 — Diagnosebericht
+        mykilOS 7.5 — Diagnosebericht
         Erzeugt: \(generatedAt)
 
         App

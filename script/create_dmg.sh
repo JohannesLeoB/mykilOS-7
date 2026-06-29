@@ -3,14 +3,14 @@ set -euo pipefail
 
 # Baut die App und verpackt sie in eine DMG für die Distribution.
 # Voraussetzung: build_and_run.sh muss vorher gelaufen sein (oder die App
-# liegt bereits unter dist/mykilOS 7.app).
+# liegt bereits unter dist/mykilOS 7.5.app).
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
-APP_BUNDLE="$DIST_DIR/mykilOS 7.app"
-DMG_NAME="mykilOS-7"
+APP_BUNDLE="$DIST_DIR/mykilOS 7.5.app"
+DMG_NAME="mykilOS-7.5"
 DMG_PATH="$DIST_DIR/$DMG_NAME.dmg"
-VOLUME_NAME="mykilOS 7"
+VOLUME_NAME="mykilOS 7.5"
 
 # Build falls nötig — ohne Start (Packaging-Lauf, kein Schlüsselbund-Prompt).
 if [ ! -d "$APP_BUNDLE" ]; then

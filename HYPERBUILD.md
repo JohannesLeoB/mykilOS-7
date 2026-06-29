@@ -83,7 +83,7 @@ neue OAuth-Scopes brauchen → **M2 Google Re-Consent** (siehe §6).
 
 ## 6 · Die einzige To-do-Liste
 
-**🔴 LIVE-ABNAHME (nur Johannes — der kritische Pfad zu „mykilOS 7"):**
+**🔴 LIVE-ABNAHME (nur Johannes — der kritische Pfad zu „mykilOS 7.5"):**
 1. **M2 Google Re-Consent** — Settings → Google **Trennen → Verbinden** (echtes Re-Consent,
    nicht nur Token-Refresh). Holt `drive.readonly` (Datei-Inhalt/Vorschau S3/S5),
    `contacts` (`create_contact` S9), `gmail.compose` (`create_draft` S14).

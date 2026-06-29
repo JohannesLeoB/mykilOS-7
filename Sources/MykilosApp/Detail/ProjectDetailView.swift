@@ -194,6 +194,7 @@ private struct ProjectWidgetBoardView: View {
     let sevdeskRef: String?
     let budget: Double?
 
+    @Environment(AppState.self) private var appState
     @State private var dropTargetID: UUID?
 
     var body: some View {
@@ -254,7 +255,7 @@ private struct ProjectWidgetBoardView: View {
         case .cash:      CashWidget(projectID: projectID, sevdeskRef: sevdeskRef, budget: budget, auditStore: auditStore)
         case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: calendarQuery)
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)
-        case .assistant: AssistantWidget(projectID: projectID, auditStore: auditStore, llmProvider: llmProvider)
+        case .assistant: ProjectAssistantChatWidget(projectID: projectID, driveFolderID: driveFolderID, clickUpListID: clickUpListID)
         case .mail:      MailWidget(projectID: projectID, mailQuery: mailQuery)
         default:         EmptyView()
         }

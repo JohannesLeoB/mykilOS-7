@@ -233,7 +233,7 @@ private struct DriveTreeRow: View {
     let store: DriveTreeStore
 
     @State private var isHovered = false
-    @State private var showPreview = false
+    @State private var showViewer = false
     @State private var resolvedLocalURL: URL?
 
     var body: some View {
@@ -246,10 +246,13 @@ private struct DriveTreeRow: View {
                     Button("Im Browser öffnen") { NSWorkspace.shared.open(url) }
                 }
             }
-            .popover(isPresented: $showPreview, arrowEdge: .trailing) {
-                FilePreviewView(file: node.file, localURL: resolvedLocalURL, remoteContent: remoteContent())
-                    .frame(width: 300)
-                    .padding(MykSpace.s2)
+            // Single-Click auf eine Datei → direkt die volle Dokumentenvorschau
+            // (mehrseitiges PDFKit / Bild / QuickLook), kein 300pt-Popover-Zwischenschritt.
+            .sheet(isPresented: $showViewer) {
+                DocumentViewerView(file: node.file, localURL: resolvedLocalURL,
+                                   remoteContent: remoteContent(),
+                                   onClose: { showViewer = false })
+                    .frame(minWidth: 820, minHeight: 680)
             }
     }
 
@@ -358,10 +361,10 @@ private struct DriveTreeRow: View {
                 Task { await store.expand(node) }
             }
         } else {
-            // Lokalen Pfad VOR der Vorschau auflösen, damit FilePreviewView die Datei
-            // per PDFKit/Vorschau rendert statt den Browser zu öffnen (Mandate B+D).
+            // Lokalen Pfad VOR der Vorschau auflösen, damit der Viewer die Datei
+            // per PDFKit/QuickLook rendert statt den Browser zu öffnen (Mandate B+D, S25).
             resolvedLocalURL = store.localURL(for: node.file)
-            showPreview.toggle()
+            showViewer = true
         }
     }
 }

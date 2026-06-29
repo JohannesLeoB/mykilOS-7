@@ -70,9 +70,15 @@ offene Aufgaben und Kalender-Ereignisse auf einen Blick.
 
 ### Übersicht
 Widget-Board mit bis zu 8 Widget-Arten: Drive, Aufgaben (ClickUp), Kontakte,
-Cash/Umsatz, Kalender, Notizen, Mail, Assistent-Insights.
+Cash/Umsatz, Kalender, Notizen, Mail, Assistent.
 
 Widgets sind drag-and-drop sortierbar. Jedes Widget zeigt Quelle und SaveState.
+
+**Assistent-Widget (S25):** Das volle-Breite Assistent-Widget zeigt jetzt den
+**kompletten konversationellen Chat** (statt der alten Insight-Liste) — kompakt
+eingebettet, mit „Maximieren"-Knopf (↖↘ oben rechts) → volles Chatfenster.
+Es ist **derselbe Chat wie der „Assistent"-Tab** (gleicher Scope, gleicher
+Verlauf): eine Frage im Widget steht auch im Tab und umgekehrt.
 
 ### Assistent
 Konversationeller Chat, scoped auf dieses Projekt. Claude hat Kontext über
@@ -88,18 +94,17 @@ lokal materialisierte Dateien sofort, der Drive-Inhalt braucht `drive.readonly`
 
 ### Dateien
 Datei-Baum des verknüpften Google-Drive-Projektordners. Unterordner werden
-lazy geladen (on-demand). Ist der Ordner über **Google Drive für Desktop** lokal
-materialisiert, zeigt die Quellzeile „· LOKAL"; ein Klick auf eine Datei öffnet
-dann eine echte **PDFKit-Vorschau** und „Im Finder öffnen" startet die macOS-
-Vorschau — **nicht** den Browser. Rechtsklick → **„Im Finder zeigen"** selektiert
-die Datei/den Ordner im Finder. Ist nichts lokal vorhanden, bleibt der Browser-
-Fallback (`webViewLink`).
+lazy geladen (on-demand) — der **komplette Projektordner** ist begehbar.
+Ist der Ordner über **Google Drive für Desktop** lokal materialisiert, zeigt die
+Quellzeile „· LOKAL". Rechtsklick → **„Im Finder zeigen"** selektiert die Datei/den
+Ordner im Finder, **„Im Browser öffnen"** nutzt den `webViewLink`-Fallback.
 
-**Vollvorschau (S3):** In der Vorschau-Karte öffnet **„Vollvorschau"** ein großes
-Dokumentenfenster — mehrseitiger PDF-Viewer (scrollbar/zoom), Bild-Viewer oder
-macOS **QuickLook** (Office/Text/viele Formate). Quelle: lokale Datei zuerst, sonst
-read-only Drive-Inhalt (braucht `drive.readonly` → M2). Alle Zustände sind sichtbar
-(laden/Fehler/Verbindung-nötig); Google-Docs/Sheets/Slides verweisen auf den Browser.
+**Vorschau per Single-Click (S25):** Ein Klick auf eine Datei öffnet **direkt** die
+volle Dokumentenvorschau (kein Zwischenschritt mehr) — ein großes Fenster mit
+mehrseitigem **PDF-Viewer** (scrollbar/zoom), **Bild-Viewer** oder macOS **QuickLook**
+(Office/Text/viele Formate). Quelle: lokale Datei zuerst, sonst read-only Drive-Inhalt
+(braucht `drive.readonly` → M2). Alle Zustände sind sichtbar (laden/Fehler/
+Verbindung-nötig); Google-Docs/Sheets/Slides verweisen auf den Browser.
 
 **Wie das Routing funktioniert:** `LocalDriveRootResolver` sucht unter
 `~/Library/CloudStorage/GoogleDrive-*` den Ordner/die Datei über das Drive-File-
