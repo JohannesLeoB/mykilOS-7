@@ -30,6 +30,30 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-29 · Claude Code (Opus) — S3: Volle Dokumentenvorschau
+
+```
+Branch: polish/dampflok; 385 → 386 Tests grün
+Build:  ✅ swift build grün
+```
+
+Letztes offenes Roadmap-Feature gebaut: `DocumentViewerView` (Sheet aus der
+FilePreviewView, „Vollvorschau"-Button in Dateien-/Angebote-Tab):
+- Mehrseitiger PDFKit-Viewer (`.singlePageContinuous`, autoScales, scrollbar/zoom).
+- NSImage-Viewer (Bilder) mit Scroll/Zoom.
+- macOS **QuickLook** (`QLPreviewView`, `import Quartz`) für alle übrigen Typen
+  (Office/Text/…), gespeist aus lokaler Datei oder Temp-Datei.
+- Alle Zustände SICHTBAR: laden / Bild / PDF / QuickLook / browserOnly (Google-native)
+  / needsConnection (kein lokaler Pfad + kein Drive-Inhalt → M2) / failed.
+- Quelle: lokale Datei (LocalDriveRootResolver) ZUERST, sonst read-only Drive-Bytes
+  (`downloadContent`) → Temp-Datei mit Originalnamen (korrekte Endung für QuickLook).
+- `DocumentViewerMode.classify` testbar nach MykilosServices ausgelagert (+1 Test).
+
+Live-Rendering von Remote-Dateien braucht M2 (drive.readonly); lokale Dateien gehen
+sofort. Read-only, kein Schreiben.
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — S17: Kompletter Review-Lauf + Aufräumen
 
 ```

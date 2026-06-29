@@ -84,6 +84,12 @@ Vorschau — **nicht** den Browser. Rechtsklick → **„Im Finder zeigen"** sel
 die Datei/den Ordner im Finder. Ist nichts lokal vorhanden, bleibt der Browser-
 Fallback (`webViewLink`).
 
+**Vollvorschau (S3):** In der Vorschau-Karte öffnet **„Vollvorschau"** ein großes
+Dokumentenfenster — mehrseitiger PDF-Viewer (scrollbar/zoom), Bild-Viewer oder
+macOS **QuickLook** (Office/Text/viele Formate). Quelle: lokale Datei zuerst, sonst
+read-only Drive-Inhalt (braucht `drive.readonly` → M2). Alle Zustände sind sichtbar
+(laden/Fehler/Verbindung-nötig); Google-Docs/Sheets/Slides verweisen auf den Browser.
+
 **Wie das Routing funktioniert:** `LocalDriveRootResolver` sucht unter
 `~/Library/CloudStorage/GoogleDrive-*` den Ordner/die Datei über das Drive-File-
 Stream-xattr `com.google.drivefs.item-id#S` (Item-ID-Abgleich), Namens-Fallback.

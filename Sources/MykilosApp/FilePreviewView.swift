@@ -15,34 +15,40 @@ public struct FilePreviewView: View {
     public var showOpenButton: Bool = true
     /// Optionale lokale URL (vom LocalDriveRootResolver aufgelöst).
     public var localURL: URL? = nil
-    /// Optionaler Remote-Fallback: liefert die PDF-Bytes (read-only, z. B. Drive
-    /// `downloadContent`), wenn die Datei NICHT lokal materialisiert ist. So rendert
-    /// die Vorschau ein echtes PDF in-App, ohne den Browser zu öffnen (Mandate D).
-    public var remotePDFData: (@Sendable () async -> Data?)? = nil
+    /// Optionaler Remote-Fallback: liefert die Datei-Bytes (read-only, z. B. Drive
+    /// `downloadContent`), wenn die Datei NICHT lokal materialisiert ist. Für die
+    /// PDF-Thumbnail-Vorschau (Mandate D) UND die volle Dokumentenvorschau (S3).
+    public var remoteContent: (@Sendable () async -> Data?)? = nil
 
     public init(file: GoogleDriveFile,
                 showOpenButton: Bool = true,
                 localURL: URL? = nil,
-                remotePDFData: (@Sendable () async -> Data?)? = nil) {
+                remoteContent: (@Sendable () async -> Data?)? = nil) {
         self.file = file
         self.showOpenButton = showOpenButton
         self.localURL = localURL
-        self.remotePDFData = remotePDFData
+        self.remoteContent = remoteContent
     }
 
     @State private var pdfDocument: PDFDocument? = nil
     @State private var loadingPDF = false
+    @State private var showFullViewer = false
 
     public var body: some View {
         VStack(spacing: MykSpace.s4) {
             previewContent
             info
+            fullViewerButton
             openButton
         }
         .padding(MykSpace.s5)
         .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.paper2.color))
         .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
         .task { await loadPDF() }
+        .sheet(isPresented: $showFullViewer) {
+            DocumentViewerView(file: file, localURL: localURL, remoteContent: remoteContent,
+                               onClose: { showFullViewer = false })
+        }
     }
 
     // MARK: - Preview
@@ -105,6 +111,24 @@ public struct FilePreviewView: View {
         }
     }
 
+    // MARK: - Vollvorschau-Button (S3)
+
+    @ViewBuilder
+    private var fullViewerButton: some View {
+        // Voll anzeigbar, wenn eine lokale Datei existiert ODER read-only Inhalt ladbar ist
+        // und es kein reines Google-Native-Format ist (das geht nur im Browser).
+        let hasLocal = localURL.map { FileManager.default.fileExists(atPath: $0.path) } ?? false
+        let canPreview = (hasLocal || remoteContent != nil)
+            && file.mimeType.hasPrefix("application/vnd.google-apps") == false
+        if canPreview {
+            Button { showFullViewer = true } label: {
+                Label("Vollvorschau", systemImage: "doc.text.magnifyingglass")
+                    .font(.mykSmall).foregroundStyle(MykColor.drive.color)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
     // MARK: - Open Button
 
     @ViewBuilder
@@ -146,9 +170,9 @@ public struct FilePreviewView: View {
         }
         // 2. Nicht lokal → optionaler Remote-Fallback (Drive downloadContent, read-only):
         //    echtes PDF in-App statt Browser/Thumbnail.
-        if let remotePDFData {
+        if let remoteContent {
             loadingPDF = true
-            let data = await remotePDFData()
+            let data = await remoteContent()
             let doc = await Task.detached(priority: .utility) { data.flatMap { PDFDocument(data: $0) } }.value
             pdfDocument = doc
             loadingPDF = false

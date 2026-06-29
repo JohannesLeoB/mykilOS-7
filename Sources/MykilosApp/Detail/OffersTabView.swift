@@ -228,10 +228,10 @@ private struct OfferRow: View {
         )
     }
 
-    // Read-only Remote-Fallback: PDF-Bytes aus Drive (kein Schreiben), damit die
+    // Read-only Remote-Fallback: Datei-Bytes aus Drive (kein Schreiben), damit die
     // Vorschau auch nicht-materialisierte Belege echt rendert statt Safari zu öffnen.
-    private func remotePDFData() -> (@Sendable () async -> Data?)? {
-        guard file.mimeType == "application/pdf" else { return nil }
+    // Versorgt PDF-Thumbnail UND volle Dokumentenvorschau (S3).
+    private func remoteContent() -> (@Sendable () async -> Data?)? {
         let fileID = file.id
         return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
     }
@@ -249,7 +249,7 @@ private struct OfferRow: View {
             }
             .buttonStyle(.plain)
             .popover(isPresented: $showPreview, arrowEdge: .trailing) {
-                FilePreviewView(file: file, localURL: resolvedLocalURL, remotePDFData: remotePDFData())
+                FilePreviewView(file: file, localURL: resolvedLocalURL, remoteContent: remoteContent())
                     .frame(width: 300)
                     .padding(MykSpace.s2)
             }

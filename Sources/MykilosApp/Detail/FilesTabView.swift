@@ -247,15 +247,16 @@ private struct DriveTreeRow: View {
                 }
             }
             .popover(isPresented: $showPreview, arrowEdge: .trailing) {
-                FilePreviewView(file: node.file, localURL: resolvedLocalURL, remotePDFData: remotePDFData())
+                FilePreviewView(file: node.file, localURL: resolvedLocalURL, remoteContent: remoteContent())
                     .frame(width: 300)
                     .padding(MykSpace.s2)
             }
     }
 
-    // Read-only Remote-Fallback: PDF-Bytes aus Drive, falls nicht lokal materialisiert.
-    private func remotePDFData() -> (@Sendable () async -> Data?)? {
-        guard node.file.mimeType == "application/pdf" else { return nil }
+    // Read-only Remote-Fallback: Datei-Bytes aus Drive (jede Nicht-Ordner-Datei), falls
+    // nicht lokal materialisiert. Versorgt PDF-Thumbnail UND volle Dokumentenvorschau (S3).
+    private func remoteContent() -> (@Sendable () async -> Data?)? {
+        guard node.file.isFolder == false else { return nil }
         let fileID = node.file.id
         return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
     }
