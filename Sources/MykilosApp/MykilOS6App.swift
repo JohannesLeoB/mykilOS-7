@@ -160,7 +160,6 @@ enum AppModule: String, CaseIterable, Identifiable {
     case brands       = "Integrationen"
     case kataloge     = "Kataloge"
     case offers       = "Angebote"
-    case kalkulation  = "Kalkulation"
     case settings     = "Einstellungen"
     var id: String { rawValue }
     var icon: String {
@@ -171,7 +170,6 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .brands:      "building.2"
         case .kataloge:    "books.vertical"
         case .offers:      "doc.text"
-        case .kalkulation: "eurosign.square"
         case .settings:    "gearshape"
         }
     }
@@ -320,7 +318,6 @@ struct ContentView: View {
         case .offers:      GlobalOffersView()
         case .brands:      BrandsView(onNavigateToSettings: { module = .settings })
         case .kataloge:    KatalogeView()
-        case .kalkulation: KalkulationsPageView()
         case .settings:    SettingsView()
         }
     }
@@ -361,44 +358,6 @@ struct AssistantPageView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .background(MykColor.paper.color)
-    }
-}
-
-// MARK: - KalkulationsPageView
-// Eigenständiger Sidebar-Tab "Kalkulation". Bettet KalkulationsWidget ein und
-// reicht AppState.kalkulationsEngine als Dependency durch.
-// projektID "global" = Tab-weite Schätzung, nicht an ein einzelnes Projekt gebunden.
-struct KalkulationsPageView: View {
-    @Environment(AppState.self) private var appState
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            Divider().overlay(MykColor.line.color)
-            ScrollView {
-                KalkulationsWidget(
-                    projektID: "global",
-                    engine: appState.kalkulationsEngine
-                )
-                .padding(MykSpace.s7)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(MykColor.paper.color)
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: MykSpace.s2) {
-            Text("Kalkulation")
-                .font(.mykDisplay)
-                .foregroundStyle(MykColor.ink.color)
-            Text("Schätze Projektkosten auf Basis historischer Baseline-Anker.")
-                .font(.mykSmall)
-                .foregroundStyle(MykColor.muted.color)
-        }
-        .padding(.horizontal, MykSpace.s9)
-        .padding(.top, MykSpace.s9)
-        .padding(.bottom, MykSpace.s5)
     }
 }
 
@@ -546,8 +505,6 @@ struct AppCommands: Commands {
                 .keyboardShortcut("8", modifiers: .command)
             Button("Angebote")        { activeModule = .offers }
                 .keyboardShortcut("5", modifiers: .command)
-            Button("Kalkulation")     { activeModule = .kalkulation }
-                .keyboardShortcut("6", modifiers: .command)
             Button("Einstellungen")   { activeModule = .settings }
                 .keyboardShortcut("7", modifiers: .command)
         }
