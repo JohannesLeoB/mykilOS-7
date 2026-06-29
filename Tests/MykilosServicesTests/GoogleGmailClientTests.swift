@@ -6,6 +6,15 @@ struct GoogleGmailClientTests {
 
     private let baseURL = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
 
+    // S12: Trefferzahl ist parametrisierbar (Default 25, gekappt auf 100).
+    @Test func gmailResultLimitDefaultUndCap() {
+        #expect(SearchGmailTool.resultLimit(from: [:]) == 25)
+        #expect(SearchGmailTool.resultLimit(from: ["anzahl": "50"]) == 50)
+        #expect(SearchGmailTool.resultLimit(from: ["anzahl": "500"]) == 100)   // cap
+        #expect(SearchGmailTool.resultLimit(from: ["anzahl": "0"]) == 1)       // floor
+        #expect(SearchGmailTool.resultLimit(from: ["anzahl": "abc"]) == 25)    // fallback
+    }
+
     @Test func buildListURLEnthaeltQueryUndMaxResults() {
         let url = GoogleGmailClient.buildListURL(query: "Meyer Küche", maxResults: 5, baseURL: baseURL)
         let components = url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }

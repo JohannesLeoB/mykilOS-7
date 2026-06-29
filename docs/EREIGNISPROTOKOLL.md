@@ -30,6 +30,21 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-29 · Claude Code (Opus) — S12: Gmail-Suche parametrisierbar (mehr als 10)
+
+```
+Branch: polish/dampflok; 357 → 358 Tests grün
+```
+
+Memo P2 „Gmail historisch — nur letzte ~10 Mails". `SearchGmailTool` hatte `maxResults`
+hart auf 10. Jetzt Parameter `anzahl` (Default **25**, Cap 100); ein Cache-Hit wird nur
+verwendet, wenn er genug Treffer hat; die Tool-Beschreibung nennt Datums-Operatoren
+(`after:2025/01/01`, `newer_than:`) für Rückblicke. +1 Test (`resultLimit`).
+Voller Mailbox-Vollcache-Sync (GmailSyncService über das ganze Postfach) bleibt ein
+größerer Folgeschritt — der Cache speichert bisher nur Query-Ergebnisse.
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — S13: Airtable-Kontaktverzeichnis (lookup_kontakt)
 
 ```

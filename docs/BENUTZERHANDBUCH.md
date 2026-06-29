@@ -249,7 +249,7 @@ Wenn Tools aktiviert sind, kann der Assistent folgende Aktionen ausführen
 
 | Tool | Was es tut | Opt-in |
 |------|-----------|--------|
-| `search_gmail` | Sucht Mails nach Query | toolsEnabled |
+| `search_gmail` | Sucht Mails nach Query (Gmail-Operatoren, z. B. `after:2025/01/01`). Trefferzahl via `anzahl` (Standard 25, max 100) für Rückblicke | toolsEnabled |
 | `list_calendar_events` | Liest Kalender-Termine | toolsEnabled |
 | `suggest_calendar_event` | Bereitet einen Termin vor → Aktionskarte „Im Kalender öffnen" (kanonischer Google-Link, kein API-Write, KEIN fabrizierter Inline-Link) | toolsEnabled |
 | `list_drive_folder` | Listet Drive-Ordner-Inhalt | toolsEnabled + driveFolderID |

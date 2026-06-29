@@ -98,21 +98,31 @@ public struct SearchGmailTool: AssistantTool {
     public let name = "search_gmail"
     public let description =
         "Durchsucht die E-Mails des Nutzers (nur lesen). Verwende Gmail-Suchsyntax im query, "
-        + "z. B. 'from:gesa', 'to:gesa subject:Angebot', 'newer_than:30d'. Gibt Treffer mit Betreff, "
-        + "Absender und Datum zurück."
+        + "z. B. 'from:gesa', 'to:gesa subject:Angebot', 'newer_than:30d', 'after:2025/01/01'. "
+        + "Gibt Treffer mit Betreff, Absender und Datum zurück. Für einen Rückblick über mehr "
+        + "Mails 'anzahl' erhöhen (Standard 25, max 100)."
     public var parameters: [ToolParameter] {
-        [ToolParameter(name: "query", description: "Gmail-Suchabfrage (Gmail-Operatoren erlaubt)")]
+        [ToolParameter(name: "query", description: "Gmail-Suchabfrage (Gmail-Operatoren erlaubt)"),
+         ToolParameter(name: "anzahl", description: "Max. Trefferzahl (Standard 25, max 100)", required: false)]
+    }
+
+    // Default 25 (vorher hart 10 — zu wenig für „Jahresrückblick"); Obergrenze 100.
+    static func resultLimit(from input: [String: String]) -> Int {
+        guard let raw = input["anzahl"], let n = Int(raw.trimmingCharacters(in: .whitespacesAndNewlines)) else { return 25 }
+        return max(1, min(n, 100))
     }
 
     public func run(input: [String: String]) async -> ToolRunResult {
         let query = (input["query"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard query.isEmpty == false else { return ToolRunResult(text: "Leere Suchabfrage.", isError: true) }
+        let limit = Self.resultLimit(from: input)
         do {
             let messages: [GoogleGmailMessage]
-            if let hit = await cache?.cached(for: query) {
-                messages = hit
+            // Cache-Hit nur nutzen, wenn er genug Treffer für die gewünschte Anzahl hat.
+            if let hit = await cache?.cached(for: query), hit.count >= limit {
+                messages = Array(hit.prefix(limit))
             } else {
-                let fresh = try await client.searchMessages(query: query, maxResults: 10)
+                let fresh = try await client.searchMessages(query: query, maxResults: limit)
                 await cache?.store(fresh, for: query)
                 messages = fresh
             }
