@@ -12,6 +12,13 @@ MIN_SYSTEM_VERSION="14.0"
 APP_ICON="AppIcon.icns"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Diagnose-Injektion (Mandate A): echter Git-Commit, Branch und Build-Zeitpunkt
+# wandern in die Info.plist (Keys Myk…) und werden zur Laufzeit über
+# Bundle.main.infoDictionary gelesen (AppIdentity). Kein zerbrechliches #if-Makro.
+GIT_COMMIT="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo unbekannt)"
+GIT_BRANCH="$(git -C "$ROOT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unbekannt)"
+BUILD_DATE="$(date -u +%Y-%m-%dT%H:%MZ)"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE="$DIST_DIR/$APP_NAME.app"
 APP_CONTENTS="$APP_BUNDLE/Contents"
@@ -48,6 +55,9 @@ chmod +x "$APP_BINARY"
 /usr/bin/plutil -insert NSPrincipalClass -string "NSApplication" "$INFO_PLIST"
 /usr/bin/plutil -insert NSHumanReadableCopyright -string "Copyright MYKILOS" "$INFO_PLIST"
 /usr/bin/plutil -insert LSMultipleInstancesProhibited -bool true "$INFO_PLIST"
+/usr/bin/plutil -insert MykGitCommit -string "$GIT_COMMIT" "$INFO_PLIST"
+/usr/bin/plutil -insert MykGitBranch -string "$GIT_BRANCH" "$INFO_PLIST"
+/usr/bin/plutil -insert MykBuildDate -string "$BUILD_DATE" "$INFO_PLIST"
 printf "APPL????" > "$PKG_INFO"
 
 /usr/bin/xattr -cr "$APP_BUNDLE" >/dev/null 2>&1 || true

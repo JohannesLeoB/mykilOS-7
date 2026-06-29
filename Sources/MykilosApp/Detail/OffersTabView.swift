@@ -17,6 +17,8 @@ import MykilosWidgets
 struct OffersTabView: View {
     let projectID: String
     let driveFolderID: String?
+    /// Optionaler expliziter lokaler Pfad-Hinweis (Airtable `driveFolderPath`).
+    var driveFolderPath: String? = nil
 
     @State private var loader = OffersLoader()
     @State private var searchText = ""
@@ -120,13 +122,17 @@ struct OffersTabView: View {
             OfferColumn(
                 title: "Eingehende Angebote",
                 offers: filtered(loader.incoming),
-                folderFound: loader.incomingFolderFound
+                folderFound: loader.incomingFolderFound,
+                projectFolderID: driveFolderID,
+                projectFolderPath: driveFolderPath
             )
             Divider().overlay(MykColor.line.color.opacity(0.6))
             OfferColumn(
                 title: "Ausgehende Angebote",
                 offers: filtered(loader.outgoing),
-                folderFound: loader.outgoingFolderFound
+                folderFound: loader.outgoingFolderFound,
+                projectFolderID: driveFolderID,
+                projectFolderPath: driveFolderPath
             )
         }
         .frame(maxWidth: .infinity)
@@ -139,6 +145,8 @@ private struct OfferColumn: View {
     let title: String
     let offers: [ClassifiedOffer]
     let folderFound: Bool
+    var projectFolderID: String? = nil
+    var projectFolderPath: String? = nil
 
     // Gruppiert nach Typ, in stabiler Anzeigereihenfolge (OfferDocumentType.rawValue).
     private var groups: [(type: OfferDocumentType, offers: [ClassifiedOffer])] {
@@ -177,7 +185,9 @@ private struct OfferColumn: View {
                 .padding(.top, MykSpace.s2)
             VStack(spacing: 0) {
                 ForEach(offers) { offer in
-                    OfferRow(file: offer.file, meta: offer)
+                    OfferRow(file: offer.file, meta: offer,
+                             projectFolderID: projectFolderID,
+                             projectFolderPath: projectFolderPath)
                     if offer.id != offers.last?.id {
                         Divider().overlay(MykColor.line.color.opacity(0.6))
                     }
@@ -193,8 +203,11 @@ private struct OfferColumn: View {
 private struct OfferRow: View {
     let file: GoogleDriveFile
     var meta: ClassifiedOffer? = nil
+    var projectFolderID: String? = nil
+    var projectFolderPath: String? = nil
 
     @State private var showPreview = false
+    @State private var resolvedLocalURL: URL?
 
     // Belegnummer + Version als kompakte Kennung (z.B. "2026-0151 · v3").
     private var metaLine: String? {
@@ -205,9 +218,30 @@ private struct OfferRow: View {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
+    // Lokaler Pfad der Datei im Projektbaum (xattr-/Namens-Auflösung). `nil`, wenn
+    // nicht lokal materialisiert → dann greift der Remote-PDF-Fallback bzw. Browser.
+    private func resolveLocalURL() -> URL? {
+        guard let projectFolderID, projectFolderID.isEmpty == false else { return nil }
+        return LocalDriveRootResolver.shared.localURL(
+            forFileID: file.id, fileName: file.name,
+            inProjectFolderID: projectFolderID, explicitProjectPath: projectFolderPath
+        )
+    }
+
+    // Read-only Remote-Fallback: PDF-Bytes aus Drive (kein Schreiben), damit die
+    // Vorschau auch nicht-materialisierte Belege echt rendert statt Safari zu öffnen.
+    private func remotePDFData() -> (@Sendable () async -> Data?)? {
+        guard file.mimeType == "application/pdf" else { return nil }
+        let fileID = file.id
+        return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
+    }
+
     var body: some View {
         HStack(spacing: MykSpace.s4) {
-            Button { showPreview.toggle() } label: {
+            Button {
+                resolvedLocalURL = resolveLocalURL()
+                showPreview.toggle()
+            } label: {
                 Image(systemName: file.iconName)
                     .font(.mykCaption)
                     .foregroundStyle(MykColor.cash.color)
@@ -215,15 +249,16 @@ private struct OfferRow: View {
             }
             .buttonStyle(.plain)
             .popover(isPresented: $showPreview, arrowEdge: .trailing) {
-                FilePreviewView(file: file)
+                FilePreviewView(file: file, localURL: resolvedLocalURL, remotePDFData: remotePDFData())
                     .frame(width: 300)
                     .padding(MykSpace.s2)
             }
 
             Button {
-                if let link = file.webViewLink, let url = URL(string: link) {
-                    NSWorkspace.shared.open(url)
-                }
+                // Lokal-zuerst öffnen (macOS-Vorschau), sonst Browser-Fallback — nie blind Safari.
+                let local = resolveLocalURL()
+                let fallback = file.webViewLink.flatMap { URL(string: $0) }
+                LocalDriveRootResolver.shared.openFile(localURL: local, fallbackURL: fallback)
             } label: {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -253,5 +288,17 @@ private struct OfferRow: View {
             .buttonStyle(.plain)
         }
         .padding(.vertical, MykSpace.s3)
+        .contextMenu {
+            Button("Im Finder zeigen") {
+                if let local = resolveLocalURL() {
+                    LocalDriveRootResolver.shared.revealInFinder(localURL: local)
+                } else if let link = file.webViewLink, let url = URL(string: link) {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            if let link = file.webViewLink, let url = URL(string: link) {
+                Button("Im Browser öffnen") { NSWorkspace.shared.open(url) }
+            }
+        }
     }
 }

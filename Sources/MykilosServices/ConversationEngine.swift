@@ -186,8 +186,11 @@ public final class ConversationEngine {
             for toolUse in response.toolUses {
                 let result = await (registry?.run(name: toolUse.name, inputJSON: toolUse.inputJSON, projektID: focusedProjectID, driveFolderID: focusedDriveFolderID, clickUpListID: focusedClickUpListID)
                     ?? ToolRunResult(text: "Keine Tools verfügbar.", isError: true))
+                // Mandate E / Forensik F12: die kanonische Manifest-ID loggen, nicht
+                // den rohen Tool-Namen — sonst findet das SchaltzentrumView nie einen
+                // Handshake (es matcht auf integrationID aus dem Manifest).
                 dataFlowLogger?.log(
-                    integrationID: toolUse.name,
+                    integrationID: AssistantToolManifest.manifestID(forTool: toolUse.name),
                     actorUserID: "assistant",
                     action: result.isError ? .error : .success,
                     errorMessage: result.isError ? result.text : nil,

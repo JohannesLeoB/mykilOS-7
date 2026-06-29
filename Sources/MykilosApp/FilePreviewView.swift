@@ -15,11 +15,19 @@ public struct FilePreviewView: View {
     public var showOpenButton: Bool = true
     /// Optionale lokale URL (vom LocalDriveRootResolver aufgelöst).
     public var localURL: URL? = nil
+    /// Optionaler Remote-Fallback: liefert die PDF-Bytes (read-only, z. B. Drive
+    /// `downloadContent`), wenn die Datei NICHT lokal materialisiert ist. So rendert
+    /// die Vorschau ein echtes PDF in-App, ohne den Browser zu öffnen (Mandate D).
+    public var remotePDFData: (@Sendable () async -> Data?)? = nil
 
-    public init(file: GoogleDriveFile, showOpenButton: Bool = true, localURL: URL? = nil) {
+    public init(file: GoogleDriveFile,
+                showOpenButton: Bool = true,
+                localURL: URL? = nil,
+                remotePDFData: (@Sendable () async -> Data?)? = nil) {
         self.file = file
         self.showOpenButton = showOpenButton
         self.localURL = localURL
+        self.remotePDFData = remotePDFData
     }
 
     @State private var pdfDocument: PDFDocument? = nil
@@ -34,7 +42,7 @@ public struct FilePreviewView: View {
         .padding(MykSpace.s5)
         .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.paper2.color))
         .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
-        .task { await loadLocalPDF() }
+        .task { await loadPDF() }
     }
 
     // MARK: - Preview
@@ -126,16 +134,25 @@ public struct FilePreviewView: View {
 
     // MARK: - PDF-Ladelogik
 
-    private func loadLocalPDF() async {
-        guard file.mimeType == "application/pdf",
-              let local = localURL,
-              FileManager.default.fileExists(atPath: local.path) else { return }
-        loadingPDF = true
-        let doc = await Task.detached(priority: .utility) {
-            PDFDocument(url: local)
-        }.value
-        pdfDocument = doc
-        loadingPDF = false
+    private func loadPDF() async {
+        guard file.mimeType == "application/pdf" else { return }
+        // 1. Lokal materialisiert → direkt aus der Datei rendern (schnell, kein Netz).
+        if let local = localURL, FileManager.default.fileExists(atPath: local.path) {
+            loadingPDF = true
+            let doc = await Task.detached(priority: .utility) { PDFDocument(url: local) }.value
+            pdfDocument = doc
+            loadingPDF = false
+            return
+        }
+        // 2. Nicht lokal → optionaler Remote-Fallback (Drive downloadContent, read-only):
+        //    echtes PDF in-App statt Browser/Thumbnail.
+        if let remotePDFData {
+            loadingPDF = true
+            let data = await remotePDFData()
+            let doc = await Task.detached(priority: .utility) { data.flatMap { PDFDocument(data: $0) } }.value
+            pdfDocument = doc
+            loadingPDF = false
+        }
     }
 }
 

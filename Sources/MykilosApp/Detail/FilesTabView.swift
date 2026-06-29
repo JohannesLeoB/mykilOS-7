@@ -31,21 +31,31 @@ final class DriveTreeStore {
     private(set) var folderName: String?
     private(set) var renderState: WidgetRenderState = .loading
     private(set) var lastChecked: Date?
+    /// Lokal aufgelöster Projektordner (Drive File Stream), falls materialisiert.
+    /// Treibt das „lokal"-Badge und die Finder-Aktionen (Mandate B).
+    private(set) var localRootURL: URL?
 
     private let client: GoogleDriveFetching
     private var loadGeneration = 0
+    private var folderID: String?
+    private var explicitPath: String?
 
     init(client: GoogleDriveFetching = GoogleDriveClient()) {
         self.client = client
     }
 
-    func load(folderID: String?) async {
+    func load(folderID: String?, explicitPath: String? = nil) async {
         loadGeneration &+= 1
         let generation = loadGeneration
+        self.folderID = folderID
+        self.explicitPath = explicitPath
         guard let folderID, !folderID.isEmpty else {
-            rootNodes = []; renderState = .empty; return
+            rootNodes = []; localRootURL = nil; renderState = .empty; return
         }
         if renderState != .content { renderState = .loading }
+        // Lokalen Projektordner auflösen (Finder-Routing). Rein lesend, kein Fehlerfall.
+        localRootURL = LocalDriveRootResolver.shared.localURL(forDriveFolderID: folderID,
+                                                              explicitPath: explicitPath)
         do {
             async let nameTask  = client.getFileName(folderID: folderID)
             async let itemsTask = client.listFolder(folderID: folderID)
@@ -61,6 +71,25 @@ final class DriveTreeStore {
         } catch {
             guard generation == loadGeneration else { return }
             rootNodes = []; renderState = .error(String(describing: error))
+        }
+    }
+
+    /// Lokaler URL einer Datei/eines Unterordners im Projektbaum (xattr- bzw.
+    /// Namens-Auflösung). `nil`, wenn nicht lokal materialisiert.
+    func localURL(for file: GoogleDriveFile) -> URL? {
+        guard let folderID, folderID.isEmpty == false else { return nil }
+        return LocalDriveRootResolver.shared.localURL(
+            forFileID: file.id, fileName: file.name,
+            inProjectFolderID: folderID, explicitProjectPath: explicitPath
+        )
+    }
+
+    /// Zeigt die Datei/den Ordner im Finder; fällt auf den Browser (webViewLink) zurück.
+    func revealInFinder(for file: GoogleDriveFile) {
+        if let local = localURL(for: file) {
+            LocalDriveRootResolver.shared.revealInFinder(localURL: local)
+        } else if let link = file.webViewLink, let url = URL(string: link) {
+            NSWorkspace.shared.open(url)
         }
     }
 
@@ -102,6 +131,8 @@ final class DriveTreeStore {
 struct FilesTabView: View {
     let projectID: String
     let driveFolderID: String?
+    /// Optionaler expliziter lokaler Pfad-Hinweis (Airtable `driveFolderPath`).
+    var driveFolderPath: String? = nil
 
     @State private var store = DriveTreeStore()
 
@@ -118,15 +149,16 @@ struct FilesTabView: View {
             }
         }
         .task(id: driveFolderID) {
-            await store.load(folderID: driveFolderID)
+            await store.load(folderID: driveFolderID, explicitPath: driveFolderPath)
         }
         .padding(.bottom, 64)
     }
 
     private var sourceLabel: String {
+        let lokal = store.localRootURL != nil ? " · LOKAL" : ""
         switch store.renderState {
-        case .content: "GOOGLE DRIVE · \(store.rootNodes.count) EINTRÄGE"
-        default:       "GOOGLE DRIVE"
+        case .content: return "GOOGLE DRIVE · \(store.rootNodes.count) EINTRÄGE\(lokal)"
+        default:       return "GOOGLE DRIVE"
         }
     }
 
@@ -202,16 +234,30 @@ private struct DriveTreeRow: View {
 
     @State private var isHovered = false
     @State private var showPreview = false
+    @State private var resolvedLocalURL: URL?
 
     var body: some View {
         Button { handleTap() } label: { rowContent }
             .buttonStyle(.plain)
             .onHover { isHovered = $0 }
+            .contextMenu {
+                Button("Im Finder zeigen") { store.revealInFinder(for: node.file) }
+                if node.file.isFolder == false, let link = node.file.webViewLink, let url = URL(string: link) {
+                    Button("Im Browser öffnen") { NSWorkspace.shared.open(url) }
+                }
+            }
             .popover(isPresented: $showPreview, arrowEdge: .trailing) {
-                FilePreviewView(file: node.file)
+                FilePreviewView(file: node.file, localURL: resolvedLocalURL, remotePDFData: remotePDFData())
                     .frame(width: 300)
                     .padding(MykSpace.s2)
             }
+    }
+
+    // Read-only Remote-Fallback: PDF-Bytes aus Drive, falls nicht lokal materialisiert.
+    private func remotePDFData() -> (@Sendable () async -> Data?)? {
+        guard node.file.mimeType == "application/pdf" else { return nil }
+        let fileID = node.file.id
+        return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
     }
 
     private var rowContent: some View {
@@ -316,6 +362,9 @@ private struct DriveTreeRow: View {
                 Task { await store.expand(node) }
             }
         } else {
+            // Lokalen Pfad VOR der Vorschau auflösen, damit FilePreviewView die Datei
+            // per PDFKit/Vorschau rendert statt den Browser zu öffnen (Mandate B+D).
+            resolvedLocalURL = store.localURL(for: node.file)
             showPreview.toggle()
         }
     }

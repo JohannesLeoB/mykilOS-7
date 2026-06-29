@@ -186,10 +186,46 @@ struct ConversationEngineTests {
                         signals: [], projects: [], toolsEnabled: true, schaetzModusEnabled: false)
 
         // GATE: Logger hat genau einen Eintrag für das schaetze_projekt-Tool.
+        // Mandate E: protokolliert wird die kanonische Manifest-ID (KALKULATION_LOCAL),
+        // NICHT mehr der rohe Tool-Name — sonst zeigt das Schaltzentrum 0 Handshakes.
         #expect(logger.entries.count == 1)
-        #expect(logger.entries.first?.integrationID == "schaetze_projekt")
+        #expect(logger.entries.first?.integrationID == "KALKULATION_LOCAL")
         #expect(logger.entries.first?.actorUserID == "assistant")
         #expect(logger.entries.first?.action == .success)
+    }
+
+    // MARK: Mandate E — search_gmail loggt unter GMAIL_SEARCH (Hustadt-Gate)
+    // Beweist genau die Schaltzentrum-Bedingung: nach einem echten search_gmail-
+    // Tool-Lauf existiert ein DataFlow-Eintrag mit integrationID == "GMAIL_SEARCH"
+    // (= die Manifest-ID, auf die das SchaltzentrumView matcht).
+    @Test @MainActor func gmailToolLoggtUnterManifestIDGmailSearch() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let logger = DataFlowLogger(db: db, airtable: nil)
+        let fakeGmail = FakeGmailForEngine(messages: [
+            GoogleGmailMessage(id: "1", subject: "Angebot", from: "gesa@example.com",
+                               snippet: "…", receivedAt: nil),
+        ])
+        let registry = AssistantToolRegistry.standard(gmail: fakeGmail)
+
+        let toolInput = Data(#"{"query":"from:gesa"}"#.utf8)
+        let toolUse = ClaudeToolUse(id: "tu_gmail", name: "search_gmail", inputJSON: toolInput)
+        let provider = ScriptedProvider(responses: [
+            ClaudeChatResponse(text: "", toolUses: [toolUse], stopReason: "tool_use"),
+            textResponse("Hier ist die Mail."),
+        ])
+
+        let conv = ConversationEngine(
+            chatStore: ChatStore(db: db),
+            provider: provider,
+            registry: registry,
+            dataFlowLogger: logger
+        )
+        await conv.send("Wo ist die Mail von Gesa?", scope: .home, focusedProjectID: nil,
+                        signals: [], projects: [], toolsEnabled: true, schaetzModusEnabled: false)
+
+        // GATE: genau die Schaltzentrum-Bedingung „GMAIL_SEARCH > 0 Handshakes".
+        #expect(logger.entries.contains { $0.integrationID == "GMAIL_SEARCH" })
+        #expect(logger.entries.contains { $0.integrationID == "search_gmail" } == false)
     }
 }
 

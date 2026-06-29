@@ -51,6 +51,33 @@ public struct BackupService: Sendable {
 
     // MARK: - Backup
 
+    /// Konsistentes Backup MIT erzwungenem WAL-Checkpoint (Mandate G). Der Checkpoint
+    /// schreibt alle ausstehenden WAL-Transaktionen in db.sqlite, sodass die Kopie
+    /// garantiert vollständig ist. Vorher war der Checkpoint nur im Doc-Kommentar
+    /// gefordert, aber nie aufgerufen — hier ist er in den Fluss eingebaut, der die
+    /// `GRDBDatabase` besitzt, also nicht mehr umgehbar.
+    @discardableResult
+    public func createConsistentBackup(db: GRDBDatabase, tag: String,
+                                       appVersion: String, gitCommit: String) throws -> URL {
+        try db.checkpoint()
+        return try createBackup(tag: tag, appVersion: appVersion, gitCommit: gitCommit)
+    }
+
+    /// Jüngster Backup-Ordner (nach Erstellungsdatum), falls vorhanden.
+    public func latestBackupFolder() -> URL? {
+        guard let items = try? fm.contentsOfDirectory(
+            at: backupDir, includingPropertiesForKeys: [.creationDateKey], options: .skipsHiddenFiles
+        ) else { return nil }
+        return items
+            .filter { $0.lastPathComponent.hasPrefix("backup_") }
+            .compactMap { url -> (url: URL, date: Date)? in
+                guard let d = (try? fm.attributesOfItem(atPath: url.path))?[.creationDate] as? Date else { return nil }
+                return (url, d)
+            }
+            .sorted { $0.date > $1.date }
+            .first?.url
+    }
+
     /// Erstellt ein konsistentes Backup. Muss nach GRDBDatabase.checkpoint() aufgerufen werden.
     /// - Parameter tag: kurzer Bezeichner (z.B. "pre-migration", "daily")
     /// - Returns: URL des Backup-Ordners

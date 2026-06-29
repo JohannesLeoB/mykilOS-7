@@ -139,4 +139,65 @@ struct GoogleDriveClientTests {
         #expect(GoogleDriveFile(id: "5", name: "e", mimeType: "image/png", modifiedAt: nil, webViewLink: nil).iconName == "photo")
         #expect(GoogleDriveFile(id: "6", name: "f", mimeType: "application/octet-stream", modifiedAt: nil, webViewLink: nil).iconName == "doc")
     }
+
+    // MARK: - Mandate C — die ECHTE nextPageToken-Schleife (gestubbte URLSession)
+
+    @Test func listFolderFolgtNextPageTokenUeberZweiSeiten() async throws {
+        // Seite 1 trägt nextPageToken → der Client MUSS eine zweite Anfrage
+        // (pageToken=PAGE2) stellen und beide Seiten zusammenführen — echte Schleife.
+        let page1 = #"{"nextPageToken":"PAGE2","files":[{"id":"1","name":"A.pdf","mimeType":"application/pdf"},{"id":"2","name":"B.pdf","mimeType":"application/pdf"}]}"#
+        let page2 = #"{"files":[{"id":"3","name":"C.pdf","mimeType":"application/pdf"}]}"#
+        StubURLProtocol.reset(responses: [(200, Data(page1.utf8)), (200, Data(page2.utf8))])
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [StubURLProtocol.self]
+        let session = URLSession(configuration: config)
+        let client = GoogleDriveClient(tokenProvider: StubReturningTokenProvider(token: "tok"), session: session)
+
+        let files = try await client.listFolder(folderID: "root")
+        #expect(files.map(\.name) == ["A.pdf", "B.pdf", "C.pdf"])
+        #expect(StubURLProtocol.requestedURLs.count == 2)
+        #expect(StubURLProtocol.requestedURLs.last?.absoluteString.contains("pageToken=PAGE2") == true)
+    }
+}
+
+// MARK: - Test-Stubs für die echte Pagination
+
+private struct StubReturningTokenProvider: GoogleAccessTokenProviding {
+    let token: String
+    func validAccessToken() async throws -> String { token }
+}
+
+// URLSession-Stub: liefert eine Queue von (Status, Body) der Reihe nach; merkt sich
+// die angefragten URLs. Nur dieser eine Test registriert ihn (eigene ephemere Session),
+// die Aufrufe innerhalb listFolder sind seriell — Zugriff zusätzlich per Lock geschützt.
+final class StubURLProtocol: URLProtocol, @unchecked Sendable {
+    nonisolated(unsafe) private static var queue: [(Int, Data)] = []
+    nonisolated(unsafe) private(set) static var requestedURLs: [URL] = []
+    nonisolated(unsafe) private static var index = 0
+    private static let lock = NSLock()
+
+    static func reset(responses: [(Int, Data)]) {
+        lock.lock(); defer { lock.unlock() }
+        queue = responses; requestedURLs = []; index = 0
+    }
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func stopLoading() {}
+
+    override func startLoading() {
+        Self.lock.lock()
+        if let url = request.url { Self.requestedURLs.append(url) }
+        let pair: (Int, Data) = Self.queue.isEmpty
+            ? (200, Data())
+            : Self.queue[min(Self.index, Self.queue.count - 1)]
+        Self.index += 1
+        Self.lock.unlock()
+
+        let resp = HTTPURLResponse(url: request.url!, statusCode: pair.0, httpVersion: nil, headerFields: nil)!
+        client?.urlProtocol(self, didReceive: resp, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: pair.1)
+        client?.urlProtocolDidFinishLoading(self)
+    }
 }

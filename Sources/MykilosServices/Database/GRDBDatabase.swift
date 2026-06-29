@@ -22,9 +22,11 @@ public final class GRDBDatabase: Sendable {
         try runMigrations()
     }
 
-    // In-Memory für Tests — kein Disk-I/O, schnell, isoliert
+    // In-Memory für Tests — kein Disk-I/O, schnell, isoliert.
+    // Kein try! mehr (Mandate F): Fehler propagieren regulär.
     public static func inMemory() throws -> GRDBDatabase {
-        let db = GRDBDatabase.__inMemory()
+        let db = GRDBDatabase(queue: try DatabaseQueue())
+        try db.runMigrations()
         return db
     }
 
@@ -152,10 +154,4 @@ public final class GRDBDatabase: Sendable {
 
     // Interner init für Tests (ohne Migrations-Fehler)
     private init(queue: DatabaseQueue) { self.queue = queue }
-
-    private static func __inMemory() -> GRDBDatabase {
-        let db = GRDBDatabase(queue: try! DatabaseQueue())
-        try! db.runMigrations()
-        return db
-    }
 }

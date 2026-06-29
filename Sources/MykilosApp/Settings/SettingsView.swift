@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import MykilosKit
 import MykilosDesign
 import MykilosServices
@@ -6,6 +7,7 @@ import MykilosServices
 // MARK: - SettingsView
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
+    @State private var diagnosticsCopied = false
     @State private var profileName: String = ""
     @State private var profileRole: String = ""
     @State private var profileSaved = false
@@ -41,6 +43,7 @@ struct SettingsView: View {
                 sevdeskSection
                 claudeSection
                 privateAreaSection
+                diagnoseSection
                 SchaltzentrumView()
                 Spacer()
             }
@@ -572,6 +575,98 @@ struct SettingsView: View {
     private func disconnectClockodo() {
         do { try appState.clockodoAuth.disconnect(); clockodoEmail = ""; clockodoApiKey = "" }
         catch { clockodoError = "Trennen fehlgeschlagen: \(error)" }
+    }
+
+    // MARK: - Diagnose (Mandate A) — Version · Commit · Pfade, sichtbar in Settings
+
+    private var diagnoseSection: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s4) {
+            Text("Diagnose")
+                .font(.mykHeadline)
+                .foregroundStyle(MykColor.ink.color)
+            Text("App-Identität für Support & Fehlersuche — keine Tokens, keine Keychain-Daten.")
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.muted.color)
+            VStack(alignment: .leading, spacing: MykSpace.s3) {
+                diagRow("Version", "\(AppIdentity.version) (Build \(AppIdentity.build))")
+                diagRow("Commit",  AppIdentity.gitCommit)
+                diagRow("Branch",  AppIdentity.gitBranch)
+                diagRow("Gebaut",  AppIdentity.buildDate)
+                diagRow("Bundle",  AppIdentity.bundlePath)
+                diagRow("DB",      AppIdentity.dbPath)
+            }
+            HStack(spacing: MykSpace.s4) {
+                Button("Diagnose kopieren") { copyDiagnostics() }
+                if diagnosticsCopied {
+                    Text("In Zwischenablage kopiert")
+                        .font(.mykMono(10))
+                        .foregroundStyle(MykColor.positive.color)
+                }
+            }
+            Divider()
+            HStack(spacing: MykSpace.s4) {
+                Button("Backup jetzt") { Task { await appState.createBackup() } }
+                    .disabled(appState.backupState == .saving)
+                backupStatusLabel
+            }
+            Text("Erzwingt einen WAL-Checkpoint und legt einen konsistenten, geprüften "
+                 + "Snapshot (db.sqlite + projects/customers.json) lokal im Unterordner backups/ an.")
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.faint.color)
+        }
+        .settingsCard()
+    }
+
+    @ViewBuilder
+    private var backupStatusLabel: some View {
+        switch appState.backupState {
+        case .idle:
+            EmptyView()
+        case .saving:
+            Text("Sichert…").font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
+        case .saved:
+            Text("Backup erstellt").font(.mykMono(10)).foregroundStyle(MykColor.positive.color)
+        case .failed(let msg):
+            Text("Fehlgeschlagen: \(msg)").font(.mykMono(10)).foregroundStyle(MykColor.critical.color)
+                .lineLimit(1)
+        }
+    }
+
+    // Redaktierter Diagnose-Export (keine Tokens/Keys/Clockodo-Rohdaten) → Zwischenablage.
+    private func copyDiagnostics() {
+        let entries = appState.dataFlow.entries
+        let lines = entries.prefix(15).map { e in
+            "\(e.integrationID) · \(e.action.rawValue) · \(e.timestamp.formatted(.relative(presentation: .named)))"
+        }
+        let report = DiagnosticsReport.build(
+            identity: .init(
+                version: AppIdentity.version, build: AppIdentity.build,
+                commit: AppIdentity.gitCommit, branch: AppIdentity.gitBranch,
+                buildDate: AppIdentity.buildDate, bundlePath: AppIdentity.bundlePath,
+                dbPath: AppIdentity.dbPath
+            ),
+            handshakeCount: entries.count,
+            handshakeLines: Array(lines),
+            generatedAt: Date().formatted(.dateTime)
+        )
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(report, forType: .string)
+        diagnosticsCopied = true
+    }
+
+    private func diagRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .top, spacing: MykSpace.s3) {
+            Text(label)
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.muted.color)
+                .frame(width: 56, alignment: .trailing)
+            Text(value)
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.inkSoft.color)
+                .lineLimit(2)
+                .truncationMode(.middle)
+                .textSelection(.enabled)
+        }
     }
 
     // MARK: - Shared Helpers

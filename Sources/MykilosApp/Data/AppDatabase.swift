@@ -1,13 +1,19 @@
 import Foundation
+import os
 import MykilosServices
 
-// MARK: - AppDatabase
-// Einmalige Erzeugung der Produktions-Datenbank.
-// `try!` ist hier justified: wenn Application Support nicht erreichbar ist,
-// kann die App nicht arbeiten und soll mit einem klaren Crash enden —
-// nicht still mit leeren Listen.
+// MARK: - AppDatabase (Mandate F — wiederherstellbarer DB-Start, kein try!)
+//
+// Früher: `static let production = try! GRDBDatabase(url:)` — schlug das Öffnen fehl
+// (gesperrte/korrupte sqlite, nicht beschreibbares Application Support), crashte die
+// App noch VOR dem ersten View, ohne jede Diagnose. Jetzt liefert `boot()` einen
+// expliziten Erfolg/Fehler-Zustand, den `MykilOS6App` konsumiert: bei Fehler erscheint
+// eine Wiederherstellungs-Ansicht (Pfad sichtbar + „Datenbank zurücksetzen") statt eines Absturzes.
 public enum AppDatabase {
-    public static let production: GRDBDatabase = {
+
+    /// Pfad der Produktions-DB. EINE Quelle der Wahrheit, damit die Diagnose
+    /// (`AppIdentity.dbPath`) garantiert exakt den Pfad zeigt, der real geöffnet wird.
+    public static var productionURL: URL {
         let dir: URL
         if let appSupport = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask).first {
@@ -16,10 +22,62 @@ public enum AppDatabase {
             dir = FileManager.default.temporaryDirectory
                 .appendingPathComponent("mykilOS6", isDirectory: true)
         }
-        // swiftlint:disable:next force_try
-        try! FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let dbURL = dir.appendingPathComponent("db.sqlite")
-        // swiftlint:disable:next force_try
-        return try! GRDBDatabase(url: dbURL)
-    }()
+        return dir.appendingPathComponent("db.sqlite")
+    }
+
+    public enum Boot {
+        case ready(GRDBDatabase)
+        case failed(message: String, dbPath: String)
+    }
+
+    /// Öffnet die Produktions-DB wiederherstellbar — wirft nie, crasht nie.
+    public static func boot() -> Boot {
+        let dbURL = productionURL
+        do {
+            try FileManager.default.createDirectory(
+                at: dbURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let db = try GRDBDatabase(url: dbURL)
+            MykLog.db.notice("DB geöffnet: \(dbURL.path, privacy: .public)")
+            return .ready(db)
+        } catch {
+            MykLog.db.error("DB-Öffnen fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            return .failed(message: String(describing: error), dbPath: dbURL.path)
+        }
+    }
+
+    /// Letzte Rettung: korrupte DB-Dateien (+ WAL/SHM) beiseiteschieben und neu anlegen.
+    /// Die Quarantäne bleibt erhalten (kein Datenverlust durch Löschen) — der Nutzer
+    /// kann sie später inspizieren/per Backup wiederherstellen.
+    public static func recoverByResettingDatabase(now: Date = Date()) -> Boot {
+        let dbURL = productionURL
+        let stamp = Int(now.timeIntervalSinceReferenceDate)
+        for suffix in ["", "-wal", "-shm"] {
+            let live = URL(fileURLWithPath: dbURL.path + suffix)
+            let quarantine = URL(fileURLWithPath: dbURL.path + ".corrupt-\(stamp)" + suffix)
+            try? FileManager.default.moveItem(at: live, to: quarantine)
+        }
+        MykLog.db.notice("DB zurückgesetzt (Quarantäne-Stempel \(stamp))")
+        return boot()
+    }
+
+    /// Stellt das jüngste Backup wieder her und öffnet die DB neu. SICHER nur, weil
+    /// dies aus dem Fehler-Zustand (DB nicht geöffnet) aufgerufen wird — kein offenes
+    /// Handle auf die live-Datei. `BackupService.restore` ist atomar + prüft Prüfsummen
+    /// und legt vorher selbst ein Rettungsbackup an.
+    public static func restoreLatestBackupThenBoot() -> Boot {
+        let appSupportDir = productionURL.deletingLastPathComponent()
+        let service = BackupService(appSupportDir: appSupportDir)
+        guard let latest = service.latestBackupFolder() else {
+            return .failed(message: "Kein Backup gefunden, das wiederhergestellt werden könnte.",
+                           dbPath: productionURL.path)
+        }
+        do {
+            try service.restore(from: latest, appVersion: AppIdentity.version, gitCommit: AppIdentity.gitCommit)
+            MykLog.backup.notice("Backup wiederhergestellt: \(latest.lastPathComponent, privacy: .public)")
+            return boot()
+        } catch {
+            MykLog.backup.error("Wiederherstellung fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            return .failed(message: "Wiederherstellung fehlgeschlagen: \(error)", dbPath: productionURL.path)
+        }
+    }
 }

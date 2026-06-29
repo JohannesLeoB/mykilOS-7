@@ -3,8 +3,10 @@ import Foundation
 
 // MARK: - DatastromAudit GATE-Tests (L8)
 // Prüft, dass alle hardcodierten integrationID-Strings im Produktionscode
-// im DatastromManifest.json dokumentiert sind. Dynamische IDs (integrationID: toolUse.name)
-// werden durch ASSISTANT_TOOL_CALL abgedeckt und nicht einzeln erfasst.
+// im DatastromManifest.json dokumentiert sind. Tool-Calls werden seit Mandate E
+// über AssistantToolManifest auf ihre eigene Manifest-ID gemappt (z. B. search_gmail
+// → GMAIL_SEARCH; Cross-Check in AssistantToolManifestTests); ein noch nicht
+// gemapptes Tool fällt auf den Umbrella-Eintrag ASSISTANT_TOOL_CALL zurück.
 struct DatastromAuditTests {
 
     // Bekannte dynamische Muster, die NICHT als Literal im Manifest stehen müssen,

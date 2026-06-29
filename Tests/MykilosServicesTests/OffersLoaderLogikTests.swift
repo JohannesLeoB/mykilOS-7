@@ -45,12 +45,15 @@ struct SubfolderErkennungTests {
     }
 }
 
-// MARK: - Pagination-Test mit FakeDriveClient
+// MARK: - Pagination (Fake-Ebene)
+// Hinweis: Die ECHTE nextPageToken-Schleife von GoogleDriveClient.listFolder wird in
+// GoogleDriveClientTests.listFolderFolgtNextPageTokenUeberZweiSeiten() gegen eine
+// gestubbte URLSession getestet. Dieser Fake-Test prüft nur, dass der Collector mit
+// einem mehrseitig befüllten Ordner alle Treffer sieht.
 
 struct DriveClientPaginierungTests {
 
-    @Test func listFolderPaginiert() async throws {
-        // Fake-Client: Erste Seite gibt nextPageToken zurück, zweite nicht.
+    @Test func fakeClientLiefertAlleSeitenkombiniert() async throws {
         let client = PagedFakeDriveClient(pages: [
             [makePDF("Seite1_A.pdf"), makePDF("Seite1_B.pdf")],
             [makePDF("Seite2_A.pdf")],
@@ -62,7 +65,7 @@ struct DriveClientPaginierungTests {
     }
 }
 
-// MARK: - RekursionTest
+// MARK: - RekursionTest (jetzt gegen die ECHTE OffersCollector-Logik, Mandate C/F7)
 
 struct DriveRekursionTests {
 
@@ -83,15 +86,18 @@ struct DriveRekursionTests {
             "sub1": [kostenschaetzung],
         ])
 
-        let eingehendFolderObj = try await client.listFolder(folderID: "root")
-            .first { $0.name.lowercased().contains("eingehende") }
+        let eingehendFolderObj = OffersCollector.subfolder(
+            in: try await client.listFolder(folderID: "root"), matching: "eingehende")
         #expect(eingehendFolderObj != nil)
 
-        // Simuliere filesRecursive-Logik
-        let files = try await collectRecursive(in: eingehendFolderObj, client: client, depth: 0)
+        // ECHTE Produktionslogik (kein nachgebauter Klon).
+        let files = try await OffersCollector.collect(in: eingehendFolderObj, client: client, depth: 0)
         #expect(files.count == 2)
-        #expect(files.map(\.name).contains("Kostenschätzung_2026.pdf"))
-        #expect(files.map(\.name).contains("direkt.pdf"))
+        #expect(files.map(\.file.name).contains("Kostenschätzung_2026.pdf"))
+        #expect(files.map(\.file.name).contains("direkt.pdf"))
+        // Sicheres Signal: die geschachtelte Datei trägt den Unterordnernamen.
+        #expect(files.first { $0.file.name == "Kostenschätzung_2026.pdf" }?.parentName == "Vorplanung")
+        #expect(files.first { $0.file.name == "direkt.pdf" }?.parentName == nil)
     }
 
     @Test func tiefenbegrenzungBeiDreiEbenen() async throws {
@@ -99,37 +105,56 @@ struct DriveRekursionTests {
         let client = DeepTreeFakeDriveClient(depth: 4)
         let root = try await client.listFolder(folderID: "root")
         let folder = root.first { $0.isFolder }
-        let files = try await collectRecursive(in: folder, client: client, depth: 0)
+        let files = try await OffersCollector.collect(in: folder, client: client, depth: 0)
         // depth=0 Startpunkt → max. 3 Levels tiefer (Depth 0,1,2) = 3 PDFs
         #expect(files.count <= 3)
     }
 
     @Test func fehlendeIncomingFolderLiefertLeereArray() async throws {
         let client = TreeFakeDriveClient(tree: ["root": []])
-        let result = try await collectRecursive(in: nil, client: client, depth: 0)
+        let result = try await OffersCollector.collect(in: nil, client: client, depth: 0)
         #expect(result.isEmpty)
     }
+}
 
-    // Hilfsfunktion: reproduziert OffersLoader.filesRecursive ohne @MainActor
-    private func collectRecursive(
-        in folder: GoogleDriveFile?,
-        client: GoogleDriveFetching,
-        depth: Int
-    ) async throws -> [GoogleDriveFile] {
-        guard let folder, depth < 3 else { return [] }
-        let children = try await client.listFolder(folderID: folder.id)
-        var result: [GoogleDriveFile] = []
-        var tasks: [Task<[GoogleDriveFile], Error>] = []
-        for child in children {
-            if child.isFolder {
-                let t = Task { try await self.collectRecursive(in: child, client: client, depth: depth + 1) }
-                tasks.append(t)
-            } else {
-                result.append(child)
-            }
-        }
-        for t in tasks { result.append(contentsOf: try await t.value) }
-        return result
+// MARK: - OffersCollector end-to-end (Mandate C — die echte Lade+Klassifikations-Kette)
+
+struct OffersCollectorLoadTests {
+
+    @Test func loadKlassifiziertEingehendUndAusgehendMitOrdnerSignal() async throws {
+        // root → "05 eingehende Angebote"/Vorplanung/202603971.pdf  (Lieferanten-Angebot)
+        //      → "04 ausgehende Angebote"/Rechnung/SR-SR_2026-0170-Kdnr-12822.pdf (Schlussrechnung)
+        let lieferant = makePDF("202603971.pdf", id: "f1")
+        let schluss   = makePDF("SR-SR_2026-0170-Kdnr-12822.pdf", id: "f2")
+        let client = TreeFakeDriveClient(tree: [
+            "root": [makeFolder("05 eingehende Angebote", id: "ein"),
+                     makeFolder("04 ausgehende Angebote", id: "aus")],
+            "ein":  [makeFolder("Vorplanung", id: "vp")],
+            "vp":   [lieferant],
+            "aus":  [makeFolder("Rechnung", id: "re")],
+            "re":   [schluss],
+        ])
+
+        let result = try await OffersCollector.load(rootFolderID: "root", client: client)
+        #expect(result.incomingFolderFound)
+        #expect(result.outgoingFolderFound)
+        // Eingehend: rein numerischer Lieferanten-Beleg → eingehendesAngebot.
+        #expect(result.incoming.count == 1)
+        #expect(result.incoming.first?.type == .eingehendesAngebot)
+        // Ausgehend: Ordnername „Rechnung" (sicher) + Präfix „SR" → Schlussrechnung,
+        // Belegnummer extrahiert.
+        #expect(result.outgoing.count == 1)
+        #expect(result.outgoing.first?.type == .schlussrechnung)
+        #expect(result.outgoing.first?.belegNummer == "2026-0170")
+    }
+
+    @Test func loadOhneAngebotsOrdnerMeldetNichtGefunden() async throws {
+        let client = TreeFakeDriveClient(tree: ["root": [makeFolder("01 INFOS", id: "x")]])
+        let result = try await OffersCollector.load(rootFolderID: "root", client: client)
+        #expect(result.incomingFolderFound == false)
+        #expect(result.outgoingFolderFound == false)
+        #expect(result.incoming.isEmpty)
+        #expect(result.outgoing.isEmpty)
     }
 }
 

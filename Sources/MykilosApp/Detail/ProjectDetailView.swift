@@ -148,12 +148,14 @@ struct ProjectDetailView: View {
         case .files:
             FilesTabView(
                 projectID: project.projectNumber,
-                driveFolderID: project.links.driveFolderID
+                driveFolderID: project.links.driveFolderID,
+                driveFolderPath: project.links.driveFolderPath
             )
         case .offers:
             OffersTabView(
                 projectID: project.projectNumber,
-                driveFolderID: project.links.driveFolderID
+                driveFolderID: project.links.driveFolderID,
+                driveFolderPath: project.links.driveFolderPath
             )
         case .material:
             MaterialTabView(

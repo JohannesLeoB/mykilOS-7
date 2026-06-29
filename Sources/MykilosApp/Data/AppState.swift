@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 import MykilosKit
 import MykilosServices
 
@@ -64,6 +65,9 @@ public final class AppState {
     // Feld ist die Brücke: setzen → ContentView wechselt das Modul, Gallery
     // öffnet das Projekt und räumt danach selbst wieder auf (nil).
     public var pendingProjectSelection: Project?
+
+    // MARK: Backup (Mandate G) — sichtbarer Speicherzustand für „Backup jetzt"
+    public private(set) var backupState: SaveState = .idle
 
     public init(database: GRDBDatabase) {
         self.database = database
@@ -226,6 +230,31 @@ public final class AppState {
             }
         } catch {
             airtableAuth.setError(String(describing: error))
+        }
+    }
+
+    // MARK: - Backup (Mandate G)
+    // Erzwungener WAL-Checkpoint + konsistentes Backup, off-main ausgeführt.
+    // Lokal, read-only auf die DB — kein externer Schreibzugriff.
+    public func createBackup() async {
+        backupState = .saving
+        let db = database
+        let appSupportDir = AppDatabase.productionURL.deletingLastPathComponent()
+        let version = AppIdentity.version
+        let commit = AppIdentity.gitCommit
+        do {
+            let url = try await Task.detached(priority: .utility) {
+                let service = BackupService(appSupportDir: appSupportDir)
+                let folder = try service.createConsistentBackup(
+                    db: db, tag: "manual", appVersion: version, gitCommit: commit)
+                try? service.pruneOldBackups(olderThanDays: 30)
+                return folder
+            }.value
+            backupState = .saved(Date())
+            MykLog.backup.notice("Backup erstellt: \(url.lastPathComponent, privacy: .public)")
+        } catch {
+            backupState = .failed(String(describing: error))
+            MykLog.backup.error("Backup fehlgeschlagen: \(String(describing: error), privacy: .public)")
         }
     }
 }

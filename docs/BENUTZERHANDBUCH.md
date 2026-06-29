@@ -71,15 +71,29 @@ Projektnummer, verknüpfte Drive-Ordner, ClickUp-Liste und Kalender-Suche.
 Tool-Use (Drive/Mail/Kalender/Kalkulation) nur bei aktiviertem Opt-in.
 
 ### Dateien
-Finder-Baum des verknüpften Google-Drive-Projektordners. Unterordner werden
-lazy geladen (on-demand). Öffnet Dateien im Browser per Klick.
+Datei-Baum des verknüpften Google-Drive-Projektordners. Unterordner werden
+lazy geladen (on-demand). Ist der Ordner über **Google Drive für Desktop** lokal
+materialisiert, zeigt die Quellzeile „· LOKAL"; ein Klick auf eine Datei öffnet
+dann eine echte **PDFKit-Vorschau** und „Im Finder öffnen" startet die macOS-
+Vorschau — **nicht** den Browser. Rechtsklick → **„Im Finder zeigen"** selektiert
+die Datei/den Ordner im Finder. Ist nichts lokal vorhanden, bleibt der Browser-
+Fallback (`webViewLink`).
 
-**Voraussetzung:** Google-Konto verbunden (Settings → Google).
+**Wie das Routing funktioniert:** `LocalDriveRootResolver` sucht unter
+`~/Library/CloudStorage/GoogleDrive-*` den Ordner/die Datei über das Drive-File-
+Stream-xattr `com.google.drivefs.item-id#S` (Item-ID-Abgleich), Namens-Fallback.
+Optionaler Vorrang: ein expliziter Pfad in Airtable `driveFolderPath`.
+
+**Voraussetzung:** Google-Konto verbunden (Settings → Google); für lokale Vorschau
+zusätzlich Google Drive für Desktop mit materialisiertem (heruntergeladenem) Ordner.
 
 ### Angebote
-Zeigt alle Angebots-/Rechnungs-PDFs aus dem Drive-Ordner (`04 Angebote`-
-Unterordner oder per Keyword erkannt: angebot/rechnung/kostenvoranschlag).
-Read-only — öffnet im Browser.
+Zwei Spalten — eingehende (`05 …`) und ausgehende (`04 …`) Belege —, rekursiv
+gesammelt und nach Dokumenttyp gruppiert. **Vorschau** (Icon-Klick) rendert ein
+echtes PDF: lokal materialisiert per PDFKit, sonst per read-only Drive-Download
+(`downloadContent`) — **nicht** im Browser. **Öffnen** (Klick auf den Namen) startet
+lokal-zuerst die macOS-Vorschau, nur ohne lokale Datei den Browser-Fallback.
+Rechtsklick → **„Im Finder zeigen"**. Read-only — nie Schreiben.
 
 ### Timeline
 Platzhalter — in Entwicklung (L27).
@@ -108,7 +122,7 @@ Alle Drive-Dateien des Accounts, nach Änderungszeit sortiert.
 Projektliste links, Angebots-PDFs des gewählten Projekts rechts.
 
 ### Integrationen (⌘7)
-Datenstrom-Schaltzentrale: zeigt alle 22 Weichen aus `DatastromManifest.json`
+Datenstrom-Schaltzentrale: zeigt alle 25 Weichen aus `DatastromManifest.json`
 mit letztem Handshake-Zeitstempel und Verbindungsstatus (grün/rot/grau).
 Jede Weiche hat eine eindeutige `Integrations-ID` die exakt dem `DataFlowLogger`-Eintrag
 im Code entspricht.
@@ -184,6 +198,33 @@ Assistenten. Tool-Daten fließen nur bei aktivem Opt-in an die API.
 
 ---
 
+## Diagnose
+
+**Name:** App-Diagnose · **Was es tut:** zeigt die App-Identität für Support &
+Fehlersuche. · **Wo zu finden:** Settings → Abschnitt „Diagnose" (zusätzlich im
+Fenster „Über mykilOS 6", App-Menü / ⌘,). · **Voraussetzungen:** keine. ·
+**Einschränkungen:** zeigt keine Tokens/Keychain-Daten.
+
+Felder: **Version** (+ Build-Nummer), **Commit** (echter Git-Kurz-Hash),
+**Branch**, **Gebaut** (UTC-Build-Zeitpunkt), **Bundle**-Pfad, **DB**-Pfad.
+Commit/Branch/Build-Datum injiziert `script/build_and_run.sh` beim Bauen in die
+`Info.plist` (Keys `MykGitCommit`/`MykGitBranch`/`MykBuildDate`); die App liest sie
+über `Bundle.main.infoDictionary`. Bei `swift run` ohne App-Bundle stehen sie
+ehrlich auf „–"/„unbekannt". Der DB-Pfad stammt aus derselben Quelle
+(`AppDatabase.productionURL`), die die App real öffnet — kann also nie divergieren.
+
+**Diagnose kopieren:** Der Button legt einen redaktierten Diagnosebericht (App-
+Identität + die letzten Datenstrom-Handshakes) in die Zwischenablage — **ohne**
+Tokens/API-Keys/Clockodo-Rohdaten (per Konstruktion). Gut für Support-Anfragen.
+
+**Datenbank-Wiederherstellung:** Lässt sich die lokale Datenbank beim Start nicht
+öffnen (gesperrt/korrupt), zeigt mykilOS statt eines Absturzes eine
+Wiederherstellungs-Ansicht mit Fehlertext und DB-Pfad. „Datenbank zurücksetzen"
+verschiebt die beschädigte Datei zerstörungsfrei in Quarantäne (`*.corrupt-…`) und
+legt eine neue an. Geteilte Daten (Drive/Kalender/Airtable) sind nie betroffen.
+
+---
+
 ## Assistent — Tool-Use
 
 Wenn Tools aktiviert sind, kann der Assistent folgende Aktionen ausführen
@@ -231,7 +272,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 
 ---
 
-### Alle Weichen (Stand 2026-06-28 · 22 Weichen)
+### Alle Weichen (Stand 2026-06-28 · 25 Weichen)
 
 #### Airtable
 
@@ -250,6 +291,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `DRIVE_FILES_TAB` | Dateien-Tab (Finder-Baum) | READ | onDemand (Tab öffnen) | read-only | Nur Metadaten (Name/Typ/Datum/Größe). `drive.metadata.readonly` Scope. |
 | `DRIVE_OFFERS_TAB` | Angebote-Tab | READ | onDemand (Tab öffnen) | read-only | Gleiche Erkennungslogik wie `DriveOfferWatcher.detectOffers`. |
 | `DRIVE_MATERIAL_TAB` | Material-Tab | READ | onDemand (Tab öffnen) | read-only | Tolerant per Ordnername gematcht (`05 Material` o.ä.). |
+| `DRIVE_ASSISTANT_LIST` | Drive-Ordner-Listing (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `list_drive_folder`. Nur Metadaten, nie Dateiinhalte. Eigene Weiche (Mandate E). |
 
 #### Google Gmail
 
@@ -262,7 +304,8 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 
 | Integrations-ID | Name | Richtung | Trigger | NO-GO | Notiz |
 |---|---|---|---|---|---|
-| `CALENDAR_LIST` | Kalender-Termine | READ | onDemand (Tool-Call) | read-only | `suggest_calendar_event` erzeugt nur eine URL — kein API-Write. |
+| `CALENDAR_LIST` | Kalender-Termine | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `list_calendar_events`. |
+| `CALENDAR_SUGGEST` | Termin-Vorschlag (nur Link) | WRITE | onDemand (Tool-Call) | NIE echter API-Write | Assistenten-Tool `suggest_calendar_event` erzeugt nur eine `calendar.google.com`-URL zum Öffnen im Browser — schreibt NIE in den Google-Kalender. Eigene Weiche (Mandate E). |
 
 #### Google Contacts / Identity
 
@@ -276,7 +319,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | Integrations-ID | Name | Richtung | Trigger | NO-GO | Notiz |
 |---|---|---|---|---|---|
 | `CLAUDE_MESSAGES` | Assistent (LLM) | BIDIRECTIONAL | onDemand (Chat) | — | Modell `claude-sonnet-4-6`. Tool-Daten nur bei Opt-in. Streaming via SSE. |
-| `ASSISTANT_TOOL_CALL` | Tool-Call Logging | READ | onDemand (Tool-Run) | Nein | Seit L5: jeder `registry.run()`-Aufruf → `DataFlowLogger`-Eintrag (integrationID = Tool-Name). Opt-in nötig. |
+| `ASSISTANT_TOOL_CALL` | Tool-Call Logging (Umbrella) | READ | onDemand (Tool-Run) | Nein | Umbrella-Fallback für ein (noch) nicht gemapptes Tool. Seit Mandate E mappt `AssistantToolManifest` jeden Tool-Lauf auf seine eigene Manifest-ID (z. B. `search_gmail`→`GMAIL_SEARCH`) statt den Roh-Tool-Namen zu loggen — sonst zeigte das Schaltzentrum 0 Handshakes (Forensik F12). |
 
 #### ClickUp
 
@@ -304,6 +347,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `LOCAL_BRAINSEED_PRICE_ANCHORS` | Preis-Anker (BrainSeed) | READ | App-Start | `_Daten/Kalkulation/Brain/active_price_anchors.csv` | 203 Tischler-Anker. Fallback: 6 konservative BaselineAnchors. NIE ins Repo. |
 | `LOCAL_DEVICECATALOG_ARTIKEL` | Geräte-Preisbuch | READ | App-Start | `_Daten/Kalkulation/Devices/catalog.csv` | 5.565 Artikel (Gaggenau, Miele, Blum…). Quelle Airtable-DB `appdxTeT6bhSBmwx5` (read-only Export). NIE ins Repo. |
 | `DEVICE_CATALOG_LOAD` | Gerätekatalog laden | READ | App-Start | `DeviceCatalog.loadDefault()` | Optional — fehlt die CSV, bleibt Katalog nil, kein Crash. |
+| `STUDIO_KNOWLEDGE_QUERY` | Studio-Wissensbasis-Abfrage | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `query_studio_knowledge` über die lokale `StudioBrain`-Projekthistorie. Eigene Weiche (Mandate E). |
 
 ---
 

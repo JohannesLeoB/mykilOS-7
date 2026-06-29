@@ -95,7 +95,8 @@ struct GlobalOffersView: View {
            let project = offerProjects.first(where: { $0.projectNumber == nr }) {
             OffersTabView(
                 projectID: project.projectNumber,
-                driveFolderID: project.links.driveFolderID
+                driveFolderID: project.links.driveFolderID,
+                driveFolderPath: project.links.driveFolderPath
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {

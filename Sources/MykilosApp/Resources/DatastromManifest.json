@@ -152,5 +152,26 @@
     "system": "Lokal",
     "direction": "READ",
     "link": "mykilos://datastream/DEVICE_CATALOG_LOAD"
+  },
+  {
+    "integrationID": "DRIVE_ASSISTANT_LIST",
+    "name": "Drive-Ordner-Listing (Assistent)",
+    "system": "Google Drive",
+    "direction": "READ",
+    "link": "mykilos://datastream/DRIVE_ASSISTANT_LIST"
+  },
+  {
+    "integrationID": "CALENDAR_SUGGEST",
+    "name": "Kalender-Termin-Vorschlag (nur Link)",
+    "system": "Google Calendar",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/CALENDAR_SUGGEST"
+  },
+  {
+    "integrationID": "STUDIO_KNOWLEDGE_QUERY",
+    "name": "Studio-Wissensbasis-Abfrage (Assistent)",
+    "system": "Lokal",
+    "direction": "READ",
+    "link": "mykilos://datastream/STUDIO_KNOWLEDGE_QUERY"
   }
 ]

@@ -37,6 +37,45 @@ struct OfferDocumentClassifierTests {
         #expect(r.type == .auftrag)
     }
 
+    // MARK: - Ordnernamen-Klassifikation (Mandate C — das Kernsignal, vorher ungetestet)
+    // Der team-kontrollierte Unterordnername hat Vorrang vor der Präfix-Vermutung.
+
+    @Test func ordnerRechnungMitSRWirdSchlussrechnung() {
+        let r = OfferDocumentClassifier.classify(pdf("SR-SR_2026-0170.pdf"), isIncoming: false, folderName: "Rechnung")
+        #expect(r.type == .schlussrechnung)
+    }
+
+    @Test func ordnerRechnungMitTRWirdAbschlagsrechnung() {
+        let r = OfferDocumentClassifier.classify(pdf("TR-ARE_2026-0123.pdf"), isIncoming: false, folderName: "03 Rechnung")
+        #expect(r.type == .abschlagsrechnung)
+    }
+
+    @Test func ordnerRechnungOhnePraefixWirdStandardSchlussrechnung() {
+        let r = OfferDocumentClassifier.classify(pdf("scan_001.pdf"), isIncoming: false, folderName: "Rechnung")
+        #expect(r.type == .schlussrechnung)
+    }
+
+    @Test func ordnerAngebotGewinntGegenPraefix() {
+        // Datei trägt "SR"-Präfix, liegt aber im Ordner "Angebot" → Ordnersignal gewinnt.
+        let r = OfferDocumentClassifier.classify(pdf("SR-SR_2026-0170.pdf"), isIncoming: false, folderName: "01 Angebot")
+        #expect(r.type == .angebot)
+    }
+
+    @Test func ordnerAuftragWirdAuftrag() {
+        let r = OfferDocumentClassifier.classify(pdf("egal_2026-0001.pdf"), isIncoming: false, folderName: "Auftrag")
+        #expect(r.type == .auftrag)
+    }
+
+    @Test func eingehendBestellungenOrdnerWirdBestellung() {
+        let r = OfferDocumentClassifier.classify(pdf("202603971.pdf"), isIncoming: true, folderName: "Bestellungen")
+        #expect(r.type == .bestellung)
+    }
+
+    @Test func eingehendVorplanungBleibtEingehendesAngebot() {
+        let r = OfferDocumentClassifier.classify(pdf("202603971.pdf"), isIncoming: true, folderName: "Vorplanung Stein")
+        #expect(r.type == .eingehendesAngebot)
+    }
+
     @Test func unbekanntesPraefixAusgehendWirdSonstiges() {
         let r = OfferDocumentClassifier.classify(pdf("XYZ_irgendwas.pdf"), isIncoming: false)
         #expect(r.type == .sonstiges)

@@ -30,6 +30,135 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-28 · Claude Code (Opus) — Core Repair Session (PR #3, Mandate A–G)
+
+```
+Branch: polish/dampflok (lokal, KEIN Push ohne Freigabe)
+Build:  ✅ swift build grün
+Tests:  fortlaufend grün (Start 270 → siehe je Mandat)
+```
+
+Ausgangslage (Recon, 7 read-only Mapper): Commit `ac1c914` hat für fast jedes
+Mandat *Bausteine* angelegt, aber kaum etwas *verdrahtet* — exakt das Proxy-Muster.
+Verifizierter Befund: B `LocalDriveRootResolver` 0 Caller (orphaned); D `localURL`
+nie übergeben → PDF öffnet Safari; E `ConversationEngine` loggt Roh-Tool-Namen →
+Schaltzentrum 0 Handshakes; F `try!` bleibt in Prod-DB, kein `os.Logger`; G
+`BackupService` orphaned, WAL-Test ist Fake-String-Copy; A Commit immer „unbekannt",
+Diagnose nur im About-Fenster. C ist verdrahtet, aber Ordnernamen-Klassifikation 0 Tests.
+
+**Mandate E — Typed I/O (toolName→manifestID) ✅ (275 Tests grün)**
+- `AssistantToolManifest` (MykilosServices): statische Map aller 9 Tools → kanonische
+  Manifest-ID + Umbrella-Fallback `ASSISTANT_TOOL_CALL`.
+- `ConversationEngine` loggt jetzt `manifestID(forTool:)` statt `toolUse.name` (Fix F12)
+  → Schaltzentrum-Zeile `GMAIL_SEARCH` lightet nach echtem `search_gmail`-Lauf.
+- 3 neue, ehrliche Weichen im Manifest: `DRIVE_ASSISTANT_LIST`, `CALENDAR_SUGGEST`,
+  `STUDIO_KNOWLEDGE_QUERY` (jedes Tool eine eigene Zeile statt Sammel-Umbrella).
+- Divergente `docs/datastream_manifest.json` gelöscht (F12: „Docs-Version löschen") —
+  Resources-Manifest ist jetzt einzige Quelle der Wahrheit.
+- Bug-zementierenden Test korrigiert (`integrationID == "schaetze_projekt"` →
+  `"KALKULATION_LOCAL"`); neuer Gate-Test `gmailToolLoggtUnterManifestIDGmailSearch`;
+  neue `AssistantToolManifestTests` (Map↔Manifest-Konsistenz, Drift-Guard).
+- BENUTZERHANDBUCH: 22 → 25 Weichen, 3 neue Zeilen, `ASSISTANT_TOOL_CALL`-Notiz korrigiert.
+
+**Mandate A — App-Diagnose in Settings + echter Git-Commit ✅ (275 Tests grün)**
+- `AppDatabase.productionURL` extrahiert → EINE Pfad-Quelle; `AppIdentity.dbPath`
+  delegiert dorthin (kann nie vom real geöffneten Pfad divergieren, Forensik A).
+- `AppIdentity` um `gitCommit`/`gitBranch`/`buildDate` erweitert (liest Info.plist-
+  Keys `MykGitCommit`/`MykGitBranch`/`MykBuildDate`). Das kaputte `#if GIT_COMMIT`-
+  Makro (kompilierte nie zu echtem Wert) ist raus — Commit war immer „unbekannt".
+- `build_and_run.sh` injiziert `git rev-parse --short HEAD`, Branch und UTC-Build-
+  Datum via `plutil -insert` in die Info.plist (end-to-end verifiziert).
+- Neuer `diagnoseSection` in `SettingsView` (Version·Build·Commit·Branch·Gebaut·
+  Bundle·DB) — erfüllt das Hustadt-Gate „Settings → Diagnose zeigt Version+Commit".
+  About-Fenster nutzt jetzt dieselbe `AppIdentity`-Quelle (+ Build-Datum-Zeile).
+- BENUTZERHANDBUCH: neuer Abschnitt „Diagnose".
+
+**Mandate B — Lokales Drive-Routing verdrahtet ✅ (280 Tests grün)**
+- Neuer Foundation-only `DriveLocalResolver` (MykilosServices): liest xattr
+  `com.google.drivefs.item-id#S`, `firstChild(of:withItemID:)`, rekursives
+  `find(itemID:in:fileName:maxDepth:)` mit Namens-Fallback — **echt testbar**.
+- `LocalDriveRootResolver` (vorher 0 Caller, orphaned) delegiert jetzt an
+  `DriveLocalResolver`, bekommt `localURL(forFileID:…)` (Datei im Projektbaum),
+  `driveFolderPath`-Fast-Path (Forensik F9 konsumiert) und `revealInFinder(localURL:)`.
+- `FilesTabView`/`DriveTreeStore` VERDRAHTET: löst den Projektordner lokal auf
+  (Quellzeile „· LOKAL"), Datei-Tap löst lokalen Pfad auf → `FilePreviewView(localURL:)`,
+  Kontextmenü „Im Finder zeigen". `ProjectDetailView` reicht `driveFolderPath` durch.
+- Neue `DriveLocalResolverTests` (5, echte `setxattr`/Temp-Baum, inkl. Hustadt-
+  Struktur „05 eingehende Angebote/Vorplanung/angebot.pdf" + maxDepth + Namens-Fallback).
+- BENUTZERHANDBUCH: „Dateien"-Abschnitt auf lokales Öffnen/Finder-Zeigen aktualisiert.
+- ⚠️ Live-Verify (Johannes): echtes xattr `…item-id#S` am Hustadt-Mount + materialisierter Ordner.
+
+**Mandate D — Echte Dokument-Vorschau statt Safari ✅ (280 Tests grün)**
+- `FilePreviewView`: PDFKit-Render lokal-zuerst, sonst optionaler read-only
+  Remote-Fallback (`remotePDFData`-Closure → Drive `downloadContent` → `PDFDocument(data:)`).
+  Vorher war der `localURL`-Pfad toter Code (nie befüllt) → immer Browser (F11).
+- `OffersTabView`/`OfferRow` VERDRAHTET: Datei-Tap löst lokalen Pfad auf →
+  `FilePreviewView(localURL:remotePDFData:)`; Namens-Button öffnet **lokal-zuerst**
+  (`openFile(localURL:fallbackURL:)`) statt blind `NSWorkspace.open(webViewLink)`;
+  Kontextmenü „Im Finder zeigen". `driveFolderID`/`driveFolderPath` durchgereicht
+  (ProjectDetail + GlobalOffersView). `FilesTabView`-Vorschau ebenfalls mit Remote-Fallback.
+- BENUTZERHANDBUCH: „Angebote"-Abschnitt auf echte Vorschau/lokales Öffnen aktualisiert.
+- Offen (bewusst, kein Gate): Material-Tab öffnet weiter im Browser; QuickLook für
+  Nicht-PDF-Typen wäre Folge-Politur. ⚠️ Live-Verify: Hustadt-PDF rendert + öffnet lokal.
+
+**Mandate C — Angebote testbar gemacht + echte Tests ✅ (290 Tests grün)**
+- Reine Logik aus `OffersLoader` (MykilosApp, untestbar) in `OffersCollector`
+  (MykilosServices) herausgelöst: `subfolder`/`collect`/`load`→`Result`. `OffersLoader`
+  ist jetzt nur noch der dünne @Observable-Wrapper (Render-State/Generation/Fehler). F7 behoben.
+- Neue echte Tests: `OffersCollector.collect` (Rekursion bis Hustadt-Tiefe, parentName-
+  Fluss, maxDepth-Schnitt) + `OffersCollector.load` end-to-end (eingehend=Lieferanten-
+  Angebot, ausgehend „Rechnung"+SR→Schlussrechnung, Ordner-nicht-gefunden) — gegen die
+  ECHTE Produktionslogik statt eines Test-Klons.
+- **Ordnernamen-Klassifikation** (das Kernsignal, vorher 0 Tests): 7 Tests für
+  `resolveType` (Rechnung+SR/TR/Standard, Angebot gewinnt gegen Präfix, Auftrag,
+  Bestellungen incoming, Vorplanung bleibt eingehendesAngebot).
+- **Echte Pagination-Schleife** getestet: `listFolderFolgtNextPageTokenUeberZweiSeiten`
+  mit gestubbter `URLSession` (StubURLProtocol) — Seite 1 (nextPageToken) → Seite 2
+  (pageToken=PAGE2) → zusammengeführt. Der frühere Fake-Test ist als solcher markiert.
+- **Divergenz dokumentiert (bewusst):** Der Angebote-TAB klassifiziert reich über
+  `OfferDocumentClassifier` (Ordnername + Präfix); das `offerDetected`-SIGNAL nutzt weiter
+  `DriveOfferWatcher.detectOffers` (konservative Dateinamen-Keywords). Zwei Zwecke, kein Bug.
+- ⚠️ Live-Verify (Johannes): Hustadt `05 eingehende Angebote/Vorplanung…` zeigt das PDF.
+
+**Mandate F — Crash-Diagnostik: wiederherstellbare DB, kein try!, os.Logger, Export ✅ (294 Tests grün)**
+- **try! eliminiert** (Forensik F13): `AppDatabase` ist jetzt `boot() -> Boot(.ready/.failed)`
+  (do/catch, crasht nie) + `recoverByResettingDatabase()` (Quarantäne statt Löschen);
+  `GRDBDatabase.inMemory()` nutzt reguläres `try`. Grep bestätigt: 0 `try!`/`fatalError` in Sources.
+- **Wiederherstellbarer Start**: `MykilOS6App` führt `BootPhase`; bei `.failed` rendert die neue
+  `DatabaseRecoveryView` (Fehlertext + DB-Pfad + „Datenbank zurücksetzen") statt eines Absturzes
+  vor dem ersten View. Kein eager force-unwrapped `AppState` mehr.
+- **os.Logger**: neues `MykLog` (Subsystem `de.mykilos.mykilos6`, Kategorien lifecycle/db/
+  drive/offers/chat/backup). Launch-Marker (Version+Build+Commit) in `MykilOS6App.init`,
+  DB-Öffnen/-Reset protokolliert. Nie Secrets im Log.
+- **Redaktierter Export**: reiner `DiagnosticsReport.build(...)` (MykilosServices, nimmt per
+  Konstruktion keine Geheimnisse) + „Diagnose kopieren"-Button (Settings → Diagnose) → Zwischenablage.
+- Neue Tests: `GRDBDatabaseRecoverabilityTests` (gültiger Pfad → Roundtrip; unbeschreibbarer Pfad →
+  wirft statt Crash), `DiagnosticsReportTests` (Identität+Handshakes enthalten; keine Secret-Marker).
+- BENUTZERHANDBUCH: „Diagnose"-Abschnitt um Export + Wiederherstellung erweitert.
+
+**Mandate G — Backup/Restore verdrahtet + echter WAL-Round-Trip ✅ (296 Tests grün)**
+- `BackupService` war komplett, aber orphaned + Checkpoint nur dokumentiert. Jetzt:
+  `createConsistentBackup(db:…)` ERZWINGT `db.checkpoint()` vor dem Kopieren (nicht mehr umgehbar)
+  + `latestBackupFolder()`.
+- **Backup verdrahtet**: `AppState.createBackup()` (off-main, `SaveState`) + „Backup jetzt"-Button
+  in Settings → Diagnose (mit Status). Prune >30 Tage. Read-only auf die DB, kein externer Schreibzugriff.
+- **Restore verdrahtet — sicher**: `AppDatabase.restoreLatestBackupThenBoot()` nur aus der
+  `DatabaseRecoveryView` erreichbar (DB ist dort NICHT offen → kein Risiko durch offenes Handle).
+  `BackupService.restore` ist atomar (temp+move), prüft SHA-256, legt vorher Rettungsbackup an.
+- **Echter WAL-Round-Trip** (ersetzt den String-Copy-Fake): reale on-disk GRDB-DB (WAL) → Zeile
+  schreiben → `createConsistentBackup` (Checkpoint) → ALLE DB-Dateien löschen → `restore` →
+  neu öffnen → Zeile (777) wieder da. Plus SHA-256-Known-Vector („abc") + `latestBackupFolder`-Test.
+
+---
+
+### Core Repair (PR #3) — Mandate A–G alle code-fertig ✅
+
+Branch `polish/dampflok`, lokal (KEIN Push/Merge ohne Johannes' Freigabe). **296 Tests grün, 48 Suites.**
+Reihenfolge gefahren: E → A → B → D → C → F → G (Hustadt-kritische zuerst). Jeder Schritt build+test grün.
+Offen = ausschließlich Live-Abnahme am echten Gerät (Hustadt-Gate, siehe Handoff). Keine externen Schreibzugriffe.
+
+---
+
 ## 2026-06-28 · Claude Code — Forensik-Session + Übergabe Core Repair
 
 ```
