@@ -30,6 +30,34 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-29 · Claude Code (Opus) — S23: „Alle Angebote" (globale Aggregation) · Start MYKILOS 7
+
+```
+Branch: polish/dampflok; 397 → 405 Tests grün · Build grün · Token-Regeln clean
+```
+
+Erstes Feature von **MYKILOS 7**. Neuer Button „Alle Angebote" im Sidebar-Modul Angebote:
+listet die Belege ALLER 04/05-Ordner ALLER Projekte mit Drive-Ordner in einer flachen,
+sortier- und durchsuchbaren Liste.
+
+- **Services (testbar):** `AllOffersCollector.collectAll` aggregiert pro Projekt über die
+  bestehende `OffersCollector`-Logik (eine Quelle der Wahrheit), begrenzt nebenläufig
+  (`maxConcurrent`, schont Drive-Rate-Limit). Pro-Projekt-Fehler werden übersprungen und
+  gezählt; `GoogleDriveError.notConnected` wird durchgereicht (globales Auth-Problem →
+  UI `permissionRequired`). `AllOffersSorter`: Sortierung Datum/Projekt/Richtung/Typ/Name
+  + Volltextfilter (Datei/Projekt/Belegnummer). `AggregatedOffer` trägt Projekt-Kontext +
+  Richtung.
+- **App:** `AllOffersLoader` (@Observable, alle Renderstates, Lade-Fortschritt N/M),
+  `AllOffersView` (Sortier-Menü, Suche, Quellzeile, Klick-Zeile → In-App-Vorschau via
+  FilePreviewView-Popover/Vollvorschau). `GlobalOffersView` bekommt den Button „Alle
+  Angebote" + Inhalts-Umschaltung.
+- **Weiche:** DRIVE_ALL_OFFERS (read-only) in BENUTZERHANDBUCH eingetragen (35 Weichen).
+  Airtable-Datenstrom-Handbuch-Sync steht als manueller Folgeschritt aus (PAT-Curl).
+- +8 Tests (Aggregation, Fehler-Überspringen, notConnected-Durchreichen, leere Liste,
+  serielle Nebenläufigkeit, Sortierer/Filter). **405 Tests grün.**
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — S22: Assistenten-Ergebnisse klickbar + In-App-Vorschau
 
 ```

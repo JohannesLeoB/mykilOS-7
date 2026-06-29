@@ -11,9 +11,18 @@ struct GlobalOffersView: View {
     @Environment(AppState.self) private var appState
 
     @State private var selectedProjectNumber: String?
+    @State private var showAll = false
 
     private var offerProjects: [Project] {
         appState.registry.projects.filter { $0.links.driveFolderID != nil }
+    }
+
+    private var allProjectRefs: [AllOffersCollector.ProjectRef] {
+        offerProjects.compactMap { project in
+            guard let id = project.links.driveFolderID, id.isEmpty == false else { return nil }
+            return AllOffersCollector.ProjectRef(
+                projectNumber: project.projectNumber, title: project.title, driveFolderID: id)
+        }
     }
 
     var body: some View {
@@ -41,6 +50,8 @@ struct GlobalOffersView: View {
                 .padding(.top, MykSpace.s9)
                 .padding(.bottom, MykSpace.s5)
             Divider().overlay(MykColor.line.color)
+            allOffersButton
+            Divider().overlay(MykColor.line.color.opacity(0.5))
             if offerProjects.isEmpty {
                 Text("Keine Projekte mit Drive-Ordner.")
                     .font(.mykSmall)
@@ -61,9 +72,34 @@ struct GlobalOffersView: View {
         .background(MykColor.card.color)
     }
 
+    private var allOffersButton: some View {
+        Button {
+            showAll = true
+        } label: {
+            HStack(spacing: MykSpace.s3) {
+                Image(systemName: "square.stack.3d.up")
+                    .font(.mykCaption)
+                    .foregroundStyle(showAll ? MykColor.drive.color : MykColor.muted.color)
+                Text("Alle Angebote")
+                    .font(.mykSmall)
+                    .foregroundStyle(showAll ? MykColor.ink.color : MykColor.inkSoft.color)
+                Spacer()
+            }
+            .padding(.horizontal, MykSpace.s6)
+            .padding(.vertical, MykSpace.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(showAll ? MykColor.paper.color : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, MykSpace.s3)
+        .padding(.vertical, MykSpace.s3)
+    }
+
     private func projectRow(_ project: Project) -> some View {
-        let isSelected = selectedProjectNumber == project.projectNumber
+        let isSelected = showAll == false && selectedProjectNumber == project.projectNumber
         return Button {
+            showAll = false
             selectedProjectNumber = project.projectNumber
         } label: {
             VStack(alignment: .leading, spacing: 2) {
@@ -91,7 +127,10 @@ struct GlobalOffersView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let nr = selectedProjectNumber,
+        if showAll {
+            AllOffersView(projects: allProjectRefs)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if let nr = selectedProjectNumber,
            let project = offerProjects.first(where: { $0.projectNumber == nr }) {
             OffersTabView(
                 projectID: project.projectNumber,

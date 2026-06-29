@@ -147,6 +147,17 @@ Alle Drive-Dateien des Accounts, nach Änderungszeit sortiert.
 ### Angebote (global)
 Projektliste links, Angebots-PDFs des gewählten Projekts rechts.
 
+**Alle Angebote (S23):** Oben in der Projektliste der Button **„Alle Angebote"**.
+Er aggregiert die Belege **aller** 04/05-Ordner **aller** Projekte mit Drive-Ordner
+in eine flache Liste. Sortierbar nach **Datum, Projekt, Richtung (eingehend/ausgehend),
+Typ, Name**; durchsuchbar über Dateiname, Projekt und Belegnummer. Jede Zeile ist
+anklickbar → In-App-Vorschau (lokale Datei zuerst, sonst read-only Drive-Bytes; Vollvorschau
+über das Popover). Read-only, nutzt dieselbe `OffersCollector`-Logik wie der Projekt-Tab
+(eine Quelle der Wahrheit). Das Durchsuchen aller Projektordner läuft begrenzt nebenläufig
+(schont das Drive-Rate-Limit) mit Lade-Fortschrittsanzeige; einzelne nicht erreichbare
+Projektordner werden übersprungen und gezählt. **Voraussetzung:** Google-Konto verbunden
+(volle Drive-Vorschau via M2).
+
 ### Integrationen (⌘7)
 Datenstrom-Schaltzentrale: zeigt alle 28 Weichen aus `DatastromManifest.json`
 mit letztem Handshake-Zeitstempel und Verbindungsstatus (grün/rot/grau).
@@ -322,7 +333,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 
 ---
 
-### Alle Weichen (Stand 2026-06-29 · 34 Weichen)
+### Alle Weichen (Stand 2026-06-29 · 35 Weichen)
 
 #### Airtable
 
@@ -345,6 +356,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `DRIVE_MATERIAL_TAB` | Material-Tab | READ | onDemand (Tab öffnen) | read-only | Tolerant per Ordnername gematcht (`05 Material` o.ä.). |
 | `DRIVE_ASSISTANT_LIST` | Drive-Ordner-Listing (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `list_drive_folder`. Nur Metadaten, nie Dateiinhalte. Eigene Weiche (Mandate E). |
 | `DRIVE_OFFERS_FIND` | Angebote-Suche (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `find_offers` über `OffersCollector` (rekursiv, klassifiziert). Findet 04/05 auch verschachtelt in „01 INFOS"; global per Projektname auflösbar (S2). Ergebnisse erscheinen als **anklickbare** Karte mit In-App-Vorschau (S22, reine UI — keine eigene Weiche). |
+| `DRIVE_ALL_OFFERS` | Alle Angebote (global) | READ | onDemand (Button „Alle Angebote") | read-only | Aggregiert die 04/05-Belege ALLER Projekte mit Drive-Ordner in eine flache, sortier-/durchsuchbare Liste (`AllOffersCollector`, begrenzt nebenläufig). Gleiche `OffersCollector`-Lese-/Klassifikationslogik wie der Projekt-Tab. Klick → In-App-Vorschau. S23 (MYKILOS 7). |
 | `DRIVE_FILE_READ` | Dateiinhalt lesen (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `read_drive_file` über `DriveFileReader`: findet die Datei per (Teil-)Name rekursiv und liest den **Inhalt** als Klartext (PDF→PDFKit, Google Docs/Sheets/Slides→Export, Text→utf8, gekürzt auf 6000 Zeichen). Braucht `drive.readonly` Scope. Eigene Weiche (S5). |
 
 #### Google Gmail
