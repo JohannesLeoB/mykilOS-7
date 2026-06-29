@@ -13,10 +13,12 @@ genau deshalb gibt es diesen Safe State.
 
 | Artefakt | Wo | Zweck |
 |---|---|---|
-| **Git-Tag `v7.0.0`** | mykilOS-7 **und** mykilOS-6 (beide Remotes) | unveränderlicher Anker auf Commit `e629e84` |
+| **Git-Tag `v7.0.0`** | `origin` (mykilOS-7) + `mykilos6-archive` | unveränderlicher Anker auf Commit `e629e84` |
 | **GitHub Release `v7.0.0`** | github.com/JohannesLeoB/mykilOS-7/releases/tag/v7.0.0 | dauerhaft abrufbare DMG + Release-Notes |
 | **Safe-DMG** | `dist/safe/mykilOS-7-v7.0.0-SAFE.dmg` (+ `.sha256`) | lauffähiges Bundle, lokal |
-| **Snapshot-Branch** | mykilOS-7 `main` = `2e0f773` (Snapshot @ e629e84) | redundante Kopie desselben Standes |
+| **`main`** | mykilOS-7 `main` = `e629e84` | der Stamm steht exakt auf dem Safe-Stand |
+
+> Workflow & Branch-Modell: **[docs/GIT_WORKFLOW.md](GIT_WORKFLOW.md)**.
 
 **Inhalt v7.0.0:** 409 Tests grün · S22 (klickbare Vorschau) · S23 (Alle Angebote) ·
 S24 (Fehler-400-Fix) · Version 7.0.0.

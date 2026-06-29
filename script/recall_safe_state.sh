@@ -24,9 +24,8 @@ cd "$ROOT_DIR"
 
 # Tag muss existieren (lokal oder remote).
 if ! git rev-parse -q --verify "refs/tags/$SAFE_TAG" >/dev/null; then
-  echo "→ Tag $SAFE_TAG nicht lokal — hole ihn aus den Remotes …"
-  git fetch --tags mykilos7 2>/dev/null || true
-  git fetch --tags origin   2>/dev/null || true
+  echo "→ Tag $SAFE_TAG nicht lokal — hole ihn aus origin (mykilOS-7) …"
+  git fetch --tags origin 2>/dev/null || true
 fi
 if ! git rev-parse -q --verify "refs/tags/$SAFE_TAG" >/dev/null; then
   echo "✗ Safe-Tag $SAFE_TAG nicht gefunden. Abbruch." >&2

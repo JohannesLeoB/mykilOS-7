@@ -68,12 +68,13 @@ für immer.** Alles, was wir weiterentwickeln (7.5, Mail-Client, Experimente),
 läuft auf Branches daneben und darf diesen Stand **niemals** zerstören. Manche
 Versuche verlaufen im Sande — genau dafür gibt es den Safe State.
 
-- Tag `v7.0.0` liegt in **beiden** Remotes (mykilOS-7 + mykilOS-6) + als GitHub-Release.
-- **NIE** den Tag verschieben/löschen, **NIE** `main` force-pushen.
-- Neue Arbeit nur auf Branches (`release/7.5`, `feat/…`, `experiment/…`).
-- Frisch aufrufen: `./script/recall_safe_state.sh` (separater Worktree, stört die
-  laufende Arbeit nicht) oder `git checkout v7.0.0`.
-- Vollständiger Vertrag: **[docs/SAFE_STATE.md](docs/SAFE_STATE.md)**.
+- **Ein Repo:** `origin` = github.com/JohannesLeoB/**mykilOS-7** (privat). mykilOS-6 ist
+  **archiviert** (Remote `mykilos6-archive`, read-only). Kein zweites aktives Repo.
+- `main` steht auf `v7.0.0` (e629e84). Tag liegt in `origin` + Archiv + als GitHub-Release.
+- **NIE** den Tag verschieben/löschen, **NIE** `main` force-pushen, **NIE** direkt auf `main`.
+- Neue Arbeit nur auf Branches (`release/7.5`, `feat/…`, `experiment/…`), signiert (SSH).
+- Frisch aufrufen: `./script/recall_safe_state.sh` (separater Worktree) oder `git checkout v7.0.0`.
+- Verträge: **[docs/SAFE_STATE.md](docs/SAFE_STATE.md)** + **[docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md)**.
 
 ---
 
