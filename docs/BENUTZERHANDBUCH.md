@@ -1,6 +1,6 @@
 # mykilOS 6 — Benutzerhandbuch
 
-**Stetige Mitschrift aller Funktionen. Stand: 2026-06-29 · Version 6.4.0**
+**Stetige Mitschrift aller Funktionen. Stand: 2026-06-29 · Version 6.5.0**
 Jede neue Funktion wird hier beim Build dokumentiert. Dieses Dokument ist kein
 Abschlussdokument — es wächst mit der App.
 
