@@ -235,53 +235,31 @@ struct ContentView: View {
 
     private var shell: some View {
         HStack(spacing: 0) {
-            if !sidebarCollapsed {
-                SidebarView(
-                    selection: $module,
-                    onOpenProfile: {
-                        if appState.profile.profile?.isComplete == true { module = .settings }
-                        else { showOnboarding = true }
-                    },
-                    onToggleSidebar: {
-                        withAnimation(.easeInOut(duration: 0.22)) { sidebarCollapsed.toggle() }
-                    }
-                )
-                .fixedSize(horizontal: true, vertical: false)
-                .layoutPriority(1)
+            // Sidebar ist IMMER sichtbar — sidebarCollapsed steuert jetzt nur
+            // kompakt (nur Icons) vs. breit; der Brand-Button oben togglet das.
+            SidebarView(
+                selection: $module,
+                isCompact: $sidebarCollapsed,
+                onOpenProfile: {
+                    if appState.profile.profile?.isComplete == true { module = .settings }
+                    else { showOnboarding = true }
+                }
+            )
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(1)
+            .zIndex(1)
+            Divider()
+                .overlay(MykColor.line.color)
                 .zIndex(1)
-                .transition(.move(edge: .leading))
-                Divider()
-                    .overlay(MykColor.line.color)
-                    .zIndex(1)
-                    .transition(.move(edge: .leading))
-            }
             detailPane
-                .overlay(alignment: .topLeading) { sidebarToggleButton }
         }
         .background(MykColor.paper.color)
-        // minWidth schrumpft wenn Sidebar eingeklappt (212 px weniger).
-        .frame(minWidth: sidebarCollapsed ? 888 : 1100,
+        // minWidth schrumpft im Kompakt-Modus (Sidebar 212 → 64 px).
+        .frame(minWidth: sidebarCollapsed ? 960 : 1100,
                maxWidth: .infinity,
                minHeight: 720, maxHeight: .infinity)
-        .animation(.easeInOut(duration: 0.22), value: sidebarCollapsed)
+        .animation(.spring(response: 0.34, dampingFraction: 0.82), value: sidebarCollapsed)
         .disabled(isOnboardingUp)
-    }
-
-    private var sidebarToggleButton: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.22)) { sidebarCollapsed.toggle() }
-        } label: {
-            Image(systemName: sidebarCollapsed ? "sidebar.left" : "sidebar.left")
-                .symbolVariant(sidebarCollapsed ? .none : .slash)
-                .font(.mykSmall)
-                .foregroundStyle(MykColor.faint.color)
-                .frame(width: 28, height: 28)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.top, MykSpace.s5)
-        .padding(.leading, MykSpace.s5)
-        .help(sidebarCollapsed ? "Sidebar einblenden (⌘⇧S)" : "Sidebar ausblenden (⌘⇧S)")
     }
 
     /// Harte Layout-Grenze zwischen Sidebar und Modulinhalt.
@@ -488,7 +466,7 @@ struct AppCommands: Commands {
             .keyboardShortcut(",", modifiers: .command)
         }
         CommandMenu("Navigation") {
-            Button(sidebarCollapsed ? "Sidebar einblenden" : "Sidebar ausblenden") {
+            Button(sidebarCollapsed ? "Sidebar ausklappen" : "Sidebar einklappen") {
                 withAnimation(.easeInOut(duration: 0.22)) { sidebarCollapsed.toggle() }
             }
             .keyboardShortcut("s", modifiers: [.command, .shift])
