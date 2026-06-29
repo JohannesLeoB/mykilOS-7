@@ -682,21 +682,34 @@ struct ReadDriveFileTool: AssistantTool {
 // Bewusst nur lokale, nutzer-eigene Notizen (kein externer Schreibzugriff). Jeder
 // Lauf wird von der ConversationEngine als DataFlow-Handshake protokolliert.
 
+// Liest die injizierte Fokus-Projektnummer (`_projektID`) aus dem Tool-Input.
+// `_projektID` setzt die Registry aus dem Chat-Scope (kein vom Modell gesendeter Key).
+enum AssistantScope {
+    static func projectID(from input: [String: String]) -> String? {
+        let value = (input["_projektID"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
+    }
+}
+
 struct CreateNoteTool: AssistantTool {
     private let store: AssistantNotesStore
     init(store: AssistantNotesStore) { self.store = store }
     var name: String { "create_note" }
     var description: String {
         "Legt eine persistente Notiz/Erinnerung an (lokal gespeichert, überlebt den "
-        + "Chat-/App-Neustart). Nutze es, wenn der Nutzer etwas notieren oder sich erinnern lassen will."
+        + "Chat-/App-Neustart). Nutze es, wenn der Nutzer etwas notieren oder sich erinnern lassen will. "
+        + "Im Projekt-Chat wird die Notiz automatisch diesem Projekt zugeordnet."
     }
     var parameters: [ToolParameter] { [ToolParameter(name: "text", description: "Der Notiztext")] }
     func run(input: [String: String]) async -> ToolRunResult {
         let text = (input["text"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard text.isEmpty == false else { return ToolRunResult(text: "Kein Notiztext angegeben.", isError: true) }
+        let pid = AssistantScope.projectID(from: input)
         do {
-            let note = try await store.create(text)
-            return ToolRunResult(text: "Notiz angelegt [\(note.ref)]: \(note.body)")
+            let note = try await store.create(text, projectID: pid)
+            var msg = "Notiz angelegt [\(note.ref)]"
+            if let p = note.projectID { msg += " (Projekt \(p))" }
+            return ToolRunResult(text: msg + ": \(note.body)")
         } catch {
             return ToolRunResult(text: "Notiz konnte nicht gespeichert werden: \(error.localizedDescription)", isError: true)
         }
@@ -707,14 +720,25 @@ struct ListNotesTool: AssistantTool {
     private let store: AssistantNotesStore
     init(store: AssistantNotesStore) { self.store = store }
     var name: String { "list_notes" }
-    var description: String { "Listet alle gespeicherten Notizen/Erinnerungen (neueste zuerst) mit Kurzbezug." }
-    var parameters: [ToolParameter] { [] }
+    var description: String {
+        "Listet gespeicherte Notizen/Erinnerungen (neueste zuerst) mit Kurzbezug. Im "
+        + "Projekt-Chat standardmäßig die Notizen DIESES Projekts plus die globalen; "
+        + "mit alle=true alle Projekte."
+    }
+    var parameters: [ToolParameter] {
+        [ToolParameter(name: "alle", description: "true = Notizen aller Projekte, sonst nur das aktuelle + globale")]
+    }
     func run(input: [String: String]) async -> ToolRunResult {
+        let pid = AssistantScope.projectID(from: input)
+        let alle = (input["alle"] ?? "").lowercased() == "true"
         do {
-            let notes = try await store.all()
+            let notes = (alle || pid == nil) ? try await store.all() : try await store.scoped(to: pid)
             guard notes.isEmpty == false else { return ToolRunResult(text: "Keine Notizen gespeichert.") }
             let fmt = DateFormatter(); fmt.dateFormat = "dd.MM.yy HH:mm"; fmt.locale = Locale(identifier: "de_DE")
-            let lines = notes.map { "• [\($0.ref)] \($0.body) (\(fmt.string(from: $0.updatedAt)))" }
+            let lines = notes.map { note -> String in
+                let tag = note.projectID.map { " · Projekt \($0)" } ?? ""
+                return "• [\(note.ref)] \(note.body)\(tag) (\(fmt.string(from: note.updatedAt)))"
+            }
             return ToolRunResult(text: lines.joined(separator: "\n"))
         } catch {
             return ToolRunResult(text: "Notizen konnten nicht geladen werden: \(error.localizedDescription)", isError: true)
@@ -809,7 +833,8 @@ struct CreateTaskTool: AssistantTool {
     var description: String {
         "Legt eine persistente Aufgabe/Erinnerung an (lokal, überlebt den Neustart). "
         + "Nutze es für interne Memos und To-dos, die der Nutzer sich selbst setzt. "
-        + "Optionales Fälligkeitsdatum als ISO (yyyy-MM-dd)."
+        + "Optionales Fälligkeitsdatum als ISO (yyyy-MM-dd). Im Projekt-Chat wird die "
+        + "Aufgabe automatisch diesem Projekt zugeordnet."
     }
     var parameters: [ToolParameter] {
         [ToolParameter(name: "titel", description: "Worum geht die Aufgabe"),
@@ -819,9 +844,12 @@ struct CreateTaskTool: AssistantTool {
         let titel = (input["titel"] ?? input["text"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         guard titel.isEmpty == false else { return ToolRunResult(text: "Kein Aufgabentitel angegeben.", isError: true) }
         let due = DueDateParser.parse(input["faellig"])
+        let pid = AssistantScope.projectID(from: input)
         do {
-            let task = try await store.create(titel, dueDate: due)
-            var msg = "Aufgabe angelegt [\(task.ref)]: \(task.title)"
+            let task = try await store.create(titel, dueDate: due, projectID: pid)
+            var msg = "Aufgabe angelegt [\(task.ref)]"
+            if let p = task.projectID { msg += " (Projekt \(p))" }
+            msg += ": \(task.title)"
             if let d = task.dueDate { msg += " (fällig \(assistantTaskDateFormatter.string(from: d)))" }
             return ToolRunResult(text: msg)
         } catch {
@@ -834,20 +862,29 @@ struct ListTasksTool: AssistantTool {
     private let store: AssistantTasksStore
     init(store: AssistantTasksStore) { self.store = store }
     var name: String { "list_tasks" }
-    var description: String { "Listet die Aufgaben/Erinnerungen (offene zuerst, nach Fälligkeit) mit Kurzbezug und Status." }
+    var description: String {
+        "Listet Aufgaben/Erinnerungen (offene zuerst, nach Fälligkeit) mit Kurzbezug und "
+        + "Status. Im Projekt-Chat standardmäßig die Aufgaben DIESES Projekts plus globale; "
+        + "mit alle=true alle Projekte."
+    }
     var parameters: [ToolParameter] {
-        [ToolParameter(name: "nur_offen", description: "true = nur offene Aufgaben, sonst alle")]
+        [ToolParameter(name: "nur_offen", description: "true = nur offene Aufgaben, sonst alle"),
+         ToolParameter(name: "alle", description: "true = Aufgaben aller Projekte, sonst nur das aktuelle + globale")]
     }
     func run(input: [String: String]) async -> ToolRunResult {
         let nurOffen = (input["nur_offen"] ?? "").lowercased() == "true"
+        let alle = (input["alle"] ?? "").lowercased() == "true"
+        let pid = AssistantScope.projectID(from: input)
         do {
-            let tasks = nurOffen ? try await store.open() : try await store.all()
+            var tasks = (alle || pid == nil) ? try await store.all() : try await store.scoped(to: pid)
+            if nurOffen { tasks = tasks.filter { !$0.done } }
             guard tasks.isEmpty == false else {
                 return ToolRunResult(text: nurOffen ? "Keine offenen Aufgaben." : "Keine Aufgaben gespeichert.")
             }
             let lines = tasks.map { task -> String in
                 let box = task.done ? "✓" : "○"
                 var line = "\(box) [\(task.ref)] \(task.title)"
+                if let p = task.projectID { line += " · Projekt \(p)" }
                 if let d = task.dueDate { line += " (fällig \(assistantTaskDateFormatter.string(from: d)))" }
                 return line
             }

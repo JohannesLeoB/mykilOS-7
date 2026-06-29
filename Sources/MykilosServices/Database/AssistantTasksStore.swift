@@ -9,6 +9,7 @@ struct AssistantTaskRecord: Codable, FetchableRecord, PersistableRecord {
     var title: String
     var done: Bool
     var dueDate: Double?    // timeIntervalSince1970, optional
+    var projectID: String?
     var createdAt: Double
     var updatedAt: Double
 
@@ -17,6 +18,7 @@ struct AssistantTaskRecord: Codable, FetchableRecord, PersistableRecord {
         title = task.title
         done = task.done
         dueDate = task.dueDate?.timeIntervalSince1970
+        projectID = task.projectID
         createdAt = task.createdAt.timeIntervalSince1970
         updatedAt = task.updatedAt.timeIntervalSince1970
     }
@@ -24,6 +26,7 @@ struct AssistantTaskRecord: Codable, FetchableRecord, PersistableRecord {
     var toDomain: AssistantTask {
         AssistantTask(id: id, title: title, done: done,
                       dueDate: dueDate.map { Date(timeIntervalSince1970: $0) },
+                      projectID: projectID,
                       createdAt: Date(timeIntervalSince1970: createdAt),
                       updatedAt: Date(timeIntervalSince1970: updatedAt))
     }
@@ -64,11 +67,19 @@ public actor AssistantTasksStore {
         try all().filter { !$0.done }
     }
 
-    /// Legt eine neue Aufgabe an und gibt sie zurück.
+    /// Aufgaben im Projekt-Bereich: ist `projectID` gesetzt, die Aufgaben dieses Projekts
+    /// PLUS die globalen (projectID == nil); ist es nil, alle. Gleiche Sortierung wie all().
+    public func scoped(to projectID: String?) throws -> [AssistantTask] {
+        let tasks = try all()
+        guard let projectID, projectID.isEmpty == false else { return tasks }
+        return tasks.filter { $0.projectID == projectID || $0.projectID == nil }
+    }
+
+    /// Legt eine neue Aufgabe an und gibt sie zurück. `projectID` nil = global.
     @discardableResult
-    public func create(_ title: String, dueDate: Date? = nil, now: Date = Date()) throws -> AssistantTask {
+    public func create(_ title: String, dueDate: Date? = nil, projectID: String? = nil, now: Date = Date()) throws -> AssistantTask {
         let task = AssistantTask(title: title.trimmingCharacters(in: .whitespacesAndNewlines),
-                                 dueDate: dueDate, createdAt: now, updatedAt: now)
+                                 dueDate: dueDate, projectID: projectID, createdAt: now, updatedAt: now)
         try db.write { conn in try AssistantTaskRecord(from: task).insert(conn) }
         return task
     }

@@ -7,18 +7,20 @@ struct AssistantNoteRecord: Codable, FetchableRecord, PersistableRecord {
     static var databaseTableName: String { "assistantNotes" }
     var id: String
     var body: String
+    var projectID: String?
     var createdAt: Double   // timeIntervalSince1970
     var updatedAt: Double
 
     init(from note: AssistantNote) {
         id = note.id
         body = note.body
+        projectID = note.projectID
         createdAt = note.createdAt.timeIntervalSince1970
         updatedAt = note.updatedAt.timeIntervalSince1970
     }
 
     var toDomain: AssistantNote {
-        AssistantNote(id: id, body: body,
+        AssistantNote(id: id, body: body, projectID: projectID,
                       createdAt: Date(timeIntervalSince1970: createdAt),
                       updatedAt: Date(timeIntervalSince1970: updatedAt))
     }
@@ -45,11 +47,19 @@ public actor AssistantNotesStore {
         }.map(\.toDomain)
     }
 
-    /// Legt eine neue Notiz an und gibt sie zurück.
+    /// Notizen im Projekt-Bereich: ist `projectID` gesetzt, die Notizen dieses Projekts
+    /// PLUS die globalen (projectID == nil); ist es nil, alle. Neueste zuerst.
+    public func scoped(to projectID: String?) throws -> [AssistantNote] {
+        let notes = try all()
+        guard let projectID, projectID.isEmpty == false else { return notes }
+        return notes.filter { $0.projectID == projectID || $0.projectID == nil }
+    }
+
+    /// Legt eine neue Notiz an und gibt sie zurück. `projectID` nil = global.
     @discardableResult
-    public func create(_ body: String, now: Date = Date()) throws -> AssistantNote {
+    public func create(_ body: String, projectID: String? = nil, now: Date = Date()) throws -> AssistantNote {
         let note = AssistantNote(body: body.trimmingCharacters(in: .whitespacesAndNewlines),
-                                 createdAt: now, updatedAt: now)
+                                 projectID: projectID, createdAt: now, updatedAt: now)
         try db.write { conn in try AssistantNoteRecord(from: note).insert(conn) }
         return note
     }

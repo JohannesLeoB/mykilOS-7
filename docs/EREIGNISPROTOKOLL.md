@@ -30,6 +30,31 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-29 · Claude Code (Opus) — Memo-Reconciliation + S10: Notizen/Aufgaben pro Projekt
+
+```
+Branch: polish/dampflok; 348 → 351 Tests grün
+Build:  ✅ swift build grün
+```
+
+Johannes leitete ein Memo des **In-App-Assistenten** weiter (fehlende Integrationen).
+Statt es 1:1 zu glauben: Multi-Agent-Audit (37 Agenten) jeder Memo-Zeile gegen den echten
+Code. Kernbefund: **P1 „Drive blind" + „Kontakte nicht abrufbar" sind code-fertig** (S2/S5/S8/S9)
+und nur durch **M2 (Google Re-Consent)** blockiert — nicht durch fehlenden Code. Echte,
+ohne M2 baubare Lücken: Notizen/Aufgaben pro Projekt, ClickUp projektübergreifend,
+Gmail-Limit, Airtable-Kundendetails.
+
+**S10 — Notizen & Aufgaben pro Projekt** (Memo P2 „Notizsystem pro Projekt"):
+- `projectID` an `AssistantNote`/`AssistantTask` (Kit) + Records + Stores (`scoped(to:)` =
+  Projekt-Einträge + globale). GRDB-Migration **v10** additiv (Spalte nullable, NULL=global,
+  kein Datenverlust an Alt-Einträgen).
+- Tools taggen automatisch via injiziertem `_projektID` (`AssistantScope`-Helfer): im
+  Projekt-Chat angelegte Notiz/Aufgabe gehört dem Projekt. `list_notes`/`list_tasks` zeigen
+  standardmäßig Projekt+global, `alle=true` = alle Projekte. Kataloge-Tabs zeigen Projekt-Badge.
+- +3 Tests (Scope-Filter, projectID-Cold-Start, Projekt-Chat-Tagging via Registry).
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — S9: Google Contacts Schreibzugriff (create_contact)
 
 ```

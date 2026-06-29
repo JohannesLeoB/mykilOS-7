@@ -12,15 +12,19 @@ public struct AssistantTask: Codable, Identifiable, Equatable, Sendable {
     public var title: String
     public var done: Bool
     public var dueDate: Date?       // optionale Erinnerung
+    /// Projektnummer (z. B. „2026-015"), zu der die Aufgabe gehört — nil = projektübergreifend/global.
+    public var projectID: String?
     public let createdAt: Date
     public var updatedAt: Date
 
     public init(id: String = UUID().uuidString, title: String, done: Bool = false,
-                dueDate: Date? = nil, createdAt: Date = Date(), updatedAt: Date = Date()) {
+                dueDate: Date? = nil, projectID: String? = nil,
+                createdAt: Date = Date(), updatedAt: Date = Date()) {
         self.id = id
         self.title = title
         self.done = done
         self.dueDate = dueDate
+        self.projectID = projectID
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

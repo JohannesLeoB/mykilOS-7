@@ -121,8 +121,13 @@ struct NotizenKatalogTab: View {
                                 Image(systemName: "note.text").font(.mykBody).foregroundStyle(MykColor.personal.color)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(note.body).font(.mykBody).foregroundStyle(MykColor.ink.color)
-                                    Text("[\(note.ref)] \u{00B7} \(Self.stamp.string(from: note.updatedAt))")
-                                        .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                                    HStack(spacing: MykSpace.s2) {
+                                        Text("[\(note.ref)] \u{00B7} \(Self.stamp.string(from: note.updatedAt))")
+                                            .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                                        if let pid = note.projectID {
+                                            Text(pid).font(.mykMono(9)).foregroundStyle(MykColor.personal.color)
+                                        }
+                                    }
                                 }
                                 Spacer()
                                 Button { delete(note) } label: {
@@ -220,9 +225,14 @@ struct AufgabenKatalogTab: View {
                                         .font(.mykBody)
                                         .foregroundStyle(task.done ? MykColor.muted.color : MykColor.ink.color)
                                         .strikethrough(task.done, color: MykColor.muted.color)
-                                    if let due = task.dueDate {
-                                        Text("fällig \(Self.stamp.string(from: due))")
-                                            .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                                    HStack(spacing: MykSpace.s2) {
+                                        if let due = task.dueDate {
+                                            Text("fällig \(Self.stamp.string(from: due))")
+                                                .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                                        }
+                                        if let pid = task.projectID {
+                                            Text(pid).font(.mykMono(9)).foregroundStyle(MykColor.tasks.color)
+                                        }
                                     }
                                 }
                                 Spacer()

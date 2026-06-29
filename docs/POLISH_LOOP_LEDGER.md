@@ -97,4 +97,14 @@ Jeder Schritt schließt eine real beobachtete Funktionslücke.
 | S6 | Aufgaben-Store + Assistent-Tools (Memos/Erinnerungen) | done | f2da028 | 342 | AssistantTask (Kit) + AssistantTasksStore (actor, GRDB v9) + create/list/complete/delete_task; optionales Fälligkeitsdatum; Weiche ASSISTANT_TASKS; AppState-Wiring; +8 Tests (inkl. Cold-Start) |
 | S7 | Kataloge: umsortierbare Unter-Tabs | done | dcec0ad | 342 | KatalogeView mit 4 Drag-umsortierbaren Tabs (Geräte/Kontakte/Notizen/Aufgaben), Reihenfolge in @AppStorage; Kontakte=People-Suche, Notizen/Aufgaben=lokale Stores mit Inline-Add/Toggle/Delete + sichtbarer Fehlerzeile; in KatalogeContentTabs.swift ausgelagert |
 | S8 | Kontakte-Widget im Projektdetail reparieren | done | 2472bd1 | 344 | Ursache: People-API `searchContacts` liefert beim kalten Index **deterministisch leer** (Warmup-Pflicht). Fix: stiller Warmup (leere Query) + Retry-once; Query-Normalisierung (Unterstrich→Space, „Fuckner_Huetter"). +2 Tests (buildWarmupURL, normalizedQuery) |
-| S9 | Google Contacts Schreibzugriff (`create_contact`) | done | (dieser Commit) | 348 | `GoogleContactsWriting` + `createContact` (People API), `ContactDraft`/`ContactCreateOutcome` (Kit), `create_contact`-Tool (nur Entwurf, kein Auto-Write), `.contactAction`-Block + `ContactActionCard` (Bestätigung→AppState.createContact→Audit `.contactCreated`), Weiche CONTACTS_CREATE. **Live-Test braucht M2 (Google Re-Consent, contacts-Scope).** +4 Tests |
+| S9 | Google Contacts Schreibzugriff (`create_contact`) | done | 4c1b816 | 348 | `GoogleContactsWriting` + `createContact` (People API), `ContactDraft`/`ContactCreateOutcome` (Kit), `create_contact`-Tool (nur Entwurf, kein Auto-Write), `.contactAction`-Block + `ContactActionCard` (Bestätigung→AppState.createContact→Audit `.contactCreated`), Weiche CONTACTS_CREATE. **Live-Test braucht M2 (Google Re-Consent, contacts-Scope).** +4 Tests |
+
+## Block 11 — Memo-Reconciliation (In-App-Assistent, 2026-06-29)
+
+Memo des In-App-Assistenten gegen den echten Code auditiert (Multi-Agent-Workflow, 37 Agenten).
+Befund: P1 (Drive/Kontakte) ist code-fertig, nur **M2-blockiert** (Google Re-Consent). Die echten,
+ohne M2 baubaren Lücken werden hier geschlossen.
+
+| ID | Titel | Status | Commit | Tests | Notiz |
+|----|-------|--------|--------|-------|-------|
+| S10 | Notizen & Aufgaben pro Projekt | done | (dieser Commit) | 351 | `projectID` an AssistantNote/AssistantTask + Stores (`scoped(to:)`) + GRDB v10 (additiv, NULL=global); Tools taggen via `_projektID` (AssistantScope), `list_*` scoped aufs Fokus-Projekt + global (`alle=true` = alle); Kataloge zeigt Projekt-Badge. +3 Tests (Scope-Filter, Cold-Start, Projekt-Chat-Tagging) |

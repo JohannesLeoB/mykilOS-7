@@ -262,8 +262,8 @@ Wenn Tools aktiviert sind, kann der Assistent folgende Aktionen ausführen
 | `query_studio_knowledge` | Fragt Slack-Brain | toolsEnabled |
 | `search_katalog` | Sucht Gerätekatalog (Hersteller, Artikelnr., VK) | toolsEnabled, kein SchaetzModus |
 | `lookup_kunde` | Sucht Airtable-Kunden (Name/Kundennr./Projektanzahl, lokaler Sync-Cache) | toolsEnabled |
-| `create_note` / `list_notes` / `update_note` / `delete_note` | **Notizen/Erinnerungen** anlegen, auflisten, ändern, löschen (lokal, persistent) — Schreib-Tools, nur eigene lokale Daten | toolsEnabled |
-| `create_task` / `list_tasks` / `complete_task` / `delete_task` | **Aufgaben/To-dos** anlegen, auflisten, abhaken, löschen (lokal, persistent, optionales Fälligkeitsdatum) — Schreib-Tools, nur eigene lokale Daten | toolsEnabled |
+| `create_note` / `list_notes` / `update_note` / `delete_note` | **Notizen/Erinnerungen** anlegen, auflisten, ändern, löschen (lokal, persistent). Im Projekt-Chat automatisch dem Projekt zugeordnet; `list_notes` zeigt Projekt+global (`alle=true` = alle) | toolsEnabled |
+| `create_task` / `list_tasks` / `complete_task` / `delete_task` | **Aufgaben/To-dos** anlegen, auflisten, abhaken, löschen (lokal, persistent, optionales Fälligkeitsdatum). Im Projekt-Chat automatisch dem Projekt zugeordnet | toolsEnabled |
 
 Alle Tool-Calls werden via `DataFlowLogger` lokal protokolliert.
 

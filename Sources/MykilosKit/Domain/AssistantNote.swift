@@ -8,13 +8,16 @@ import Foundation
 public struct AssistantNote: Codable, Identifiable, Equatable, Sendable {
     public let id: String
     public var body: String
+    /// Projektnummer (z. B. „2026-015"), zu der die Notiz gehört — nil = projektübergreifend/global.
+    public var projectID: String?
     public let createdAt: Date
     public var updatedAt: Date
 
-    public init(id: String = UUID().uuidString, body: String,
+    public init(id: String = UUID().uuidString, body: String, projectID: String? = nil,
                 createdAt: Date = Date(), updatedAt: Date = Date()) {
         self.id = id
         self.body = body
+        self.projectID = projectID
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

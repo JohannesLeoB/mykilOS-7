@@ -180,6 +180,18 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v10_assistant_project_scope — Notizen/Aufgaben pro Projekt (Memo-Wunsch).
+        // projectID = Projektnummer (z. B. „2026-015"); NULL = projektübergreifend/global.
+        // Additiv: bestehende Einträge bleiben global (NULL), kein Datenverlust.
+        migrator.registerMigration("v10_assistant_project_scope") { db in
+            try db.alter(table: "assistantNotes") { t in
+                t.add(column: "projectID", .text).indexed()
+            }
+            try db.alter(table: "assistantTasks") { t in
+                t.add(column: "projectID", .text).indexed()
+            }
+        }
+
         try migrator.migrate(queue)
     }
 
