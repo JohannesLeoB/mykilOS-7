@@ -551,6 +551,75 @@ struct LookupKundeTool: AssistantTool {
     }
 }
 
+// MARK: - FindOffersTool (S2, read-only) — Angebote im Drive finden
+// Kapselt OffersCollector (rekursiv, klassifiziert eingehend/ausgehend). Im Projekt-
+// Chat nutzt es den injizierten _driveFolderID; im globalen Chat löst es ein per
+// 'projekt' genanntes Projekt über die ProjectDirectory auf.
+struct FindOffersTool: AssistantTool {
+    private let client: GoogleDriveFetching
+    private let directory: ProjectDirectory?
+    init(client: GoogleDriveFetching = GoogleDriveClient(), directory: ProjectDirectory? = nil) {
+        self.client = client
+        self.directory = directory
+    }
+
+    var name: String { "find_offers" }
+    var description: String {
+        "Findet Angebote und Rechnungen im Google-Drive-Projektordner (eingehende UND "
+        + "ausgehende, auch verschachtelt z. B. in '01 INFOS'). Nur lesen. Im Projekt-Chat "
+        + "automatisch fürs offene Projekt; sonst das Projekt über 'projekt' (Name/Nummer/Kunde) angeben."
+    }
+    var parameters: [ToolParameter] {
+        [ToolParameter(name: "projekt", description: "Projekt (Name, Nummer oder Kunde) — nur nötig ohne offenes Projekt", required: false)]
+    }
+
+    func run(input: [String: String]) async -> ToolRunResult {
+        var folderID = (input["_driveFolderID"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        var label = "dem aktuellen Projekt"
+        if folderID.isEmpty {
+            let q = (input["projekt"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard q.isEmpty == false else {
+                return ToolRunResult(text: "Für welches Projekt? Nenne Name, Nummer oder Kunde.", isError: true)
+            }
+            guard let entry = directory?.resolve(q) else {
+                return ToolRunResult(text: "Projekt \(q) nicht gefunden.", isError: true)
+            }
+            guard let fid = entry.driveFolderID, fid.isEmpty == false else {
+                return ToolRunResult(text: "Für \(entry.title) (\(entry.projectNumber)) ist kein Drive-Ordner verknüpft.", isError: true)
+            }
+            folderID = fid
+            label = "\(entry.title) (\(entry.projectNumber))"
+        }
+        do {
+            let result = try await OffersCollector.load(rootFolderID: folderID, client: client)
+            return ToolRunResult(text: Self.format(result, label: label))
+        } catch GoogleDriveError.notConnected {
+            return ToolRunResult(text: "Google Drive nicht verbunden. In den Einstellungen verbinden.", isError: true)
+        } catch {
+            return ToolRunResult(text: "Angebots-Suche fehlgeschlagen: \(error.localizedDescription)", isError: true)
+        }
+    }
+
+    private static func format(_ r: OffersCollector.Result, label: String) -> String {
+        guard r.incoming.isEmpty == false || r.outgoing.isEmpty == false else {
+            return "Keine Angebote/Rechnungen in \(label) gefunden."
+        }
+        let fmt = DateFormatter(); fmt.dateFormat = "dd.MM.yy"; fmt.locale = Locale(identifier: "de_DE")
+        func lines(_ offers: [ClassifiedOffer]) -> String {
+            offers.prefix(20).map { o in
+                var parts = ["• \(o.file.name) [\(o.type.label)]"]
+                if let nr = o.belegNummer { parts.append("· \(nr)") }
+                if let d = o.file.modifiedAt { parts.append("· \(fmt.string(from: d))") }
+                return parts.joined(separator: " ")
+            }.joined(separator: "\n")
+        }
+        var s = "Angebote in \(label):"
+        if r.outgoing.isEmpty == false { s += "\n\nAusgehend (\(r.outgoing.count)):\n" + lines(r.outgoing) }
+        if r.incoming.isEmpty == false { s += "\n\nEingehend (\(r.incoming.count)):\n" + lines(r.incoming) }
+        return s
+    }
+}
+
 // MARK: - Notiz-Tools (S4) — die EINZIGEN Schreib-Tools des Assistenten.
 // Bewusst nur lokale, nutzer-eigene Notizen (kein externer Schreibzugriff). Jeder
 // Lauf wird von der ConversationEngine als DataFlow-Handshake protokolliert.
@@ -667,13 +736,15 @@ public struct AssistantToolRegistry: Sendable {
         kalkulationsEngine: (any KalkulationsEngineProviding)? = nil,
         deviceCatalog: DeviceCatalog? = DeviceCatalog.loadDefault(),
         kundenDirectory: KundenBrain? = nil,
-        notesStore: AssistantNotesStore? = nil
+        notesStore: AssistantNotesStore? = nil,
+        projectDirectory: ProjectDirectory? = nil
     ) -> AssistantToolRegistry {
         var tools: [any AssistantTool] = [
             SearchGmailTool(client: gmail, cache: gmailCache),
             ListCalendarTool(client: calendar),
             SuggestCalendarEventTool(),
             ListDriveFolderTool(client: drive),
+            FindOffersTool(client: drive, directory: projectDirectory),
             SearchContactsTool(client: contacts),
             ListClickUpTasksTool(client: clickUp),
             SearchKatalogTool(catalog: deviceCatalog),

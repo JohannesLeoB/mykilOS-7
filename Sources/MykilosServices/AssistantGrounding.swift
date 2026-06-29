@@ -21,7 +21,8 @@ public enum AssistantGrounding {
         clickUpEnabled: Bool = false,
         studioBrainEnabled: Bool = false,
         katalogEnabled: Bool = false,
-        notesEnabled: Bool = false
+        notesEnabled: Bool = false,
+        offersEnabled: Bool = false
     ) -> String {
         var lines: [String] = []
         var intro = "Du bist der mykilOS-Projektassistent für ein Design-/Küchenstudio. "
@@ -66,7 +67,10 @@ public enum AssistantGrounding {
                 "- suggest_calendar_event: erzeugt einen Kalender-Link (kein API-Write).",
             ]
             if driveEnabled {
-                toolLines.append("- list_drive_folder: Dateien und Unterordner im verlinkten Drive-Projektordner (nur Metadaten lesen). Mit 'unterordner' gezielt z. B. in '01 ANGEBOTE' schauen.")
+                toolLines.append("- list_drive_folder: Dateien und Unterordner im verlinkten Drive-Projektordner (nur Metadaten lesen). Mit 'unterordner' gezielt z. B. in '01 INFOS' schauen.")
+            }
+            if offersEnabled {
+                toolLines.append("- find_offers: Angebote & Rechnungen im Drive finden (eingehend/ausgehend, auch verschachtelt in '01 INFOS'). Im Projekt-Chat automatisch; sonst Projekt per 'projekt' nennen. Nutze DIESES Werkzeug für Angebots-/Rechnungsfragen statt zu sagen, Drive sei außer Reichweite.")
             }
             if contactsEnabled {
                 toolLines.append("- search_contacts: Kontakte des verbundenen Accounts per Freitext suchen.")

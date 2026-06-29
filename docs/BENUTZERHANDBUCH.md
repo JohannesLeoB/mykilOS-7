@@ -131,7 +131,7 @@ Alle Drive-Dateien des Accounts, nach Änderungszeit sortiert.
 Projektliste links, Angebots-PDFs des gewählten Projekts rechts.
 
 ### Integrationen (⌘7)
-Datenstrom-Schaltzentrale: zeigt alle 27 Weichen aus `DatastromManifest.json`
+Datenstrom-Schaltzentrale: zeigt alle 28 Weichen aus `DatastromManifest.json`
 mit letztem Handshake-Zeitstempel und Verbindungsstatus (grün/rot/grau).
 Jede Weiche hat eine eindeutige `Integrations-ID` die exakt dem `DataFlowLogger`-Eintrag
 im Code entspricht.
@@ -245,6 +245,7 @@ Wenn Tools aktiviert sind, kann der Assistent folgende Aktionen ausführen
 | `list_calendar_events` | Liest Kalender-Termine | toolsEnabled |
 | `suggest_calendar_event` | Bereitet einen Termin vor → Aktionskarte „Im Kalender öffnen" (kanonischer Google-Link, kein API-Write, KEIN fabrizierter Inline-Link) | toolsEnabled |
 | `list_drive_folder` | Listet Drive-Ordner-Inhalt | toolsEnabled + driveFolderID |
+| `find_offers` | Findet Angebote/Rechnungen im Drive (rekursiv, auch in „01 INFOS"); global per Projektname | toolsEnabled |
 | `list_clickup_tasks` | Liest ClickUp-Aufgaben | toolsEnabled + clickUpListID |
 | `search_contacts` | Sucht Google-Kontakte | toolsEnabled |
 | `schaetze_projekt` | Kostenschätzung (lokal) | toolsEnabled oder schaetzModus |
@@ -283,7 +284,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 
 ---
 
-### Alle Weichen (Stand 2026-06-29 · 27 Weichen)
+### Alle Weichen (Stand 2026-06-29 · 28 Weichen)
 
 #### Airtable
 
@@ -304,6 +305,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `DRIVE_OFFERS_TAB` | Angebote-Tab | READ | onDemand (Tab öffnen) | read-only | Gleiche Erkennungslogik wie `DriveOfferWatcher.detectOffers`. |
 | `DRIVE_MATERIAL_TAB` | Material-Tab | READ | onDemand (Tab öffnen) | read-only | Tolerant per Ordnername gematcht (`05 Material` o.ä.). |
 | `DRIVE_ASSISTANT_LIST` | Drive-Ordner-Listing (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `list_drive_folder`. Nur Metadaten, nie Dateiinhalte. Eigene Weiche (Mandate E). |
+| `DRIVE_OFFERS_FIND` | Angebote-Suche (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `find_offers` über `OffersCollector` (rekursiv, klassifiziert). Findet 04/05 auch verschachtelt in „01 INFOS"; global per Projektname auflösbar (S2). |
 
 #### Google Gmail
 

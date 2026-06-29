@@ -249,8 +249,10 @@ public final class AppState {
     // KalkulationsEngine, sonst verschwände schaetze_projekt.
     private func refreshAssistantKundenWissen() {
         let brain = KundenBrain(customers: registry.customers, projects: registry.projects)
+        let dir = ProjectDirectory(projects: registry.projects, customers: registry.customers)
         conversation.updateRegistry(.standard(
-            kalkulationsEngine: kalkulationsEngine, kundenDirectory: brain, notesStore: assistantNotes))
+            kalkulationsEngine: kalkulationsEngine, kundenDirectory: brain,
+            notesStore: assistantNotes, projectDirectory: dir))
     }
 
     // MARK: - Backup (Mandate G)

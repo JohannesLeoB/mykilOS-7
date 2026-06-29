@@ -161,6 +161,13 @@
     "link": "mykilos://datastream/DRIVE_ASSISTANT_LIST"
   },
   {
+    "integrationID": "DRIVE_OFFERS_FIND",
+    "name": "Angebote-Suche (Assistent)",
+    "system": "Google Drive",
+    "direction": "READ",
+    "link": "mykilos://datastream/DRIVE_OFFERS_FIND"
+  },
+  {
     "integrationID": "CALENDAR_SUGGEST",
     "name": "Kalender-Termin-Vorschlag (nur Link)",
     "system": "Google Calendar",

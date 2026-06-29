@@ -116,13 +116,15 @@ public final class ConversationEngine {
         let studioBrainEnabled = !schaetzModusEnabled && has("query_studio_knowledge")
         let katalogEnabled    = !schaetzModusEnabled && has("search_katalog")
         let notesEnabled      = !schaetzModusEnabled && has("create_note")
+        let offersEnabled     = !schaetzModusEnabled && has("find_offers")
         let system = AssistantGrounding.systemPrompt(
             profile: profile, focusedProjectID: effectiveProjectID,
             signals: signals, projects: projects, now: now, toolsEnabled: effectiveToolsEnabled,
             kalkulationsEnabled: kalkulationsEnabled,
             driveEnabled: driveEnabled, contactsEnabled: contactsEnabled,
             clickUpEnabled: clickUpEnabled, studioBrainEnabled: studioBrainEnabled,
-            katalogEnabled: katalogEnabled, notesEnabled: notesEnabled
+            katalogEnabled: katalogEnabled, notesEnabled: notesEnabled,
+            offersEnabled: offersEnabled
         )
         // Schätzchat bekommt NUR schaetze_projekt — kein Mail/Kalender/Drive-Leak.
         let tools: [ClaudeToolDefinition]
