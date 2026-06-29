@@ -435,6 +435,7 @@ struct AirtableOfferSyncRecord: Codable, FetchableRecord, PersistableRecord {
     var importedAt: String
     var reviewActionID: String?
     var syncStatus: String
+    var offerDate: String?
 
     init(_ e: AirtableOfferSyncEntry) {
         pk = nil
@@ -448,6 +449,7 @@ struct AirtableOfferSyncRecord: Codable, FetchableRecord, PersistableRecord {
         importedAt = LearningCodec.string(from: e.importedAt)
         reviewActionID = e.reviewActionID
         syncStatus = e.syncStatus
+        offerDate = e.offerDate
     }
 
     var domain: AirtableOfferSyncEntry {
@@ -461,7 +463,8 @@ struct AirtableOfferSyncRecord: Codable, FetchableRecord, PersistableRecord {
             docSHA256: docSHA256,
             importedAt: LearningCodec.date(from: importedAt),
             reviewActionID: reviewActionID,
-            syncStatus: syncStatus
+            syncStatus: syncStatus,
+            offerDate: offerDate
         )
     }
 }

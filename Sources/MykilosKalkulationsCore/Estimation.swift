@@ -163,6 +163,7 @@ public final class EvidenceBasedEstimator {
                 if CarryforwardRule.isForbiddenContext(anchor.evidenceQuote) && !carryforwardSafe {
                     return false
                 }
+                if !densityCompatible(anchor: anchor, requirement: requirement) { return false }
                 return scopeCompatible(anchor: anchor, requirement: requirement)
             }
             .map { anchor in (anchor: anchor, score: score(anchor: anchor, requirement: requirement)) }
@@ -172,6 +173,22 @@ public final class EvidenceBasedEstimator {
                 return lhs.score > rhs.score
             }
             .map(\.anchor)
+    }
+
+    /// Dichtebewusster Ausschluss (SCOPE-006). Greift NUR bei küchenzeilenartigen
+    /// Anforderungen, wo der Ausstattungsgrad überhaupt eine Bedeutung hat, und NUR
+    /// wenn die Anfrage-Dichte bekannt ist. Schließt einen Anker aus, dessen
+    /// Ausstattungsgrad zwei Stufen oder mehr von der Anfrage abweicht (low ↔ high).
+    /// Unbekannt auf einer Seite → kein Ausschluss (ehrlich breites Band).
+    private func densityCompatible(anchor: CandidateReleaseDecision, requirement: ComponentRequirement) -> Bool {
+        let component = requirement.component
+        guard component.componentClass == .kitchenRun || component.componentClass == .aggregateKitchen else { return true }
+        let queryDensity = KitchenEquipmentDensity.classifyQuery(
+            drawerCount: component.drawerCount,
+            lengthM: component.unit == "lfm" ? component.quantity : component.widthM
+        )
+        guard queryDensity != .unknown else { return true }
+        return !queryDensity.isHardIncompatible(with: anchor.equipmentDensity)
     }
 
     private func scopeCompatible(anchor: CandidateReleaseDecision, requirement: ComponentRequirement) -> Bool {
@@ -220,6 +237,18 @@ public final class EvidenceBasedEstimator {
         }
         if component.componentClass == .baseUnit && lower.contains("60cm") { score += 1.0 }
         if component.componentClass == .kitchenRun && lower.contains("linoleum") { score += 0.25 }
+        // Ausstattungsgrad-Nähe belohnen (nur wenn beide Dichten bekannt). Gleiche Stufe
+        // stärker als benachbarte — so wandert ein passend ausgestatteter Anker nach oben,
+        // ohne dass ein unbekannter Anker bestraft wird.
+        if component.componentClass == .kitchenRun || component.componentClass == .aggregateKitchen {
+            let queryDensity = KitchenEquipmentDensity.classifyQuery(
+                drawerCount: component.drawerCount,
+                lengthM: component.unit == "lfm" ? component.quantity : component.widthM
+            )
+            if let queryLevel = queryDensity.level, let anchorLevel = anchor.equipmentDensity.level {
+                if queryLevel == anchorLevel { score += 0.6 } else if abs(queryLevel - anchorLevel) == 1 { score += 0.2 }
+            }
+        }
         if component.materials.contains("edelstahl") && lower.contains("edelstahl") { score += 0.7 }
         if lower.contains("alternative") || lower.contains("mehrpreis") { score -= 1.5 }
         return score

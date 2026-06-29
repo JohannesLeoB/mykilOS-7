@@ -134,9 +134,17 @@ public final class AppState {
         // Engine live: Baseline-Anker (eingebaut) + DeviceCatalog (lädt die echte
         // Preisbuch-CSV aus Application-Support, falls vorhanden — sonst nil-Lookup).
         // Muss vor ConversationEngine initialisiert werden, damit die Registry sie bekommt.
+        // Ein geteilter LearningStore für Engine UND gelernten Anker-Kanal (Phase 1,
+        // feat/tischler-predictor): der CompositeAnchorProvider legt die review-bestätigten
+        // eingehenden Angebote über den destillierten Seed-Korpus. Beide MÜSSEN dieselbe
+        // learning.sqlite sehen, sonst liest der Provider ein anderes Gate als die Engine schreibt.
+        let learningStore = LearningStore()
         let kalkulationsEngine = KalkulationsEngine(
-            provider: BrainSeedProvider(),
-            learningStore: LearningStore(),
+            provider: CompositeAnchorProvider(
+                primary: BrainSeedProvider(),
+                learned: LearnedAnchorProvider(store: learningStore)
+            ),
+            learningStore: learningStore,
             deviceCatalog: DeviceCatalog.loadDefault(),
             auditStore: audit   // bestätigte Anpassungen landen im Audit-Log
         )

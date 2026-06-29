@@ -100,6 +100,9 @@ public struct AirtableOfferSyncEntry: Codable, Equatable, Identifiable, Sendable
     public let importedAt: Date
     public let reviewActionID: String?
     public let syncStatus: String
+    /// Original-Angebotsdatum (roh aus Airtable). Basis der Zeitgewichtung im
+    /// LearnedAnchorProvider. Nullable: Altbestand vor v4 trägt es nicht.
+    public let offerDate: String?
 
     public init(
         id: String = UUID().uuidString,
@@ -111,7 +114,8 @@ public struct AirtableOfferSyncEntry: Codable, Equatable, Identifiable, Sendable
         docSHA256: String?,
         importedAt: Date = Date(),
         reviewActionID: String?,
-        syncStatus: String = "imported"
+        syncStatus: String = "imported",
+        offerDate: String? = nil
     ) {
         self.id = id
         self.airtableRecordID = airtableRecordID
@@ -123,6 +127,7 @@ public struct AirtableOfferSyncEntry: Codable, Equatable, Identifiable, Sendable
         self.importedAt = importedAt
         self.reviewActionID = reviewActionID
         self.syncStatus = syncStatus
+        self.offerDate = offerDate
     }
 }
 

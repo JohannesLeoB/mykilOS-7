@@ -12,7 +12,11 @@ import PDFKit
 public enum DriveFileReader {
 
     private static let folderMime = "application/vnd.google-apps.folder"
-    public static let maxChars = 6000
+    /// Sicherheitskappe gegen Speicher-Exzesse bei pathologisch großen Dateien — bewusst
+    /// hoch (≈ 60–80 normseitige Angebotsseiten). Der frühere Wert (6000) schnitt 85/146
+    /// reale Angebote ab (58 %) → Garbage-in fürs Schätz-Brain. Angebote brauchen den
+    /// VOLLEN Text (alle Positionen), nicht nur die erste Seite.
+    public static let maxChars = 400_000
 
     /// Erste Nicht-Ordner-Datei, deren Name `query` (case-insensitiv) enthält. BFS bis maxDepth.
     public static func findFile(named query: String, in rootFolderID: String,

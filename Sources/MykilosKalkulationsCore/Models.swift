@@ -180,13 +180,16 @@ public struct CandidateReleaseDecision: Codable, Equatable, Identifiable {
     public let ruleNotes: String
     public let componentClass: CalculationComponentClass
     public let sourceKind: AnchorSourceKind
+    /// Vorberechneter Ausstattungsgrad (Schubkasten-Dichte) aus dem verifizierten Korpus.
+    /// Default `.unknown` — fehlt der Join, verhält sich das Matching wie bisher (kein Ausschluss).
+    public let equipmentDensity: KitchenEquipmentDensity
 
     public var componentType: ComponentType { ComponentType.fromBrainComponent(component) }
     public var isReleaseReady: Bool { proposedStatus.hasPrefix("release_") }
     public var isSuperseded: Bool { proposedStatus.hasPrefix("superseded_") || supersededBy?.isEmpty == false }
     public var isManualReview: Bool { proposedStatus.hasPrefix("review_") }
 
-    public init(candidateID: String, sourceFile: String, page: Int, supplier: String, project: String, component: String, trade: String, priceNetGuess: Decimal, confidence: Double, duplicateCount: Int, currentStatus: String, proposedStatus: String, supersededBy: String?, decisionScore: Double, decisionReason: String, helpNeeded: String, title: String, evidenceQuote: String, carryforwardRuleStatus: String, ruleSafePriceNet: Decimal?, ruleNotes: String, componentClass: CalculationComponentClass? = nil, sourceKind: AnchorSourceKind = .pdfOffer) {
+    public init(candidateID: String, sourceFile: String, page: Int, supplier: String, project: String, component: String, trade: String, priceNetGuess: Decimal, confidence: Double, duplicateCount: Int, currentStatus: String, proposedStatus: String, supersededBy: String?, decisionScore: Double, decisionReason: String, helpNeeded: String, title: String, evidenceQuote: String, carryforwardRuleStatus: String, ruleSafePriceNet: Decimal?, ruleNotes: String, componentClass: CalculationComponentClass? = nil, sourceKind: AnchorSourceKind = .pdfOffer, equipmentDensity: KitchenEquipmentDensity = .unknown) {
         self.candidateID = candidateID
         self.sourceFile = sourceFile
         self.page = page
@@ -210,6 +213,22 @@ public struct CandidateReleaseDecision: Codable, Equatable, Identifiable {
         self.ruleNotes = ruleNotes
         self.componentClass = componentClass ?? CandidateReleaseDecision.classify(component: component, trade: trade, title: title, evidenceQuote: evidenceQuote, proposedStatus: proposedStatus)
         self.sourceKind = sourceKind
+        self.equipmentDensity = equipmentDensity
+    }
+
+    /// Kopie mit gesetztem Ausstattungsgrad (für die Anreicherung beim Korpus-Laden,
+    /// ohne die Preis-/Backtest-Felder zu berühren).
+    public func withEquipmentDensity(_ density: KitchenEquipmentDensity) -> CandidateReleaseDecision {
+        CandidateReleaseDecision(
+            candidateID: candidateID, sourceFile: sourceFile, page: page, supplier: supplier,
+            project: project, component: component, trade: trade, priceNetGuess: priceNetGuess,
+            confidence: confidence, duplicateCount: duplicateCount, currentStatus: currentStatus,
+            proposedStatus: proposedStatus, supersededBy: supersededBy, decisionScore: decisionScore,
+            decisionReason: decisionReason, helpNeeded: helpNeeded, title: title,
+            evidenceQuote: evidenceQuote, carryforwardRuleStatus: carryforwardRuleStatus,
+            ruleSafePriceNet: ruleSafePriceNet, ruleNotes: ruleNotes, componentClass: componentClass,
+            sourceKind: sourceKind, equipmentDensity: density
+        )
     }
 
     public static func classify(component: String, trade: String, title: String, evidenceQuote: String, proposedStatus: String) -> CalculationComponentClass {

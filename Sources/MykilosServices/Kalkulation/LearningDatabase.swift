@@ -15,7 +15,7 @@ import GRDB
 // nie berührt — diese DB hält nur Nutzer-Writes.
 public final class LearningDatabase: Sendable {
     /// Aktuelle Schemaversion (entspricht der höchsten registrierten Migration).
-    public static let schemaVersion = 3
+    public static let schemaVersion = 4
 
     private let queue: DatabaseQueue
 
@@ -220,6 +220,17 @@ public final class LearningDatabase: Sendable {
                 t.column("importedAt", .text).notNull()
                 t.column("reviewActionID", .text)            // FK → review_actions.recordID
                 t.column("syncStatus", .text).notNull().defaults(to: "imported")
+            }
+        }
+
+        // v4 — Angebots-Datum am Sync-Record (feat/tischler-predictor, Phase 1).
+        // Trägt das ORIGINAL-Angebotsdatum mit, damit der LearnedAnchorProvider den
+        // Preis inflationssicher auf Gegenwartswert hebt (Zeitgewichtung gegen die
+        // Teuerung 2021–23). `importedAt` allein genügt nicht — das ist der Sync-,
+        // nicht der Angebotszeitpunkt. Additiv, nullable (Altbestand bleibt gültig).
+        migrator.registerMigration("v4_offer_date") { db in
+            try db.alter(table: "airtable_offer_sync") { t in
+                t.add(column: "offerDate", .text)   // ISO/Freitext-Datum aus Airtable, NULL erlaubt
             }
         }
 

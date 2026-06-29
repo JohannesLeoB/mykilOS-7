@@ -15,10 +15,16 @@ import MykilosKalkulationsCore
 public struct BrainSeedProvider: PriceAnchorProviding {
     private let csvURL: URL
     private let fallback: PriceAnchorProviding
+    private let scopeCatalog: ScopeSignatureCatalog
 
-    public init(csvURL: URL? = nil, fallback: PriceAnchorProviding = BaselineAnchorProvider()) {
+    public init(csvURL: URL? = nil,
+                fallback: PriceAnchorProviding = BaselineAnchorProvider(),
+                scopeCatalog: ScopeSignatureCatalog? = nil) {
         self.csvURL = csvURL ?? BrainSeedProvider.defaultURL
         self.fallback = fallback
+        // Vorberechnete Ausstattungsgrade aus dem verifizierten Korpus. Fehlt die Datei,
+        // ist der Katalog leer und die Anreicherung ein No-Op (Anker bleiben `.unknown`).
+        self.scopeCatalog = scopeCatalog ?? ScopeSignatureCatalog.load()
     }
 
     /// Standardpfad des destillierten Anker-Korpus.
@@ -44,7 +50,9 @@ public struct BrainSeedProvider: PriceAnchorProviding {
         let table = try CSVTable(data: raw, lenient: true)
         let anchors = table.rows.compactMap(Self.anchor(from:))
         // Leerer/kaputter Korpus → lieber konservative Regelanker als gar keine.
-        return anchors.isEmpty ? try fallback.activeAnchors() : anchors
+        guard anchors.isEmpty == false else { return try fallback.activeAnchors() }
+        // Verlässlichkeits-Parameter (Ausstattungsgrad) nachtragen — Preise bleiben identisch.
+        return scopeCatalog.enrich(anchors)
     }
 
     // MARK: - Zeilen-Mapping
