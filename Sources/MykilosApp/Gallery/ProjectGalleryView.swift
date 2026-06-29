@@ -131,7 +131,11 @@ struct ProjectGalleryView: View {
                             }
                         }
                     }
-                    .padding(MykSpace.s8)
+                    // Karten richten sich horizontal am Page-Rand (s9) aus — gleiche
+                    // Inhalt-zu-Rand-Kante wie die Command-Bar darüber und alle anderen
+                    // Seiten. Vertikal s8 für Luft unter dem Divider (wie TodayView-Body).
+                    .padding(.horizontal, MykSpace.s9)
+                    .padding(.vertical, MykSpace.s8)
                 }
             }
         }

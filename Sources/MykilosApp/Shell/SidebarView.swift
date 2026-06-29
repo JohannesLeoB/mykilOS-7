@@ -181,9 +181,13 @@ private struct NavItem: View {
 
     @ViewBuilder private var content: some View {
         if compact {
+            // Icon füllt die Rail-Innenbreite (kein fixes 44 mehr, das über den
+            // s4-Rail-Rand hinausragte). So teilt die Auswahl-Pille exakt dieselbe
+            // Breite/Mittellinie wie die App-Dock-Pille darunter — ein Rail-Rand (s4).
             Image(systemName: module.icon)
                 .font(.mykBody)
-                .frame(width: 44, height: 38)
+                .frame(height: 38)
+                .frame(maxWidth: .infinity)
         } else {
             HStack(spacing: 12) {
                 Circle()
