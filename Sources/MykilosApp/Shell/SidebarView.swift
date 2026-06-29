@@ -62,6 +62,7 @@ struct SidebarView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: Fußzeile — immer Avatar (Initialen) + Einstellungs-Icon

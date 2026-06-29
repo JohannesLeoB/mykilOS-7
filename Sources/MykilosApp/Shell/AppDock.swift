@@ -9,7 +9,7 @@ import MykilosDesign
 // Max 5; speichert nach UserDefaults. Rein lokal, keine externen Daten.
 @MainActor @Observable
 final class AppShortcutStore {
-    static let maxCount = 5
+    static let maxCount = 7
     private static let key = "sidebar.appShortcuts"
 
     private(set) var paths: [String]
@@ -62,7 +62,7 @@ struct AppDockStrip: View {
         .onReceive(heartbeat) { _ in tick &+= 1 }
         .dropDestination(for: URL.self) { urls, _ in
             var added = false
-            for url in urls where url.pathExtension.lowercased() == "app" { store.add(url.path); added = true }
+            for url in urls where url.pathExtension.lowercased() == "app" || url.hasDirectoryPath { store.add(url.path); added = true }
             return added
         }
         .id(tick)
@@ -96,9 +96,10 @@ struct AppDockStrip: View {
     static func pickApp() -> String? {
         let panel = NSOpenPanel()
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        panel.allowedContentTypes = [.application]
+        panel.allowedContentTypes = [.application, .folder]
         panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = true
         panel.prompt = "Hinzufügen"
         return panel.runModal() == .OK ? panel.url?.path : nil
     }
@@ -159,8 +160,13 @@ private struct AppDockIcon: View {
     }
 
     private func launch() {
-        let config = NSWorkspace.OpenConfiguration()
-        config.activates = true
-        NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: path), configuration: config, completionHandler: nil)
+        let url = URL(fileURLWithPath: path)
+        if path.hasSuffix(".app") {
+            let config = NSWorkspace.OpenConfiguration()
+            config.activates = true
+            NSWorkspace.shared.openApplication(at: url, configuration: config, completionHandler: nil)
+        } else {
+            NSWorkspace.shared.open(url)   // Ordner im Finder / Datei in Standard-App
+        }
     }
 }
