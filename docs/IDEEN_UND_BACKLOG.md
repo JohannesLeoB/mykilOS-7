@@ -289,7 +289,16 @@ Airtable-Automations/Webhooks empfängt und an die App weiterreicht (eine lokale
 selbst keine Webhook-Ziel-URL sein). **Für die nächste Session vorzubereiten/abzustimmen:** wo
 läuft der Relay (eigener kleiner Cloud-Dienst?), wie meldet sich die App dort an, Fallback auf
 Polling falls die App offline ist/der Relay nicht erreichbar ist. Sofort-Sync nach eigenem
-Write (wie heute bei Intake) bleibt davon unabhängig zusätzlich bestehen.
+Write (wie heute bei Intake) bleibt davon unabhängig zusätzlich bestehen. **Push heißt lokal
+aktualisieren** (Johannes, 2026-06-30): ein eingehendes Webhook-Event muss den jeweiligen lokalen
+Cache (GRDB/FileBackedRepository) genauso befüllen wie ein normaler Sync — der Relay liefert nur
+den Auslöse-Impuls „etwas hat sich geändert", die App holt/cached danach wie gewohnt über die
+bestehenden `sync(...)`-Pfade. Kein separater Schreibweg am Cache vorbei.
+
+**Weiterer Ausbau angekündigt (Johannes, 2026-06-30):** es wird später zusätzlich eine
+**intelligente Alerts-Logik** geben, gestützt auf eigene Airtable-Base(s) für Alerts/Regeln —
+Details (welche Trigger, welche Schwellenwerte, wohin gemeldet) noch offen, in der nächsten
+vollen Session mit dem Multi-Base-Strang gemeinsam abstimmen.
 
 ### 🚨 Budget hat HEUTE zwei Quellen (Mastermind `Project.links.budget` vs. Artikel `BusinessProject.budget`)
 **Quelle:** mykilOS 8 Block A, S0-Audit (2026-06-30), code-verifiziert. `CashWidget` liest
