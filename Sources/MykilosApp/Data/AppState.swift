@@ -265,8 +265,8 @@ public final class AppState {
         }
 
         guard airtableAuth.status == .connected else { return }
+        guard let credentials = try? airtableAuth.storedCredentials() else { return }
         do {
-            guard let credentials = try airtableAuth.storedCredentials() else { return }
             dataFlow.log(integrationID: "AIRTABLE_KUNDEN_PROJEKTE", actorUserID: actorUserID,
                          action: .start, summary: "Auto-Sync bei App-Start")
             await registry.syncFromAirtable(baseID: credentials.baseID, auth: airtableAuth)
@@ -277,12 +277,16 @@ public final class AppState {
                 dataFlow.log(integrationID: "AIRTABLE_KUNDEN_PROJEKTE", actorUserID: actorUserID,
                              action: .success, recordsRead: registry.projects.count,
                              summary: "Projekte/Kunden aus Mastermind synchronisiert")
-                await syncKontakte(baseID: credentials.baseID)   // S13: Adress-/Telefonverzeichnis
-                refreshAssistantKundenWissen()   // frische Kunden + Kontakte → Assistent
             }
         } catch {
             airtableAuth.setError(String(describing: error))
         }
+        // Kontakte laufen UNABHÄNGIG vom Projekt-/Kunden-Sync (eigene kanonische Base):
+        // sonst sieht der Assistent keine Kontakte, sobald die gespeicherte baseID kaputt
+        // ist und syncFromAirtable scheitert (Status .error → der Kontakt-Sync wurde im
+        // übersprungenen else-Zweig nie ausgeführt).
+        await syncKontakte(baseID: credentials.baseID)   // nutzt intern die kanonische Base
+        refreshAssistantKundenWissen()                   // frische Kunden + Kontakte → Assistent
     }
 
     // S13: lädt die Airtable-Tabelle „Kontakte" einmalig (read-only) in den lokalen
