@@ -265,9 +265,18 @@ darunter), `CashWidget` auf `ExternalMappingRegistry.resolve(...).business?.budg
 **Quelle:** mykilOS 8 Block A, S0-Audit (2026-06-30), code-verifiziert (Feldnamen aus
 `IntakeResultBuilder.mapProjektFelder`: `Projektname`/`Projektstatus`/`Budget`/Adresse — kein
 Nummernfeld). `ExternalMappingRegistry` markiert solche Records als `businessOnlyUnbound`
-(abrufbar über `unboundBusinessProjects()`). **Plan:** entweder Daniel ergänzt das Feld in der
-Artikel-Base (Datenstrom-Handbuch-Eintrag `AIRTABLE_GESCHAEFT_KUNDEN_PROJEKTE` verweist darauf),
-oder Block C (Nomenklatur/`NumberAuthority`) schreibt die Projektnummer beim Anlegen direkt mit.
+(abrufbar über `unboundBusinessProjects()`).
+
+**Entschieden (Johannes, 2026-06-30):** KEIN Projektname-Fuzzy-Match als Workaround — zu
+gefährlich bei Geld-/Statusdaten. Stattdessen exakt das Gegenteil von „selbst reparieren": die
+**bestehende Artikel-Projektliste wird von mykilOS/Claude NIE editiert** — weder Schema (neues
+Feld) noch Daten (Bestandsrecords). Das ist und bleibt **Daniels Backend-Hoheit** (siehe
+`AGENTS.md` „Wer darf was"). Folge: das Feld kommt, wenn Daniel es anlegt — kein Zeitdruck von
+unserer Seite, kein Workaround drumherum. Neue Projekte, die Block C (Nomenklatur) zukünftig
+selbst per gated CREATE anlegt, können die Projektnummer beim Anlegen mitschreiben, SOBALD das
+Feld existiert — das ist kein „Editieren bestehender Daten", sondern ein neues, eigenes CREATE.
+Bis dahin bleibt `businessOnlyUnbound` der ehrliche, dauerhafte Zustand für unverbundene
+Bestandsprojekte — keine Eile, kein Drängen auf Daniel.
 
 ### 📋 ClickUp als Quelle für `ProjectKind`
 **Quelle:** Live-Wiring-Session 1 (2026-06-27). Drive-Ordnernamen lassen

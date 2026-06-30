@@ -34,7 +34,9 @@ Mastermind-Routing-Eintrag dafür entsteht — was heute nirgends automatisch pa
    gefährlich bei Geld-/Statusdaten — ein Fehljoin ist schlimmer als kein Treffer). Stattdessen:
    `ExternalMappingRegistry` joint ausschließlich über die Projektnummer und macht den fehlenden
    Join ehrlich sichtbar (`businessOnlyUnbound`, `unboundBusinessProjects()`), statt zu raten.
-   Das Feld selbst zu ergänzen ist Daniels Backend-Entscheidung — im Datenstrom-Handbuch vermerkt.
+   **Von Johannes bestätigt (2026-06-30):** die bestehende Artikel-Projektliste wird von mykilOS/
+   Claude NIE editiert (weder Schema noch Bestandsdaten) — das Feld kommt ausschließlich, wenn
+   Daniel es in seiner Backend-Hoheit anlegt, ohne Drängen unsererseits. Siehe `IDEEN_UND_BACKLOG.md`.
 2. **`mykilOS-Backup`-Base:** versucht, live über den verfügbaren Airtable-MCP anzulegen.
    `list_workspaces` liefert für diese Session eine leere Liste, `search_bases` sieht nur
    Mastermind — `create_base` braucht aber eine `workspaceId`, die nicht ermittelbar war. Statt zu
