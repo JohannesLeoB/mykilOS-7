@@ -289,8 +289,14 @@ public final class AppState {
     // Snapshot für lookup_kontakt. Fehler werden geschluckt (Verzeichnis bleibt leer,
     // sichtbar via os.Logger) — Kontakte sind ein Komfort-Feature, kein Boot-Blocker.
     private func syncKontakte(baseID: String) async {
+        // Kanonische Mastermind-Base — bewusst NICHT die übergebene credentials.baseID:
+        // die ist durch den Keychain-Bug teils kaputt (enthielt den PAT statt der ID),
+        // wodurch das Assistenten-Kontaktverzeichnis leer blieb, obwohl die Kontakte-
+        // Seite (die exakt diese ID hartkodiert) alle Kontakte lud. So sieht der
+        // Assistent dieselben Kontakte wie die Seite.
+        let kontakteBaseID = "appuVMh3KDfKw4OoQ"
         do {
-            let records = try await AirtableClient().fetchRecords(baseID: baseID, table: "Kontakte")
+            let records = try await AirtableClient().fetchRecords(baseID: kontakteBaseID, table: "Kontakte")
             studioContacts = AirtableClient.mapContacts(from: records)
             dataFlow.log(integrationID: "AIRTABLE_KONTAKTE_LOOKUP", actorUserID: actorUserID,
                          action: .success, recordsRead: studioContacts.count,

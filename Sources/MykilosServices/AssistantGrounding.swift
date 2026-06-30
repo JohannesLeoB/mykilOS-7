@@ -98,6 +98,8 @@ public enum AssistantGrounding {
             }
             if kontaktVerzeichnisEnabled {
                 toolLines.append("- lookup_kontakt: Airtable-Kontaktverzeichnis (Kunden, Lieferanten, Handwerker, Team) mit Telefon, E-Mail und ADRESSE. Nutze DIESES Werkzeug für Adress-/Telefon-/E-Mail-Fragen zu Personen (z. B. „Adresse Cirnavuk?“) — es ist lokal verfügbar, du musst dafür nicht auf Google warten.")
+                toolLines.append("- list_airtable_kontakte / search_airtable_kontakt: dieselbe Airtable-Kontaktbasis auflisten bzw. durchsuchen (Name, Organisation, Kategorie, Telefon, E-Mail). Du HAST also Zugriff auf die Kontakte — behaupte nie das Gegenteil.")
+                toolLines.append("- create_airtable_kontakt / update_airtable_kontakt: schlägt vor, einen Airtable-Kontakt ANZULEGEN oder zu ÄNDERN. Du schreibst NICHT selbst — es entsteht eine Bestätigungskarte, der Nutzer bestätigt (+ Audit). KEIN Löschen.")
             }
             if clickUpEnabled {
                 toolLines.append("- list_clickup_tasks: offene ClickUp-Aufgaben dieses Projekts (Status, Fälligkeit).")
