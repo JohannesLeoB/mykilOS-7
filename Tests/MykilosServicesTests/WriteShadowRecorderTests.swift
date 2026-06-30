@@ -49,6 +49,31 @@ struct WriteShadowRecorderTests {
         #expect(dataFlow.entries.contains { $0.integrationID == "WRITE_SHADOW_BACKUP_FEHLT" })
     }
 
+    @Test func fehlgeschlagenerSpiegelTrotzGesetzterBackupBaseIstSichtbar() async throws {
+        // Block A, Erweiterung 2026-06-30: backupBaseID ist gesetzt, aber der Mirror-Write
+        // schlägt fehl (z. B. falscher Tabellenname) — das darf NIE spurlos verschwinden.
+        let db = try GRDBDatabase.inMemory()
+        let dataFlow = DataFlowLogger(db: db)
+        try dataFlow.load()
+        let recorder = WriteShadowRecorder(
+            db: db, airtable: ThrowingFakeCreator(), backupBaseID: "app56DTbSoqPvZhom", dataFlow: dataFlow)
+
+        _ = try recorder.recordAirtableWrite(
+            action: .create, actorUserID: "johannes", baseID: "appdxTeT6bhSBmwx5",
+            table: "Kunden", recordID: "recK1", fields: ["Nachname": .string("Schmidt")],
+            mode: .test, result: .ok
+        )
+        // Der Mirror läuft in einem losgelösten Task — pollen statt fester Sleep-Dauer,
+        // damit der Test unter Last (volle Suite parallel) nicht flackert.
+        var found = false
+        for _ in 0..<50 where !found {
+            try await Task.sleep(nanoseconds: 100_000_000)
+            found = dataFlow.entries.contains { $0.integrationID == "WRITE_SHADOW_BACKUP_FEHLT" }
+        }
+
+        #expect(found)
+    }
+
     @Test func primaerSchreibvorgangBleibtUnberuehrtAuchOhneBackupBase() throws {
         // Der Write-Shadow darf NIE den eigentlichen Write blockieren — hier geprüft,
         // indem recordAirtableWrite trotz fehlender Backup-Base erfolgreich zurückkehrt.
@@ -86,6 +111,50 @@ struct ProvisioningModeStoreTests {
             try store.setMode(.prod)
         }
         #expect(store.mode == .test)
+    }
+}
+
+// Block A, Erweiterung 2026-06-30: die rein lokale Projektnummer-Bindungs-Brücke
+// überlebt den Neustart (Cold-Start-Pflicht für neue Persistenz).
+@MainActor
+struct ProjectNumberBindingStoreTests {
+    @Test func bestaetigteBindungUeberlebtNeustart() throws {
+        let db = try GRDBDatabase.inMemory()
+        let candidate = ProjectNumberBindingCandidate(
+            businessRecordID: "recP1", businessProjektname: "Küche Schmidt",
+            projectNumber: "2026-015", routingTitle: "Küche Schmidt")
+
+        let storeA = ProjectNumberBindingStore(db: db)
+        try storeA.load()
+        try storeA.confirm(candidate, actorUserID: "johannes")
+
+        let storeB = ProjectNumberBindingStore(db: db)
+        try storeB.load()
+
+        #expect(storeB.bindings.count == 1)
+        #expect(storeB.asLookup["recP1"] == "2026-015")
+        #expect(storeB.bindings.first?.actorUserID == "johannes")
+    }
+
+    @Test func erneuteBestaetigungUeberschreibtAlteBindung() throws {
+        let db = try GRDBDatabase.inMemory()
+        let store = ProjectNumberBindingStore(db: db)
+        try store.load()
+        try store.confirm(ProjectNumberBindingCandidate(
+            businessRecordID: "recP1", businessProjektname: "X", projectNumber: "2026-015", routingTitle: "X"),
+            actorUserID: "johannes")
+        try store.confirm(ProjectNumberBindingCandidate(
+            businessRecordID: "recP1", businessProjektname: "X", projectNumber: "2026-099", routingTitle: "X"),
+            actorUserID: "johannes")
+
+        #expect(store.bindings.count == 1)
+        #expect(store.asLookup["recP1"] == "2026-099")
+    }
+}
+
+private struct ThrowingFakeCreator: AirtableRecordCreating {
+    func createRecord(baseID: String, table: String, fields: [String: AirtableFieldValue]) async throws -> String {
+        throw AirtableError.invalidBaseID("Tabelle \(table)@\(baseID) existiert nicht (Test-Fake)")
     }
 }
 

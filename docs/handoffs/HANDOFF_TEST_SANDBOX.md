@@ -78,14 +78,18 @@ freigibt. So fließt nie versehentlich Echtbetrieb.
 
 ## 7. Write-Backup-Base (Sicherheitskopie ALLER Schreibvorgänge — append-only, KEIN DELETE)
 
-> **Status (Block A): `WriteShadowRecorder` ist im Code fertig und in `erzeugeKundeUndProjekt`
-> verdrahtet — der lokale GRDB-Eintrag (`writeShadowLog`, vollständiges Payload-JSON, Cold-Start-
-> getestet) passiert JETZT bei jedem Write. Die Base `mykilOS-Backup` selbst existiert noch nicht:
-> der für diese Session verfügbare Airtable-MCP sieht nur die Mastermind-Base und liefert keine
-> `workspaceId` (`list_workspaces` → leer), `create_base` braucht aber genau die. Muss entweder
-> live mit Johannes angelegt werden (dann nur `backupBaseID` in `AppState.init` setzen — kein
-> Code-Umbau), oder der Airtable-MCP bekommt breiteren Workspace-Zugriff. Bis dahin meldet jeder
-> Write eine sichtbare Warnung (`WRITE_SHADOW_BACKUP_FEHLT`) statt die Lücke zu verstecken.
+> **Status (Block A, aktualisiert 2026-06-30): Base von Johannes live angelegt.** „mykilOS 8
+> Backup Base" (`app56DTbSoqPvZhom`, Tabelle vermutlich `Write-Shadow-Log`, Table-ID
+> `tblYQVdeHP2Zvgt8m`) ist verdrahtet — `AppState.writeShadow` zeigt jetzt auf diese Base,
+> `AirtableClient.writableMap` erlaubt CREATE in `app56DTbSoqPvZhom: ["Write-Shadow-Log"]`.
+> **Unverifiziert:** der für diese Session verfügbare Airtable-MCP konnte das Schema NICHT
+> gegenprüfen (403 — sieht nur Mastermind). Stimmt der Tabellenname/die Feldnamen nicht exakt
+> (`Zeitstempel`/`Nutzer`/`Aktion`/`Ziel-System`/`Ziel-Base`/`Ziel-Tabelle`/`Ziel-Record-ID`/
+> `Payload-JSON`/`Vorwert-JSON`/`TEST-PROD`/`Ergebnis`), scheitert NUR der externe Spiegel
+> (non-fatal, jetzt sichtbar geloggt unter `WRITE_SHADOW_BACKUP_FEHLT` mit Fehlertext) — der
+> lokale GRDB-Eintrag (die eigentliche Sicherheitskopie) passiert immer. **Nächster Schritt:**
+> Johannes verifiziert live (echten Write auslösen, z. B. Intake-Submit, dann in der Backup-Base
+> nachschauen, ob der Record ankommt).
 
 **Jeder Schreibvorgang in die Datenkerne** (Airtable CREATE/PATCH, Drive-Ordner/Datei-Anlage, künftig
 Clockodo/ClickUp-Writes) wird **zusätzlich als Sicherheitskopie** in eine **separate Backup-Base** geschrieben —

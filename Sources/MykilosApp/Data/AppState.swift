@@ -35,6 +35,10 @@ public final class AppState {
     // Optional wie `RegistryStore`s privater Cache: Verzeichnis-Init-Fehler = kein
     // Resolver statt Absturz (derselbe begründete try?-Ausnahmefall wie dort).
     public let externalMapping: ExternalMappingRegistry?
+    // mykilOS 8, Block A (Erweiterung, Johannes-Entscheidung 2026-06-30): rein lokale,
+    // manuell bestätigte Brücke Geschäftsprojekt → Projektnummer (solange Artikel-
+    // `Projekte` kein Projektnummer-Feld hat). Siehe ProjectNumberBindingStore.swift.
+    public let projectNumberBindings: ProjectNumberBindingStore
 
     // MARK: Integrationen
     public let googleAuth: GoogleAuthService
@@ -140,12 +144,14 @@ public final class AppState {
         // (nur Datenstrom-Log der Mastermind-Base; Whitelist im AirtableClient).
         let dataFlowLogger = DataFlowLogger(db: database, airtable: AirtableClient())
         self.dataFlow = dataFlowLogger
-        // mykilOS 8, Block A: backupBaseID ist absichtlich nil (mykilOS-Backup-Base
-        // existiert noch nicht — siehe WriteShadowRecorder.swift Kopfkommentar). Der
-        // lokale GRDB-Eintrag passiert trotzdem immer; sobald die Base + ID feststehen,
-        // hier nur die ID einsetzen.
+        // mykilOS 8, Block A: Backup-Base von Johannes live angelegt (2026-06-30,
+        // "mykilOS 8 Backup Base"). Tabellenname "Write-Shadow-Log" ist UNVERIFIZIERT —
+        // der verfügbare Airtable-MCP sieht diese Base nicht (403), daher konnte das
+        // Schema nicht gegengeprüft werden. Stimmt der Name nicht, scheitert NUR der
+        // externe Spiegel (non-fatal, siehe WriteShadowRecorder.mirrorToBackupBase) —
+        // der lokale GRDB-Eintrag (die eigentliche Sicherheitskopie) passiert immer.
         self.writeShadow = WriteShadowRecorder(
-            db: database, airtable: AirtableClient(), backupBaseID: nil, dataFlow: dataFlowLogger)
+            db: database, airtable: AirtableClient(), backupBaseID: "app56DTbSoqPvZhom", dataFlow: dataFlowLogger)
         self.provisioningMode = ProvisioningModeStore(db: database)
         // Begründeter try?-Ausnahmefall (wie RegistryStore.init): Verzeichnis-Init-
         // Fehler ergibt keinen Resolver statt Absturz; der echte Fehler würde ohnehin
@@ -155,6 +161,7 @@ public final class AppState {
         } else {
             self.externalMapping = nil
         }
+        self.projectNumberBindings = ProjectNumberBindingStore(db: database)
         let claudeCredentials = KeychainClaudeCredentialsStore()
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
         self.assistantLLM = ClaudeMessagesClient(credentialsStore: claudeCredentials)
@@ -277,6 +284,7 @@ public final class AppState {
         try? dataFlow.load()
         try? favorites.load()   // leere Favoritenmenge ist kein Fehler (L25)
         try? provisioningMode.load()   // mykilOS 8, Block A: ungefunden = Default .test
+        try? projectNumberBindings.load()   // mykilOS 8, Block A: ungefunden = leere Liste
         // Registry seeden/laden
         await registry.seedIfEmpty()
         await registry.load()
@@ -318,6 +326,10 @@ public final class AppState {
         // ist und syncFromAirtable scheitert (Status .error → der Kontakt-Sync wurde im
         // übersprungenen else-Zweig nie ausgeführt).
         await syncKontakte(baseID: credentials.baseID)   // nutzt intern die kanonische Base
+        // mykilOS 8, Block A: Geschäfts-Registry auch beim App-Start synchronisieren —
+        // sonst zeigt die Bindungsvorschläge-Sektion in den Integrationen erst nach dem
+        // ersten Intake-Submit überhaupt Kandidaten.
+        await syncBusinessRegistry()
         refreshAssistantKundenWissen()                   // frische Kunden + Kontakte → Assistent
     }
 
@@ -618,6 +630,26 @@ public final class AppState {
                          action: .error, summary: "Business-Registry-Sync fehlgeschlagen")
             MykLog.lifecycle.error("Business-Registry-Sync fehlgeschlagen: \(String(describing: error), privacy: .public)")
         }
+    }
+
+    /// mykilOS 8, Block A (Erweiterung 2026-06-30): Bindungs-Kandidaten für die
+    /// Schaltzentrum-Ansicht — Geschäftsprojekte ohne Projektnummer, die per exaktem
+    /// Titel-Match genau einem Routing-Projekt zugeordnet werden könnten. Bereits
+    /// bestätigte Bindungen werden rausgefiltert.
+    public func projectNumberBindingCandidates() -> [ProjectNumberBindingCandidate] {
+        guard let externalMapping else { return [] }
+        let confirmed = Set(projectNumberBindings.bindings.map(\.businessRecordID))
+        return (try? externalMapping.candidateBindings(excluding: confirmed)) ?? []
+    }
+
+    /// Bestätigt EINEN Bindungs-Kandidaten — Karte→Bestätigung→Audit, wie jeder andere
+    /// Schreibpfad. Rein lokal (GRDB), rührt die Artikel-Projektliste nie an.
+    public func confirmProjectNumberBinding(_ candidate: ProjectNumberBindingCandidate) throws {
+        try projectNumberBindings.confirm(candidate, actorUserID: actorUserID)
+        try audit.append(AuditEntry(
+            actorUserID: actorUserID, projectID: candidate.projectNumber,
+            action: .projectLinked,
+            summary: "Geschäftsprojekt „\(candidate.businessProjektname)“ lokal an Projektnummer \(candidate.projectNumber) gebunden (manuell bestätigt)"))
     }
 
     /// mykilOS 8, Block A: spiegelt einen FEHLGESCHLAGENEN Airtable-Write — die

@@ -19,6 +19,8 @@ struct SchaltzentrumView: View {
                 .font(.mykMono(10))
                 .foregroundStyle(MykColor.muted.color)
 
+            ProjectNumberBindingSection()
+
             VStack(spacing: 1) {
                 // Header
                 HStack(spacing: 0) {

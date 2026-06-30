@@ -136,6 +136,12 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
             "Projekte",        // Intake: neues Projekt anlegen (tblOXF9Cv8Jze6595, gated)
             "Kunden",          // Intake: neuen Kunden anlegen (tblImZ3fKYBXBT7Wb, gated)
         ],
+        // mykilOS-Backup (Write-Shadow-Spiegel, von Johannes 2026-06-30 live angelegt).
+        // AUSSCHLIESSLICH append-only über WriteShadowRecorder — niemals PATCH (kein
+        // updateRecord-Aufrufer nutzt diese Base), niemals DELETE (kein Pfad existiert).
+        "app56DTbSoqPvZhom": [
+            "Write-Shadow-Log",   // tblYQVdeHP2Zvgt8m — Tabellenname unverifiziert, MCP sieht die Base nicht
+        ],
     ]
 
     /// Prüft, ob Base + Tabelle auf der Schreib-Whitelist stehen.

@@ -86,6 +86,86 @@ struct ExternalMappingRegistryTests {
         #expect(try registry.unboundBusinessProjects().isEmpty)
     }
 
+    @Test func candidateBindingsFindetNurEindeutigeExakteTitelTreffer() throws {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let routingCache = try CachedProjectRegistry(directory: dir)
+        let businessCache = try CachedBusinessRegistry(directory: dir)
+        try routingCache.replaceProjects([
+            Project(projectNumber: "2026-015", title: "Küche Schmidt", kind: .kitchen, customerNumber: "K-1"),
+            Project(projectNumber: "2026-016", title: "Küche Mehrdeutig", kind: .kitchen, customerNumber: "K-2"),
+            Project(projectNumber: "2026-017", title: "Küche Mehrdeutig", kind: .kitchen, customerNumber: "K-3"),
+        ])
+        try businessCache.replaceProjects([
+            BusinessProject(airtableRecordID: "recEindeutig", projektname: "  küche schmidt  "),  // Whitespace+Case
+            BusinessProject(airtableRecordID: "recMehrdeutig", projektname: "Küche Mehrdeutig"),
+            BusinessProject(airtableRecordID: "recKeinTreffer", projektname: "Unbekanntes Projekt"),
+        ])
+
+        let registry = ExternalMappingRegistry(routing: routingCache, business: businessCache)
+        let candidates = try registry.candidateBindings()
+
+        #expect(candidates.count == 1)
+        #expect(candidates.first?.businessRecordID == "recEindeutig")
+        #expect(candidates.first?.projectNumber == "2026-015")
+    }
+
+    @Test func candidateBindingsSchliesstBereitsBestaetigteAus() throws {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let routingCache = try CachedProjectRegistry(directory: dir)
+        let businessCache = try CachedBusinessRegistry(directory: dir)
+        try routingCache.replaceProjects([
+            Project(projectNumber: "2026-015", title: "Küche Schmidt", kind: .kitchen, customerNumber: "K-1")
+        ])
+        try businessCache.replaceProjects([
+            BusinessProject(airtableRecordID: "recP1", projektname: "Küche Schmidt")
+        ])
+
+        let registry = ExternalMappingRegistry(routing: routingCache, business: businessCache)
+        let candidates = try registry.candidateBindings(excluding: ["recP1"])
+
+        #expect(candidates.isEmpty)
+    }
+
+    @Test func resolveBevorzugtEchtesFeldVorLokalerBindung() throws {
+        // „Aktueller Datenstand als Safety": sobald das echte Projektnummer-Feld existiert,
+        // gewinnt es IMMER vor der lokalen Bindungs-Brücke.
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let routingCache = try CachedProjectRegistry(directory: dir)
+        let businessCache = try CachedBusinessRegistry(directory: dir)
+        try routingCache.replaceProjects([
+            Project(projectNumber: "2026-015", title: "Küche Schmidt", kind: .kitchen, customerNumber: "K-1")
+        ])
+        try businessCache.replaceProjects([
+            BusinessProject(airtableRecordID: "recP1", projektname: "Küche Schmidt", projectNumber: "2026-015")
+        ])
+        let registry = ExternalMappingRegistry(routing: routingCache, business: businessCache)
+
+        // Eine (absichtlich falsche) lokale Bindung auf eine andere Nummer darf den
+        // echten Feld-Match NIE überschreiben.
+        let resolved = try registry.resolve(projectNumber: "2026-015", confirmedBindings: ["recP1": "2099-999"])
+
+        #expect(resolved.bindingState == .linked)
+        #expect(resolved.business?.airtableRecordID == "recP1")
+    }
+
+    @Test func resolveNutztLokaleBindungNurAlsFallback() throws {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let routingCache = try CachedProjectRegistry(directory: dir)
+        let businessCache = try CachedBusinessRegistry(directory: dir)
+        try routingCache.replaceProjects([
+            Project(projectNumber: "2026-015", title: "Küche Schmidt", kind: .kitchen, customerNumber: "K-1")
+        ])
+        try businessCache.replaceProjects([
+            BusinessProject(airtableRecordID: "recP1", projektname: "Küche Schmidt")   // kein Feld
+        ])
+        let registry = ExternalMappingRegistry(routing: routingCache, business: businessCache)
+
+        let resolved = try registry.resolve(projectNumber: "2026-015", confirmedBindings: ["recP1": "2026-015"])
+
+        #expect(resolved.bindingState == .linkedViaLocalBinding)
+        #expect(resolved.business?.airtableRecordID == "recP1")
+    }
+
     @Test func mapBusinessProjectsIstTolerantBeiFehlendemFeld() {
         // Fallstrick aus ROLLING_PLAN §3b: ein fehlendes Feld darf den Record
         // nicht lautlos verwerfen — nur Projektname ist Pflicht.

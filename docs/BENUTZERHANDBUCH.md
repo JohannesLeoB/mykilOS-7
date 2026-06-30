@@ -360,8 +360,9 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `DATAFLOW_LOG_WRITE` | Datenstrom-Log | WRITE | Ereignisgesteuert | append-only (Mastermind) | Jeder Sync-Handshake landet hier. Harte Whitelist im AirtableClient: nur diese Tabelle + Handbuch. |
 | `DATAFLOW_HANDBOOK_WRITE` | Datenstrom-Handbuch | WRITE | onDemand (Session) | append-only (Mastermind) | Diese Karte selbst. Jede neue Weiche wird hier registriert. |
 | `POLISH_LOG_WRITE` | Dampflok Polish-Log | WRITE | onDemand (Session) | append-only (Mastermind) | Nur Claude-Code-Agent, nicht die App. Tabelle `tblberJMgRArGSypE`. |
-| `WRITE_SHADOW_LOG` | Write-Shadow-Log (Backup-Base) | WRITE | onDemand (jeder Write) | append-only (Mastermind) | **Geplant** — mykilOS 8, Block A. `WriteShadowRecorder` schreibt JETZT schon vollständig lokal (GRDB `writeShadowLog`, Cold-Start-getestet); der Airtable-Spiegel nach einer eigenen Base `mykilOS-Backup` ist im Code verdrahtet, aber `backupBaseID` ist noch `nil` — die Base muss live angelegt werden. |
-| `WRITE_SHADOW_BACKUP_FEHLT` | Write-Shadow ohne Backup-Base (Warnung) | READ | onDemand (jeder Write, solange Backup-Base fehlt) | keine | Lokale Sichtbarkeits-Warnung, kein echter Datenstrom — macht die Lücke aus `WRITE_SHADOW_LOG` im Schaltzentrum sichtbar statt sie zu verstecken. Verschwindet automatisch, sobald `backupBaseID` gesetzt ist. |
+| `WRITE_SHADOW_LOG` | Write-Shadow-Log (Backup-Base) | WRITE | onDemand (jeder Write) | append-only (Mastermind) | **Aktiv** — mykilOS 8, Block A. Base `mykilOS 8 Backup Base` (`app56DTbSoqPvZhom`) von Johannes 2026-06-30 live angelegt, `backupBaseID` gesetzt. Tabellenname `Write-Shadow-Log` unverifiziert (Airtable-MCP sieht die Base nicht) — noch live zu testen. `WriteShadowRecorder` schreibt unabhängig davon IMMER vollständig lokal (GRDB `writeShadowLog`, Cold-Start-getestet). |
+| `WRITE_SHADOW_BACKUP_FEHLT` | Write-Shadow ohne Backup-Base (Warnung) | READ | onDemand (jeder Write, solange Spiegel scheitert) | keine | Lokale Sichtbarkeits-Warnung — feuert jetzt auch, wenn der Airtable-Spiegel trotz gesetzter `backupBaseID` fehlschlägt (z. B. falscher Tabellenname), nicht nur wenn die Base ganz fehlt. Macht jede Spiegel-Lücke sichtbar statt sie zu verstecken. |
+| `PROJECT_NUMBER_LOCAL_BINDING` | Projektnummer-Bindungs-Brücke (lokal) | WRITE | onDemand (manuelle Bestätigung) | keine | mykilOS 8, Block A-Erweiterung (Johannes-Entscheidung 2026-06-30): rein lokale GRDB-Tabelle (`projectNumberBindings`) — **kein Airtable-Write, rührt die Artikel-Projektliste nie an.** Bindet ein Geschäftsprojekt ohne Projektnummer-Feld an eine Mastermind-Projektnummer, NUR nach manueller Bestätigung eines automatisch erkannten (exakter Titel-Match) Kandidaten. |
 
 #### Google Drive
 
@@ -489,24 +490,33 @@ nach **Bestätigung**: ein **Kunde** + ein **Projekt** (Airtable Artikel-Base, n
 
 ---
 
-## mykilOS 8, Block A — Fundament: Eine Wahrheit + Sicherheit (Grundgerüst, keine UI)
+## mykilOS 8, Block A — Fundament: Eine Wahrheit + Sicherheit
 
-Block A baut die **Mechanik**, nicht die Oberfläche — es gibt noch keinen Settings-Schalter
-oder Cleanup-Button dafür. Trotzdem live im laufenden Code, weil spätere Blöcke (C, D, E, F)
-direkt darauf aufbauen.
+Block A baut überwiegend **Mechanik, nicht Oberfläche** — eine erste UI-Sektion (Projektnummer-
+Bindungsvorschläge) ist dazugekommen, siehe unten. Spätere Blöcke (C, D, E, F) bauen direkt auf
+der Mechanik auf.
 
 **`ExternalMappingRegistry`** löst die Split-Brain-Verletzung (zwei `Kunden`-/`Projekte`-Tabellen,
 Mastermind vs. Artikel-Base) auf: Routing-Wahrheit bleibt Mastermind, Geschäfts-Wahrheit ist die
-Artikel-Base, beide werden in **getrennten** lokalen Caches gehalten und nur über die
+Artikel-Base, beide werden in **getrennten** lokalen Caches gehalten und primär über die
 **Projektnummer** gejoint — nie geraten, nie per Namens-Fuzzy-Match. Solange die Artikel-Base
 kein `Projektnummer`-Feld hat (Stand 2026-06-30), bleiben neue Intake-Projekte `businessOnlyUnbound`
 — sichtbar über `unboundBusinessProjects()`, nicht versteckt.
 
+**Projektnummer-Bindungsvorschläge (Integrationen-Tab).** Solange das echte Feld fehlt, zeigt
+die Schaltzentrum-Ansicht automatisch erkannte Bindungs-Kandidaten — ein Geschäftsprojekt ohne
+Nummer, das per **exaktem** Titel-Match (nie mehrdeutig, nie fuzzy) genau einem Mastermind-
+Routing-Projekt zugeordnet werden könnte. Ein Klick auf „Bestätigen" macht die Bindung gültig
+(Karte→Bestätigung→Audit) — gespeichert rein lokal (GRDB `projectNumberBindings`), **rührt die
+Artikel-Projektliste nie an**. Existiert später das echte Feld, gewinnt es automatisch vor dieser
+Brücke. *Voraussetzung:* Airtable verbunden, Geschäfts-Registry synct beim App-Start.
+
 **`WriteShadowRecorder`** spiegelt jeden Airtable-Write (aktuell: den Intake-Schreibpfad) als
 vollständige Sicherheitskopie — lokal in GRDB (`writeShadowLog`, immer, Cold-Start-getestet)
-und perspektivisch nach einer eigenen Airtable-Base `mykilOS-Backup` (append-only, keine
-Löschrechte). Die Backup-Base existiert noch nicht; bis sie angelegt ist, bleibt der lokale
-GRDB-Eintrag die einzige Kopie, und jeder Write meldet das ehrlich über `WRITE_SHADOW_BACKUP_FEHLT`.
+und nach der eigenen Airtable-Base `mykilOS 8 Backup Base` (`app56DTbSoqPvZhom`, von Johannes
+2026-06-30 angelegt, append-only, keine Löschrechte). Scheitert der externe Spiegel (z. B. noch
+unverifizierter Tabellenname), bleibt der lokale GRDB-Eintrag die primäre Kopie, und der Fehler
+wird sichtbar über `WRITE_SHADOW_BACKUP_FEHLT` gemeldet statt stillschweigend zu verschwinden.
 
 **`ProvisioningModeStore`** ist der TEST/PROD-Schalter (Default `.test`). `.prod` ist hart im
 Code gesperrt — es gibt keinen Parameter, der das umgeht — bis Nomenklatur (Block C),

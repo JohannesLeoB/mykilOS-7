@@ -77,13 +77,57 @@ public struct BusinessProject: Codable, Identifiable, Equatable, Sendable {
 // Match, nur über den exakten Schlüssel. `bindingState` macht ehrlich sichtbar, wenn
 // eine Seite fehlt, statt eine davon stillschweigend als „die Wahrheit" zu behandeln.
 public enum ProjectBindingState: String, Codable, Sendable, Equatable {
-    /// Beide Seiten vorhanden, über Projektnummer verbunden.
+    /// Beide Seiten vorhanden, über das echte `Projektnummer`-Feld verbunden.
     case linked
+    /// Beide Seiten vorhanden, aber NUR über die lokale, manuell bestätigte
+    /// Bindungs-Brücke verbunden (kein `Projektnummer`-Feld in Artikel-`Projekte`,
+    /// siehe `ProjectNumberBindingStore`) — redundant, ersetzt sich selbst, sobald
+    /// das echte Feld existiert (der `linked`-Pfad gewinnt dann automatisch).
+    case linkedViaLocalBinding
     /// Nur Mastermind-Routing bekannt (kein Geschäftsprojekt mit dieser Nummer gefunden).
     case routingOnly
     /// Geschäftsprojekt existiert, hat aber keine (oder eine unbekannte) Projektnummer
     /// und kann deshalb nicht verbunden werden — der heutige Normalfall für Intake-Projekte.
     case businessOnlyUnbound
+}
+
+// MARK: - ProjectNumberBindingCandidate / ConfirmedProjectNumberBinding
+// mykilOS 8, Block A (Erweiterung, 2026-06-30, Johannes-Entscheidung): solange Artikel-
+// `Projekte` kein `Projektnummer`-Feld hat (und solange bleibt, bis Daniel es in seiner
+// Backend-Hoheit ergänzt — siehe IDEEN_UND_BACKLOG.md), gibt es eine REDUNDANTE, rein
+// lokale Brücke: ein Geschäftsprojekt OHNE Nummer wird per exaktem Titel-Match gegen ein
+// Mastermind-Routing-Projekt (dessen Nummer aus der Drive-Ordner-Liste stammt) vorgeschlagen
+// — NIE automatisch als wahr behandelt, sondern als Kandidat über Karte→Bestätigung→Audit.
+// Mehrdeutige Treffer (>1 Routing-Projekt mit demselben Titel) werden NIE vorgeschlagen.
+// Rührt die Artikel-Projektliste selbst nie an — die Bindung lebt ausschließlich lokal.
+public struct ProjectNumberBindingCandidate: Sendable, Equatable, Identifiable {
+    public var id: String { businessRecordID }
+    public let businessRecordID: String
+    public let businessProjektname: String
+    public let projectNumber: String
+    public let routingTitle: String
+
+    public init(businessRecordID: String, businessProjektname: String, projectNumber: String, routingTitle: String) {
+        self.businessRecordID = businessRecordID
+        self.businessProjektname = businessProjektname
+        self.projectNumber = projectNumber
+        self.routingTitle = routingTitle
+    }
+}
+
+public struct ConfirmedProjectNumberBinding: Codable, Sendable, Equatable, Identifiable {
+    public var id: String { businessRecordID }
+    public let businessRecordID: String
+    public let projectNumber: String
+    public let confirmedAt: Date
+    public let actorUserID: String
+
+    public init(businessRecordID: String, projectNumber: String, confirmedAt: Date = Date(), actorUserID: String) {
+        self.businessRecordID = businessRecordID
+        self.projectNumber = projectNumber
+        self.confirmedAt = confirmedAt
+        self.actorUserID = actorUserID
+    }
 }
 
 public struct ResolvedProject: Sendable, Equatable {

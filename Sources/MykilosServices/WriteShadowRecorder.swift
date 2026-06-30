@@ -179,8 +179,20 @@ public final class WriteShadowRecorder {
             "TEST-PROD":        .string(entry.mode.rawValue),
             "Ergebnis":         .string(entry.result.rawValue),
         ]
+        let dataFlow = self.dataFlow
+        let actorUserID = entry.actorUserID
         Task {
-            _ = try? await airtable.createRecord(baseID: baseID, table: "Write-Shadow-Log", fields: fields)
+            do {
+                _ = try await airtable.createRecord(baseID: baseID, table: "Write-Shadow-Log", fields: fields)
+            } catch {
+                // Nicht-fatal (Ziel-Write ist längst durch), aber SICHTBAR — sonst
+                // verschwindet ein falscher Tabellenname/Schema-Mismatch spurlos.
+                dataFlow?.log(
+                    integrationID: "WRITE_SHADOW_BACKUP_FEHLT", actorUserID: actorUserID,
+                    action: .error, errorMessage: String(describing: error),
+                    summary: "Write-Shadow-Spiegel nach mykilOS-Backup fehlgeschlagen — Tabellenname/Schema prüfen"
+                )
+            }
         }
     }
 

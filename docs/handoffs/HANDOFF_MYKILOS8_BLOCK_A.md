@@ -4,7 +4,7 @@
 Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
 Branch: feat/mykilos8-block-a-fundament (von docs/mykilos8-handoff abgezweigt)
 Build:  ✅ swift build grün
-Tests:  ✅ 652 Tests grün (0 fehlgeschlagen)
+Tests:  ✅ 659 Tests grün (0 fehlgeschlagen)
 Datum:  2026-06-30
 ```
 
@@ -84,17 +84,52 @@ neu, plus volle Bestandssuite. GRDB-Migrationen `v12_write_shadow_log` + `v13_ap
 5. **Tests:** 652 grün, davon 16 neu für Block A.
 6. **Abschluss:** siehe §5 (DMG) unten.
 
-## 5. Offene Punkte für Johannes / nächste Sessions
+## 5. Erweiterung (gleicher Tag): Backup-Base live + Projektnummer-Bindungs-Brücke
 
-- **`mykilOS-Backup`-Base live anlegen** (Workspace, gewünschtes Schema siehe
-  `HANDOFF_TEST_SANDBOX.md` §7) → danach nur `backupBaseID` in `AppState.init` setzen.
-- **Artikel-`Projekte`: Feld `Projektnummer` ergänzen** (oder Block C übernimmt das beim Anlegen).
+Johannes hat die `mykilOS-Backup`-Base selbst angelegt ("mykilOS 8 Backup Base",
+`app56DTbSoqPvZhom`) und live gegeben — `AppState.writeShadow` zeigt jetzt darauf,
+`AirtableClient.writableMap` erlaubt CREATE in `Write-Shadow-Log` (Tabellenname
+unverifiziert, siehe `HANDOFF_TEST_SANDBOX.md` §7).
+
+Zur offenen Projektnummer-Frage (§2.1) hat Johannes präzisiert: statt nur auf Daniel zu warten,
+soll eine **redundante, rein lokale Brücke** Geschäftsprojekte ohne Projektnummer an Mastermind-
+Routing-Projekte binden — automatisch per exaktem Titel-Match erkannt, aber NUR nach manueller
+Bestätigung gültig (Karte→Bestätigung→Audit). Gebaut:
+
+| Komponente | Datei |
+|---|---|
+| `ProjectNumberBindingCandidate`/`ConfirmedProjectNumberBinding` | `Sources/MykilosKit/Domain/BusinessRecord.swift` |
+| `ProjectNumberBindingStore` (GRDB, `v14_project_number_bindings`) | `Sources/MykilosServices/ProjectNumberBindingStore.swift` |
+| `ExternalMappingRegistry.candidateBindings()` + `resolve(confirmedBindings:)` | `Sources/MykilosServices/ExternalMappingRegistry.swift` |
+| `ProjectNumberBindingSection` (UI, Integrationen-Tab) | `Sources/MykilosApp/ProjectNumberBindingSection.swift` |
+| `AppState.projectNumberBindingCandidates()` / `confirmProjectNumberBinding(_:)` | `Sources/MykilosApp/Data/AppState.swift` |
+
+Sicherheitsgarantien (alle testbewiesen): mehrdeutige Titel-Treffer werden NIE vorgeschlagen;
+existiert später das echte `Projektnummer`-Feld, gewinnt es IMMER vor der lokalen Bindung
+(`resolveBevorzugtEchtesFeldVorLokalerBindung`); die Bindung rührt die Artikel-Projektliste nie
+an (rein lokales GRDB). Live verifiziert: App startet ohne Crash, `AIRTABLE_GESCHAEFT_KUNDEN_
+PROJEKTE` synct jetzt auch beim App-Start (vorher nur nach Intake-Submit) — bestätigt mit echten
+Artikel-Base-Daten (grüner Status, „vor 13 s"), Integrationen-Seite rendert sauber mit 38 Weichen.
+Die Bindungs-Sektion blieb in diesem Live-Lauf leer (kein Crash, korrektes Verhalten — keine
+exakten Titel-Treffer in den echten Daten gefunden, lieber kein Vorschlag als ein falscher).
+
+7 neue Tests (`ExternalMappingRegistryTests` +4, `ProjectNumberBindingStoreTests` +2,
+`WriteShadowRecorderTests` +1 inkl. Flaky-Fix von fester Sleep-Dauer auf Polling) — 659 gesamt
+grün.
+
+## 6. Offene Punkte für Johannes / nächste Sessions
+
+- **Tabellenname/-schema von `mykilOS-Backup` bestätigen** — mein Airtable-MCP sieht die Base
+  nicht (403), `Write-Shadow-Log` ist meine Annahme. Live-Test: Intake-Submit auslösen, in der
+  Backup-Base nachschauen, ob der Record ankommt.
+- **Artikel-`Projekte`: Feld `Projektnummer` ergänzen** (Daniel, ohne Drängen) — die lokale
+  Bindungs-Brücke ist der Übergang, kein Ersatz.
 - **CashWidget-Budget** auf `ExternalMappingRegistry`-Resolve umstellen, sobald Projekte gebunden
   sind (siehe `IDEEN_UND_BACKLOG.md`).
 - **Block B (Lokales Zeit-Subsystem, S1)** ist der nächste Block im Rolling-Plan — rein lokal,
   keine externe Abhängigkeit, kann sofort starten.
 
-## 6. Push/Merge
+## 7. Push/Merge
 
 Branch `feat/mykilos8-block-a-fundament` ist bereit für Review. Push/Merge nach
 `docs/mykilos8-handoff`/`main` nur durch Johannes (Eiserne Regel).

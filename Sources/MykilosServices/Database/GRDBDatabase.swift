@@ -235,6 +235,20 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v14_project_number_bindings (mykilOS 8, Block A, Johannes-Entscheidung
+        // 2026-06-30) — REIN LOKALE, redundante Brücke: solange Artikel-`Projekte` kein
+        // `Projektnummer`-Feld hat, bindet diese Tabelle ein Geschäftsprojekt
+        // (businessRecordID) an eine Projektnummer — NUR nach manueller Bestätigung
+        // (Karte→Bestätigung→Audit). Rührt die Artikel-Base selbst nie an.
+        migrator.registerMigration("v14_project_number_bindings") { db in
+            try db.create(table: "projectNumberBindings") { t in
+                t.primaryKey("businessRecordID", .text)
+                t.column("projectNumber", .text).notNull().indexed()
+                t.column("confirmedAt", .double).notNull()
+                t.column("actorUserID", .text).notNull()
+            }
+        }
+
         try migrator.migrate(queue)
     }
 
