@@ -143,6 +143,30 @@ Ordner. Heimat: Airtable `Ordner-Konnektoren` ODER GRDB-Config (**live entscheid
   neuen Ordner mappen, bestehende Projekte per Migration re-verdrahten. Der `DriveProjectFolderResolver` liest die
   Konnektor-Tabelle statt fester Strings.
 
-> §8–§10 sind **Adapter-Seams**: Nummern, ClickUp-Routing und Ordner-Verdrahtung sind **Daten/Config, nicht
-> Code** — so bleibt alles re-routebar, wenn Sevdesk die Nummern vorgibt, ClickUp anders verdrahtet wird oder
-> sich der Ordnerbaum ändert. Befüllung/echte IDs immer **live mit Johannes**, Default TEST-Sandbox.
+## 11. Clockodo-Routing-/Schalter-Tabelle (Projekt-Buchungs-Export · Ins & Outs) — MUSS ANGELEGT WERDEN
+
+**Johannes-Vorgabe: „DIE muss angelegt werden!"** — analog zur ClickUp-Routing-Tabelle (§9), aber für Clockodo:
+die **Schalter-Tabelle** für den Projekt-Buchungs-Export mit allen **Ins & Outs**. Sitzt auf dem schon
+entworfenen Zuhörer + den bestehenden Airtable-Clockodo-Tabellen (`Clockodo-Nutzer` tblPbly2br8mR2kaU,
+`Clockodo-EW-<Name>`, `Clockodo-Buchungen`, `Clockodo-Leistungen`). **Heimat: neue Airtable-Tabelle
+`Clockodo-Routing` (live mit Johannes anlegen).** Jede Zeile = eine Weiche: **welcher User bucht wann was,
+in welche Tabelle rein und nach Clockodo raus** — User-scoped (jeder nur seine eigenen), Rücklauf anonymisiert.
+
+| Routing-ID | Ebene | Richtung | Quelle | Ziel | Trigger | User-Scope | NO-GO |
+|---|---|---|---|---|---|---|---|
+| `CL_IN_TIMER` | user | IN | Timer-Segment | persönl. `Clockodo-EW-<User>` (Draft) | Stopp/Buchung | je User, nur eigene | — |
+| `CL_IN_CHAT` | user | IN | NLP-Chat („4h CAD für Heinz") | persönl. EW-Tabelle (Draft) | Nachricht | je User | — |
+| `CL_IN_MAIL_CAL` | user | IN (Vorschlag) | Gmail/GCal | Draft-Vorschlag | periodisch | je User | Bestätigung nötig |
+| `CL_OUT_POST` | user | OUT | bestätigter Draft | Clockodo `POST /api/v2/entries` (per-User-Key) | Confirm/Wochenabschluss | je User, eigener Keychain-Key | nie fremde Buchungen, kein App-Key |
+| `CL_OUT_MASTER` | user→projekt | OUT | gebuchter Eintrag | Airtable `Clockodo-Buchungen` (Master-Audit) | nach POST | System | keine PII anderer User |
+| `CL_BACK_AGG` | projekt | RÜCKLAUF | Clockodo-Aggregation | Geld-Widget Ist (Soll/Ist) | periodisch | **anonymisiert** je Kostenstelle/Projekt | nie personenbezogen |
+
+- **Felder je Zeile auch:** `clockodoRef` (entry-ID, Laufzeit), `kostenstelle→service`-Mapping (aus Airtable-Projektfeld
+  → `Clockodo-Leistungen`), `billable`, `aktiv`, `optin`, `letzterSync`, `status`.
+- **Privatheits-Grenze (hart):** Zeit-/Buchungsdaten sind pro Nutzer isoliert (Private Area); Rücklauf nur
+  aggregiert/anonymisiert; kein Log/Audit enthält Clockodo-Rohdaten anderer. Re-Routing = Zeile ändern, nicht Code.
+- **Block-Zuordnung:** wird in **Block E (Clockodo)** angelegt + verdrahtet — `Clockodo-Routing`-Tabelle **live mit Johannes** erstellen.
+
+> §8–§11 sind **Adapter-Seams**: Nummern, ClickUp-Routing, Ordner-Verdrahtung und **Clockodo-Routing** sind
+> **Daten/Config, nicht Code** — so bleibt alles re-routebar, wenn Sevdesk die Nummern vorgibt, ClickUp/Clockodo
+> anders verdrahtet werden oder sich der Ordnerbaum ändert. Befüllung/echte IDs immer **live mit Johannes**, Default TEST-Sandbox.
