@@ -250,6 +250,35 @@ das Kalkulationsmodul live geht. Bürogeheimnis, nicht in Code/Docs.
 
 ## Architektur & Datenfluss
 
+### 💡 Multi-Base-Architektur v2 + zentrale Datenweichen-Router-Tabelle
+**Quelle:** Johannes, 2026-06-30 (während mykilOS 8 Block A). Johannes hat 17 neue, domänen-
+getrennte Airtable-Bases angelegt: `mykilOS_Projekte`, `mykilOS_Datenweichen`,
+`mykilOS_Handelswaren`, `mykilOS_Onlineshop & Verkauf`, `mykilOS_App Entwicklung`,
+`mykilOS_Rechnungen IN`/`OUT`, `mykilOS_Angebote IN`/`OUT`, `mykilOS_Fragebogen & Projekt IN`,
+`mykilOS_Adapter ClickUp`/`Slack`/`Sevdesk`/`GoogleDrive`/`Weclapp`, `mykilOS_TRESOR` — sichtbar
+über den `list_bases`-Meta-Endpoint mit dem App-PAT, nicht über den Standard-Airtable-MCP.
+
+**Frage:** lohnt sich der Umbau auf Domänen-Bases + eine zentrale Master-/Router-Tabelle, die
+maschinenlesbar führt, welche Base/Tabelle für welches Datum die SoR ist (die `Datenstrom-
+Handbuch`-Idee konsequent zu Ende gedacht — die App liest Routing-Entscheidungen dann aus dieser
+Tabelle statt aus hartcodierten `AirtableClient.writableMap`-Konstanten)?
+
+**Einschätzung:** architektonisch richtig — ein Adapter pro externem System trennt sauber
+externe Spiegelung von Geschäftsdaten, genau die Trennung, die den Mastermind↔Artikel-Konflikt
+aus Block A verursacht hat (siehe oben). **Umfang ≥ Block C/D, eigener Strang:** 17 Schemata
+lesen+verstehen, SoR-Karte v2 entwerfen, gesamtes App-Routing umschreiben (`writableMap`,
+`mapProjects`/`mapCustomers`, `ExternalMappingRegistry`, `CartStore`, Intake-Schreibpfad), dazu
+intensive Live-Tests (von Johannes selbst gefordert). **Bewusst NICHT in Block A angefasst** —
+keine Daten geschrieben/migriert, reine Erkundung.
+
+**Hinweis:** die alte tabu-Base `appkPzoEiI5eSMkNK` (Zuliefererpreise Schätzung) ist über den
+App-PAT jetzt ebenfalls sichtbar (gleicher Token, breiterer Zugriff) — das **NO-GO bleibt
+unverändert in Kraft**, Sichtbarkeit ist keine Erlaubnis.
+
+**Plan:** erster Schritt einer künftigen, voll budgetierten Session — alle 17 Schemata
+domänenweise lesen, Verständnis-Report + konkreten Router-Tabellen-Vorschlag liefern, Johannes
+entscheidet, was von Mastermind/Artikel-Base abgelöst wird vs. koexistiert, erst dann bauen.
+
 ### 🚨 Budget hat HEUTE zwei Quellen (Mastermind `Project.links.budget` vs. Artikel `BusinessProject.budget`)
 **Quelle:** mykilOS 8 Block A, S0-Audit (2026-06-30), code-verifiziert. `CashWidget` liest
 `project.links.budget` aus dem Mastermind-Cache (Soll-Wert für den Ist-vs-Budget-Balken). Die
