@@ -71,6 +71,9 @@ struct KatalogeView: View {
     @State private var artikelStore = ArtikelKatalogStore()
     @State private var lagerStore = LagerlisteStore()
     @State private var warenkorbListeStore = WarenkorbListeStore()
+    // Intake: Fragebogen-Sheet
+    @State private var zeigeFragebogen: Bool = false
+    @State private var frageBogenModell = FragebogenModel()
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -82,6 +85,15 @@ struct KatalogeView: View {
             }
             .background(MykColor.paper.color)
             .onAppear { loadOrder() }
+            .sheet(isPresented: $zeigeFragebogen, onDismiss: {
+                // Fragebogen-Modell nach Schließen zurücksetzen
+                frageBogenModell = FragebogenModel()
+            }) {
+                FragebogenView(modell: frageBogenModell) {
+                    zeigeFragebogen = false
+                }
+                .environment(appState)
+            }
 
             // Warenkorb-Floating-Panel (rechts oben eingeblendet)
             if warenkorb.showPanel {
@@ -111,6 +123,26 @@ struct KatalogeView: View {
                     .foregroundStyle(MykColor.muted.color)
             }
             Spacer()
+
+            // Intake: + Neues Projekt (Fragebogen)
+            Button {
+                zeigeFragebogen = true
+            } label: {
+                HStack(spacing: MykSpace.s2) {
+                    Image(systemName: "plus")
+                        .font(.mykCaption)
+                    Text("Neues Projekt")
+                        .font(.mykSmall)
+                }
+                .foregroundStyle(MykColor.paper.color)
+                .padding(.horizontal, MykSpace.s4)
+                .padding(.vertical, MykSpace.s2)
+                .background(MykColor.brand.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+            }
+            .buttonStyle(.plain)
+            .help("Neues Projekt über Fragebogen anlegen")
+
             // Warenkorb-Badge-Button
             Button {
                 warenkorb.showPanel.toggle()
