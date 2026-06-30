@@ -4,7 +4,7 @@ set -euo pipefail
 PRODUCT_NAME="mykilOS6"
 EXECUTABLE_NAME="mykilOS6"
 BUNDLE_ID="de.mykilos.mykilos6"
-APP_VERSION="7.6.6"
+APP_VERSION="7.6.7"
 # App-Bundle trägt die Versionsnummer im Namen, damit im Dock/Finder immer
 # eindeutig ist, welche Version läuft. BUNDLE_ID bleibt KONSTANT (sonst neuer
 # DB-/Keychain-Pfad → Datenverlust).
