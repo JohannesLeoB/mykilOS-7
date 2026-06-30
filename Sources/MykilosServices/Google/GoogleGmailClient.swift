@@ -56,6 +56,8 @@ public protocol GoogleGmailFetching: Sendable {
     func fetchBody(messageID: String) async throws -> String
     /// Alle Nachrichten eines Threads (für 3-Spalten-View). Default-Impl: leeres Array.
     func fetchThread(threadID: String, maxMessages: Int) async throws -> [GoogleGmailMessage]
+    /// Lädt einen Anhang als rohe Bytes (feat/mail-client-v2). Default wirft.
+    func downloadAttachment(messageID: String, attachmentID: String) async throws -> Data
 }
 
 public extension GoogleGmailFetching {
@@ -63,6 +65,9 @@ public extension GoogleGmailFetching {
         throw GoogleGmailError.invalidResponse
     }
     func fetchThread(threadID: String, maxMessages: Int) async throws -> [GoogleGmailMessage] { [] }
+    func downloadAttachment(messageID: String, attachmentID: String) async throws -> Data {
+        throw GoogleGmailError.invalidResponse
+    }
 }
 
 // MARK: - GoogleGmailWriting (S14) — getrennt, damit Lese-Fakes unberührt bleiben.
@@ -138,6 +143,34 @@ public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting {
         guard let http = response as? HTTPURLResponse else { throw GoogleGmailError.invalidResponse }
         guard (200...299).contains(http.statusCode) else { throw GoogleGmailError.httpError(http.statusCode) }
         return Self.parseBody(from: data)
+    }
+
+    // MARK: - Anhang herunterladen (feat/mail-client-v2)
+
+    public func downloadAttachment(messageID: String, attachmentID: String) async throws -> Data {
+        guard let accessToken = try? await tokenProvider.validAccessToken() else {
+            throw GoogleGmailError.notConnected
+        }
+        // GET /gmail/v1/users/me/messages/{messageId}/attachments/{id}
+        let urlString = "\(baseURL)/\(messageID)/attachments/\(attachmentID)"
+        guard let url = URL(string: urlString) else { throw GoogleGmailError.invalidResponse }
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw GoogleGmailError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw GoogleGmailError.httpError(http.statusCode) }
+        // Response: { "attachmentId": "…", "size": N, "data": "<base64url>" }
+        struct AttachmentBody: Decodable { var data: String? }
+        guard let body = try? JSONDecoder().decode(AttachmentBody.self, from: data),
+              let raw = body.data else { throw GoogleGmailError.decodingFailed }
+        return Self.decodeBase64URL(raw) ?? Data()
+    }
+
+    /// base64url → Data (Umkehr zu base64URL(_:)).
+    static func decodeBase64URL(_ s: String) -> Data? {
+        var padded = s.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        while padded.count % 4 != 0 { padded += "=" }
+        return Data(base64Encoded: padded)
     }
 
     // MARK: - Entwurf anlegen (S14)

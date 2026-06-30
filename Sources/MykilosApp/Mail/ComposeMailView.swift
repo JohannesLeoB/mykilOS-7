@@ -6,10 +6,13 @@ import MykilosServices
 
 // MARK: - ComposeMailView
 // Verfassen-UI → GoogleGmailClient.createDraft. KEIN Senden. Nur Entwurf anlegen.
-// Anhänge per Finder-Drop (UniformTypeIdentifiers). Empfänger aus Kontakten wählbar.
+// Anhänge per Finder-Drop (UniformTypeIdentifiers). Empfänger aus Airtable-Kontakten wählbar.
+// Kontakt-Quelle: StudioContact aus Airtable Mastermind-Base (appuVMh3KDfKw4OoQ),
+// Tabelle „Kontakte" (tblncfQzQa8TzCZQC) — vom App-Layer injiziert, kein direkter
+// Airtable-Fetch hier (Widgets-Schicht kennt keinen Netzwerk-Client).
 @MainActor
 struct ComposeMailView: View {
-    let contacts: [GoogleContact]
+    let contacts: [StudioContact]
     @Environment(\.dismiss) private var dismiss
 
     @State private var toField: String = ""
@@ -277,40 +280,73 @@ private struct AttachmentChip: View {
 }
 
 // MARK: - ContactPickerPopover
+// Zeigt Airtable-StudioContacts mit E-Mail-Adresse. Nur Kontakte mit gesetzter
+// E-Mail sind wählbar (sinnlos ohne). Quelle: appuVMh3KDfKw4OoQ/tblncfQzQa8TzCZQC.
 private struct ContactPickerPopover: View {
-    let contacts: [GoogleContact]
-    let onSelect: (GoogleContact) -> Void
+    let contacts: [StudioContact]
+    let onSelect: (StudioContact) -> Void
+    @State private var filter: String = ""
+
+    private var filtered: [StudioContact] {
+        let hasEmail = contacts.filter { $0.email?.isEmpty == false }
+        guard !filter.isEmpty else { return hasEmail }
+        return hasEmail.filter { $0.matches(filter) }
+    }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                ForEach(contacts) { contact in
-                    Button {
-                        onSelect(contact)
-                    } label: {
-                        HStack(spacing: MykSpace.s3) {
-                            Image(systemName: "person.crop.circle")
-                                .foregroundStyle(MykColor.people.color)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(contact.displayName)
-                                    .font(.mykSmall)
-                                    .foregroundStyle(MykColor.ink.color)
-                                if let email = contact.email {
-                                    Text(email)
-                                        .font(.mykMono(9.5))
-                                        .foregroundStyle(MykColor.muted.color)
+        VStack(spacing: 0) {
+            HStack(spacing: MykSpace.s3) {
+                Image(systemName: "magnifyingglass")
+                    .font(.mykCaption)
+                    .foregroundStyle(MykColor.muted.color)
+                TextField("Suchen …", text: $filter)
+                    .font(.mykBody)
+                    .textFieldStyle(.plain)
+            }
+            .padding(MykSpace.s4)
+            Divider()
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    if filtered.isEmpty {
+                        Text("Keine Kontakte mit E-Mail")
+                            .font(.mykMono(10))
+                            .foregroundStyle(MykColor.muted.color)
+                            .padding(MykSpace.s5)
+                    }
+                    ForEach(filtered) { contact in
+                        Button {
+                            onSelect(contact)
+                        } label: {
+                            HStack(spacing: MykSpace.s3) {
+                                Image(systemName: "person.crop.circle")
+                                    .foregroundStyle(MykColor.people.color)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(contact.name)
+                                        .font(.mykSmall)
+                                        .foregroundStyle(MykColor.ink.color)
+                                    if let email = contact.email {
+                                        Text(email)
+                                            .font(.mykMono(9.5))
+                                            .foregroundStyle(MykColor.muted.color)
+                                    }
+                                    if let org = contact.organisation {
+                                        Text(org)
+                                            .font(.mykMono(9))
+                                            .foregroundStyle(MykColor.faint.color)
+                                    }
                                 }
                             }
+                            .padding(.horizontal, MykSpace.s4)
+                            .padding(.vertical, MykSpace.s3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .padding(.horizontal, MykSpace.s4)
-                        .padding(.vertical, MykSpace.s3)
+                        .buttonStyle(.plain)
+                        Divider()
                     }
-                    .buttonStyle(.plain)
-                    Divider()
                 }
             }
         }
-        .frame(width: 280, height: 300)
+        .frame(width: 300, height: 340)
         .background(MykColor.paper.color)
     }
 }

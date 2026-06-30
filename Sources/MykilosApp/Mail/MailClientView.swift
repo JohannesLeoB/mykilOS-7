@@ -6,10 +6,13 @@ import MykilosServices
 // MARK: - MailClientView
 // 3-Spalten-Mail-Reader: Suchleiste + Nachrichtenliste (links) + Volltext (rechts).
 // Nutzt GoogleGmailClient.searchMessages + fetchBody. KEIN Senden — nur Lesen + Entwurf.
+// Kontakt-Brücke (Phase 3): Airtable Mastermind-Base appuVMh3KDfKw4OoQ,
+// Tabelle Kontakte (tblncfQzQa8TzCZQC) → StudioContact → Empfänger-Picker.
 @MainActor
 struct MailClientView: View {
     @State private var store = MailClientStore()
     @State private var showCompose = false
+    @State private var airtableContacts: [StudioContact] = []
 
     var body: some View {
         HStack(spacing: 0) {
@@ -31,8 +34,21 @@ struct MailClientView: View {
             }
         }
         .sheet(isPresented: $showCompose) {
-            ComposeMailView(contacts: [])
+            ComposeMailView(contacts: airtableContacts)
         }
+        .task {
+            await loadAirtableContacts()
+        }
+    }
+
+    /// Lädt Kontakte aus Airtable Mastermind-Base (appuVMh3KDfKw4OoQ).
+    /// Fehler werden still geschluckt — fehlende Kontakte = leere Picker-Liste, kein Crash.
+    private func loadAirtableContacts() async {
+        let client = AirtableClient()
+        let baseID = "appuVMh3KDfKw4OoQ"
+        let tableID = "tblncfQzQa8TzCZQC"
+        guard let records = try? await client.fetchRecords(baseID: baseID, table: tableID) else { return }
+        airtableContacts = AirtableClient.mapContacts(from: records)
     }
 
     // MARK: - Linke Spalte: Suche + Nachrichtenliste

@@ -357,6 +357,36 @@ struct GoogleGmailClientTests {
         let result = GoogleGmailClient.parseThreadMessages(from: Data("bad json".utf8))
         #expect(result.isEmpty)
     }
+
+    // MARK: - feat/mail-client-v2: decodeBase64URL Roundtrip
+
+    @Test func decodeBase64URLRoundtripMitBinaerDaten() {
+        let original = Data([0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x00, 0xFF, 0xFE])
+        let encoded = GoogleGmailClient.base64URL(original)
+        let decoded = GoogleGmailClient.decodeBase64URL(encoded)
+        #expect(decoded == original)
+    }
+
+    @Test func decodeBase64URLOhnePaddingTollerant() {
+        // base64url ohne Padding (wie Gmail API antwortet)
+        let original = Data("mykilOS".utf8)
+        let b64url = original.base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "="))
+        let decoded = GoogleGmailClient.decodeBase64URL(b64url)
+        #expect(decoded == original)
+    }
+
+    @Test func downloadAttachmentDefaultWirftInvalidResponse() async {
+        struct FakeGmail: GoogleGmailFetching, @unchecked Sendable {
+            func searchMessages(query: String, maxResults: Int) async throws -> [GoogleGmailMessage] { [] }
+        }
+        let fake = FakeGmail()
+        await #expect(throws: GoogleGmailError.invalidResponse) {
+            _ = try await fake.downloadAttachment(messageID: "m1", attachmentID: "a1")
+        }
+    }
 }
 
 private struct FakeGmailWithBody: GoogleGmailFetching, @unchecked Sendable {
