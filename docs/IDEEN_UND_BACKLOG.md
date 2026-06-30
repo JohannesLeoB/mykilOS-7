@@ -279,6 +279,18 @@ unverändert in Kraft**, Sichtbarkeit ist keine Erlaubnis.
 domänenweise lesen, Verständnis-Report + konkreten Router-Tabellen-Vorschlag liefern, Johannes
 entscheidet, was von Mastermind/Artikel-Base abgelöst wird vs. koexistiert, erst dann bauen.
 
+**Performance/Caching-Frage geklärt (2026-06-30):** mehr Bases machen die App NICHT langsamer,
+solange das bestehende Lokal-Cache-Muster beibehalten wird (UI liest nie live von Airtable,
+immer aus `CachedProjectRegistry`/`CachedBusinessRegistry`/künftigem Artikel-Spiegel — Kosten
+skalieren mit Datensätzen pro Sync, nicht mit Anzahl Bases). **Johannes' Entscheidung: Webhook-
+basiertes Push ist der bevorzugte Weg** (nicht nur Intervall-Polling) — heißt: für die
+Umsetzung braucht es einen kleinen Relay-Server mit öffentlich erreichbarer HTTPS-URL, der
+Airtable-Automations/Webhooks empfängt und an die App weiterreicht (eine lokale Mac-App kann
+selbst keine Webhook-Ziel-URL sein). **Für die nächste Session vorzubereiten/abzustimmen:** wo
+läuft der Relay (eigener kleiner Cloud-Dienst?), wie meldet sich die App dort an, Fallback auf
+Polling falls die App offline ist/der Relay nicht erreichbar ist. Sofort-Sync nach eigenem
+Write (wie heute bei Intake) bleibt davon unabhängig zusätzlich bestehen.
+
 ### 🚨 Budget hat HEUTE zwei Quellen (Mastermind `Project.links.budget` vs. Artikel `BusinessProject.budget`)
 **Quelle:** mykilOS 8 Block A, S0-Audit (2026-06-30), code-verifiziert. `CashWidget` liest
 `project.links.budget` aus dem Mastermind-Cache (Soll-Wert für den Ist-vs-Budget-Balken). Die
