@@ -270,7 +270,11 @@ public final class AppState {
         do {
             dataFlow.log(integrationID: "AIRTABLE_KUNDEN_PROJEKTE", actorUserID: actorUserID,
                          action: .start, summary: "Auto-Sync bei App-Start")
-            await registry.syncFromAirtable(baseID: credentials.baseID, auth: airtableAuth)
+            // Kanonische Base statt der gespeicherten credentials.baseID: die ist durch
+            // den wiederkehrenden Keychain-Bug teils kaputt (PAT statt ID) → der Sync
+            // schlug fehl und vergiftete airtableAuth.status auf .error, was wiederum
+            // JEDES Schreiben blockierte. Alle Airtable-Zugriffe nutzen jetzt dieselbe ID.
+            await registry.syncFromAirtable(baseID: AirtableClient.writableBaseID, auth: airtableAuth)
             if case .error(let msg) = airtableAuth.status {
                 dataFlow.log(integrationID: "AIRTABLE_KUNDEN_PROJEKTE", actorUserID: actorUserID,
                              action: .error, errorMessage: msg, summary: "Airtable-Sync fehlgeschlagen")
@@ -390,9 +394,9 @@ public final class AppState {
     // create → AirtableClient.createRecord; update → AirtableClient.updateRecord.
     // KEIN delete. Wird der AssistantChatView als `onWriteAirtableContact` injiziert.
     public func writeAirtableContact(_ draft: AirtableContactDraft) async -> AirtableContactWriteOutcome {
-        guard airtableAuth.status == .connected else {
-            return .failed("Airtable nicht verbunden — in den Einstellungen verbinden.")
-        }
+        // KEIN Gate auf airtableAuth.status: ein fehlgeschlagener Projekt-Sync darf das
+        // Schreiben nicht blockieren (genau dieser Bug kam wiederholt). Ob ein PAT da ist,
+        // prüft AirtableClient.createRecord/updateRecord selbst und wirft sonst .notConnected.
         let client = AirtableClient()
         let baseID = AirtableClient.writableBaseID
         let table  = "Kontakte"
@@ -427,7 +431,9 @@ public final class AppState {
         } catch AirtableError.invalidBaseID(let msg) {
             return .failed("Schreibschutz verletzt: \(msg)")
         } catch AirtableError.notConnected {
-            return .failed("Airtable nicht verbunden — in den Einstellungen verbinden.")
+            return .failed("Airtable nicht verbunden — Personal Access Token in den Einstellungen eintragen.")
+        } catch AirtableError.httpError(let code) where code == 401 || code == 403 {
+            return .failed("Airtable-Token hat keine Schreibrechte (Fehler \(code)). In Airtable einen Token mit Scope „data.records:write\" für die Mastermind-Base erstellen und in den Einstellungen eintragen.")
         } catch {
             return .failed("Fehler beim Schreiben: \(error.localizedDescription)")
         }
