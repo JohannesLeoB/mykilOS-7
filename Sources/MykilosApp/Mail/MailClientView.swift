@@ -13,8 +13,11 @@ struct MailClientView: View {
     // Eingebettet im Assistenten-Toggle bringt die Seite ihren Titel schon mit —
     // dann KEINEN eigenen „Mail"-Kopf rendern (sonst steht „Mail" doppelt).
     var showsOwnHeader: Bool = true
+    // „Verfassen" wird vom Seiten-Header (neben dem Toggle) gesteuert — NICHT mehr
+    // über ein Fenster-Toolbar-Item, das beim Tab-Wechsel auftauchte/verschwand und
+    // dabei den ganzen Inhalt verschob.
+    @Binding var showCompose: Bool
     @State private var store = MailClientStore()
-    @State private var showCompose = false
     @State private var airtableContacts: [StudioContact] = []
 
     var body: some View {
@@ -27,18 +30,6 @@ struct MailClientView: View {
         // Höhe nach Inhalt und das Fenster verspringt beim Toggle Assistent⇄Mail.
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(MykColor.paper.color)
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Button {
-                    showCompose = true
-                } label: {
-                    Label("Verfassen", systemImage: "square.and.pencil")
-                        .font(.mykSmall)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(MykColor.personal.color)
-            }
-        }
         .sheet(isPresented: $showCompose) {
             ComposeMailView(contacts: airtableContacts)
         }

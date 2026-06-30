@@ -321,6 +321,7 @@ struct AssistantPageView: View {
     @Environment(StudioContext.self) private var context
     @Environment(AppState.self) private var appState
     @State private var activeTab: AssistantTab = .assistant
+    @State private var mailCompose = false
 
     var body: some View {
         // Wurzel VStack (kein äußeres ScrollView), damit der Chat eigenständig
@@ -348,6 +349,16 @@ struct AssistantPageView: View {
                 .pickerStyle(.segmented)
                 .frame(width: 200)
                 .labelsHidden()
+                // „Verfassen" sitzt rechts neben dem Toggle (nur im Mail-Tab) —
+                // bewusst NICHT in der Fenster-Toolbar (die verschob beim Wechsel).
+                if activeTab == .mail {
+                    Button { mailCompose = true } label: {
+                        Label("Verfassen", systemImage: "square.and.pencil")
+                            .font(.mykSmall)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(MykColor.personal.color)
+                }
             }
             .padding(.horizontal, MykSpace.s9)
             .padding(.top, MykSpace.s9)
@@ -370,7 +381,7 @@ struct AssistantPageView: View {
                     onCreateDraft: { await appState.createDraft($0) }
                 )
             case .mail:
-                MailClientView(showsOwnHeader: false)
+                MailClientView(showsOwnHeader: false, showCompose: $mailCompose)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
