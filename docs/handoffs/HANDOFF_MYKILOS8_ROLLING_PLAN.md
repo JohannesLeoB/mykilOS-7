@@ -52,17 +52,18 @@ Details: `HANDOFF_TEST_SANDBOX.md`.
 
 | # | Block | Modell · Level | Inhalt (Quellen) |
 |---|---|---|---|
-| **A** | **Fundament: Eine Wahrheit + Sicherheit + Audit (S0)** | **Opus · xhigh** | S0-Audit · **SoR-Karte auflösen** (Mastermind↔Artikel) · `ExternalMappingRegistry` als einziger Resolver (Grundgerüst) · `WriteShadowRecorder` + `mykilOS-Backup` · TEST-Sandbox + Schalter + `TestSandboxCleaner` · Rechte-Matrix scharf (sicher). |
+| **A** | **Fundament: Eine Wahrheit + Sicherheit + Audit (S0)** | **Sonnet · high** (⤴ optional) | S0-Audit · **SoR-Karte auflösen** (Mastermind↔Artikel) · `ExternalMappingRegistry` als einziger Resolver (Grundgerüst) · `WriteShadowRecorder` + `mykilOS-Backup` · TEST-Sandbox + Schalter + `TestSandboxCleaner` · Rechte-Matrix scharf (sicher). |
 | **B** | **Lokales Zeit-Subsystem (S1)** | **Sonnet · high** | Projekt-Timer (Start/Stopp/Pause, Single-Instance-Invariante), 3–5 Kostenstellen-Buttons, Sidebar-Pille, Puls-Erinnerung, doppelte Buchungs-Bestätigung, Zielkontingent. **Rein lokal.** Mockups `entwuerfe/`. |
-| **C** | **Identität + Nomenklatur (S2)** | **Opus · high** | Registry voll (Kdnr/Projektnr/Token→Customer/Project, **Kdnr ≠ Projektnr**) · Kostenstellen aus Airtable · **NumberAuthority** (nächste `2026_030`, max+1, Archiv, Sevdesk-Seam) · STR-Nr-Regel + Varianten (aus Bestand) · **Anti-Duplikat-Checks** · konfigurierbares Ordnerschema + **Ordner-Konnektor-Tabelle** · Kdnr auf Detail-Übersicht. |
+| **C** | **Identität + Nomenklatur (S2)** | **Sonnet · high** (⤴ optional) | Registry voll (Kdnr/Projektnr/Token→Customer/Project, **Kdnr ≠ Projektnr**) · Kostenstellen aus Airtable · **NumberAuthority** (nächste `2026_030`, max+1, Archiv, Sevdesk-Seam) · STR-Nr-Regel + Varianten (aus Bestand) · **Anti-Duplikat-Checks** · konfigurierbares Ordnerschema + **Ordner-Konnektor-Tabelle** · Kdnr auf Detail-Übersicht. |
 | **D** | **Provisioning in der Sandbox (S4)** | **Sonnet · high** | Drive-Ordnerbaum aus Schema (in `_TEST_PROVISIONING`) via Konnektoren · Mehrsystem-Geburt (Drive+Airtable, gated) · ClickUp-Routing-Tabelle (Gerüst) · **Intake-Drive-Upload-Trigger nachrüsten** (feuert heute nicht). Live fragen: wo/wie. |
-| **E** | **Geld & Zeit-Upload (S3)** | **Opus · high** | Clockodo-Write-Gerüst + API-Schemata (per-User-Key, draft→confirm→POST, anonymisiert) · Soll/Ist-Loop (Sevdesk-OrderPos via Airtable → Soll · Ist aus Clockodo · Verkaufsbalken %). Kein realer POST bis Freigabe. |
+| **E** | **Geld & Zeit-Upload (S3)** | **Sonnet · high** (⤴ optional) | Clockodo-Write-Gerüst + API-Schemata (per-User-Key, draft→confirm→POST, anonymisiert) · Soll/Ist-Loop (Sevdesk-OrderPos via Airtable → Soll · Ist aus Clockodo · Verkaufsbalken %). Kein realer POST bis Freigabe. |
 | **F** | **Dokument-Widgets** | **Sonnet · high** | **Abnahme-Widget** (Protokoll→PDF-Briefpapier+Airtable+einsehbar) · **Warenkorb-Widget** (Einkaufswagen-Icon auf Übersicht, Tabelle, Versionen, **rote Diffs**) · **Export** (Warenkorb CSV/PDF) · **Feature A** „+"-Masken. |
-| **G** | **Performance + Politur + Live-Schaltung** | **Sonnet/Opus · gemischt** | Lokaler Artikel-Spiegel (Speed) · Linienzeichnungen in der Fragebogen-Maske · ClickUp-Baum **live mit Johannes** routen · **TEST→PROD-Flip je Schritt** · finaler Integrations- + Regressions-Durchlauf → mykilOS-8-Release-DMG. |
+| **G** | **Performance + Politur + Live-Schaltung** | **Sonnet · high** | Lokaler Artikel-Spiegel (Speed) · Linienzeichnungen in der Fragebogen-Maske · ClickUp-Baum **live mit Johannes** routen · **TEST→PROD-Flip je Schritt** · finaler Integrations- + Regressions-Durchlauf → mykilOS-8-Release-DMG. |
 
-**Modell-Logik:** Architektur/Identität/Geld/Sicherheit → **Opus, hoch** (Entscheidungen, Quer-Wirkungen,
-Datenwahrheit). UI/Formular/Widget/mechanischer Aufbau auf solidem Fundament → **Sonnet, hoch**. Reine
-Mechanik/Cleanup → Sonnet/Haiku. **Pro Block den Modell-Tag oben verwenden.**
+**Modell-Logik:** **Default = Sonnet 4.6, hohes Reasoning — für ALLE Blöcke ausreichend** (die Webshop-/Drive-/
+Intake-Strecke dieser Übergabe wurde von Sonnet gebaut, solide). Das **⤴** bei A/C/E heißt nur: ein stärkeres
+Modell ist bei Architektur/Identität/Geld **optional** sinnvoll, **kein Muss** — die Sicherheit liefert der
+**ZIEL-CHECK (§3) + Johannes im Loop**, nicht die Modellstufe. Reine Mechanik/Cleanup → auch Haiku.
 
 ## 3. ⭐ ZIEL-CHECK je Block (das Herzstück — vor jedem DMG, NICHTS überspringen)
 

@@ -3,7 +3,9 @@
 > **So benutzen:** Im anderen Claude-Konto eine neue Claude-Code-Session im Ordner
 > `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/` öffnen und den Block zwischen den
 > `=====`-Linien als ERSTE Nachricht einfügen. Selbsttragend — kein Gedächtnis/Chat der Vorsession nötig.
-> **Modell für den Start: Opus, hohes Reasoning** (Block A ist architektur-kritisch).
+> **Modell: Sonnet 4.6, hohes Reasoning als Default — für ALLE Blöcke ausreichend.** Ein stärkeres Modell ist
+> nur **optional** für Block A („eine Wahrheit"/Architektur) oder heikle Entscheidungen (C/E) — **kein Muss**.
+> Die Sicherheit kommt aus dem ZIEL-CHECK + Johannes im Loop, nicht aus der Modellstufe.
 
 ```
 =====================================================================================================
@@ -36,11 +38,11 @@ LIES IN DIESER REIHENFOLGE, BEVOR DU ETWAS TUST:
    HANDOFF_PROVISIONING_NOMENKLATUR.md (Nummern/Ordner/Adapter), HANDOFF_ABNAHME_WIDGET.md,
    HANDOFF_PLANNED_FEATURES.md (Feature A/C/D). Original-Briefing: mykilOS8_Orchestrierung/codesession_handoff/.
 
-ROLLIERENDE BLÖCKE (A→B→C→D→E→F→G, je bestes Modell — siehe ROLLING_PLAN §2):
-A Fundament (Eine Wahrheit + Sicherheit + Audit/S0) [Opus xhigh] · B Lokale Zeit (S1) [Sonnet high] ·
-C Identität+Nomenklatur (S2) [Opus high] · D Provisioning in Sandbox (S4) [Sonnet high] ·
-E Geld & Zeit-Upload (S3) [Opus high] · F Dokument-Widgets (Abnahme/Warenkorb/Export/+Masken) [Sonnet high] ·
-G Performance+Politur+Live-Schaltung [gemischt].
+ROLLIERENDE BLÖCKE (A→B→C→D→E→F→G — siehe ROLLING_PLAN §2). Default-Modell: Sonnet 4.6 hoch für ALLE Blöcke;
+„⤴" = stärkeres Modell optional, kein Muss:
+A Fundament (Eine Wahrheit + Sicherheit + Audit/S0) ⤴ · B Lokale Zeit (S1) · C Identität+Nomenklatur (S2) ⤴ ·
+D Provisioning in Sandbox (S4) · E Geld & Zeit-Upload (S3) ⤴ ·
+F Dokument-Widgets (Abnahme/Warenkorb/Export/+Masken) · G Performance+Politur+Live-Schaltung.
 
 JEDER BLOCK ENDET MIT DEM ZIEL-CHECK (ROLLING_PLAN §3) — NICHTS überspringen:
 1) Vollständigkeit: jedes Ziel WIRKLICH gebaut + im laufenden Bundle LIVE verifiziert (nicht nur „kompiliert"/
