@@ -115,6 +115,26 @@ public final class WarenkorbState {
         }
     }
 
+    /// Aus einem `WarenkorbItem` (z. B. wiederhergestellt aus JSON) eine Position anlegen.
+    /// Bestehende Positionen mit gleicher Artikelnummer bekommen die Menge addiert.
+    public func addWarenkorbItem(_ item: WarenkorbItem) {
+        let posID = "\(item.quelle)-\(item.artikelnummer)"
+        if let idx = positionen.firstIndex(where: { $0.id == posID }) {
+            positionen[idx].menge += item.menge
+        } else {
+            positionen.append(Position(
+                id: posID,
+                source: item.quelle,
+                artikelRecordID: item.artikelRecordID,
+                bezeichnung: item.bezeichnung,
+                artikelnummer: item.artikelnummer,
+                menge: item.menge,
+                ekNetto: item.ekNetto,
+                vkNetto: item.vkNetto
+            ))
+        }
+    }
+
     /// Menge setzen (0 = entfernen).
     public func setMenge(_ menge: Int, forID id: String) {
         if menge <= 0 {

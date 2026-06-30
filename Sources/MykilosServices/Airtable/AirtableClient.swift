@@ -50,6 +50,21 @@ public enum AirtableFieldValue: Sendable, Equatable, Decodable {
         return nil
     }
 
+    /// Gibt einen String zurück — auch für .number-Werte (Zahlen → "12345" oder "3.14").
+    /// Nutzen wenn das Quelltfeld in Airtable als Zahl formatiert sein kann (z. B. Artikelnummer).
+    public var anyStringValue: String? {
+        switch self {
+        case .string(let s): return s
+        case .number(let n):
+            // Ganzzahlen ohne Dezimalstelle (12345.0 → "12345")
+            if n.truncatingRemainder(dividingBy: 1) == 0 {
+                return String(Int(n))
+            }
+            return String(n)
+        default: return nil
+        }
+    }
+
     public var firstArrayValue: String? {
         if case .array(let a) = self { return a.first }
         return nil

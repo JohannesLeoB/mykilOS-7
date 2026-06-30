@@ -153,23 +153,35 @@ public final class ArtikelKatalogStore {
 
     // MARK: - Private Fetch
 
-    /// AirtableClient.fetchRecords paginiert bereits (loop über offset) —
-    /// ein einziger Aufruf reicht, der Client holt alle Seiten sequenziell.
+    /// Lädt alle Records paginiert. Da der AirtableClient intern alle Seiten holt,
+    /// gibt es einen einzigen Aufruf. Für sichtbaren Fortschritt: der State wechselt
+    /// von .loading(0) → .loading(N nach Fetch) → .content oder .empty.
+    /// Fehler werden sauber auf die passenden States gemappt — nie stilles Leer.
     private func _fetchAll() async {
         do {
-            // Der AirtableClient gibt alle Records zurück (paginiert intern).
-            // Für UI-Fortschritt: kurzer Zwischenzustand beim Mapping großer Tabellen.
             let records = try await client.fetchRecords(
                 baseID: Self.baseID,
                 table: Self.tableID
             )
-            state = .loading(records.count)  // kurzer Zwischen-State
-            let mapped = Self.mapArtikelItems(from: records)
-            state = mapped.isEmpty ? .empty : .content(mapped)
+            // Fortschritt sichtbar machen: kurze Zwischenstation mit Anzahl geladener Records
+            state = .loading(records.count)
+            // Mapping auf Background-Thread auslagern (13k Records sind nicht trivial)
+            let mapped = await Task.detached(priority: .userInitiated) {
+                Self.mapArtikelItems(from: records)
+            }.value
+            if mapped.isEmpty {
+                // Wenn wir Records hatten aber alle ausgefiltert wurden → Fehler-Hinweis,
+                // nicht stilles .empty (wäre verwirrend bei 13k-Tabelle)
+                state = records.isEmpty ? .empty : .error("Keine Artikel mit Artikelnummer-Feld gemappt (\(records.count) Rohdaten). Feld-Namen prüfen.")
+            } else {
+                state = .content(mapped)
+            }
         } catch AirtableError.notConnected {
             state = .notConnected
         } catch AirtableError.httpError(let code) {
-            state = .error("HTTP \(code)")
+            state = .error("HTTP \(code) — Airtable nicht erreichbar oder Base-ID falsch.")
+        } catch AirtableError.decodingFailed {
+            state = .error("Antwort konnte nicht dekodiert werden — API-Format geändert?")
         } catch {
             state = .error(error.localizedDescription)
         }
@@ -179,11 +191,14 @@ public final class ArtikelKatalogStore {
 
     /// Mappt rohe Airtable-Records auf `ArtikelItem`-Werte.
     /// Pflichtfeld: `Artikelnummer` — Records ohne Artikelnummer werden übersprungen.
+    /// Wichtig: `anyStringValue` statt `stringValue` — Artikelnummern können in Airtable
+    /// als Zahlenfeld formatiert sein (z. B. 12345 statt "12345").
     public nonisolated static func mapArtikelItems(
         from records: [[String: AirtableFieldValue]]
     ) -> [ArtikelItem] {
         records.compactMap { fields in
-            guard let artikelnummer = fields[feldArtikelnummer]?.stringValue,
+            // anyStringValue: auch numerische Artikelnummern (fld als Zahl) werden akzeptiert
+            guard let artikelnummer = fields[feldArtikelnummer]?.anyStringValue,
                   !artikelnummer.trimmingCharacters(in: .whitespaces).isEmpty else {
                 return nil
             }
@@ -193,9 +208,9 @@ public final class ArtikelKatalogStore {
             return ArtikelItem(
                 id: recordID,
                 artikelnummer: artikelnummer,
-                hersteller: fields[feldHersteller]?.stringValue,
-                kategorie: fields[feldKategorie]?.stringValue,
-                artikelbeschreibung: fields[feldBeschreibung]?.stringValue,
+                hersteller: fields[feldHersteller]?.anyStringValue,
+                kategorie: fields[feldKategorie]?.anyStringValue,
+                artikelbeschreibung: fields[feldBeschreibung]?.anyStringValue,
                 ekNetto: fields[feldEKNetto]?.numberValue,
                 vkNetto: fields[feldVKNetto]?.numberValue,
                 produktbildURL: bildURL
