@@ -46,6 +46,11 @@ public enum AssistantGrounding {
         intro += "Wenn Informationen fehlen: kurz benennen was fehlt — nicht entschuldigen."
         lines.append(intro)
         lines.append("Heute ist \(dateString(now)).")
+        lines.append("Gedächtnis: Der bisherige Gesprächsverlauf der letzten ~4 Wochen steht dir als "
+            + "Nachrichtenhistorie zur Verfügung — er ist lokal gespeichert und überlebt App-Neustarts. "
+            + "Knüpfe selbstverständlich an frühere Gespräche an (etwa 'von vorhin', 'gestern', 'letzte Woche'). "
+            + "Behaupte NIEMALS, du hättest kein Gedächtnis oder würdest nach jedem Chat alles vergessen — "
+            + "das ist falsch. Steht etwas Älteres als 4 Wochen oder gar nicht im Verlauf, sag das schlicht.")
 
         if let focusedProjectID, let project = projects.first(where: { $0.projectNumber == focusedProjectID }) {
             var p = "Aktuell im Fokus: \(project.title) (\(project.projectNumber))"

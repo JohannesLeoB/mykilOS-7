@@ -131,7 +131,12 @@ public final class ConversationEngine {
 
         // API-Konversation: persistierter Verlauf (ohne den leeren Platzhalter),
         // plus die transienten tool_use/tool_result-Turns dieser Runde.
-        var convo = chatStore.messages(for: scope).filter { $0.id != placeholder.id }
+        // Gedächtnis-Fenster: nur die letzten ~4 Wochen mitschicken (definierter
+        // Erinnerungshorizont + Token-/Kostengrenze, statt endlos den ganzen Verlauf).
+        var convo = Self.memoryWindow(
+            chatStore.messages(for: scope).filter { $0.id != placeholder.id },
+            now: now
+        )
         let effectiveToolsEnabled = toolsEnabled || schaetzModusEnabled
         // S26 — Auto-Routing: günstigstes Modell, das der Aufgabe gewachsen ist.
         let routedModel = AssistantModelRouter.model(
@@ -200,6 +205,21 @@ public final class ConversationEngine {
                 id: placeholder.id, blocks: [.text(message)], status: .failed(message), in: scope
             )
         }
+    }
+
+    // MARK: - Gedächtnis-Fenster
+    /// Anzahl Tage, die der Assistent als Gesprächsverlauf mitbekommt.
+    public static let memoryWindowDays = 28
+    /// Begrenzt den mitgeschickten Verlauf: nur Nachrichten der letzten
+    /// `memoryWindowDays`, höchstens 120 Stück, und NIE mit einem assistant-/tool-
+    /// Turn beginnend (sonst bricht ein verwaister tool_result die API). So bleibt
+    /// das Gedächtnis bezahlbar und der Verlauf API-gültig.
+    static func memoryWindow(_ messages: [ChatMessage], now: Date) -> [ChatMessage] {
+        let cutoff = now.addingTimeInterval(-Double(memoryWindowDays) * 24 * 3600)
+        var windowed = messages.filter { $0.createdAt >= cutoff }
+        if windowed.count > 120 { windowed = Array(windowed.suffix(120)) }
+        while let first = windowed.first, first.role != .user { windowed.removeFirst() }
+        return windowed
     }
 
     // Agentische Schleife. Sammelt nebenbei sichtbare Tool-Spuren (activities)
