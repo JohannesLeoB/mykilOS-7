@@ -103,11 +103,16 @@ struct ProjectHeroView: View {
         HStack(spacing: MykSpace.s8) {
             if let customer {
                 metaItem(key: "Kunde", value: customer.name)
+                // mykilOS 8, Block C (S2): Kdnr neben der Projektnummer (Vertrag §1).
+                // Kdnr ≠ Projektnr — eigener Kundenschlüssel, getrennt geführt.
+                if customer.customerNumber.trimmingCharacters(in: .whitespaces).isEmpty == false {
+                    metaItem(key: "Kdnr", value: customer.customerNumber)
+                }
             }
             if let phase = project.phase {
                 metaItem(key: "Phase", value: phase)
             }
-            metaItem(key: "Nummer", value: project.projectNumber)
+            metaItem(key: "Projektnr", value: project.projectNumber)
             if project.isAddendum, let parent = project.parentProjectNumber {
                 metaItem(key: "Nachtrag zu", value: parent)
             }

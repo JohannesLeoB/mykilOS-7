@@ -109,4 +109,54 @@ public struct ExternalMappingRegistry: Sendable {
         }
         return candidates
     }
+
+    // MARK: - Identitäts-Lookups (mykilOS 8, Block C / S2)
+    // Die Registry wird „voll": Kundennummer (Kdnr) und Projektnummer sind GETRENNTE
+    // kanonische Schlüssel (Kdnr ≠ Projektnr, HANDOFF_PROVISIONING_NOMENKLATUR §1).
+    // Kdnr identifiziert den KUNDEN, Projektnummer das PROJEKT. Ein Freitext-Token kann
+    // beides oder ein Name sein — `resolveToken` löst es eindeutig auf.
+
+    /// Kunde per Kundennummer (Kdnr). Exakt, case-insensitiv.
+    public func customer(kdnr: String) throws -> Customer? {
+        let key = kdnr.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard key.isEmpty == false else { return nil }
+        return try routing.allCustomers().first { $0.customerNumber.caseInsensitiveCompare(key) == .orderedSame }
+    }
+
+    /// Projekt per Projektnummer (Routing-Wahrheit). Exakt, case-insensitiv.
+    public func project(projektnummer: String) throws -> Project? {
+        let key = projektnummer.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard key.isEmpty == false else { return nil }
+        return try routing.allProjects().first { $0.projectNumber.caseInsensitiveCompare(key) == .orderedSame }
+    }
+
+    /// Alle Projekte eines Kunden (über `customerNumber`-Verknüpfung).
+    public func projects(kdnr: String) throws -> [Project] {
+        let key = kdnr.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard key.isEmpty == false else { return [] }
+        return try routing.allProjects().filter { $0.customerNumber.caseInsensitiveCompare(key) == .orderedSame }
+    }
+
+    /// Löst ein Freitext-Token eindeutig auf: erst Projektnummer, dann Kdnr, dann Name.
+    /// `Kdnr ≠ Projektnr` bleibt gewahrt — ein Projektnummer-Treffer gewinnt nie über eine
+    /// Kdnr, weil die Formate sich nicht überschneiden (Projektnr ist `JJJJ-NNN`).
+    public func resolveToken(_ token: String) throws -> TokenAufloesung {
+        let key = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard key.isEmpty == false else { return .unbekannt }
+        if let p = try project(projektnummer: key) { return .projekt(p) }
+        if let c = try customer(kdnr: key) { return .kunde(c) }
+        // Name-Fallback (schwächer): exakter, normalisierter Kunden-/Projekttitel.
+        func norm(_ s: String) -> String { s.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil).trimmingCharacters(in: .whitespacesAndNewlines) }
+        let nk = norm(key)
+        if let c = try routing.allCustomers().first(where: { norm($0.name) == nk }) { return .kunde(c) }
+        if let p = try routing.allProjects().first(where: { norm($0.title) == nk }) { return .projekt(p) }
+        return .unbekannt
+    }
+}
+
+// MARK: - TokenAufloesung
+public enum TokenAufloesung: Sendable, Equatable {
+    case kunde(Customer)
+    case projekt(Project)
+    case unbekannt
 }

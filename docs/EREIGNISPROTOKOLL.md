@@ -30,6 +30,27 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-07-01 · Claude Code (Opus 4.8, Ultracode) — mykilOS 8 Block C: Identität + Nomenklatur (S2)
+
+```
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Branch: feat/mykilos8-block-c-identitaet-nomenklatur
+Build:  ✅ swift build grün
+Tests:  ✅ 695 Tests grün (24 neu)
+```
+
+Identitäts- + Nomenklatur-Schicht (rein lokal, kein externer Write): `Projektnummer` (max+1, nie
+wiederverwenden), `NumberAuthority`-Adapter + `LocalSequentialAuthority` (aktiv+Archiv, atomare
+`nextAndReserve`), `STRNummer` (Adresse/ORT/Varianten-Whitelist/Warn+Block), `FolderSchema v1` +
+Ordner-Konnektoren (versionierte GRDB-Config), `AntiDuplikat`, `KostenstellenProviding` (Default +
+Override, Airtable-ready), `NomenklaturStore`, Registry voll (Kdnr/Projektnr/Token-Lookups, Kdnr≠
+Projektnr), Kdnr auf Detail-Übersicht. GRDB-Migration v16. Johannes' Vorab-Entscheidungen:
+Provider-Abstraktion, GRDB-Config-Heimat, Varianten-Whitelist, voll durchziehen. ZIEL-CHECK mit
+adversarialem Multi-Agent-Review (4 Dim., 10 Findings, 8 gefixt inkl. Race-Condition bei der
+Nummernvergabe). Details: [HANDOFF_MYKILOS8_BLOCK_C.md](handoffs/HANDOFF_MYKILOS8_BLOCK_C.md). DMG 7.10.0.
+
+---
+
 ## 2026-07-01 · Claude Code (Opus 4.8, Ultracode) — mykilOS 8 Block B: Lokales Zeit-Subsystem (S1)
 
 ```

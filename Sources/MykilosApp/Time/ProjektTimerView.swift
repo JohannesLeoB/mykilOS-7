@@ -13,8 +13,12 @@ struct ProjektTimerView: View {
     let projektTitel: String
     @Environment(AppState.self) private var appState
 
-    // Kostenstellen für S1 statisch (Kostenstelle.defaults). S2: aus Airtable-Projektfeld.
-    private let kostenstellen = Kostenstelle.defaults
+    // mykilOS 8, Block C (S2): Kostenstellen über den NomenklaturStore (Default jetzt,
+    // Airtable-Quelle sobald ein Feld existiert) statt fest verdrahteter Liste. Direkte
+    // Methode statt Provider-Allokation pro View-Frame (Block-C-Review-Fix).
+    private var kostenstellen: [Kostenstelle] {
+        appState.nomenklatur.kostenstellen(fuer: projektNummer)
+    }
     @State private var pendingKostenstelle: String = Kostenstelle.defaults.first?.name ?? "Allgemein"
     @State private var zielInput: String = ""
     @State private var editingZiel = false

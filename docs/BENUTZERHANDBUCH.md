@@ -570,5 +570,46 @@ Airtable); Zielkontingent nur manuell.
 
 ---
 
+## mykilOS 8, Block C — Identität + Nomenklatur (S2)
+
+Block C baut die **Nomenklatur-Logik** — die Regeln für Projektnummern, Ordnerschema, Kunden-
+identität und Dublettenschutz. Rein lokal, kein externer Write; das eigentliche Provisioning
+(Ordner/Records erzeugen) ist Block D. Diese Bausteine sind das Fundament dafür.
+
+**Projektnummer + NumberAuthority.** Das Format `JJJJ-NNN` (App) bzw. `JJJJ_NNN` (Drive-Ordner) ist
+einmalig und fortlaufend — strikt **max+1, keine Lücken auffüllen, nie wiederverwenden** (prüft auch
+das Archiv). Die Vergabe läuft über eine **austauschbare NumberAuthority** (heute lokal aus dem
+Projektbestand + Archiv; perspektivisch von Sevdesk vorgegeben — dann via Airtable/Make, nie direkt).
+Gelöschte Projekte werden archiviert, ihre Nummer nie erneut vergeben.
+
+**Kundennummer (Kdnr) ≠ Projektnummer.** Die Kdnr identifiziert den **Kunden** (einzigartig, nicht
+fortlaufend, kein Teil des Ordnernamens), die Projektnummer das **Projekt**. Beide werden getrennt
+geführt; die Registry löst Kdnr→Kunde, Projektnr→Projekt und Freitext-Token→beides auf. *Neu:* Die
+**Kdnr steht jetzt auf der Projekt-Detailseite** in der Übersicht, neben der Projektnummer.
+
+**STR-Nr (letzter Ordnerblock).** Default: abgekürzte **Straße der Baustelle + Hausnummer**
+(z. B. HEI8 = Heimhuder 8, KOE66, MUE71 — Umlaute werden transliteriert). Fehlt die Adresse →
+**ORT** (Stadt). Für Nicht-Baustellen-Projekte gibt es eine bestätigte **Varianten-Whitelist**
+(Geräte/Herd/Quooker/Lightnet/…). Kann der Block weder als Adresse noch per ORT noch als bestätigte
+Variante gebildet werden → **Warnung + Block** (kein schema-brechender Ordner).
+
+**Ordnerschema + Konnektoren.** Der Projekt-Ordnerbaum ist **versionierte Daten** (FolderSchema v1),
+nicht hartkodiert — so kann er künftig neu schematisiert werden. Jede App-Funktion spricht einen
+**logischen Slot** an (z. B. „Fragebogen"), eine Konnektor-Tabelle mappt Slot→aktuellen Ordner.
+Ändert sich ein Ordnername, wird nur der Konnektor angepasst, der Code bleibt. (Lokal in GRDB.)
+
+**Anti-Duplikat-Checks.** Vor jeder Kunden-/Projekt-Anlage prüft die Logik, ob Kunde/Kdnr/Projekt
+schon existieren (über Name/Firma/E-Mail/Telefon/Kundennummer) — bei Treffer wird **Verknüpfen statt
+Neu-Anlegen** angeboten, nichts wird stumm gedoppelt.
+
+**Kostenstellen-Provider.** Die Timer-Kostenstellen (Block B) kommen jetzt über eine Abstraktion:
+heute die Default-Liste (lokal pro Projekt überschreibbar), fertig verdrahtet für eine Airtable-
+Quelle, sobald ein entsprechendes Projektfeld existiert.
+
+*Einschränkungen S2:* alles lokal, kein externer Write; Kostenstellen-Airtable-Quelle wartet auf ein
+Backend-Feld; das echte Ordner-/Nummern-Provisioning kommt in Block D (Sandbox).
+
+---
+
 *Dieses Dokument wird mit jedem Feature-Commit aktualisiert.*
-*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-b-zeit-subsystem · mykilOS 8 Block B (Lokales Zeit-Subsystem, S1)*
+*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-c-identitaet-nomenklatur · mykilOS 8 Block C (Identität + Nomenklatur, S2)*

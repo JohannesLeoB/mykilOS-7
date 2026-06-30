@@ -44,6 +44,12 @@ public final class AppState {
     // Rein lokal, kein externer Write — Clockodo-Upload ist S3. Siehe TimerStore.swift.
     public let timer: TimerStore
 
+    // mykilOS 8, Block C (S2): Identität + Nomenklatur. NomenklaturStore (Ordner-Konnektoren,
+    // FolderSchema-Version, Kostenstellen-Overrides) + NumberAuthority (Projektnummern-Vergabe,
+    // austauschbarer Adapter für die spätere Sevdesk-Vorgabe). Rein lokal, kein externer Write.
+    public let nomenklatur: NomenklaturStore
+    public let numberAuthority: any NumberAuthority
+
     // MARK: Integrationen
     public let googleAuth: GoogleAuthService
     public let clockodoAuth: ClockodoAuthService
@@ -167,6 +173,20 @@ public final class AppState {
         }
         self.projectNumberBindings = ProjectNumberBindingStore(db: database)
         self.timer = TimerStore(db: database)
+        let nomenklaturStore = NomenklaturStore(db: database)
+        self.nomenklatur = nomenklaturStore
+        // Aktive Projektnummern kommen live aus dem lokalen Routing-Cache (Eine Wahrheit) —
+        // die Authority kombiniert sie mit ihrem GRDB-Register (archiviert/reserviert).
+        // Das Datei-IO läuft explizit off-main (Task.detached), damit ein Vergabe-Aufruf
+        // nie den aufrufenden Kontext blockiert (Block-C-Review-Fix).
+        self.numberAuthority = LocalSequentialAuthority(
+            db: database,
+            aktiveNummern: {
+                await Task.detached(priority: .utility) {
+                    let projekte = (try? CachedProjectRegistry().allProjects()) ?? []
+                    return projekte.compactMap { Projektnummer(parsing: $0.projectNumber) }
+                }.value
+            })
         let claudeCredentials = KeychainClaudeCredentialsStore()
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
         self.assistantLLM = ClaudeMessagesClient(credentialsStore: claudeCredentials)
@@ -291,6 +311,7 @@ public final class AppState {
         try? provisioningMode.load()   // mykilOS 8, Block A: ungefunden = Default .test
         try? projectNumberBindings.load()   // mykilOS 8, Block A: ungefunden = leere Liste
         try? timer.load()              // mykilOS 8, Block B: laufender Timer/offene Buchung überlebt Neustart
+        try? nomenklatur.load()        // mykilOS 8, Block C: Konnektoren (v1-Seed), Schema-Version, Kostenstellen-Overrides
         // Registry seeden/laden
         await registry.seedIfEmpty()
         await registry.load()

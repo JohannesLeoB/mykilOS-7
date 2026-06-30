@@ -295,6 +295,42 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v16_nomenklatur (mykilOS 8, Block C / S2) — Identität + Nomenklatur, rein lokal.
+        //   vergebeneNummern   — Nummern-Register der NumberAuthority (archiviert/reserviert/
+        //                        extern gebunden). Aktive Nummern kommen live aus der Registry;
+        //                        dieses Register hält, was NICHT mehr aktiv, aber nie wieder
+        //                        vergebbar ist (Archiv) + Reservierungen. status: aktiv/archiviert/reserviert/extern.
+        //   nomenklaturConfig  — Key-Value (aktive Schema-Version, NumberAuthorityMode).
+        //   ordnerKonnektoren  — Slot → aktueller Ordnername (Re-Wiring ohne Code).
+        //   projektKostenstellen — lokale Kostenstellen-Overrides je Projekt (bis Airtable-Feld).
+        migrator.registerMigration("v16_nomenklatur") { db in
+            try db.create(table: "vergebeneNummern") { t in
+                t.primaryKey("appFormat", .text)            // "2026-030"
+                t.column("jahr",           .integer).notNull().indexed()
+                t.column("laufendeNummer", .integer).notNull()
+                t.column("status",         .text).notNull()  // archiviert/reserviert/extern
+                t.column("quelle",         .text)            // bei extern: woher
+                t.column("updatedAt",      .double).notNull()
+            }
+            try db.create(table: "nomenklaturConfig") { t in
+                t.primaryKey("key", .text)
+                t.column("value", .text).notNull()
+                t.column("updatedAt", .double).notNull()
+            }
+            try db.create(table: "ordnerKonnektoren") { t in
+                t.primaryKey("slot", .text)
+                t.column("ordnername",    .text).notNull()
+                t.column("relativerPfad", .text).notNull()
+                t.column("schemaVersion", .integer).notNull()
+                t.column("updatedAt",     .double).notNull()
+            }
+            try db.create(table: "projektKostenstellen") { t in
+                t.primaryKey("projektNummer", .text)
+                t.column("namenJSON", .text).notNull()       // ["Planung","Beratung",…]
+                t.column("updatedAt", .double).notNull()
+            }
+        }
+
         try migrator.migrate(queue)
     }
 
