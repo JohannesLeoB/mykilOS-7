@@ -387,6 +387,28 @@ struct GoogleGmailClientTests {
             _ = try await fake.downloadAttachment(messageID: "m1", attachmentID: "a1")
         }
     }
+
+    // MARK: - Auto-Inbox (feat/mail-in-assistant)
+    // Prüft, dass die Inbox-Query genau "in:inbox" verwendet, damit der
+    // Auto-Posteingang beim Öffnen die echte Gmail-Inbox lädt.
+    @Test func inboxQueryNutztGmailInInboxFilter() {
+        let url = GoogleGmailClient.buildListURL(query: "in:inbox", maxResults: 25, baseURL: baseURL)
+        let components = url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+        let items = Dictionary(uniqueKeysWithValues: (components?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        #expect(items["q"] == "in:inbox")
+        #expect(items["maxResults"] == "25")
+    }
+
+    // Prüft, dass eine Inbox-Search-Antwort mit leerer Liste korrekt als
+    // leeres Array geparst wird (kein Crash, kein Error-Throw).
+    @Test func parseMessageIDsInboxLeer() throws {
+        // Gmail liefert bei leerer Inbox kein "messages"-Array
+        let json = """
+        { "resultSizeEstimate": 0 }
+        """
+        let ids = try GoogleGmailClient.parseMessageIDs(from: Data(json.utf8))
+        #expect(ids.isEmpty)
+    }
 }
 
 private struct FakeGmailWithBody: GoogleGmailFetching, @unchecked Sendable {

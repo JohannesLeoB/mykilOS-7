@@ -37,6 +37,9 @@ struct MailClientView: View {
             ComposeMailView(contacts: airtableContacts)
         }
         .task {
+            // Auto-Posteingang: beim ersten Erscheinen sofort die Inbox laden,
+            // sofern noch kein Suchergebnis vorliegt (store.phase == .idle).
+            await store.loadInboxIfNeeded()
             await loadAirtableContacts()
         }
     }
@@ -115,7 +118,9 @@ struct MailClientView: View {
         Group {
             switch store.phase {
             case .idle:
-                hintText("Suchbegriff eingeben — z. B. \"Leuchten Gehrke\" oder \"from:team@mykilos.com\".")
+                // Sollte nach dem Auto-Inbox-Load nie dauerhaft zu sehen sein.
+                // Falls doch (kein Netz), zeigen wir eine Mini-Erklärnote.
+                hintText("Posteingang wird geladen …")
             case .loading:
                 VStack { Spacer(); ProgressView("Lade …").font(.mykSmall); Spacer() }
                     .frame(maxWidth: .infinity)
@@ -382,9 +387,25 @@ final class MailClientStore {
         self.client = client
     }
 
+    /// Lädt den Posteingang (in:inbox) beim ersten Öffnen automatisch,
+    /// sofern noch kein Suchergebnis vorliegt.
+    func loadInboxIfNeeded() async {
+        guard phase == .idle else { return }
+        await fetchMessages(query: "in:inbox")
+    }
+
     func search() async {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !q.isEmpty else { phase = .idle; messages = []; return }
+        // Leere Suche → zurück zum Posteingang
+        guard !q.isEmpty else {
+            await fetchMessages(query: "in:inbox")
+            return
+        }
+        await fetchMessages(query: q)
+    }
+
+    /// Gemeinsamer Kern für Inbox-Load + freie Suche.
+    private func fetchMessages(query q: String) async {
         searchGen &+= 1
         let gen = searchGen
         phase = .loading

@@ -153,6 +153,8 @@ struct DatabaseRecoveryView: View {
 }
 
 // MARK: - AppModule
+// Mail ist KEIN eigener Sidebar-Eintrag mehr — es lebt als Toggle innerhalb
+// des Assistenten (AssistantPageView). Daher kein `.mail`-Case mehr hier.
 enum AppModule: String, CaseIterable, Identifiable {
     case today        = "Heute"
     case projects     = "Projekte"
@@ -160,7 +162,6 @@ enum AppModule: String, CaseIterable, Identifiable {
     case brands       = "Integrationen"
     case kataloge     = "Kataloge"
     case offers       = "Angebote"
-    case mail         = "Mail"
     case settings     = "Einstellungen"
     var id: String { rawValue }
     var icon: String {
@@ -171,7 +172,6 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .brands:      "building.2"
         case .kataloge:    "books.vertical"
         case .offers:      "doc.text"
-        case .mail:        "envelope"
         case .settings:    "gearshape"
         }
     }
@@ -298,44 +298,80 @@ struct ContentView: View {
         case .offers:      GlobalOffersView()
         case .brands:      BrandsView(onNavigateToSettings: { module = .settings })
         case .kataloge:    KatalogeView()
-        case .mail:        MailClientView()
         case .settings:    SettingsView()
         }
     }
 }
 
+// MARK: - AssistantPageView
+// Enthält zwei Modi via Segmented-Picker: Assistent-Chat + Mail-Client.
+// Mail ist KEIN eigener Sidebar-Eintrag mehr — es lebt hier als zweiter Tab.
 struct AssistantPageView: View {
+    enum AssistantTab: String, CaseIterable {
+        case assistant = "Assistent"
+        case mail      = "Mail"
+        var systemImage: String {
+            switch self {
+            case .assistant: "sparkles"
+            case .mail:      "envelope"
+            }
+        }
+    }
+
     @Environment(StudioContext.self) private var context
     @Environment(AppState.self) private var appState
+    @State private var activeTab: AssistantTab = .assistant
 
     var body: some View {
         // Wurzel VStack (kein äußeres ScrollView), damit der Chat eigenständig
         // scrollt und der Composer unten verankert bleibt.
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: MykSpace.s2) {
-                Text("Assistent")
-                    .font(.mykDisplay)
-                    .foregroundStyle(MykColor.ink.color)
-                Text("Fragt deine Projekte, Signale und den Tag — im Dialog.")
-                    .font(.mykSmall)
-                    .foregroundStyle(MykColor.muted.color)
+            // Header mit Titel + Segmented-Picker
+            HStack(alignment: .center, spacing: MykSpace.s6) {
+                VStack(alignment: .leading, spacing: MykSpace.s2) {
+                    Text(activeTab == .assistant ? "Assistent" : "Mail")
+                        .font(.mykDisplay)
+                        .foregroundStyle(MykColor.ink.color)
+                    Text(activeTab == .assistant
+                         ? "Fragt deine Projekte, Signale und den Tag — im Dialog."
+                         : "Gmail · Lesen und Entwürfe verfassen.")
+                        .font(.mykSmall)
+                        .foregroundStyle(MykColor.muted.color)
+                }
+                Spacer()
+                // Segmented-Picker: Assistent ⇄ Mail
+                Picker("Modus", selection: $activeTab) {
+                    ForEach(AssistantTab.allCases, id: \.self) { tab in
+                        Label(tab.rawValue, systemImage: tab.systemImage).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 200)
+                .labelsHidden()
             }
             .padding(.horizontal, MykSpace.s9)
             .padding(.top, MykSpace.s9)
             .padding(.bottom, MykSpace.s5)
             Divider().overlay(MykColor.line.color)
-            AssistantChatView(
-                scope: .home,
-                chatStore: appState.chat,
-                engine: appState.conversation,
-                isConnected: appState.claudeAuth.status == .connected,
-                modelName: (try? appState.claudeAuth.storedCredentials()?.model) ?? ClaudeAuthService.defaultModel,
-                projects: appState.registry.projects,
-                focusedProjectID: context.focusedProjectID,
-                profile: appState.profile.profile,
-                onCreateContact: { await appState.createContact($0) },
-                onCreateDraft: { await appState.createDraft($0) }
-            )
+
+            // Inhalt je nach aktivem Tab
+            switch activeTab {
+            case .assistant:
+                AssistantChatView(
+                    scope: .home,
+                    chatStore: appState.chat,
+                    engine: appState.conversation,
+                    isConnected: appState.claudeAuth.status == .connected,
+                    modelName: (try? appState.claudeAuth.storedCredentials()?.model) ?? ClaudeAuthService.defaultModel,
+                    projects: appState.registry.projects,
+                    focusedProjectID: context.focusedProjectID,
+                    profile: appState.profile.profile,
+                    onCreateContact: { await appState.createContact($0) },
+                    onCreateDraft: { await appState.createDraft($0) }
+                )
+            case .mail:
+                MailClientView()
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .background(MykColor.paper.color)
@@ -486,8 +522,6 @@ struct AppCommands: Commands {
                 .keyboardShortcut("8", modifiers: .command)
             Button("Angebote")        { activeModule = .offers }
                 .keyboardShortcut("5", modifiers: .command)
-            Button("Mail")            { activeModule = .mail }
-                .keyboardShortcut("9", modifiers: .command)
             Button("Einstellungen")   { activeModule = .settings }
                 .keyboardShortcut("7", modifiers: .command)
         }
