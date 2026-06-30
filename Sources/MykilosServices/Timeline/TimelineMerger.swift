@@ -34,6 +34,7 @@ public extension AuditEntry.Action {
         case .estimateAdjusted:   "Schätzung angepasst"
         case .calibrationPromoted:"Kalibrierung übernommen"
         case .contactCreated:     "Kontakt angelegt"
+        case .driveFileUploaded:  "Datei hochgeladen"
         }
     }
 }

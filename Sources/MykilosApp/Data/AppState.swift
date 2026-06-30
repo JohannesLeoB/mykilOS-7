@@ -336,6 +336,56 @@ public final class AppState {
         return .created("Entwurf in Gmail abgelegt (erscheint auch in Apple Mail).")
     }
 
+    // feat/assistant-file-drop: lädt eine vom Nutzer BESTÄTIGTE Datei via GoogleDriveClient
+    // in den vorgeschlagenen Drive-Ordner hoch. Erfordert drive.file-Scope (Re-Consent M1).
+    // Wird der AssistantChatView als `onUploadFileToDrive` injiziert.
+    // parentFolderID = aus DriveFolderSuggestionResolver; wird NICHT automatisch ermittelt
+    // (das macht die Drop-Card direkt), hier ist der Ordner bereits bekannt.
+    public func uploadFileToDrive(_ file: DroppedFile, parentFolderID: String) async -> DriveUploadOutcome {
+        do {
+            let result = try await GoogleDriveClient().uploadFile(
+                name: file.fileName,
+                mimeType: file.mimeType,
+                data: file.data,
+                parentFolderID: parentFolderID
+            )
+            do {
+                try audit.append(AuditEntry(
+                    actorUserID: actorUserID,
+                    projectID: "-",
+                    action: .driveFileUploaded,
+                    summary: "Drive-Upload: \(file.fileName) → \(parentFolderID)"
+                ))
+            } catch {
+                MykLog.lifecycle.error("Audit für Drive-Upload fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            }
+            return .uploaded(webLink: result.webViewLink)
+        } catch GoogleDriveError.notConnected {
+            return .permissionRequired
+        } catch GoogleDriveError.uploadDestinationForbidden(let id) {
+            return .failed("Upload verweigert: Ordner \(id) ist ein NO-GO-Ziel.")
+        } catch GoogleDriveError.httpError(403) {
+            // 403 = drive.file-Scope fehlt oder nicht im genehmigten Verzeichnis
+            return .permissionRequired
+        } catch {
+            return .failed("Upload fehlgeschlagen: \(error.localizedDescription)")
+        }
+    }
+
+    // feat/assistant-file-drop: legt einen Mail-Entwurf mit Dateianhang an.
+    // Wird der AssistantChatView als `onAttachFileToMailDraft` injiziert.
+    // Versendet NIE — nur Gmail-Entwurf anlegen.
+    public func createDraftWithAttachment(_ file: DroppedFile) async -> DraftCreateOutcome {
+        let attachment = DraftAttachment(filename: file.fileName, mimeType: file.mimeType, data: file.data)
+        let draft = EmailDraft(
+            to: nil,
+            subject: file.fileName,
+            body: "Datei: \(file.fileName) (\(file.humanSize))",
+            attachments: [attachment]
+        )
+        return await createDraft(draft)
+    }
+
     // S19: schreibt einen vom Nutzer BESTÄTIGTEN Airtable-Kontakt-Entwurf.
     // create → AirtableClient.createRecord; update → AirtableClient.updateRecord.
     // KEIN delete. Wird der AssistantChatView als `onWriteAirtableContact` injiziert.

@@ -378,7 +378,11 @@ struct AssistantPageView: View {
                     focusedProjectID: context.focusedProjectID,
                     profile: appState.profile.profile,
                     onCreateContact: { await appState.createContact($0) },
-                    onCreateDraft: { await appState.createDraft($0) }
+                    onCreateDraft: { await appState.createDraft($0) },
+                    // Home-Scope: kein Projekt fokussiert → Ordner kann nicht automatisch
+                    // ermittelt werden. Der Nutzer bekommt einen klaren Hinweis.
+                    onUploadFileToDrive: { _ in .failed("Bitte ein Projekt öffnen, um Dateien direkt in den Projekt-Ordner hochzuladen.") },
+                    onAttachFileToMailDraft: { await appState.createDraftWithAttachment($0) }
                 )
             case .mail:
                 MailClientView(showsOwnHeader: false, showCompose: $mailCompose)
