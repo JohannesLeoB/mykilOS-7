@@ -370,7 +370,7 @@ struct AssistantPageView: View {
                     onCreateDraft: { await appState.createDraft($0) }
                 )
             case .mail:
-                MailClientView()
+                MailClientView(showsOwnHeader: false)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)

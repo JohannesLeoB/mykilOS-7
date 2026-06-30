@@ -10,6 +10,9 @@ import MykilosServices
 // Tabelle Kontakte (tblncfQzQa8TzCZQC) → StudioContact → Empfänger-Picker.
 @MainActor
 struct MailClientView: View {
+    // Eingebettet im Assistenten-Toggle bringt die Seite ihren Titel schon mit —
+    // dann KEINEN eigenen „Mail"-Kopf rendern (sonst steht „Mail" doppelt).
+    var showsOwnHeader: Bool = true
     @State private var store = MailClientStore()
     @State private var showCompose = false
     @State private var airtableContacts: [StudioContact] = []
@@ -20,6 +23,9 @@ struct MailClientView: View {
             Divider()
             detailPane
         }
+        // Füllt den verfügbaren Raum vollständig — sonst dimensioniert sich die
+        // Höhe nach Inhalt und das Fenster verspringt beim Toggle Assistent⇄Mail.
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(MykColor.paper.color)
         .toolbar {
             ToolbarItem(placement: .automatic) {
@@ -58,7 +64,7 @@ struct MailClientView: View {
 
     private var messageListPane: some View {
         VStack(alignment: .leading, spacing: 0) {
-            header
+            if showsOwnHeader { header }
             searchBar
             Divider().overlay(MykColor.line.color)
             messageList

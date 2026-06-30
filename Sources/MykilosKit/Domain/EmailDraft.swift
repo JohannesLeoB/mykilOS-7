@@ -41,6 +41,19 @@ public struct EmailDraft: Codable, Sendable, Equatable {
         self.attachments = attachments
     }
 
+    // Rückwärtskompatibel: `attachments` kam erst mit Session B dazu. Alte persistierte
+    // Entwürfe (z. B. ein `draftAction`-Block im Chat-Archiv) haben den Key NICHT — der
+    // synthetisierte Decoder würde dann `keyNotFound` werfen und beim Laden eines ganzen
+    // Chat-Scopes ALLE Nachrichten mitreißen. Daher `decodeIfPresent ?? []`.
+    private enum CodingKeys: String, CodingKey { case to, subject, body, attachments }
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.to = try c.decodeIfPresent(String.self, forKey: .to)
+        self.subject = try c.decode(String.self, forKey: .subject)
+        self.body = try c.decode(String.self, forKey: .body)
+        self.attachments = try c.decodeIfPresent([DraftAttachment].self, forKey: .attachments) ?? []
+    }
+
     /// Kurze Kopfzeile für die Karte/Logs (nie der ganze Body).
     public var headline: String {
         let empfaenger = (to?.isEmpty == false) ? to! : "(kein Empfänger)"

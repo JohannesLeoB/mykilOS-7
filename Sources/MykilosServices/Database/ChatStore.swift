@@ -43,7 +43,9 @@ public final class ChatStore {
                 .order(ChatMessageRecord.Columns.sequence)
                 .fetchAll(dbConn)
         }
-        byScope[key] = try records.map { try $0.toDomain() }
+        // Ausfallsicher mappen: ein einzelner undekodierbarer Block darf nie das
+        // ganze Archiv eines Scopes verschlucken (siehe toDomainResilient).
+        byScope[key] = records.map { $0.toDomainResilient() }
         loadedScopes.insert(key)
     }
 

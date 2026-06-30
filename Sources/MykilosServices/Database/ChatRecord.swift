@@ -48,4 +48,26 @@ extension ChatMessageRecord {
             createdAt: Date(timeIntervalSince1970: createdAt)
         )
     }
+
+    // Wie toDomain(), aber ausfallsicher: ein nicht dekodierbarer Block (z. B. nach
+    // einem Schema-Wechsel an einem persistierten Typ) darf NICHT den ganzen Scope
+    // mitreißen — sonst verschwindet beim Laden das komplette Chat-Archiv. Die
+    // Nachricht bleibt an ihrer Stelle erhalten; ihr Inhalt wird, falls undekodierbar,
+    // durch einen sichtbaren Platzhalter ersetzt. Sequenz/Reihenfolge bleiben intakt.
+    func toDomainResilient() -> ChatMessage {
+        let uuid = UUID(uuidString: id) ?? UUID()
+        let parsedRole = ChatRole(rawValue: role) ?? .assistant
+        let createdDate = Date(timeIntervalSince1970: createdAt)
+        if let blocks = try? JSONDecoder().decode([ChatContentBlock].self, from: blocksJSON),
+           let status = try? JSONDecoder().decode(ChatTurnStatus.self, from: statusJSON) {
+            return ChatMessage(id: uuid, role: parsedRole, blocks: blocks, status: status, createdAt: createdDate)
+        }
+        return ChatMessage(
+            id: uuid,
+            role: parsedRole,
+            blocks: [.text("⚠️ Diese Nachricht konnte nicht geladen werden (Format-Änderung).")],
+            status: .complete,
+            createdAt: createdDate
+        )
+    }
 }
