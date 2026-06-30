@@ -30,25 +30,29 @@ public struct DraftAttachment: Codable, Sendable, Equatable {
 // Versenden bleibt ein hartes NO-GO; dies ist reine Entwurfs-Ablage.
 public struct EmailDraft: Codable, Sendable, Equatable {
     public var to: String?
+    /// Komma-getrennte CC-Adressen (optional, z. B. bei Reply-All gesetzt).
+    public var cc: String?
     public var subject: String
     public var body: String
     public var attachments: [DraftAttachment]
 
-    public init(to: String? = nil, subject: String, body: String, attachments: [DraftAttachment] = []) {
+    public init(to: String? = nil, cc: String? = nil, subject: String, body: String, attachments: [DraftAttachment] = []) {
         self.to = to
+        self.cc = cc
         self.subject = subject
         self.body = body
         self.attachments = attachments
     }
 
-    // Rückwärtskompatibel: `attachments` kam erst mit Session B dazu. Alte persistierte
-    // Entwürfe (z. B. ein `draftAction`-Block im Chat-Archiv) haben den Key NICHT — der
-    // synthetisierte Decoder würde dann `keyNotFound` werfen und beim Laden eines ganzen
-    // Chat-Scopes ALLE Nachrichten mitreißen. Daher `decodeIfPresent ?? []`.
-    private enum CodingKeys: String, CodingKey { case to, subject, body, attachments }
+    // Rückwärtskompatibel: `attachments` kam erst mit Session B dazu, `cc` mit feat/mail-folders-reply.
+    // Alte persistierte Entwürfe haben diese Keys NICHT — der synthetisierte Decoder würde dann
+    // `keyNotFound` werfen und beim Laden eines ganzen Chat-Scopes ALLE Nachrichten mitreißen.
+    // Daher `decodeIfPresent ?? nil/[]`.
+    private enum CodingKeys: String, CodingKey { case to, cc, subject, body, attachments }
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.to = try c.decodeIfPresent(String.self, forKey: .to)
+        self.cc = try c.decodeIfPresent(String.self, forKey: .cc)
         self.subject = try c.decode(String.self, forKey: .subject)
         self.body = try c.decode(String.self, forKey: .body)
         self.attachments = try c.decodeIfPresent([DraftAttachment].self, forKey: .attachments) ?? []

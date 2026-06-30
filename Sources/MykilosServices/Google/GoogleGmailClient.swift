@@ -22,21 +22,85 @@ public struct GoogleGmailMessage: Identifiable, Equatable, Sendable {
     public var id: String
     public var threadID: String
     public var subject: String
+    /// Display-Name (oder E-Mail) des Absenders — bereits aus dem „From"-Header extrahiert.
     public var from: String
+    /// Rohe „From"-Header-Adresse (z. B. „Max Müller <max@example.com>") für Reply-To-Aufbau.
+    public var fromRaw: String
+    /// Komma-getrennte Empfänger aus dem „To"-Header (roh, für Reply-All).
+    public var toRaw: String
+    /// Komma-getrennte CC-Adressen aus dem „Cc"-Header (roh, für Reply-All).
+    public var ccRaw: String
     public var snippet: String
     public var receivedAt: Date?
     public var labels: [String]
     public var attachments: [GmailAttachment]
 
-    public init(id: String, threadID: String = "", subject: String, from: String, snippet: String, receivedAt: Date?, labels: [String] = [], attachments: [GmailAttachment] = []) {
+    public init(
+        id: String,
+        threadID: String = "",
+        subject: String,
+        from: String,
+        fromRaw: String = "",
+        toRaw: String = "",
+        ccRaw: String = "",
+        snippet: String,
+        receivedAt: Date?,
+        labels: [String] = [],
+        attachments: [GmailAttachment] = []
+    ) {
         self.id = id
         self.threadID = threadID
         self.subject = subject
         self.from = from
+        self.fromRaw = fromRaw
+        self.toRaw = toRaw
+        self.ccRaw = ccRaw
         self.snippet = snippet
         self.receivedAt = receivedAt
         self.labels = labels
         self.attachments = attachments
+    }
+
+    // MARK: Reply / Forward Helfer
+
+    /// Extrahiert die rohe E-Mail-Adresse aus einem Adressfeld-String.
+    /// „Max Müller <max@example.com>" → „max@example.com"; ohne Klammern → unveränderter String.
+    public static func extractEmail(from raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let open = trimmed.firstIndex(of: "<"),
+           let close = trimmed.lastIndex(of: ">"),
+           open < close {
+            return String(trimmed[trimmed.index(after: open)..<close])
+        }
+        return trimmed
+    }
+
+    /// Gibt die E-Mail des Absenders zurück (aus `fromRaw`; Fallback: `from`).
+    public var senderEmail: String {
+        let email = Self.extractEmail(from: fromRaw)
+        return email.isEmpty ? from : email
+    }
+
+    /// Reply-Betreff: „Re: Originalbetreff" (kein doppeltes „Re:").
+    public var replySubject: String {
+        subject.hasPrefix("Re: ") || subject.hasPrefix("re: ") ? subject : "Re: \(subject)"
+    }
+
+    /// Forward-Betreff: „Fwd: Originalbetreff".
+    public var forwardSubject: String {
+        "Fwd: \(subject)"
+    }
+
+    /// Zitierten Originaltext für Reply / Forward aufbauen.
+    public func quotedBody(_ body: String) -> String {
+        let dateStr = receivedAt.map {
+            DateFormatter.localizedString(from: $0, dateStyle: .medium, timeStyle: .short)
+        } ?? ""
+        let header = "\n\n— Am \(dateStr) schrieb \(from):\n"
+        let quoted = body.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { "> \($0)" }
+            .joined(separator: "\n")
+        return header + quoted
     }
 }
 
@@ -205,6 +269,9 @@ public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting {
         if let to = draft.to?.trimmingCharacters(in: .whitespacesAndNewlines), to.isEmpty == false {
             lines.append("To: \(to)")
         }
+        if let cc = draft.cc?.trimmingCharacters(in: .whitespacesAndNewlines), !cc.isEmpty {
+            lines.append("Cc: \(cc)")
+        }
         lines.append("Subject: \(encodeHeader(draft.subject))")
         lines.append("MIME-Version: 1.0")
         lines.append("Content-Type: text/plain; charset=\"UTF-8\"")
@@ -228,6 +295,9 @@ public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting {
         var lines: [String] = []
         if let to = draft.to?.trimmingCharacters(in: .whitespacesAndNewlines), !to.isEmpty {
             lines.append("To: \(to)")
+        }
+        if let cc = draft.cc?.trimmingCharacters(in: .whitespacesAndNewlines), !cc.isEmpty {
+            lines.append("Cc: \(cc)")
         }
         lines.append("Subject: \(encodeHeader(draft.subject))")
         lines.append("MIME-Version: 1.0")
@@ -296,13 +366,18 @@ public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting {
         return (tr.messages ?? []).map { r in
             let headers = r.payload?.headers ?? []
             let subject = headers.first(where: { $0.name == "Subject" })?.value ?? "(kein Betreff)"
-            let fromRaw = headers.first(where: { $0.name == "From" })?.value ?? ""
+            let fromRawValue = headers.first(where: { $0.name == "From" })?.value ?? ""
+            let toRawValue = headers.first(where: { $0.name == "To" })?.value ?? ""
+            let ccRawValue = headers.first(where: { $0.name == "Cc" })?.value ?? ""
             let dateStr = headers.first(where: { $0.name == "Date" })?.value
             return GoogleGmailMessage(
                 id: r.id,
                 threadID: r.threadId ?? "",
                 subject: subject,
-                from: extractSenderName(from: fromRaw),
+                from: extractSenderName(from: fromRawValue),
+                fromRaw: fromRawValue,
+                toRaw: toRawValue,
+                ccRaw: ccRawValue,
                 snippet: r.snippet ?? "",
                 receivedAt: dateStr.flatMap { parseEmailDate($0) },
                 labels: r.labelIds ?? [],
@@ -408,7 +483,9 @@ public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting {
     private static func mapResource(_ resource: GmailMessageResource) -> GoogleGmailMessage {
         let headers = resource.payload?.headers ?? []
         let subject = headers.first(where: { $0.name == "Subject" })?.value ?? "(kein Betreff)"
-        let fromRaw = headers.first(where: { $0.name == "From" })?.value ?? ""
+        let fromRawValue = headers.first(where: { $0.name == "From" })?.value ?? ""
+        let toRawValue = headers.first(where: { $0.name == "To" })?.value ?? ""
+        let ccRawValue = headers.first(where: { $0.name == "Cc" })?.value ?? ""
         let dateString = headers.first(where: { $0.name == "Date" })?.value
 
         let attachments = extractAttachments(from: resource.payload?.parts ?? [])
@@ -417,7 +494,10 @@ public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting {
             id: resource.id,
             threadID: resource.threadId ?? "",
             subject: subject,
-            from: extractSenderName(from: fromRaw),
+            from: extractSenderName(from: fromRawValue),
+            fromRaw: fromRawValue,
+            toRaw: toRawValue,
+            ccRaw: ccRawValue,
             snippet: resource.snippet ?? "",
             receivedAt: dateString.flatMap { parseEmailDate($0) },
             labels: resource.labelIds ?? [],

@@ -3,8 +3,43 @@ import MykilosKit
 import MykilosDesign
 import MykilosServices
 
+// MARK: - MailFolder
+// Ordner/Ansichten-Auswahl — dezente mykilOS-Segment-Reihe (kein Apple-Mail-Klon).
+// Jeder Ordner hat eine Gmail-Query, ein SF-Symbol und einen kurzen Label.
+enum MailFolder: CaseIterable, Identifiable {
+    case inbox, starred, sent
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .inbox:   return "Eingang"
+        case .starred: return "Markiert"
+        case .sent:    return "Gesendet"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .inbox:   return "tray"
+        case .starred: return "flag"
+        case .sent:    return "paperplane"
+        }
+    }
+
+    /// Gmail-Query für diesen Ordner.
+    var gmailQuery: String {
+        switch self {
+        case .inbox:   return "in:inbox"
+        // Apple-Mail-Flags syncen zu Gmail-Sternen → is:starred
+        case .starred: return "is:starred"
+        case .sent:    return "in:sent"
+        }
+    }
+}
+
 // MARK: - MailClientView
-// 3-Spalten-Mail-Reader: Suchleiste + Nachrichtenliste (links) + Volltext (rechts).
+// 3-Spalten-Mail-Reader: Ordnerauswahl + Suchleiste + Nachrichtenliste (links) + Volltext (rechts).
 // Nutzt GoogleGmailClient.searchMessages + fetchBody. KEIN Senden — nur Lesen + Entwurf.
 // Kontakt-Brücke (Phase 3): Airtable Mastermind-Base appuVMh3KDfKw4OoQ,
 // Tabelle Kontakte (tblncfQzQa8TzCZQC) → StudioContact → Empfänger-Picker.
@@ -19,6 +54,16 @@ struct MailClientView: View {
     @Binding var showCompose: Bool
     @State private var store = MailClientStore()
     @State private var airtableContacts: [StudioContact] = []
+    @State private var composeConfig: ComposeConfig? = nil
+
+    /// Konfiguration für den Compose-Sheet (Reply/Forward/Neu).
+    struct ComposeConfig: Identifiable {
+        var id: UUID = UUID()
+        var to: String? = nil
+        var cc: String? = nil
+        var subject: String? = nil
+        var body: String? = nil
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -30,8 +75,22 @@ struct MailClientView: View {
         // Höhe nach Inhalt und das Fenster verspringt beim Toggle Assistent⇄Mail.
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(MykColor.paper.color)
-        .sheet(isPresented: $showCompose) {
-            ComposeMailView(contacts: airtableContacts)
+        // Neuer Sheet: via composeConfig identifiable (ersetzt alten showCompose-Bool).
+        .sheet(item: $composeConfig) { config in
+            ComposeMailView(
+                contacts: airtableContacts,
+                prefilledTo: config.to,
+                prefilledCc: config.cc,
+                prefilledSubject: config.subject,
+                prefilledBody: config.body
+            )
+        }
+        // Externer Trigger von außen (z. B. Header-Button "Verfassen").
+        .onChange(of: showCompose) { _, newValue in
+            if newValue {
+                composeConfig = ComposeConfig()
+                showCompose = false
+            }
         }
         .task {
             // Auto-Posteingang: beim ersten Erscheinen sofort die Inbox laden,
@@ -51,11 +110,13 @@ struct MailClientView: View {
         airtableContacts = AirtableClient.mapContacts(from: records)
     }
 
-    // MARK: - Linke Spalte: Suche + Nachrichtenliste
+    // MARK: - Linke Spalte: Ordner + Suche + Nachrichtenliste
 
     private var messageListPane: some View {
         VStack(alignment: .leading, spacing: 0) {
             if showsOwnHeader { header }
+            folderBar
+            Divider().overlay(MykColor.line.color)
             searchBar
             Divider().overlay(MykColor.line.color)
             messageList
@@ -82,6 +143,53 @@ struct MailClientView: View {
         .padding(.bottom, MykSpace.s3)
     }
 
+    // MARK: Ordner-Leiste (dezent, mykilOS-Stil — kein Apple-Mail-Klon)
+
+    private var folderBar: some View {
+        HStack(spacing: MykSpace.s2) {
+            ForEach(MailFolder.allCases) { folder in
+                folderButton(folder)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, MykSpace.s5)
+        .padding(.vertical, MykSpace.s3)
+        .background(MykColor.paper.color)
+    }
+
+    private func folderButton(_ folder: MailFolder) -> some View {
+        let isActive = store.activeFolder == folder
+        return Button {
+            guard store.activeFolder != folder else { return }
+            store.switchFolder(folder)
+            Task { await store.loadFolder() }
+        } label: {
+            HStack(spacing: MykSpace.s2) {
+                Image(systemName: folder.icon)
+                    .font(.mykMono(10))
+                Text(folder.label)
+                    .font(.mykMono(10))
+            }
+            .foregroundStyle(isActive ? MykColor.personal.color : MykColor.muted.color)
+            .padding(.horizontal, MykSpace.s3)
+            .padding(.vertical, 4)
+            .background(
+                isActive
+                    ? MykColor.personal.color.opacity(0.1)
+                    : Color.clear
+            )
+            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+            .overlay(
+                RoundedRectangle(cornerRadius: MykRadius.sm)
+                    .stroke(
+                        isActive ? MykColor.personal.color.opacity(0.25) : Color.clear,
+                        lineWidth: 1
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
     private var searchBar: some View {
         HStack(spacing: MykSpace.s3) {
             Image(systemName: "magnifyingglass")
@@ -94,7 +202,7 @@ struct MailClientView: View {
             if !store.query.isEmpty {
                 Button {
                     store.query = ""
-                    Task { await store.search() }
+                    Task { await store.loadFolder() }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.mykCaption)
@@ -116,7 +224,6 @@ struct MailClientView: View {
             switch store.phase {
             case .idle:
                 // Sollte nach dem Auto-Inbox-Load nie dauerhaft zu sehen sein.
-                // Falls doch (kein Netz), zeigen wir eine Mini-Erklärnote.
                 hintText("Posteingang wird geladen …")
             case .loading:
                 VStack { Spacer(); ProgressView("Lade …").font(.mykSmall); Spacer() }
@@ -124,7 +231,8 @@ struct MailClientView: View {
             case .notConnected:
                 hintText("Google nicht verbunden. Bitte in den Einstellungen verbinden.")
             case .empty:
-                hintText("Keine Treffer für \"\(store.query)\".")
+                let label = store.query.isEmpty ? store.activeFolder.label : store.query
+                hintText("Keine Treffer in \"\(label)\".")
             case .error(let msg):
                 hintText("Fehler: \(msg)")
             case .loaded:
@@ -163,7 +271,9 @@ struct MailClientView: View {
                     message: selected,
                     mailBody: store.selectedBody,
                     isLoadingBody: store.isLoadingBody
-                )
+                ) { action in
+                    handleDetailAction(action, message: selected)
+                }
             } else {
                 VStack {
                     Spacer()
@@ -180,6 +290,55 @@ struct MailClientView: View {
             }
         }
     }
+
+    // MARK: - Detail-Aktionen (Reply / ReplyAll / Forward)
+
+    private func handleDetailAction(_ action: MailDetailAction, message: GoogleGmailMessage) {
+        let body = store.selectedBody.isEmpty ? message.snippet : store.selectedBody
+        let quoted = message.quotedBody(body)
+        switch action {
+        case .reply:
+            composeConfig = ComposeConfig(
+                to: message.senderEmail,
+                subject: message.replySubject,
+                body: quoted
+            )
+        case .replyAll:
+            // To = Absender, CC = restliche Empfänger (original To + CC, ohne eigene Adresse)
+            let others = buildReplyAllCC(message: message)
+            composeConfig = ComposeConfig(
+                to: message.senderEmail,
+                cc: others.isEmpty ? nil : others,
+                subject: message.replySubject,
+                body: quoted
+            )
+        case .forward:
+            composeConfig = ComposeConfig(
+                subject: message.forwardSubject,
+                body: quoted
+            )
+        }
+    }
+
+    /// Baut die CC-Zeile für Reply-All: original To + Cc, Absender herausgefiltert.
+    private func buildReplyAllCC(message: GoogleGmailMessage) -> String {
+        var addresses: [String] = []
+        if !message.toRaw.isEmpty { addresses.append(message.toRaw) }
+        if !message.ccRaw.isEmpty { addresses.append(message.ccRaw) }
+        let senderEmail = message.senderEmail.lowercased()
+        // Komma-getrennte Adressen einzeln filtern
+        let filtered = addresses
+            .flatMap { $0.components(separatedBy: ",") }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .filter { GoogleGmailMessage.extractEmail(from: $0).lowercased() != senderEmail }
+        return filtered.joined(separator: ", ")
+    }
+}
+
+// MARK: - MailDetailAction
+enum MailDetailAction {
+    case reply, replyAll, forward
 }
 
 // MARK: - MailListRow
@@ -242,81 +401,158 @@ private struct MailDetailView: View {
     let message: GoogleGmailMessage
     let mailBody: String
     let isLoadingBody: Bool
+    let onAction: (MailDetailAction) -> Void
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MykSpace.s5) {
-                // Header
-                VStack(alignment: .leading, spacing: MykSpace.s3) {
-                    Text(message.subject)
-                        .font(.mykHeadline)
-                        .foregroundStyle(MykColor.ink.color)
-                    HStack(spacing: MykSpace.s3) {
-                        Image(systemName: "person.circle")
-                            .foregroundStyle(MykColor.personal.color)
-                        Text(message.from)
-                            .font(.mykSmall)
-                            .foregroundStyle(MykColor.inkSoft.color)
-                        Spacer()
-                        if let date = message.receivedAt {
-                            Text(date.formatted(date: .abbreviated, time: .shortened))
-                                .font(.mykMono(10))
-                                .foregroundStyle(MykColor.faint.color)
-                        }
-                    }
-                    // Labels
-                    if !message.labels.filter({ !["INBOX", "UNREAD", "SENT"].contains($0) }).isEmpty {
-                        HStack {
-                            ForEach(message.labels.filter { !["INBOX", "UNREAD", "SENT"].contains($0) }, id: \.self) { label in
-                                Text(label)
-                                    .font(.mykMono(9))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(MykColor.personal.color.opacity(0.15))
-                                    .clipShape(Capsule())
-                                    .foregroundStyle(MykColor.personal.color)
-                            }
-                        }
-                    }
-                }
-                .padding(.bottom, MykSpace.s3)
-                Divider().overlay(MykColor.line.color)
-                // Body
-                if isLoadingBody {
-                    HStack { Spacer(); ProgressView("Lade Mail …").font(.mykSmall); Spacer() }
-                        .padding(.vertical, MykSpace.s6)
-                } else if mailBody.isEmpty {
-                    Text(message.snippet)
-                        .font(.mykBody)
-                        .foregroundStyle(MykColor.inkSoft.color)
-                } else {
-                    Text(mailBody)
-                        .font(.mykBody)
-                        .foregroundStyle(MykColor.ink.color)
-                        .textSelection(.enabled)
-                }
-                // Attachments
-                if !message.attachments.isEmpty {
+        VStack(spacing: 0) {
+            // Aktionsleiste (Reply / ReplyAll / Forward)
+            actionBar
+            Divider().overlay(MykColor.line.color)
+            // Nachrichteninhalt
+            ScrollView {
+                VStack(alignment: .leading, spacing: MykSpace.s5) {
+                    messageHeader
                     Divider().overlay(MykColor.line.color)
-                    VStack(alignment: .leading, spacing: MykSpace.s3) {
-                        Text("ANHÄNGE")
-                            .font(.mykMono(9))
-                            .foregroundStyle(MykColor.muted.color)
-                        ForEach(message.attachments, id: \.attachmentID) { att in
-                            AttachmentRow(attachment: att)
-                        }
-                    }
+                    messageBody
+                    if !message.attachments.isEmpty { attachmentsSection }
+                    sourceFooter
                 }
-                // Quellenzeile
-                Divider().overlay(MykColor.line.color)
-                Text("GMAIL  ·  LESEN")
-                    .font(.mykMono(9))
-                    .foregroundStyle(MykColor.faint.color)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(MykSpace.s7)
             }
-            .padding(MykSpace.s7)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    // MARK: Aktionsleiste
+
+    private var actionBar: some View {
+        HStack(spacing: MykSpace.s4) {
+            actionButton(
+                icon: "arrowshape.turn.up.left",
+                label: "Antworten",
+                action: .reply
+            )
+            actionButton(
+                icon: "arrowshape.turn.up.left.2",
+                label: "Allen antworten",
+                action: .replyAll
+            )
+            actionButton(
+                icon: "arrowshape.turn.up.right",
+                label: "Weiterleiten",
+                action: .forward
+            )
+            Spacer()
+            Text("GMAIL  ·  LESEN")
+                .font(.mykMono(9))
+                .foregroundStyle(MykColor.faint.color)
+        }
+        .padding(.horizontal, MykSpace.s6)
+        .padding(.vertical, MykSpace.s4)
+        .background(MykColor.card.color)
+    }
+
+    private func actionButton(icon: String, label: String, action: MailDetailAction) -> some View {
+        Button {
+            onAction(action)
+        } label: {
+            HStack(spacing: MykSpace.s2) {
+                Image(systemName: icon)
+                    .font(.mykMono(10))
+                Text(label)
+                    .font(.mykMono(10))
+            }
+            .foregroundStyle(MykColor.personal.color)
+            .padding(.horizontal, MykSpace.s3)
+            .padding(.vertical, 4)
+            .background(MykColor.personal.color.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+        }
+        .buttonStyle(.plain)
+        .help(label)
+    }
+
+    // MARK: Nachrichten-Header
+
+    private var messageHeader: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s3) {
+            Text(message.subject)
+                .font(.mykHeadline)
+                .foregroundStyle(MykColor.ink.color)
+            HStack(spacing: MykSpace.s3) {
+                Image(systemName: "person.circle")
+                    .foregroundStyle(MykColor.personal.color)
+                Text(message.from)
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.inkSoft.color)
+                Spacer()
+                if let date = message.receivedAt {
+                    Text(date.formatted(date: .abbreviated, time: .shortened))
+                        .font(.mykMono(10))
+                        .foregroundStyle(MykColor.faint.color)
+                }
+            }
+            // Labels
+            let visibleLabels = message.labels.filter { !["INBOX", "UNREAD", "SENT"].contains($0) }
+            if !visibleLabels.isEmpty {
+                HStack {
+                    ForEach(visibleLabels, id: \.self) { label in
+                        Text(label)
+                            .font(.mykMono(9))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(MykColor.personal.color.opacity(0.15))
+                            .clipShape(Capsule())
+                            .foregroundStyle(MykColor.personal.color)
+                    }
+                }
+            }
+        }
+        .padding(.bottom, MykSpace.s3)
+    }
+
+    // MARK: Body
+
+    private var messageBody: some View {
+        Group {
+            if isLoadingBody {
+                HStack { Spacer(); ProgressView("Lade Mail …").font(.mykSmall); Spacer() }
+                    .padding(.vertical, MykSpace.s6)
+            } else if mailBody.isEmpty {
+                Text(message.snippet)
+                    .font(.mykBody)
+                    .foregroundStyle(MykColor.inkSoft.color)
+            } else {
+                Text(mailBody)
+                    .font(.mykBody)
+                    .foregroundStyle(MykColor.ink.color)
+                    .textSelection(.enabled)
+            }
+        }
+    }
+
+    // MARK: Anhänge
+
+    private var attachmentsSection: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s3) {
+            Divider().overlay(MykColor.line.color)
+            Text("ANHÄNGE")
+                .font(.mykMono(9))
+                .foregroundStyle(MykColor.muted.color)
+            ForEach(message.attachments, id: \.attachmentID) { att in
+                AttachmentRow(attachment: att)
+            }
+        }
+    }
+
+    // MARK: Quellenzeile
+
+    private var sourceFooter: some View {
+        Group {
+            Divider().overlay(MykColor.line.color)
+            // Quellenzeile unten rechts
+            Color.clear.frame(height: 0) // Spacer-Ersatz ohne Padding-Interferenz
+        }
     }
 }
 
@@ -368,6 +604,7 @@ final class MailClientStore {
     }
 
     var query: String = ""
+    private(set) var activeFolder: MailFolder = .inbox
     private(set) var messages: [GoogleGmailMessage] = []
     private(set) var phase: Phase = .idle
     private(set) var selectedID: String? = nil
@@ -384,24 +621,40 @@ final class MailClientStore {
         self.client = client
     }
 
+    /// Ordner wechseln (setzt Suche zurück).
+    func switchFolder(_ folder: MailFolder) {
+        activeFolder = folder
+        query = ""
+        selectedID = nil
+        selectedMessage = nil
+        selectedBody = ""
+        messages = []
+        phase = .idle
+    }
+
+    /// Lädt den aktiven Ordner (wird nach switchFolder() und bei Pull-to-Refresh aufgerufen).
+    func loadFolder() async {
+        await fetchMessages(query: activeFolder.gmailQuery)
+    }
+
     /// Lädt den Posteingang (in:inbox) beim ersten Öffnen automatisch,
     /// sofern noch kein Suchergebnis vorliegt.
     func loadInboxIfNeeded() async {
         guard phase == .idle else { return }
-        await fetchMessages(query: "in:inbox")
+        await fetchMessages(query: activeFolder.gmailQuery)
     }
 
     func search() async {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Leere Suche → zurück zum Posteingang
+        // Leere Suche → zurück zum aktiven Ordner
         guard !q.isEmpty else {
-            await fetchMessages(query: "in:inbox")
+            await loadFolder()
             return
         }
         await fetchMessages(query: q)
     }
 
-    /// Gemeinsamer Kern für Inbox-Load + freie Suche.
+    /// Gemeinsamer Kern für Inbox-Load + Ordner-Wechsel + freie Suche.
     private func fetchMessages(query q: String) async {
         searchGen &+= 1
         let gen = searchGen

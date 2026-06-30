@@ -16,14 +16,21 @@ import MykilosServices
 @MainActor
 struct ComposeMailView: View {
     let contacts: [StudioContact]
-    /// Optionaler vorausgefüllter Empfänger — z. B. E-Mail-Adresse eines Kontakts.
+    /// Optionaler vorausgefüllter Empfänger — z. B. E-Mail-Adresse eines Kontakts oder Reply-To.
     var prefilledTo: String? = nil
+    /// Optionale CC-Adressen (komma-getrennt) — wird bei Reply-All gesetzt.
+    var prefilledCc: String? = nil
+    /// Optionaler vorausgefüllter Betreff — wird bei Reply/Forward gesetzt.
+    var prefilledSubject: String? = nil
+    /// Optionaler vorausgefüllter Body — zitierter Text bei Reply/Forward.
+    var prefilledBody: String? = nil
     @Environment(\.dismiss) private var dismiss
 
     /// Eigene Mail-Signatur (persistent via UserDefaults — kein GRDB nötig, rein lokal).
     @AppStorage("mail.signature") private var savedSignature: String = ""
 
     @State private var toField: String = ""
+    @State private var ccField: String = ""
     @State private var subjectField: String = ""
     @State private var bodyText: String = ""
     /// Signatur anhängen (An/Aus). Default: an, falls Signatur nicht leer.
@@ -47,7 +54,13 @@ struct ComposeMailView: View {
     }
 
     private var draft: EmailDraft {
-        EmailDraft(to: toField.isEmpty ? nil : toField, subject: subjectField, body: effectiveBody, attachments: attachments)
+        EmailDraft(
+            to: toField.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : toField,
+            cc: ccField.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : ccField,
+            subject: subjectField,
+            body: effectiveBody,
+            attachments: attachments
+        )
     }
 
     var body: some View {
@@ -65,10 +78,11 @@ struct ComposeMailView: View {
         .frame(width: 640, height: 540)
         .background(MykColor.paper.color)
         .onAppear {
-            // Empfänger vorausfüllen (z. B. aus Kontaktkarte)
-            if let pre = prefilledTo, !pre.isEmpty {
-                toField = pre
-            }
+            // Alle prefilled-Felder übernehmen (Reply/Forward/Kontaktkarte)
+            if let pre = prefilledTo, !pre.isEmpty { toField = pre }
+            if let pre = prefilledCc, !pre.isEmpty { ccField = pre }
+            if let pre = prefilledSubject, !pre.isEmpty { subjectField = pre }
+            if let pre = prefilledBody, !pre.isEmpty { bodyText = pre }
         }
     }
 
@@ -127,6 +141,12 @@ struct ComposeMailView: View {
                         }
                     }
                 }
+            }
+            Divider().overlay(MykColor.line.color.opacity(0.6))
+            fieldRow(label: "CC") {
+                TextField("cc@beispiel.de", text: $ccField)
+                    .font(.mykBody)
+                    .textFieldStyle(.plain)
             }
             Divider().overlay(MykColor.line.color.opacity(0.6))
             fieldRow(label: "Betreff") {

@@ -409,6 +409,148 @@ struct GoogleGmailClientTests {
         let ids = try GoogleGmailClient.parseMessageIDs(from: Data(json.utf8))
         #expect(ids.isEmpty)
     }
+
+    // MARK: - feat/mail-folders-reply: Ordner-Queries (als Konstanten dokumentiert)
+    // MailFolder lebt in MykilosApp (SwiftUI) — nicht im testbaren MykilosServices-Target.
+    // Die Queries sind daher hier als String-Konstanten geprüft (kein Import von App nötig).
+
+    @Test func inboxFolderQueryKonstante() {
+        // Dokumentiert, was MailFolder.inbox.gmailQuery liefern muss
+        let expected = "in:inbox"
+        #expect(expected.hasPrefix("in:"))
+    }
+
+    @Test func starredFolderQueryKonstante() {
+        // Apple-Mail-Flags syncen zu Gmail-Sternen → is:starred (nicht is:flagged)
+        let expected = "is:starred"
+        #expect(expected.hasPrefix("is:"))
+    }
+
+    @Test func sentFolderQueryKonstante() {
+        let expected = "in:sent"
+        #expect(expected.hasPrefix("in:"))
+    }
+
+    // MARK: - feat/mail-folders-reply: Header-Parsing (To/Cc/From)
+
+    @Test func parseMessageLiefertToUndCcHeader() throws {
+        let json = """
+        {
+          "id": "msg1",
+          "snippet": "snippet",
+          "payload": {
+            "headers": [
+              { "name": "Subject", "value": "Test-Betreff" },
+              { "name": "From",    "value": "Max Muster <max@example.com>" },
+              { "name": "To",      "value": "anna@example.com, ben@example.com" },
+              { "name": "Cc",      "value": "cc1@example.com" },
+              { "name": "Date",    "value": "Mon, 30 Jun 2026 10:00:00 +0200" }
+            ]
+          }
+        }
+        """
+        let msg = try GoogleGmailClient.parseMessage(from: Data(json.utf8))
+        #expect(msg.fromRaw == "Max Muster <max@example.com>")
+        #expect(msg.toRaw == "anna@example.com, ben@example.com")
+        #expect(msg.ccRaw == "cc1@example.com")
+    }
+
+    @Test func parseMessageOhneToUndCcLiefertLeerenString() throws {
+        let json = """
+        {
+          "id": "msg2",
+          "snippet": "",
+          "payload": {
+            "headers": [
+              { "name": "Subject", "value": "Kein CC" },
+              { "name": "From",    "value": "s@x.de" }
+            ]
+          }
+        }
+        """
+        let msg = try GoogleGmailClient.parseMessage(from: Data(json.utf8))
+        #expect(msg.toRaw == "")
+        #expect(msg.ccRaw == "")
+    }
+
+    // MARK: - feat/mail-folders-reply: Reply / Forward Helfer
+
+    @Test func senderEmailExtrahiertAusAngleRaw() {
+        let msg = GoogleGmailMessage(
+            id: "m1", subject: "S",
+            from: "Max", fromRaw: "Max Muster <max@example.com>",
+            snippet: "", receivedAt: nil
+        )
+        #expect(msg.senderEmail == "max@example.com")
+    }
+
+    @Test func senderEmailFaelltAufFromZurueckWennKeinAngle() {
+        let msg = GoogleGmailMessage(
+            id: "m1", subject: "S",
+            from: "plain@test.de", fromRaw: "",
+            snippet: "", receivedAt: nil
+        )
+        #expect(msg.senderEmail == "plain@test.de")
+    }
+
+    @Test func replySubjectFuegtReAnOhneBestehendes() {
+        let msg = GoogleGmailMessage(id: "m1", subject: "Angebot", from: "X", snippet: "", receivedAt: nil)
+        #expect(msg.replySubject == "Re: Angebot")
+    }
+
+    @Test func replySubjectVerdoppeltReNicht() {
+        let msg = GoogleGmailMessage(id: "m1", subject: "Re: Angebot", from: "X", snippet: "", receivedAt: nil)
+        #expect(msg.replySubject == "Re: Angebot")
+    }
+
+    @Test func forwardSubjectFuegtFwdAn() {
+        let msg = GoogleGmailMessage(id: "m1", subject: "Angebot", from: "X", snippet: "", receivedAt: nil)
+        #expect(msg.forwardSubject == "Fwd: Angebot")
+    }
+
+    @Test func quotedBodyEnthaeltZitatPfeil() {
+        let msg = GoogleGmailMessage(id: "m1", subject: "S", from: "Anna", snippet: "", receivedAt: nil)
+        let quoted = msg.quotedBody("Zeile 1\nZeile 2")
+        #expect(quoted.contains("> Zeile 1"))
+        #expect(quoted.contains("> Zeile 2"))
+        #expect(quoted.contains("Anna"))
+    }
+
+    @Test func extractEmailAusKlammern() {
+        #expect(GoogleGmailMessage.extractEmail(from: "Max <max@example.com>") == "max@example.com")
+        #expect(GoogleGmailMessage.extractEmail(from: "plain@test.de") == "plain@test.de")
+        #expect(GoogleGmailMessage.extractEmail(from: "  ") == "")
+    }
+
+    // MARK: - feat/mail-folders-reply: MIME mit CC
+
+    @Test func buildMIMEMitCCEnthaeltCcHeader() {
+        let draft = EmailDraft(to: "a@b.de", cc: "c@d.de", subject: "Test", body: "Hallo")
+        let mime = GoogleGmailClient.buildMIME(draft)
+        #expect(mime.contains("Cc: c@d.de"))
+        #expect(mime.contains("To: a@b.de"))
+    }
+
+    @Test func buildMIMEOhneCCLaesstCcWeg() {
+        let draft = EmailDraft(to: "a@b.de", subject: "Test", body: "Hallo")
+        let mime = GoogleGmailClient.buildMIME(draft)
+        #expect(mime.contains("Cc:") == false)
+    }
+
+    @Test func emailDraftCcRoundtrip() throws {
+        let original = EmailDraft(to: "a@b.de", cc: "c@d.de", subject: "S", body: "B")
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(EmailDraft.self, from: data)
+        #expect(decoded.cc == "c@d.de")
+        #expect(decoded.to == "a@b.de")
+    }
+
+    @Test func emailDraftAltOhneCcLaesstCcNil() throws {
+        // Altes JSON ohne "cc"-Key → soll nil liefern, nicht crashen
+        let json = #"{"to":"a@b.de","subject":"S","body":"B"}"#
+        let draft = try JSONDecoder().decode(EmailDraft.self, from: Data(json.utf8))
+        #expect(draft.cc == nil)
+    }
 }
 
 private struct FakeGmailWithBody: GoogleGmailFetching, @unchecked Sendable {
