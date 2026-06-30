@@ -65,6 +65,8 @@ public enum GoogleDriveError: Error, Sendable, Equatable {
     case invalidResponse
     case httpError(Int)
     case decodingFailed
+    /// Upload-Ziel ist ein explizit verbotener Ordner (NO-GO-Guard).
+    case uploadDestinationForbidden(String)
 }
 
 // MARK: - GoogleDriveFetching
@@ -230,6 +232,114 @@ public struct GoogleDriveClient: GoogleDriveFetching {
     // Rückwärtskompatibel: gibt nur Dateien zurück (ignoriert nextPageToken).
     static func parseFiles(from data: Data) throws -> [GoogleDriveFile] {
         try parseFilesPage(from: data).files
+    }
+
+    // MARK: - Upload (drive.file-Scope, feat/assistant-write-tier)
+
+    /// NO-GO-Ordner: Diese IDs dürfen NIEMALS Upload-Ziel sein.
+    /// `0AOeReQBQKkKBUk9PVA` = geteilter Drive-Root (read-only lt. CLAUDE.md).
+    static let forbiddenParentFolderIDs: Set<String> = [
+        "0AOeReQBQKkKBUk9PVA",
+    ]
+
+    /// Lädt eine Datei per `files.create` (`uploadType=multipart`) in Drive hoch.
+    /// Erfordert `drive.file`-Scope (NICHT in Standard-Scopes — Re-Consent nötig).
+    /// Wirft `.uploadDestinationForbidden` wenn `parentFolderID` auf der NO-GO-Liste steht.
+    public func uploadFile(
+        name: String,
+        mimeType: String,
+        data: Data,
+        parentFolderID: String
+    ) async throws -> GoogleDriveFile {
+        // HARTE NO-GO-Grenze — nie in verbotene Ordner schreiben.
+        guard !Self.forbiddenParentFolderIDs.contains(parentFolderID) else {
+            throw GoogleDriveError.uploadDestinationForbidden(parentFolderID)
+        }
+        guard let accessToken = try? await tokenProvider.validAccessToken() else {
+            throw GoogleDriveError.notConnected
+        }
+        guard let url = Self.buildUploadURL(baseURL: baseURL) else {
+            throw GoogleDriveError.invalidResponse
+        }
+        let boundary = "mykilos_boundary_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
+        let body = Self.buildMultipartBody(
+            boundary: boundary,
+            metadata: ["name": name, "parents": [parentFolderID]],
+            mimeType: mimeType,
+            data: data
+        )
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/related; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        let (responseData, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse,
+              (200...299).contains(http.statusCode) else {
+            throw GoogleDriveError.httpError((response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+        return try Self.parseUploadedFile(from: responseData)
+    }
+
+    // MARK: - Reine, testbare Upload-Bausteine (kein Netzwerk/Keychain)
+
+    /// Baut die Upload-URL für `uploadType=multipart`.
+    static func buildUploadURL(baseURL: String) -> URL? {
+        var components = URLComponents(string: "https://www.googleapis.com/upload/drive/v3/files")
+        components?.queryItems = [
+            URLQueryItem(name: "uploadType", value: "multipart"),
+            URLQueryItem(name: "fields", value: "id,name,mimeType,webViewLink"),
+            URLQueryItem(name: "supportsAllDrives", value: "true"),
+        ]
+        return components?.url
+    }
+
+    /// Baut den `multipart/related`-Body aus Metadaten-JSON + Mediendaten.
+    /// Rein synchron, testbar ohne Netzwerk.
+    static func buildMultipartBody(
+        boundary: String,
+        metadata: [String: Any],
+        mimeType: String,
+        data: Data
+    ) -> Data {
+        var body = Data()
+        let crlf = "\r\n"
+        let dash = "--"
+
+        // Metadaten-Part
+        body.append(contentsOf: "\(dash)\(boundary)\(crlf)".utf8)
+        body.append(contentsOf: "Content-Type: application/json; charset=UTF-8\(crlf)\(crlf)".utf8)
+        if let json = try? JSONSerialization.data(withJSONObject: metadata) {
+            body.append(json)
+        }
+        body.append(contentsOf: crlf.utf8)
+
+        // Medien-Part
+        body.append(contentsOf: "\(dash)\(boundary)\(crlf)".utf8)
+        body.append(contentsOf: "Content-Type: \(mimeType)\(crlf)\(crlf)".utf8)
+        body.append(data)
+        body.append(contentsOf: crlf.utf8)
+
+        // Epilog
+        body.append(contentsOf: "\(dash)\(boundary)\(dash)\(crlf)".utf8)
+        return body
+    }
+
+    /// Parst die `files.create`-Antwort in ein `GoogleDriveFile`.
+    static func parseUploadedFile(from data: Data) throws -> GoogleDriveFile {
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let id = obj["id"] as? String,
+              let name = obj["name"] as? String,
+              let mime = obj["mimeType"] as? String else {
+            throw GoogleDriveError.decodingFailed
+        }
+        return GoogleDriveFile(
+            id: id,
+            name: name,
+            mimeType: mime,
+            modifiedAt: nil,
+            webViewLink: obj["webViewLink"] as? String
+        )
     }
 }
 

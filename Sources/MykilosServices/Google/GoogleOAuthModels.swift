@@ -26,6 +26,10 @@ public enum GoogleOAuthScope: String, CaseIterable, Codable, Sendable {
     // Erfordert einmaliges Re-Consent (prompt=consent ist bereits gesetzt).
     case userinfoEmail          = "https://www.googleapis.com/auth/userinfo.email"
     case userinfoProfile        = "https://www.googleapis.com/auth/userinfo.profile"
+    // Schreibender Drive-Scope (feat/assistant-write-tier): nötig für files.create
+    // (Datei-Drop → Drive ablegen). Erlaubt NUR Dateien, die die App selbst erstellt hat.
+    // NICHT in readOnlyDefaults — erst nach explizitem Re-Consent von Johannes aktivieren.
+    case driveFile              = "https://www.googleapis.com/auth/drive.file"
 
     public static let readOnlyDefaults: [GoogleOAuthScope] = [
         // drive.readonly: nötig für downloadContent (PDF-Vorschau) + thumbnailLink.

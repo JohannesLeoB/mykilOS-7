@@ -161,6 +161,74 @@ struct GoogleDriveClientTests {
     }
 }
 
+    // MARK: - Upload-Tests (feat/assistant-write-tier)
+
+    @Test func uploadURLEnthaeltUploadTypeMultipart() {
+        let url = GoogleDriveClient.buildUploadURL(baseURL: "https://www.googleapis.com/drive/v3/files")
+        let comps = url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+        let items = Dictionary(uniqueKeysWithValues: (comps?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        #expect(items["uploadType"] == "multipart")
+        #expect(items["supportsAllDrives"] == "true")
+        #expect(items["fields"]?.contains("id") == true)
+    }
+
+    @Test func multipartBodyEnthaeltBoundaryUndMimeType() {
+        let boundary = "TEST_BOUNDARY"
+        let data = Data("Hallo Welt".utf8)
+        let body = GoogleDriveClient.buildMultipartBody(
+            boundary: boundary,
+            metadata: ["name": "test.pdf"],
+            mimeType: "application/pdf",
+            data: data
+        )
+        let bodyString = String(decoding: body, as: UTF8.self)
+        #expect(bodyString.contains("--\(boundary)"))
+        #expect(bodyString.contains("application/json"))
+        #expect(bodyString.contains("application/pdf"))
+        #expect(bodyString.contains("test.pdf"))
+        #expect(bodyString.contains("Hallo Welt"))
+        // Epilog
+        #expect(bodyString.contains("--\(boundary)--"))
+    }
+
+    @Test func parseUploadedFileDekodiertAntwort() throws {
+        let json = #"{"id":"fileXYZ","name":"Rechnung.pdf","mimeType":"application/pdf","webViewLink":"https://drive.google.com/r"}"#
+        let file = try GoogleDriveClient.parseUploadedFile(from: Data(json.utf8))
+        #expect(file.id == "fileXYZ")
+        #expect(file.name == "Rechnung.pdf")
+        #expect(file.mimeType == "application/pdf")
+        #expect(file.webViewLink == "https://drive.google.com/r")
+    }
+
+    @Test func parseUploadedFileWirftBeiKaputtemJSON() {
+        #expect(throws: GoogleDriveError.decodingFailed) {
+            _ = try GoogleDriveClient.parseUploadedFile(from: Data("{}".utf8))
+        }
+    }
+
+    @Test func uploadFileWirftBeiVerbotenemOrdner() async {
+        // Der NO-GO-Root-Ordner darf NIEMALS Upload-Ziel sein — Guard wirft sofort.
+        let client = GoogleDriveClient(tokenProvider: StubReturningTokenProvider(token: "tok"))
+        let forbiddenID = "0AOeReQBQKkKBUk9PVA"
+        do {
+            _ = try await client.uploadFile(
+                name: "test.pdf",
+                mimeType: "application/pdf",
+                data: Data("x".utf8),
+                parentFolderID: forbiddenID
+            )
+            Issue.record("hätte .uploadDestinationForbidden werfen sollen")
+        } catch let err as GoogleDriveError {
+            #expect(err == .uploadDestinationForbidden(forbiddenID))
+        } catch {
+            Issue.record("falscher Fehlertyp: \(error)")
+        }
+    }
+
+    @Test func forbiddenFolderIDsEnthaeltNOGORoot() {
+        #expect(GoogleDriveClient.forbiddenParentFolderIDs.contains("0AOeReQBQKkKBUk9PVA"))
+    }
+
 // MARK: - Test-Stubs für die echte Pagination
 
 private struct StubReturningTokenProvider: GoogleAccessTokenProviding {
