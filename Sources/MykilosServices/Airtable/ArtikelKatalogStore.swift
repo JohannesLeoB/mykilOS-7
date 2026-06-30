@@ -48,13 +48,13 @@ public final class ArtikelKatalogStore {
     public static let tableKey = "tbl3dAbQtbF51wb4a"
 
     // Feld-IDs
-    static let feldArtikelnummer    = "fld2pimT2447Sagl1"
-    static let feldHersteller       = "fldizMl5VBOXzF4f4"
-    static let feldKategorie        = "fldJFz5O7mw1ByU9W"
-    static let feldBeschreibung     = "fldRlWTXhPGQukZNM"
-    static let feldEKNetto          = "fldBemUVIGpZ77wIi"
-    static let feldVKNetto          = "fldUjIDfTheQZpFSW"
-    static let feldProduktbild      = "fldmqAJFWQhl0jGRv"
+    static let feldArtikelnummer    = "Artikelnummer"
+    static let feldHersteller       = "Hersteller"
+    static let feldKategorie        = "Kategorie"
+    static let feldBeschreibung     = "Artikelbeschreibung"
+    static let feldEKNetto          = "Netto-Einkaufspreis (€)"
+    static let feldVKNetto          = "Netto-Verkaufspreis MYKILOS (€)"
+    static let feldProduktbild      = "Automatisches Produktbild (Web-Suche)"
 
     // MARK: - Private
 

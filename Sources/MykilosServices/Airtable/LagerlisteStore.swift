@@ -38,15 +38,15 @@ public final class LagerlisteStore {
     public static let tableKey  = "tblh8j1Rykv12T2Dx"
 
     // Feld-IDs (für Mapping)
-    static let feldBezeichnung   = "fldVBhI0ozPXh7XkE"
-    static let feldKategorie     = "fldaqtdkWSgwiDZvL"
-    static let feldHersteller    = "fldeOCaWqzojGUtd2"
-    static let feldArtikelnummer = "fldKIAfFwuvRuDlnY"
-    static let feldBestand       = "fldcSK7xsT896exNf"
-    static let feldEKNetto       = "fldpqoXnOpKkluQC8"
-    static let feldVKNetto       = "fld7OcmQ7ImmU47iT"
-    static let feldQuelle        = "fldA8VVAdN9JrXxSh"
-    static let feldNotiz         = "fldaR6YTb0601O3SX"
+    static let feldBezeichnung   = "Bezeichnung"
+    static let feldKategorie     = "Kategorie"
+    static let feldHersteller    = "Hersteller"
+    static let feldArtikelnummer = "Artikelnummer"
+    static let feldBestand       = "Bestand"
+    static let feldEKNetto       = "EK netto (€)"
+    static let feldVKNetto       = "VK netto (€)"
+    static let feldQuelle        = "Quelle"
+    static let feldNotiz         = "Notiz"
 
     // MARK: - Private
 

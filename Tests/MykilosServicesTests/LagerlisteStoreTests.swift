@@ -22,7 +22,7 @@ struct LagerlisteStoreTests {
         let records: [[String: AirtableFieldValue]] = [
             [
                 "_airtableRecordID": .string("rec1"),
-                "fldVBhI0ozPXh7XkE": .string("   "),  // Leerzeichen-only
+                "Bezeichnung": .string("   "),  // Leerzeichen-only
             ],
         ]
         let items = LagerlisteStore.mapLagerItems(from: records)
@@ -35,15 +35,15 @@ struct LagerlisteStoreTests {
         let records: [[String: AirtableFieldValue]] = [
             [
                 "_airtableRecordID": .string("recABC"),
-                "fldVBhI0ozPXh7XkE": .string("Unterputz-Spülbecken"),
-                "fldaqtdkWSgwiDZvL": .string("Sanitär"),
-                "fldeOCaWqzojGUtd2": .string("Franke"),
-                "fldKIAfFwuvRuDlnY": .string("FRANKE-UPX-500"),
-                "fldcSK7xsT896exNf": .number(3),
-                "fldpqoXnOpKkluQC8": .number(245.50),
-                "fld7OcmQ7ImmU47iT": .number(389.00),
-                "fldA8VVAdN9JrXxSh": .string("Sanitär Lieferer GmbH"),
-                "fldaR6YTb0601O3SX": .string("Eingebaut 2025"),
+                "Bezeichnung": .string("Unterputz-Spülbecken"),
+                "Kategorie": .string("Sanitär"),
+                "Hersteller": .string("Franke"),
+                "Artikelnummer": .string("FRANKE-UPX-500"),
+                "Bestand": .number(3),
+                "EK netto (€)": .number(245.50),
+                "VK netto (€)": .number(389.00),
+                "Quelle": .string("Sanitär Lieferer GmbH"),
+                "Notiz": .string("Eingebaut 2025"),
             ],
         ]
         let items = LagerlisteStore.mapLagerItems(from: records)
@@ -65,7 +65,7 @@ struct LagerlisteStoreTests {
         let records: [[String: AirtableFieldValue]] = [
             [
                 "_airtableRecordID": .string("recXYZ"),
-                "fldVBhI0ozPXh7XkE": .string("Spot LED"),
+                "Bezeichnung": .string("Spot LED"),
                 // alle anderen Felder fehlen
             ],
         ]
@@ -84,7 +84,7 @@ struct LagerlisteStoreTests {
     @Test func mappingFallbackIDAufBezeichnung() {
         // Kein _airtableRecordID → Bezeichnung als Fallback-ID
         let records: [[String: AirtableFieldValue]] = [
-            ["fldVBhI0ozPXh7XkE": .string("Einbauleuchte")],
+            ["Bezeichnung": .string("Einbauleuchte")],
         ]
         let items = LagerlisteStore.mapLagerItems(from: records)
         #expect(items.count == 1)
@@ -93,10 +93,10 @@ struct LagerlisteStoreTests {
 
     @Test func mappingMehrereRecords() {
         let records: [[String: AirtableFieldValue]] = [
-            ["_airtableRecordID": .string("r1"), "fldVBhI0ozPXh7XkE": .string("Spüle A")],
-            ["_airtableRecordID": .string("r2"), "fldVBhI0ozPXh7XkE": .string("Spüle B")],
+            ["_airtableRecordID": .string("r1"), "Bezeichnung": .string("Spüle A")],
+            ["_airtableRecordID": .string("r2"), "Bezeichnung": .string("Spüle B")],
             ["_airtableRecordID": .string("r3")],  // ohne Bezeichnung → übersprungen
-            ["_airtableRecordID": .string("r4"), "fldVBhI0ozPXh7XkE": .string("Armatur C")],
+            ["_airtableRecordID": .string("r4"), "Bezeichnung": .string("Armatur C")],
         ]
         let items = LagerlisteStore.mapLagerItems(from: records)
         #expect(items.count == 3)
@@ -107,7 +107,7 @@ struct LagerlisteStoreTests {
 
     @Test @MainActor func storeLoadtContentState() async {
         let fake = FakeLagerFetcher(records: [
-            ["_airtableRecordID": .string("r1"), "fldVBhI0ozPXh7XkE": .string("Wandleuchte")],
+            ["_airtableRecordID": .string("r1"), "Bezeichnung": .string("Wandleuchte")],
         ])
         let store = LagerlisteStore(client: fake)
         #expect(store.state == .idle)
@@ -149,14 +149,14 @@ struct LagerlisteStoreTests {
 
     @Test @MainActor func storeReloadErzwingtNeuladung() async {
         let fake = FakeLagerFetcher(records: [
-            ["_airtableRecordID": .string("r1"), "fldVBhI0ozPXh7XkE": .string("Tischleuchte")],
+            ["_airtableRecordID": .string("r1"), "Bezeichnung": .string("Tischleuchte")],
         ])
         let store = LagerlisteStore(client: fake)
         await store.load()
         // Reload erzwingt erneuten Fetch
         fake.records = [
-            ["_airtableRecordID": .string("r1"), "fldVBhI0ozPXh7XkE": .string("Tischleuchte")],
-            ["_airtableRecordID": .string("r2"), "fldVBhI0ozPXh7XkE": .string("Stehleuchte")],
+            ["_airtableRecordID": .string("r1"), "Bezeichnung": .string("Tischleuchte")],
+            ["_airtableRecordID": .string("r2"), "Bezeichnung": .string("Stehleuchte")],
         ]
         await store.reload()
         #expect(store.items.count == 2)

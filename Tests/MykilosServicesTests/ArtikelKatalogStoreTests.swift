@@ -19,7 +19,7 @@ struct ArtikelKatalogStoreTests {
 
     @Test func mappingMitLeererArtikelnummerWirdUebersprungen() {
         let records: [[String: AirtableFieldValue]] = [
-            ["_airtableRecordID": .string("r1"), "fld2pimT2447Sagl1": .string(" ")],
+            ["_airtableRecordID": .string("r1"), "Artikelnummer": .string(" ")],
         ]
         let items = ArtikelKatalogStore.mapArtikelItems(from: records)
         #expect(items.isEmpty)
@@ -29,13 +29,13 @@ struct ArtikelKatalogStoreTests {
         let records: [[String: AirtableFieldValue]] = [
             [
                 "_airtableRecordID": .string("recART001"),
-                "fld2pimT2447Sagl1": .string("GFW-750"),
-                "fldizMl5VBOXzF4f4": .string("GROHE"),
-                "fldJFz5O7mw1ByU9W": .string("Armaturen"),
-                "fldRlWTXhPGQukZNM": .string("Grohe Eurosmart Einhebel-Waschtischarmatur"),
-                "fldBemUVIGpZ77wIi": .number(89.90),
-                "fldUjIDfTheQZpFSW": .number(149.00),
-                "fldmqAJFWQhl0jGRv": .string("https://cdn.example.com/img.jpg"),
+                "Artikelnummer": .string("GFW-750"),
+                "Hersteller": .string("GROHE"),
+                "Kategorie": .string("Armaturen"),
+                "Artikelbeschreibung": .string("Grohe Eurosmart Einhebel-Waschtischarmatur"),
+                "Netto-Einkaufspreis (€)": .number(89.90),
+                "Netto-Verkaufspreis MYKILOS (€)": .number(149.00),
+                "Automatisches Produktbild (Web-Suche)": .string("https://cdn.example.com/img.jpg"),
             ],
         ]
         let items = ArtikelKatalogStore.mapArtikelItems(from: records)
@@ -53,7 +53,7 @@ struct ArtikelKatalogStoreTests {
 
     @Test func mappingOptionaleFelderNil() {
         let records: [[String: AirtableFieldValue]] = [
-            ["_airtableRecordID": .string("r1"), "fld2pimT2447Sagl1": .string("XYZ-001")],
+            ["_airtableRecordID": .string("r1"), "Artikelnummer": .string("XYZ-001")],
         ]
         let items = ArtikelKatalogStore.mapArtikelItems(from: records)
         #expect(items.count == 1)
@@ -68,7 +68,7 @@ struct ArtikelKatalogStoreTests {
 
     @Test func mappingFallbackIDaufArtikelnummer() {
         let records: [[String: AirtableFieldValue]] = [
-            ["fld2pimT2447Sagl1": .string("AB-999")],
+            ["Artikelnummer": .string("AB-999")],
         ]
         let items = ArtikelKatalogStore.mapArtikelItems(from: records)
         #expect(items[0].id == "AB-999")
@@ -179,8 +179,8 @@ struct ArtikelKatalogStoreTests {
 
     @Test @MainActor func storeLoadtContentState() async {
         let fake = FakeLagerFetcher(records: [
-            ["_airtableRecordID": .string("r1"), "fld2pimT2447Sagl1": .string("ART-001")],
-            ["_airtableRecordID": .string("r2"), "fld2pimT2447Sagl1": .string("ART-002")],
+            ["_airtableRecordID": .string("r1"), "Artikelnummer": .string("ART-001")],
+            ["_airtableRecordID": .string("r2"), "Artikelnummer": .string("ART-002")],
         ])
         let store = ArtikelKatalogStore(client: fake)
         #expect(store.state == .idle)
@@ -198,7 +198,7 @@ struct ArtikelKatalogStoreTests {
         var callCount = 0
         let fake = CountingFakeFetcher {
             callCount += 1
-            return [["_airtableRecordID": .string("r1"), "fld2pimT2447Sagl1": .string("ART-001")]]
+            return [["_airtableRecordID": .string("r1"), "Artikelnummer": .string("ART-001")]]
         }
         let store = ArtikelKatalogStore(client: fake)
         await store.load()
@@ -210,7 +210,7 @@ struct ArtikelKatalogStoreTests {
         var callCount = 0
         let fake = CountingFakeFetcher {
             callCount += 1
-            return [["_airtableRecordID": .string("r1"), "fld2pimT2447Sagl1": .string("ART-001")]]
+            return [["_airtableRecordID": .string("r1"), "Artikelnummer": .string("ART-001")]]
         }
         let store = ArtikelKatalogStore(client: fake)
         await store.load()
@@ -230,13 +230,13 @@ struct ArtikelKatalogStoreTests {
         let fake = FakeLagerFetcher(records: [
             [
                 "_airtableRecordID": .string("r1"),
-                "fld2pimT2447Sagl1": .string("GFW-750"),
-                "fldRlWTXhPGQukZNM": .string("Eurosmart Einhebelmischer"),
+                "Artikelnummer": .string("GFW-750"),
+                "Artikelbeschreibung": .string("Eurosmart Einhebelmischer"),
             ],
             [
                 "_airtableRecordID": .string("r2"),
-                "fld2pimT2447Sagl1": .string("HK-200"),
-                "fldRlWTXhPGQukZNM": .string("Hansgrohe Ventil"),
+                "Artikelnummer": .string("HK-200"),
+                "Artikelbeschreibung": .string("Hansgrohe Ventil"),
             ],
         ])
         let store = ArtikelKatalogStore(client: fake)
