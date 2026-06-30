@@ -463,5 +463,26 @@ Wenn eine neue Integration gebaut wird:
 
 ---
 
+## Webshop & Projektaufnahme (7.7.2)
+
+**Kataloge → Artikel/Shop.** Vollständiger Artikel-Katalog (13.419 Artikel, live aus Airtable):
+Vorschaubilder, Kategorie-/Hersteller-Filter, Ansicht als **Liste oder Kacheln**, Seiten-Navigation
+mit wählbarer Seitengröße (25/50/100). *Voraussetzung:* Airtable verbunden. Der frühere „Geräte"-Tab
+(lokale CSV) ist entfallen — vollständig im Artikel/Shop aufgegangen.
+
+**Kataloge → Warenkörbe.** Liste aller gesendeten Projekt-Warenkörbe (Datum, Bezeichnung, Projekt,
+Status, Version, Summen) als Spiegelung der Airtable-Tabelle. Ein Warenkorb ist **wieder aufrufbar**
+(Positionen zurück in den Warenkorb laden). Speichern bleibt **append-only** (neue Version, alte
+→ archiviert; nie Löschen/Überschreiben).
+
+**Neues Projekt (Fragebogen).** „+ Neues Projekt (Fragebogen)" in Kataloge öffnet den geführten
+Küchen-Projekt-Fragebogen (24 Sektionen + Kontakt/Budget/Raum). Aus dem ausgefüllten Bogen entstehen
+nach **Bestätigung**: ein **Kunde** + ein **Projekt** (Airtable Artikel-Base, nur CREATE, append-only)
++ ein **Erst-Warenkorb**. Der Bogen lässt sich als **PDF** exportieren und ins Drive-Projektverzeichnis
+`01 INFOS / 07 Fragebogen` hochladen. *Voraussetzung Upload:* Google neu verbunden (Scope `drive.file`).
+*Einschränkung:* nur Anlegen, nie Ändern/Löschen bestehender Records.
+
+---
+
 *Dieses Dokument wird mit jedem Feature-Commit aktualisiert.*
-*Letzte Änderung: 2026-06-28 · polish/dampflok · L6–L15 abgeschlossen*
+*Letzte Änderung: 2026-06-30 · feat/intake-suite · 7.7.2 (Webshop Phase 4, Projektfragebogen, Drive-PDF)*

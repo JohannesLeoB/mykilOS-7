@@ -16,10 +16,19 @@ Begleitverträge: HANDOFF_PROJEKT_INTAKE.md · HANDOFF_PLANNED_FEATURES.md · ..
 |---|---|---|
 | `main` | Release-Stand | unangetastet (nur Johannes merged) |
 | `feat/webshop-phase4` | **Basis dieser Runde.** Artikel-Leer-Bug-Fix, Warenkörbe-Tab, Kacheln/Pagination, Geräte-Tab raus | ✅ gebaut+verifiziert (Commit 1591cad) |
-| `feat/drive-pdf-plumbing` | GoogleDriveClient.uploadFile + DriveProjectFolderResolver (01 INFOS/07 Fragebogen) + MykPDFRenderer + `drive.file`-Scope | 🔄 in Arbeit (Agent) |
-| `feat/projekt-intake` | Projektfragebogen-Maske → Kunde+Projekt (Artikel-Base) + Erst-Warenkorb + PDF/Drive-Stubs | 🔄 in Arbeit (Agent) |
+| `feat/drive-pdf-plumbing` | GoogleDriveClient.uploadFile + DriveProjectFolderResolver (01 INFOS/07 Fragebogen) + MykPDFRenderer + `drive.file`-Scope | ✅ in `feat/intake-suite` |
+| `feat/projekt-intake` | Projektfragebogen-Maske → Kunde+Projekt (Artikel-Base) + Erst-Warenkorb + PDF/Drive | ✅ in `feat/intake-suite` |
+| **`feat/intake-suite`** | **Release 7.7.2** — P4 + Drive + Intake + Verdrahtung + Docs konsolidiert | ✅ 661 Tests grün, DMG gebaut |
 
-Beide in-Arbeit-Branches zweigen von `feat/webshop-phase4` ab und sind **datei-disjunkt** (kein gemeinsames File) → konfliktfreier Merge.
+> **✅ RELEASE 7.7.2 (2026-06-30):** `feat/intake-suite` = alles oben zusammengeführt (FF-fähig auf main),
+> 661 Tests (636 Swift-Testing + 25 XCTest), `mykilOS-7.7.2.dmg` signiert gebaut. PDF/Drive-Stubs sind
+> mit `MykPDFRenderer` + `DriveProjectFolderResolver` verdrahtet. **Wave-1-Agenten wurden durch einen
+> Prozess-Neustart unterbrochen; Claude hat ihre unkommittierte Arbeit geborgen + repariert** (Layering,
+> Aktor-Isolation, Base-Konsistenz Kunde→Artikel-Base, Whitelist). **Offen Johannes:** Google Re-Consent
+> (`drive.file`) für Live-Upload. **Wave 2 noch offen** (s. §4): lokaler Artikel-Spiegel, Feature A/C,
+> Export D (Warenkorb CSV/PDF), Linienzeichnungen.
+
+Die Branches zweigen von `feat/webshop-phase4` ab, sind **datei-disjunkt** und wurden konfliktfrei gemergt.
 
 ## 2. Wichtigster Lerneffekt dieser Runde (für Airtable-Mapping)
 **`AirtableFieldValue.stringValue` ist `nil`, wenn Airtable das Feld als `.number` liefert** (z. B. `Artikelnummer`).
