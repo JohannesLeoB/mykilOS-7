@@ -315,6 +315,78 @@ struct GoogleGmailClientTests {
         #expect(msg.attachments.count == 1)
         #expect(msg.attachments.first?.filename == "logo.png")
     }
+
+    // MARK: - Session B: Multipart-MIME mit Anhängen
+
+    @Test func buildMIMEMultipartMitAnhangErzeugtMultipartMixed() {
+        let att = DraftAttachment(filename: "test.pdf", mimeType: "application/pdf", data: Data("PDF-Inhalt".utf8))
+        let draft = EmailDraft(to: "a@b.de", subject: "Mit Anhang", body: "Hallo", attachments: [att])
+        let mime = GoogleGmailClient.buildMIMEMultipart(draft)
+        #expect(mime.contains("Content-Type: multipart/mixed"))
+        #expect(mime.contains("Content-Disposition: attachment; filename=\"test.pdf\""))
+        #expect(mime.contains("application/pdf"))
+        #expect(mime.contains(String(Data("PDF-Inhalt".utf8).base64EncodedString().prefix(20))))
+    }
+
+    @Test func buildMIMEMultipartOhneAnhangDelegiertAnBuildMIME() {
+        let draft = EmailDraft(to: "a@b.de", subject: "Ohne Anhang", body: "Text")
+        let mime = GoogleGmailClient.buildMIMEMultipart(draft)
+        #expect(mime.contains("Content-Type: text/plain"))
+        #expect(mime.contains("multipart") == false)
+    }
+
+    @Test func draftAttachmentHumanSizeKB() {
+        let data = Data(repeating: 0, count: 2048)
+        let att = DraftAttachment(filename: "f.bin", mimeType: "application/octet-stream", data: data)
+        #expect(att.humanSize == "2 KB")
+    }
+
+    @Test func draftAttachmentHumanSizeBytes() {
+        let att = DraftAttachment(filename: "f.txt", mimeType: "text/plain", data: Data("abc".utf8))
+        #expect(att.humanSize == "3 B")
+    }
+
+    @Test func emailDraftMitAnhangEquatable() {
+        let att = DraftAttachment(filename: "x.pdf", mimeType: "application/pdf", data: Data([1,2,3]))
+        let d1 = EmailDraft(to: "a@b.de", subject: "S", body: "B", attachments: [att])
+        let d2 = EmailDraft(to: "a@b.de", subject: "S", body: "B", attachments: [att])
+        #expect(d1 == d2)
+    }
+
+    @Test func parseThreadMessagesGibtLeereArrayBeiKaputtemJSON() {
+        let result = GoogleGmailClient.parseThreadMessages(from: Data("bad json".utf8))
+        #expect(result.isEmpty)
+    }
+
+    // MARK: - feat/mail-client-v2: decodeBase64URL Roundtrip
+
+    @Test func decodeBase64URLRoundtripMitBinaerDaten() {
+        let original = Data([0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x00, 0xFF, 0xFE])
+        let encoded = GoogleGmailClient.base64URL(original)
+        let decoded = GoogleGmailClient.decodeBase64URL(encoded)
+        #expect(decoded == original)
+    }
+
+    @Test func decodeBase64URLOhnePaddingTollerant() {
+        // base64url ohne Padding (wie Gmail API antwortet)
+        let original = Data("mykilOS".utf8)
+        let b64url = original.base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .trimmingCharacters(in: CharacterSet(charactersIn: "="))
+        let decoded = GoogleGmailClient.decodeBase64URL(b64url)
+        #expect(decoded == original)
+    }
+
+    @Test func downloadAttachmentDefaultWirftInvalidResponse() async {
+        struct FakeGmail: GoogleGmailFetching, @unchecked Sendable {
+            func searchMessages(query: String, maxResults: Int) async throws -> [GoogleGmailMessage] { [] }
+        }
+        let fake = FakeGmail()
+        await #expect(throws: GoogleGmailError.invalidResponse) {
+            _ = try await fake.downloadAttachment(messageID: "m1", attachmentID: "a1")
+        }
+    }
 }
 
 private struct FakeGmailWithBody: GoogleGmailFetching, @unchecked Sendable {
