@@ -229,6 +229,41 @@ struct GoogleDriveClientTests {
         #expect(GoogleDriveClient.forbiddenParentFolderIDs.contains("0AOeReQBQKkKBUk9PVA"))
     }
 
+    // MARK: - findOrCreateSubfolder URL-Builder
+
+    @Test func findSubfolderURLEnthaeltParentNameUndFolder() {
+        let url = GoogleDriveClient.buildFindSubfolderURL(
+            parentID: "PARENT_ABC",
+            name: "01 INFOS",
+            baseURL: "https://www.googleapis.com/drive/v3/files"
+        )
+        let comps = url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+        let items = Dictionary(
+            uniqueKeysWithValues: (comps?.queryItems ?? []).map { ($0.name, $0.value ?? "") }
+        )
+        #expect(items["q"]?.contains("PARENT_ABC") == true)
+        #expect(items["q"]?.contains("01 INFOS") == true)
+        #expect(items["q"]?.contains("application/vnd.google-apps.folder") == true)
+        #expect(items["q"]?.contains("trashed=false") == true)
+        #expect(items["supportsAllDrives"] == "true")
+        #expect(items["includeItemsFromAllDrives"] == "true")
+        #expect(items["pageSize"] == "1")
+    }
+
+    @Test func findOrCreateSubfolderWirftNotConnectedOhneToken() async {
+        let client = GoogleDriveClient(tokenProvider: ThrowingTokenProvider(error: GoogleOAuthError.notConnected))
+        do {
+            _ = try await client.findOrCreateSubfolder(parentID: "P", name: "N")
+            Issue.record("Erwartete .notConnected")
+        } catch {
+            #expect(error as? GoogleDriveError == .notConnected)
+        }
+    }
+
+    // findOrCreateSubfolder network-level tests are covered via DriveProjectFolderResolverTests
+    // with FakeDriveClientForResolver (no shared URLProtocol state, no race conditions).
+    // These two tests verify the URL builder only — the real flow is tested at resolver level.
+
 // MARK: - Test-Stubs für die echte Pagination
 
 private struct StubReturningTokenProvider: GoogleAccessTokenProviding {

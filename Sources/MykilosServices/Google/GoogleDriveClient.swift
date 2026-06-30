@@ -79,12 +79,19 @@ public protocol GoogleDriveFetching: Sendable {
     /// Exportiert ein Google-natives Format (Docs/Sheets/Slides) in ein Zielformat
     /// (z. B. text/plain, text/csv). Erfordert drive.readonly.
     func exportFile(fileID: String, exportMimeType: String) async throws -> Data
+    /// Sucht einen Unterordner mit `name` unterhalb von `parentID`.
+    /// Wenn er nicht existiert, wird er angelegt (drive.file-Scope).
+    /// Gibt die Ordner-ID zurück.
+    func findOrCreateSubfolder(parentID: String, name: String) async throws -> String
 }
 
-// Default, damit bestehende Fakes/Conformer nicht brechen (nur GoogleDriveClient
-// implementiert den echten Export).
+// Default-Implementierungen, damit bestehende Fakes/Conformer nicht brechen.
 public extension GoogleDriveFetching {
     func exportFile(fileID: String, exportMimeType: String) async throws -> Data {
+        throw GoogleDriveError.invalidResponse
+    }
+
+    func findOrCreateSubfolder(parentID: String, name: String) async throws -> String {
         throw GoogleDriveError.invalidResponse
     }
 }
@@ -323,6 +330,94 @@ public struct GoogleDriveClient: GoogleDriveFetching {
         // Epilog
         body.append(contentsOf: "\(dash)\(boundary)\(dash)\(crlf)".utf8)
         return body
+    }
+
+    // MARK: - findOrCreateSubfolder
+
+    /// Sucht einen Unterordner mit `name` direkt unterhalb von `parentID`.
+    /// Wenn keiner gefunden wird, legt `files.create` (folder-MIME) ihn an.
+    /// Erfordert `drive.file`-Scope — Re-Consent (Trennen→Verbinden) nötig.
+    public func findOrCreateSubfolder(parentID: String, name: String) async throws -> String {
+        guard let accessToken = try? await tokenProvider.validAccessToken() else {
+            throw GoogleDriveError.notConnected
+        }
+        // Suche: existiert ein Ordner mit diesem Namen im parent?
+        if let existingID = try? await searchSubfolder(
+            parentID: parentID, name: name, accessToken: accessToken
+        ) {
+            return existingID
+        }
+        // Nicht gefunden → anlegen.
+        return try await createSubfolder(parentID: parentID, name: name, accessToken: accessToken)
+    }
+
+    private func searchSubfolder(parentID: String, name: String, accessToken: String) async throws -> String? {
+        guard let url = Self.buildFindSubfolderURL(parentID: parentID, name: name, baseURL: baseURL) else {
+            throw GoogleDriveError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse,
+              (200...299).contains(http.statusCode) else {
+            throw GoogleDriveError.httpError((response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let files = obj["files"] as? [[String: Any]],
+              let first = files.first,
+              let id = first["id"] as? String else {
+            return nil
+        }
+        return id
+    }
+
+    private func createSubfolder(parentID: String, name: String, accessToken: String) async throws -> String {
+        guard let url = URL(string: "\(baseURL)?fields=id&supportsAllDrives=true") else {
+            throw GoogleDriveError.invalidResponse
+        }
+        let metadata: [String: Any] = [
+            "name": name,
+            "mimeType": "application/vnd.google-apps.folder",
+            "parents": [parentID],
+        ]
+        guard let body = try? JSONSerialization.data(withJSONObject: metadata) else {
+            throw GoogleDriveError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json; charset=UTF-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse,
+              (200...299).contains(http.statusCode) else {
+            throw GoogleDriveError.httpError((response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let id = obj["id"] as? String else {
+            throw GoogleDriveError.decodingFailed
+        }
+        return id
+    }
+
+    // MARK: - Testbarer findOrCreateSubfolder-Baustein
+
+    /// Baut die Suche-URL für einen Unterordner nach Name + parentID.
+    /// Rein statisch, testbar ohne Netzwerk.
+    static func buildFindSubfolderURL(parentID: String, name: String, baseURL: String) -> URL? {
+        // Sonderzeichen im Namen maskieren (einfache Hochkommas in Drive-Query).
+        let safeParent = parentID.replacingOccurrences(of: "'", with: "\\'")
+        let safeName   = name.replacingOccurrences(of: "'", with: "\\'")
+        let query = "'\(safeParent)' in parents and name='\(safeName)' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        var components = URLComponents(string: baseURL)
+        components?.queryItems = [
+            URLQueryItem(name: "q", value: query),
+            URLQueryItem(name: "fields", value: "files(id,name)"),
+            URLQueryItem(name: "pageSize", value: "1"),
+            URLQueryItem(name: "supportsAllDrives", value: "true"),
+            URLQueryItem(name: "includeItemsFromAllDrives", value: "true"),
+        ]
+        return components?.url
     }
 
     /// Parst die `files.create`-Antwort in ein `GoogleDriveFile`.
