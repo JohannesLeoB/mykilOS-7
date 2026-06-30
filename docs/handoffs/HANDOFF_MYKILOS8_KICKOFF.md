@@ -48,10 +48,10 @@ Gegen den echten Code abgeglichen:
 
 ## 4. 🔑 Kritische Überschneidung: Clockodo ist schon entworfen — NICHT neu erfinden
 Das S1/S3-Zeit-/Upload-Thema sitzt auf einer **bereits durchdachten Architektur** im Repo:
-- **`docs/handoffs/HANDOFF_LIVE_WIRING_4.md`** — „Clockodo-Zuhörer", 6-Schichten (Intent→Resolution→Draft-Store→UI→Confirm/POST→Vorschläge), User-Scoping-Constraint („jeder bucht nur seine eigenen Einträge").
+- **`docs/handoffs/_archiv/HANDOFF_LIVE_WIRING_4.md`** — „Clockodo-Zuhörer", 6-Schichten (Intent→Resolution→Draft-Store→UI→Confirm/POST→Vorschläge), User-Scoping-Constraint („jeder bucht nur seine eigenen Einträge").
 - **Airtable-Schema lebt schon** in Base `appuVMh3KDfKw4OoQ`: `Clockodo-Nutzer` (tblPbly2br8mR2kaU, Key + Entwurf-Tabelle je User), persönliche `Clockodo-EW-<Name>`-Tabellen, `Clockodo-Buchungen`, `Clockodo-Leistungen` (Services + Stundensatz). `Kunden.Clockodo-Kunden-ID` teils gemappt.
 - `ClockodoClient` existiert (`Sources/MykilosServices/Clockodo/`).
-- **Unterschied:** mykilOS-8-S1 ist **Timer-getrieben** (UI), der Zuhörer war **Sprach-getrieben** (Chat). Beide speisen denselben **Draft→Confirm→Upload-Pfad** mit **per-User-Keychain-Key** + **anonymisiertem Rücklauf**. → S1 baut den lokalen Timer/Store; S3 verdrahtet den schon entworfenen Upload. **Vorher `HANDOFF_LIVE_WIRING_4.md` lesen.**
+- **Unterschied:** mykilOS-8-S1 ist **Timer-getrieben** (UI), der Zuhörer war **Sprach-getrieben** (Chat). Beide speisen denselben **Draft→Confirm→Upload-Pfad** mit **per-User-Keychain-Key** + **anonymisiertem Rücklauf**. → S1 baut den lokalen Timer/Store; S3 verdrahtet den schon entworfenen Upload. **Vorher `_archiv/HANDOFF_LIVE_WIRING_4.md` lesen.**
 
 ## 5. Eiserne Regeln (gelten unverändert — Voll: `CLAUDE.md` + `AGENTS.md`)
 - **Kanonischer Ordner** (oben), nie in Desktop-Worktrees dauerhaft arbeiten. **Parallele Agenten = isolierte git-Worktrees.**
@@ -83,7 +83,7 @@ Quelle: `AppState.erzeugeKundeUndProjekt` (vom Intake-Submit `FragebogenView:625
 |---|---|---|
 | **Airtable** | ✅ **JA** | Kunde + Projekt (Artikel-Base `appdxTeT6bhSBmwx5`, gated CREATE, append-only) + Erst-Warenkorb (Warenkörbe + Projektartikel via CartStore). Das ist der **einzige** real feuernde Schreibpfad. |
 | **Drive** | ❌ **NEIN** | Es werden **keine** Projektordner angelegt. Der `MykFragebogenDriveUploader` ist verdrahtet, wird aber im Submit **nicht aufgerufen**; und selbst wenn — er kann nur `01 INFOS/07 Fragebogen` **unter einem existierenden** Projektordner anlegen, **nicht** den vollen BEISPIELORDNER-Baum (`02 CAD`, `03 PRÄSENTATION`, `01 Pläne` … werden nirgends erzeugt). Braucht zudem `drive.file`-Re-Consent. |
-| **Clockodo** | ❌ **NEIN** | Nur entworfen (`HANDOFF_LIVE_WIRING_4.md`), nicht gebaut. Kein Write. |
+| **Clockodo** | ❌ **NEIN** | Nur entworfen (`_archiv/HANDOFF_LIVE_WIRING_4.md`), nicht gebaut. Kein Write. |
 | **ClickUp** | ❌ **NEIN** | In 7.x read-only. Kein Write. |
 | **Kunden-/Projektnummer** | ❌ **NICHT generiert** | Kein Kdnr (die Artikel-Base-`Kunden` hat kein Kundennummer-Feld). Der **Projektname ist Freitext** aus der Maske — keine automatische Nummerierung/Schema-Bildung. |
 

@@ -69,7 +69,7 @@ Bei „Projekt anlegen" / „Kunde anlegen" zuerst prüfen — **nie** Kunde/Pro
 ## 5. Clockodo (Gerüst jetzt, Details später)
 
 - Jetzt: **Gerüst + API-Write-Schemata architektieren** (noch nicht live schreiben). Sitzt auf dem schon
-  entworfenen Zuhörer (`HANDOFF_LIVE_WIRING_4.md`): `POST /api/v2/entries` (`customers_id`, `services_id`,
+  entworfenen Zuhörer (`_archiv/HANDOFF_LIVE_WIRING_4.md`): `POST /api/v2/entries` (`customers_id`, `services_id`,
   `time_since`, `time_until`, `billable`), per-User-Keychain-Key, anonymisierter Rücklauf.
 - Liefern: Write-Modell (Request/Response-Typen, Mapping Kostenstelle→Service, Idempotenz/Retry), Tests mit
   Fake-Client. **Kein realer POST**, bis Johannes das Write-Gate freigibt.
