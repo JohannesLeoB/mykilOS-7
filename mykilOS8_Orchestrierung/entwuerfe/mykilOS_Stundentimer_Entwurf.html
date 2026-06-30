@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mykilOS · Stundentimer (Entwurf)</title>
+<style>
+  :root{
+    --paper:#FAF9F5; --card:#FFFFFF; --ink:#2C2C2A; --sub:#5F5E5A; --mut:#9C9A92;
+    --line:rgba(0,0,0,.10); --line2:rgba(0,0,0,.18);
+    --ochre:#B98A30; --ochre-bg:#F4ECDA;
+    --sage:#6E8B6A; --sage-bg:#E8EDE6;
+    --indigo:#4C6280; --indigo-bg:#E4E9F0;
+    --risk:#C44536; --risk-bg:#F7E2DD;
+    --done:#1D9E75;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#262624; --card:#302F2C; --ink:#E9E7DD; --sub:#B4B2A9; --mut:#8B897F;
+      --line:rgba(255,255,255,.12); --line2:rgba(255,255,255,.22);
+      --ochre:#D7A94A; --ochre-bg:#3A3220;
+      --sage:#93AE8F; --sage-bg:#28332A;
+      --indigo:#8AA0C0; --indigo-bg:#1E2735;
+      --risk:#E07A66; --risk-bg:#3C211B;
+      --done:#4FBF95;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;padding:26px 20px 60px}
+  .wrap{max-width:920px;margin:0 auto;display:grid;grid-template-columns:1fr 230px;gap:22px}
+  .titleline{grid-column:1/-1;font-size:12px;color:var(--mut);margin:0 0 14px}
+  .pane{border:0.5px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
+
+  /* MAIN: project page timer widget */
+  .w{border:0.5px solid var(--line);border-radius:14px;padding:18px 20px;background:var(--card);margin-bottom:16px}
+  .wh{font-size:12px;font-weight:500;color:var(--sage);display:flex;align-items:center;gap:7px;margin-bottom:14px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--sage)}
+
+  .timerface{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .clock{font-size:38px;font-weight:300;font-variant-numeric:tabular-nums;letter-spacing:-0.5px;color:var(--ink)}
+  .clock .sub{font-size:12px;color:var(--mut);font-weight:400;display:block;margin-top:2px;letter-spacing:0}
+  .toggle{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;border-radius:24px;padding:10px 20px;border:0.5px solid var(--sage);color:#fff;background:var(--sage)}
+  .toggle.stop{background:var(--risk);border-color:var(--risk)}
+  .toggle .ic{width:9px;height:9px}
+
+  .ksrow{display:flex;gap:8px;flex-wrap:wrap}
+  .ks{font-size:12.5px;font-weight:500;border-radius:9px;padding:8px 14px;border:0.5px solid var(--line2);color:var(--sub);background:transparent}
+  .ks.active{background:var(--sage-bg);border-color:var(--sage);color:var(--sage)}
+  .kslabel{font-size:11px;color:var(--mut);margin-bottom:8px}
+
+  .switchnote{margin-top:14px;font-size:11.5px;color:var(--mut);border-top:0.5px solid var(--line);padding-top:11px}
+
+  /* takeover confirm card */
+  .confirm{border:0.5px solid var(--sage);border-radius:12px;background:var(--sage-bg);padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .confirm .txt{flex:1;font-size:13px}
+  .confirm .txt b{font-weight:500}
+  .confirm .sub2{font-size:11px;color:var(--sub);margin-top:2px}
+  .btn{font-size:12px;font-weight:500;border-radius:8px;padding:6px 13px;border:0.5px solid var(--line2);color:var(--ink);background:var(--card)}
+  .btn.primary{background:var(--sage);color:#fff;border-color:var(--sage)}
+
+  /* SIDEBAR */
+  .side{display:flex;flex-direction:column;gap:14px}
+  .sidetitle{font-size:11px;color:var(--mut);font-weight:500;text-transform:uppercase;letter-spacing:.04em;padding:0 2px}
+  .navrow{font-size:13px;color:var(--sub);padding:7px 10px;border-radius:8px}
+  .navrow.on{background:var(--card);color:var(--ink);font-weight:500;border:0.5px solid var(--line)}
+
+  /* minimal active-timer pill in sidebar */
+  .pill{display:flex;align-items:center;gap:9px;border:0.5px solid var(--sage);background:var(--sage-bg);border-radius:11px;padding:9px 11px}
+  .playpause{width:26px;height:26px;border-radius:50%;background:var(--sage);display:flex;align-items:center;justify-content:center;flex:none}
+  .playpause svg{width:11px;height:11px;fill:#fff}
+  .pillbody{flex:1;min-width:0}
+  .pillproj{font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pilltime{font-size:11px;color:var(--sage);font-variant-numeric:tabular-nums}
+  .pillks{font-size:10px;color:var(--mut)}
+
+  .sideghost{font-size:11px;color:var(--mut);text-align:center;padding:14px 6px;border:0.5px dashed var(--line2);border-radius:11px}
+
+  .legend{grid-column:1/-1;font-size:11px;color:var(--mut);margin-top:6px;display:flex;gap:16px;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .sw{width:9px;height:9px;border-radius:50%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="titleline">mykilOS · Stundentimer auf der Projektseite + Sidebar-Mini-Widget (Entwurf, nicht final)</p>
+
+  <!-- MAIN COLUMN: project detail page -->
+  <div>
+    <!-- takeover prompt state (shown only when switching projects while another timer runs) -->
+    <div class="confirm">
+      <div class="txt">
+        <b>Timer läuft noch in „Fuckner / Hütter"</b>
+        <div class="sub2">12 Min · Kostenstelle Montage — hier übernehmen?</div>
+      </div>
+      <button class="btn">Abbrechen</button>
+      <button class="btn primary">Übernehmen</button>
+    </div>
+
+    <div class="w">
+      <div class="wh"><span class="dot"></span>Zeit — Vinahl Neurologie</div>
+
+      <div class="timerface">
+        <div class="clock">00:42:18<span class="sub">Kostenstelle: Beratung</span></div>
+        <button class="toggle stop"><span class="ic">⏹</span>Stopp</button>
+      </div>
+
+      <div class="kslabel">Kostenstelle in diesem Projekt</div>
+      <div class="ksrow">
+        <span class="ks">Planung</span>
+        <span class="ks active">Beratung</span>
+        <span class="ks">Montage</span>
+        <span class="ks">Fahrtzeit</span>
+        <span class="ks">Sonstiges</span>
+      </div>
+
+      <div class="switchnote">Kostenstelle wechseln während der Timer läuft → aktuelles Segment wird beendet, ein neues startet sofort. Keine Zeit geht verloren, keine Stunde landet im falschen Topf.</div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="side">
+    <div class="sidetitle">mykilOS</div>
+    <div class="navrow">Heute</div>
+    <div class="navrow on">Projekte</div>
+    <div class="navrow">Alle Angebote</div>
+    <div class="navrow">Kontakte</div>
+
+    <div style="height:8px"></div>
+    <div class="sidetitle">Aktiver Timer</div>
+    <!-- state A: running -->
+    <div class="pill">
+      <div class="playpause"><svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg></div>
+      <div class="pillbody">
+        <div class="pillproj">Vinahl Neurologie</div>
+        <div class="pillks">Beratung</div>
+      </div>
+      <div class="pilltime">42:18</div>
+    </div>
+
+    <!-- state B: idle, nothing running — quiet, no widget at all -->
+    <div class="sideghost">kein Timer aktiv</div>
+  </div>
+
+  <div class="legend">
+    <span><span class="sw" style="background:var(--sage)"></span>Zeit / Menschen (Timer)</span>
+    <span><span class="sw" style="background:var(--indigo)"></span>Geld (späterer Soll/Ist-Abgleich)</span>
+    <span><span class="sw" style="background:var(--risk)"></span>Stopp / Risiko</span>
+  </div>
+</div>
+</body>
+</html>

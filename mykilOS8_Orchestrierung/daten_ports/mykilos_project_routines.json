@@ -1,0 +1,1661 @@
+{
+  "_meta": {
+    "source": "Slack export 2025-01..2026-06",
+    "generated": "2026-06-29",
+    "method": "keyword phase-signal detection; durations = median of per-project transition gaps where both signals present (directional, not exact)"
+  },
+  "phase_model": [
+    {
+      "order": 1,
+      "phase": "Anfrage/Lead",
+      "signal_regex": "anfrage|interessent|erstkontakt|kennengelernt|fragebogen|lead\\b|neukunde|neuer kunde|angefragt"
+    },
+    {
+      "order": 2,
+      "phase": "Termin/Aufmaß",
+      "signal_regex": "aufma(ß|ss)|vor ort|besichtigung|ortstermin|termin vereinbar|vor-ort|aufgemessen|raumaufnahme"
+    },
+    {
+      "order": 3,
+      "phase": "Planung/Entwurf",
+      "signal_regex": "planung|entwurf|grundriss|\\bcad\\b|visualisier|rendering|moodboard|konzept|zeichnung|3d|skizze"
+    },
+    {
+      "order": 4,
+      "phase": "Angebot/Kalkul.",
+      "signal_regex": "angebot|kostenvoranschlag|\\bkv\\b|kalkulation|angebotssumme|preis(liste)?|kalkulier|nachtrag"
+    },
+    {
+      "order": 5,
+      "phase": "Auftrag/Freigabe",
+      "signal_regex": "auftrag|beauftrag|freigabe|freigegeben|zugesagt|unterschrieb|auftragsbest|\\bab\\b liegt|zusage|bestellung freigegeben|los geht"
+    },
+    {
+      "order": 6,
+      "phase": "Bestellung",
+      "signal_regex": "bestellt|bestellung|geordert|\\border\\b|bei (weichsel|bartels|meylahn|horatec|hkt|jandali|pelle|gemtec)|materialbestellung"
+    },
+    {
+      "order": 7,
+      "phase": "Produktion",
+      "signal_regex": "produktion|in fertigung|fertigung|werkstatt|wird gebaut|gefertigt|korpus|fronten produz"
+    },
+    {
+      "order": 8,
+      "phase": "Lieferung",
+      "signal_regex": "liefertermin|geliefert|anlieferung|lieferung|versand|verschickt|kommt am|ankunft|wird geliefert"
+    },
+    {
+      "order": 9,
+      "phase": "Montage",
+      "signal_regex": "montage|aufbau|einbau|monteur|installation|montiert|aufgebaut|eingebaut|aufgestellt"
+    },
+    {
+      "order": 10,
+      "phase": "Abnahme/Übergabe",
+      "signal_regex": "abnahme|abgenommen|übergab|fertiggestellt|fertig montiert|projekt fertig|abgeschlossen|finale"
+    },
+    {
+      "order": 11,
+      "phase": "Rechnung/Zahlung",
+      "signal_regex": "rechnung|schlussrechnung|abschlag|anzahlung|bezahlt|zahlung|überwiesen|gezahlt|rechnungsstellung"
+    },
+    {
+      "order": 12,
+      "phase": "Service/Reklam.",
+      "signal_regex": "reklamation|reklamier|\\bmangel|mängel|nachbesserung|servicefall|reparatur|nacharbeit|beanstand"
+    }
+  ],
+  "transition_medians_days": [
+    {
+      "from": "Anfrage/Lead",
+      "to": "Termin/Aufmaß",
+      "median_days": 46,
+      "n": 16
+    },
+    {
+      "from": "Termin/Aufmaß",
+      "to": "Planung/Entwurf",
+      "median_days": 4,
+      "n": 8
+    },
+    {
+      "from": "Planung/Entwurf",
+      "to": "Angebot/Kalkul.",
+      "median_days": 1,
+      "n": 20
+    },
+    {
+      "from": "Angebot/Kalkul.",
+      "to": "Auftrag/Freigabe",
+      "median_days": 27,
+      "n": 28
+    },
+    {
+      "from": "Auftrag/Freigabe",
+      "to": "Bestellung",
+      "median_days": 40,
+      "n": 16
+    },
+    {
+      "from": "Bestellung",
+      "to": "Produktion",
+      "median_days": 20,
+      "n": 13
+    },
+    {
+      "from": "Produktion",
+      "to": "Lieferung",
+      "median_days": 20,
+      "n": 14
+    },
+    {
+      "from": "Lieferung",
+      "to": "Montage",
+      "median_days": 6,
+      "n": 13
+    },
+    {
+      "from": "Montage",
+      "to": "Abnahme/Übergabe",
+      "median_days": 44,
+      "n": 21
+    },
+    {
+      "from": "Abnahme/Übergabe",
+      "to": "Rechnung/Zahlung",
+      "median_days": 31,
+      "n": 7
+    }
+  ],
+  "project_span_median_days": {
+    "all_active": 132,
+    "full_kitchen": 251
+  },
+  "routines": [
+    {
+      "id": "vollprojekt",
+      "name": "Privatküche – Vollprojekt",
+      "applies_to": "Privater Küchen-/Wohnraum-Auftrag mit Planung, Fertigung und Montage. Die Kernroutine des Studios.",
+      "notes": "30 Channels, Median-Laufzeit 251 Tage (~8 Monate), Ø 203 Nachrichten. Durchläuft praktisch alle Phasen (Angebot 100%, Montage 97%, Rechnung 93%).",
+      "steps": [
+        {
+          "phase": "Anfrage/Lead",
+          "trigger": "Anfrage erfasst, Fragebogen verschickt",
+          "role": "Lead/PM (dk·jo·jb·se)",
+          "artifact": "Typeform-Fragebogen, Kontaktanlage",
+          "blocker": "—"
+        },
+        {
+          "phase": "Termin/Aufmaß",
+          "trigger": "Ortstermin & Aufmaß vereinbart und durchgeführt",
+          "role": "Lead/PM",
+          "artifact": "Aufmaß-Skizze + Fotos (Drive)",
+          "blocker": "Vorlauf bis Aufmaß ~46 T – Leads bleiben liegen"
+        },
+        {
+          "phase": "Planung/Entwurf",
+          "trigger": "Grundriss, CAD-Visualisierung, Moodboard",
+          "role": "Planung/Lead",
+          "artifact": "CAD-Datei, Renderings, Moodboard (Drive)",
+          "blocker": "—"
+        },
+        {
+          "phase": "Angebot/Kalkul.",
+          "trigger": "Kalkulation & Angebots-PDF an Kunde",
+          "role": "Lead + Kalkulation",
+          "artifact": "Angebots-PDF (→ Kalkulationslabor)",
+          "blocker": "—"
+        },
+        {
+          "phase": "Auftrag/Freigabe",
+          "trigger": "Kunde gibt frei / unterschreibt, AB raus",
+          "role": "Lead/PM",
+          "artifact": "Auftragsbestätigung, Anzahlungsrechnung",
+          "blocker": "ENGPASS: Entscheidung ~27 T – Kunden-Unentschlossenheit"
+        },
+        {
+          "phase": "Bestellung",
+          "trigger": "Material & Geräte bei Lieferanten bestellt",
+          "role": "Lead/PM + Einkauf",
+          "artifact": "Bestellungen (Weichsel78, Bartels, Geräte)",
+          "blocker": "~40 T bis Bestellung – Beschaffungsvorlauf"
+        },
+        {
+          "phase": "Produktion",
+          "trigger": "Korpus/Fronten in Fertigung",
+          "role": "Werkstatt/Lieferant",
+          "artifact": "Produktionsstatus (Horatec/Weichsel)",
+          "blocker": "Lieferanten-Verzug"
+        },
+        {
+          "phase": "Lieferung",
+          "trigger": "Liefertermin koordiniert, Anlieferung",
+          "role": "Lead/PM",
+          "artifact": "Liefertermin, Versandinfo",
+          "blocker": "—"
+        },
+        {
+          "phase": "Montage",
+          "trigger": "Einbau durch Monteur",
+          "role": "Montageteam",
+          "artifact": "Montagetermin",
+          "blocker": "—"
+        },
+        {
+          "phase": "Abnahme/Übergabe",
+          "trigger": "Übergabe & Abnahmeprotokoll",
+          "role": "Lead/PM + Kunde",
+          "artifact": "Abnahmeprotokoll, Mängelliste",
+          "blocker": "Restpunkte/Mängel: ~44 T bis Abnahme"
+        },
+        {
+          "phase": "Rechnung/Zahlung",
+          "trigger": "Schlussrechnung & Zahlungseingang",
+          "role": "Buchhaltung (Frauke/Accounting)",
+          "artifact": "Schlussrechnung (Sevdesk)",
+          "blocker": "~31 T bis Zahlung; Mahnlauf bei Verzug"
+        },
+        {
+          "phase": "Service/Reklam.",
+          "trigger": "Nachbetreuung, Reklamation falls nötig",
+          "role": "Service (#service_reparatur)",
+          "artifact": "Servicefall, Ersatzteil",
+          "blocker": "57% haben Nachbesserungen"
+        }
+      ]
+    },
+    {
+      "id": "angebot_pitch",
+      "name": "Angebot / Pitch (Vorvertrieb)",
+      "applies_to": "Neue Anfrage in der Angebotsphase (a_-Channel). Ziel: Auftrag gewinnen – oder sauber als Absage schließen.",
+      "notes": "70 Channels, Median 60 Tage. Konversion gering: nur ~10% erreichen die Auftragsphase. Der Funnel verlangt aktives Nachfassen und disziplinierte Absage-Doku.",
+      "steps": [
+        {
+          "phase": "Anfrage/Lead",
+          "trigger": "Anfrage erfasst, qualifiziert",
+          "role": "Lead/PM",
+          "artifact": "Fragebogen, Budget-Indikation",
+          "blocker": "—"
+        },
+        {
+          "phase": "Termin/Aufmaß",
+          "trigger": "Aufmaß nur bei ernsthaftem Interesse",
+          "role": "Lead/PM",
+          "artifact": "Aufmaß (Drive)",
+          "blocker": "Nur 14% kommen bis hier – früh qualifizieren"
+        },
+        {
+          "phase": "Planung/Entwurf",
+          "trigger": "Erstentwurf / Konzept",
+          "role": "Planung/Lead",
+          "artifact": "Entwurf, Moodboard",
+          "blocker": "Aufwand vor Auftrag – Risiko unbezahlter Planung"
+        },
+        {
+          "phase": "Angebot/Kalkul.",
+          "trigger": "Angebot erstellt & versandt",
+          "role": "Lead + Kalkulation",
+          "artifact": "Angebots-PDF",
+          "blocker": "—"
+        },
+        {
+          "phase": "Nachfassen",
+          "trigger": "Aktiv nachfassen (Anruf/Mail) nach 1–2 Wochen",
+          "role": "Lead/PM",
+          "artifact": "Wiedervorlage / Reminder",
+          "blocker": "Ohne Nachfass-Routine versandet der Funnel"
+        },
+        {
+          "phase": "Auftrag/Freigabe ODER Absage",
+          "trigger": "Auftrag → Wechsel auf Vollprojekt-Routine; sonst Absage dokumentieren",
+          "role": "Lead/PM",
+          "artifact": "AB oder Absage-Vermerk + Grund",
+          "blocker": "Nur ~10% konvertieren – Absagegrund festhalten"
+        }
+      ]
+    },
+    {
+      "id": "gewerbe",
+      "name": "Gewerbe / Großprojekt (B2B)",
+      "applies_to": "Gewerbliche Auftraggeber: Praxis/Klinik, Gastro, Bank, Office, Studio. Höhere Summen, mehr Beteiligte.",
+      "notes": "15 Channels (u.a. Neurologie Vinahl, Loidl-Bank ~260 T€ Angebot, Eurogate, ViaPhysio, Roots Yoga). Median 126 T im Channel – ein großer Teil der Abstimmung läuft offline (Mail/Termine), daher in Slack lückenhaft.",
+      "steps": [
+        {
+          "phase": "Anfrage/Lead",
+          "trigger": "Anfrage über Empfehlung/Pitch",
+          "role": "GF + Lead (jlb·dk)",
+          "artifact": "Briefing, Anforderungen",
+          "blocker": "—"
+        },
+        {
+          "phase": "Termin/Aufmaß",
+          "trigger": "Ortstermin, oft mehrere Stakeholder",
+          "role": "Lead/PM",
+          "artifact": "Aufmaß, Bestandsplan",
+          "blocker": "Mehrere Entscheider → längere Abstimmung"
+        },
+        {
+          "phase": "Planung/Entwurf",
+          "trigger": "Entwurf + ggf. Varianten/Vergabe",
+          "role": "Planung/Lead",
+          "artifact": "CAD, Varianten",
+          "blocker": "—"
+        },
+        {
+          "phase": "Angebot/Vertrag",
+          "trigger": "Angebot, oft mit Vertrag/Rahmenbedingungen",
+          "role": "GF + Kalkulation",
+          "artifact": "Angebots-PDF, Vertrag, Zahlungsplan",
+          "blocker": "Freigabe über Gremium/Geschäftsführung – langsam"
+        },
+        {
+          "phase": "Auftrag/Freigabe",
+          "trigger": "Beauftragung, Anzahlung",
+          "role": "GF + Lead",
+          "artifact": "AB, Vertrag, Abschlagsplan",
+          "blocker": "B2B-Zahlungsziele, Bürokratie"
+        },
+        {
+          "phase": "Beschaffung & Fertigung",
+          "trigger": "Bestellung, Produktion, ggf. in Tranchen",
+          "role": "Lead + Einkauf",
+          "artifact": "Bestellungen, Produktionsplan",
+          "blocker": "Verzug bei Sondermaßen/Stahl"
+        },
+        {
+          "phase": "Lieferung & Montage",
+          "trigger": "Gestaffelte Lieferung/Montage nach Bauphase",
+          "role": "Montageteam + Lead",
+          "artifact": "Liefer-/Montageplan",
+          "blocker": "Abhängig von Gewerken vor Ort (Bau)"
+        },
+        {
+          "phase": "Teilabnahmen/Abnahme",
+          "trigger": "Abnahme je Bauabschnitt",
+          "role": "Lead + Kunde",
+          "artifact": "Teil-Abnahmeprotokolle",
+          "blocker": "—"
+        },
+        {
+          "phase": "Rechnung/Zahlung",
+          "trigger": "Abschlags- & Schlussrechnungen",
+          "role": "Buchhaltung",
+          "artifact": "Abschlags-/Schlussrechnung",
+          "blocker": "Längere Zahlungsläufe"
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "name": "Service / Reklamation",
+      "applies_to": "Reaktiver Vorgang nach Abschluss: Mangel, Beschädigung, Reparatur, Nacharbeit.",
+      "notes": "Zentral in #service_reparatur (44 Problem-Signale – mit Abstand die meisten). Immer mit dem Ursprungsprojekt verknüpfen.",
+      "steps": [
+        {
+          "phase": "Meldung",
+          "trigger": "Kunde meldet Mangel/Defekt",
+          "role": "Service/PM",
+          "artifact": "Servicefall angelegt",
+          "blocker": "—"
+        },
+        {
+          "phase": "Erfassung/Diagnose",
+          "trigger": "Foto, Beschreibung, Ursache prüfen",
+          "role": "Service/PM",
+          "artifact": "Fotodoku, Diagnose",
+          "blocker": "—"
+        },
+        {
+          "phase": "Verursacher klären",
+          "trigger": "Eigenleistung vs. Lieferant/Hersteller",
+          "role": "Service + Lead",
+          "artifact": "Zuordnung, Gewährleistung",
+          "blocker": "Hersteller-Abwicklung (z.B. Gessi, V-ZUG)"
+        },
+        {
+          "phase": "Ersatzteil/Nacharbeit",
+          "trigger": "Teil bestellen / Nacharbeit beauftragen",
+          "role": "Service + Einkauf",
+          "artifact": "Bestellung Ersatzteil",
+          "blocker": "Lieferzeit Ersatzteil"
+        },
+        {
+          "phase": "Termin & Behebung",
+          "trigger": "Servicetermin, Behebung vor Ort",
+          "role": "Monteur/Service",
+          "artifact": "Servicetermin",
+          "blocker": "Terminfindung mit Kunde"
+        },
+        {
+          "phase": "Abschluss",
+          "trigger": "Bestätigung, ggf. Berechnung",
+          "role": "Service + Buchhaltung",
+          "artifact": "Abschlussvermerk, ggf. Rechnung",
+          "blocker": "Kulanz vs. berechenbar"
+        }
+      ]
+    },
+    {
+      "id": "kleinauftrag",
+      "name": "Kleinauftrag / Produkt & Gerät",
+      "applies_to": "Reiner Produkt-/Geräteverkauf oder Kleinleistung ohne Planung & Küchenmontage.",
+      "notes": "Verteilt über #verkauf, #a_anfragen_produkte und Restpunkt-Channels. Kurzer Durchlauf, kein Aufmaß/keine Planung.",
+      "steps": [
+        {
+          "phase": "Anfrage",
+          "trigger": "Produkt-/Geräteanfrage",
+          "role": "Verkauf/PM",
+          "artifact": "Anfrage",
+          "blocker": "—"
+        },
+        {
+          "phase": "Angebot/Bestätigung",
+          "trigger": "Preis/Verfügbarkeit, Bestätigung",
+          "role": "Verkauf",
+          "artifact": "Angebot/Bestätigung",
+          "blocker": "—"
+        },
+        {
+          "phase": "Bestellung",
+          "trigger": "Bestellung beim Hersteller",
+          "role": "Einkauf",
+          "artifact": "Bestellung (Quooker, Miele, Gaggenau …)",
+          "blocker": "Lieferzeit Hersteller"
+        },
+        {
+          "phase": "Lieferung/Abholung",
+          "trigger": "Lieferung oder Abholung",
+          "role": "Verkauf/Versand",
+          "artifact": "Versand/Etikett",
+          "blocker": "—"
+        },
+        {
+          "phase": "Rechnung",
+          "trigger": "Rechnung & Zahlung",
+          "role": "Buchhaltung",
+          "artifact": "Rechnung",
+          "blocker": "—"
+        }
+      ]
+    },
+    {
+      "id": "intern",
+      "name": "Intern / Showroom / Entwicklung",
+      "applies_to": "Interne Vorhaben ohne externen Kunden: Showroom-Ausbau, Serienküche, Produktentwicklung.",
+      "notes": "4 Channels (Studioausbau, Insel-Showroom, Serienküche, Bauhaus Dessau). Interne Meilensteine statt Kundenfreigabe.",
+      "steps": [
+        {
+          "phase": "Konzept",
+          "trigger": "Idee, Zielbild, Briefing",
+          "role": "GF/Team",
+          "artifact": "Konzeptnotiz",
+          "blocker": "—"
+        },
+        {
+          "phase": "Planung",
+          "trigger": "Entwurf, Material, Budget intern",
+          "role": "Team",
+          "artifact": "Entwurf, Budget",
+          "blocker": "—"
+        },
+        {
+          "phase": "Umsetzung",
+          "trigger": "Bau/Fertigung",
+          "role": "Team/Werkstatt",
+          "artifact": "Umsetzungsstatus",
+          "blocker": "Konkurriert mit Kundenprojekten um Kapazität"
+        },
+        {
+          "phase": "Fertigstellung",
+          "trigger": "Abschluss, Dokumentation",
+          "role": "Team",
+          "artifact": "Foto, Doku",
+          "blocker": "—"
+        }
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "name": "Kundenentscheidung (Freigabe)",
+      "note": "Median ~27 T zwischen Angebot und Auftrag; größter steuerbarer Hebel. Gegenmittel: feste Nachfass-Routine + Angebots-Verfallsdatum."
+    },
+    {
+      "name": "Lieferanten-Verzug",
+      "note": "~40 T bis Bestellung + je ~20 T Produktion/Lieferung. Häufige Stichworte: Verzug, Verspätung. Gegenmittel: frühe Bestellung, Pufferzeiten, Status-Tracking je Lieferant."
+    },
+    {
+      "name": "Scope Creep / Nachträge",
+      "note": "Nachträge tauchen wiederholt auf (z.B. Fuckner/Hütter mit Nachträgen im Auftrag). Gegenmittel: Änderungen sofort als Nachtrag erfassen und bepreisen."
+    },
+    {
+      "name": "Mängel-/Restpunkt-Auslauf",
+      "note": "Median ~44 T von Montage bis Abnahme; Nachbesserungen in 57% der Vollprojekte. Gegenmittel: Abnahmeprotokoll mit Mängelliste + Termin direkt bei Montage."
+    },
+    {
+      "name": "Anfrage-Vorlauf",
+      "note": "~46 T von Anfrage bis Aufmaß – Leads kühlen aus. Gegenmittel: Aufmaß-Termin früh fest verankern."
+    }
+  ],
+  "project_phase_timeline": {
+    "a_ol_fechner_jo": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Angebot/Kalkul.": "2025-02-17",
+        "Anfrage/Lead": "2025-03-03",
+        "Planung/Entwurf": "2025-03-03",
+        "Montage": "2025-03-04"
+      }
+    },
+    "p_hh_claussen_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Rechnung/Zahlung": "2025-01-06",
+        "Lieferung": "2025-01-06",
+        "Montage": "2025-01-07",
+        "Bestellung": "2025-01-07",
+        "Planung/Entwurf": "2025-01-13",
+        "Angebot/Kalkul.": "2025-01-27",
+        "Auftrag/Freigabe": "2025-02-24",
+        "Anfrage/Lead": "2025-04-07",
+        "Termin/Aufmaß": "2025-06-24"
+      }
+    },
+    "p_hh_neurologie_vinahl_jlb": {
+      "type": "Gewerbe/Großprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2026-01-22",
+        "Auftrag/Freigabe": "2026-01-22",
+        "Angebot/Kalkul.": "2026-01-23",
+        "Termin/Aufmaß": "2026-03-02",
+        "Bestellung": "2026-04-09",
+        "Produktion": "2026-04-10",
+        "Montage": "2026-04-14",
+        "Lieferung": "2026-04-15",
+        "Anfrage/Lead": "2026-04-22",
+        "Rechnung/Zahlung": "2026-04-29",
+        "Abnahme/Übergabe": "2026-05-29"
+      }
+    },
+    "p_hh_may_heimhuder64": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Anfrage/Lead": "2025-11-17",
+        "Angebot/Kalkul.": "2025-11-17",
+        "Abnahme/Übergabe": "2025-12-01",
+        "Bestellung": "2025-12-05",
+        "Planung/Entwurf": "2026-03-12",
+        "Termin/Aufmaß": "2026-04-09",
+        "Montage": "2026-04-09",
+        "Auftrag/Freigabe": "2026-06-05",
+        "Lieferung": "2026-06-09"
+      }
+    },
+    "p_hh_wawrzinek_jo_dk": {
+      "type": "Kleinauftrag/Restpunkt",
+      "phase": "p",
+      "phases": {
+        "Rechnung/Zahlung": "2025-01-02"
+      }
+    },
+    "a_hh_wißmeyer_dk": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Termin/Aufmaß": "2025-09-12",
+        "Produktion": "2025-09-12",
+        "Planung/Entwurf": "2025-09-15",
+        "Anfrage/Lead": "2025-09-29",
+        "Auftrag/Freigabe": "2025-09-30",
+        "Angebot/Kalkul.": "2025-10-06"
+      }
+    },
+    "p_hh_lürßenbasti_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Angebot/Kalkul.": "2025-05-19",
+        "Service/Reklam.": "2025-05-19",
+        "Auftrag/Freigabe": "2025-05-28",
+        "Anfrage/Lead": "2025-06-17",
+        "Produktion": "2025-06-17",
+        "Rechnung/Zahlung": "2025-06-17",
+        "Termin/Aufmaß": "2025-06-18",
+        "Planung/Entwurf": "2025-06-18",
+        "Lieferung": "2025-06-25",
+        "Abnahme/Übergabe": "2026-01-06"
+      }
+    },
+    "p_b_vahedi_ps": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Termin/Aufmaß": "2025-01-09",
+        "Angebot/Kalkul.": "2025-01-09",
+        "Bestellung": "2025-01-09",
+        "Lieferung": "2025-01-14",
+        "Montage": "2025-01-14",
+        "Produktion": "2025-01-15",
+        "Service/Reklam.": "2025-01-21",
+        "Rechnung/Zahlung": "2025-01-27",
+        "Abnahme/Übergabe": "2025-02-05",
+        "Auftrag/Freigabe": "2025-04-30",
+        "Anfrage/Lead": "2025-05-28",
+        "Planung/Entwurf": "2025-08-15"
+      }
+    },
+    "p_hh_roots_yoga_dk": {
+      "type": "Gewerbe/Großprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-12-02",
+        "Montage": "2025-12-02",
+        "Anfrage/Lead": "2025-12-08",
+        "Angebot/Kalkul.": "2025-12-15",
+        "Lieferung": "2025-12-15",
+        "Rechnung/Zahlung": "2026-01-19",
+        "Bestellung": "2026-01-26"
+      }
+    },
+    "p_b_zeisberg_jj": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Angebot/Kalkul.": "2025-01-13",
+        "Abnahme/Übergabe": "2025-01-13",
+        "Planung/Entwurf": "2025-01-16",
+        "Produktion": "2025-01-16",
+        "Anfrage/Lead": "2025-01-17",
+        "Lieferung": "2025-02-03",
+        "Montage": "2025-02-03",
+        "Auftrag/Freigabe": "2025-02-05",
+        "Bestellung": "2025-04-02",
+        "Rechnung/Zahlung": "2025-05-15",
+        "Termin/Aufmaß": "2025-05-23",
+        "Service/Reklam.": "2025-10-27"
+      }
+    },
+    "a_b_masuhr-jonas": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2026-03-26",
+        "Angebot/Kalkul.": "2026-03-26",
+        "Montage": "2026-03-26",
+        "Rechnung/Zahlung": "2026-06-12"
+      }
+    },
+    "p_hh_doehle_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Lieferung": "2025-01-02",
+        "Rechnung/Zahlung": "2025-01-02",
+        "Bestellung": "2025-01-09",
+        "Produktion": "2025-01-13",
+        "Montage": "2025-01-16",
+        "Service/Reklam.": "2025-01-16",
+        "Termin/Aufmaß": "2025-01-16",
+        "Abnahme/Übergabe": "2025-01-30",
+        "Angebot/Kalkul.": "2025-02-17",
+        "Auftrag/Freigabe": "2025-03-11",
+        "Planung/Entwurf": "2025-11-07"
+      }
+    },
+    "a_hh_schultzendorff_gl": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2025-12-12",
+        "Auftrag/Freigabe": "2025-12-12"
+      }
+    },
+    "a_b_richards": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Montage": "2025-09-11"
+      }
+    },
+    "a_hh_dietz_dk": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Angebot/Kalkul.": "2025-01-06",
+        "Planung/Entwurf": "2025-01-16",
+        "Montage": "2025-01-16"
+      }
+    },
+    "p_speakerdesign_dk": {
+      "type": "Gewerbe/Großprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-01-29",
+        "Angebot/Kalkul.": "2025-01-29",
+        "Anfrage/Lead": "2025-07-28",
+        "Lieferung": "2025-12-12",
+        "Rechnung/Zahlung": "2025-12-12"
+      }
+    },
+    "p_semjon_geräte_ps": {
+      "type": "Gewerbe/Großprojekt",
+      "phase": "p",
+      "phases": {
+        "Produktion": "2025-01-15",
+        "Lieferung": "2025-01-15",
+        "Rechnung/Zahlung": "2025-01-15"
+      }
+    },
+    "p_hh_heinemann": {
+      "type": "Privatküche – Standard/klein",
+      "phase": "p",
+      "phases": {
+        "Lieferung": "2025-02-21",
+        "Angebot/Kalkul.": "2025-02-21",
+        "Rechnung/Zahlung": "2025-02-25",
+        "Bestellung": "2025-05-19"
+      }
+    },
+    "a_hh_koehler_dk": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2026-02-17"
+      }
+    },
+    "p_hh_nandoluerssen_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Bestellung": "2025-01-06",
+        "Rechnung/Zahlung": "2025-01-06",
+        "Auftrag/Freigabe": "2025-01-17",
+        "Lieferung": "2025-01-21",
+        "Montage": "2025-03-18",
+        "Angebot/Kalkul.": "2025-05-19"
+      }
+    },
+    "a_b_vola_nord_dk": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Angebot/Kalkul.": "2025-03-03",
+        "Planung/Entwurf": "2025-03-05",
+        "Anfrage/Lead": "2025-03-11",
+        "Bestellung": "2025-04-04",
+        "Abnahme/Übergabe": "2025-04-04",
+        "Termin/Aufmaß": "2025-04-04",
+        "Auftrag/Freigabe": "2025-04-04",
+        "Montage": "2025-04-04"
+      }
+    },
+    "p_hh_woldsenweg6_bad_se_dk": {
+      "type": "Privatküche – Standard/klein",
+      "phase": "p",
+      "phases": {
+        "Montage": "2025-04-25",
+        "Rechnung/Zahlung": "2025-04-29",
+        "Abnahme/Übergabe": "2025-04-29"
+      }
+    },
+    "a_hh_26014_mehringer": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2026-05-21",
+        "Angebot/Kalkul.": "2026-05-26"
+      }
+    },
+    "a_hh_pässler-wilde": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2025-03-05",
+        "Angebot/Kalkul.": "2025-03-06",
+        "Bestellung": "2025-03-06",
+        "Produktion": "2025-03-07",
+        "Planung/Entwurf": "2025-03-07"
+      }
+    },
+    "p_hh_rodewyk_jb": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-11-21",
+        "Angebot/Kalkul.": "2025-11-21",
+        "Montage": "2025-12-01",
+        "Anfrage/Lead": "2025-12-05",
+        "Rechnung/Zahlung": "2026-01-07",
+        "Auftrag/Freigabe": "2026-02-12",
+        "Lieferung": "2026-05-08",
+        "Bestellung": "2026-05-13",
+        "Produktion": "2026-05-18",
+        "Termin/Aufmaß": "2026-05-22",
+        "Abnahme/Übergabe": "2026-05-22",
+        "Service/Reklam.": "2026-06-17"
+      }
+    },
+    "a_hh_schmid_dkjlb": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Termin/Aufmaß": "2026-03-06",
+        "Planung/Entwurf": "2026-03-06",
+        "Bestellung": "2026-03-09",
+        "Montage": "2026-03-17",
+        "Angebot/Kalkul.": "2026-03-18",
+        "Produktion": "2026-03-18",
+        "Lieferung": "2026-03-18",
+        "Anfrage/Lead": "2026-05-05",
+        "Abnahme/Übergabe": "2026-05-05",
+        "Auftrag/Freigabe": "2026-05-18"
+      }
+    },
+    "p_hh_fassbender_dk_kw49-50": {
+      "type": "Kleinauftrag/Restpunkt",
+      "phase": "p",
+      "phases": {
+        "Anfrage/Lead": "2026-01-06",
+        "Angebot/Kalkul.": "2026-01-06",
+        "Termin/Aufmaß": "2026-03-05"
+      }
+    },
+    "p_hh_nathalie_mohadjer": {
+      "type": "Kleinauftrag/Restpunkt",
+      "phase": "p",
+      "phases": {
+        "Bestellung": "2026-05-20",
+        "Lieferung": "2026-05-29",
+        "Anfrage/Lead": "2026-06-01",
+        "Angebot/Kalkul.": "2026-06-01"
+      }
+    },
+    "a_hh_moerickestrasse_jb": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2026-05-12",
+        "Angebot/Kalkul.": "2026-05-12",
+        "Montage": "2026-05-19",
+        "Produktion": "2026-05-19",
+        "Lieferung": "2026-05-19",
+        "Anfrage/Lead": "2026-05-29"
+      }
+    },
+    "p_l_benjamin_jb": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Anfrage/Lead": "2025-11-03",
+        "Planung/Entwurf": "2025-11-03",
+        "Bestellung": "2025-11-07",
+        "Angebot/Kalkul.": "2025-11-10",
+        "Montage": "2025-11-19",
+        "Termin/Aufmaß": "2025-12-01",
+        "Auftrag/Freigabe": "2025-12-01",
+        "Abnahme/Übergabe": "2025-12-02",
+        "Produktion": "2025-12-19",
+        "Rechnung/Zahlung": "2026-01-02",
+        "Lieferung": "2026-01-14",
+        "Service/Reklam.": "2026-03-19"
+      }
+    },
+    "p_b_koch_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Angebot/Kalkul.": "2025-09-26",
+        "Auftrag/Freigabe": "2025-09-26",
+        "Bestellung": "2025-09-26",
+        "Lieferung": "2025-09-26",
+        "Rechnung/Zahlung": "2025-09-26",
+        "Produktion": "2025-10-16",
+        "Montage": "2025-10-21",
+        "Planung/Entwurf": "2025-10-21",
+        "Anfrage/Lead": "2025-11-10",
+        "Abnahme/Übergabe": "2026-01-30"
+      }
+    },
+    "p_hh_fuerste_jo": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-01-07",
+        "Angebot/Kalkul.": "2025-01-07",
+        "Rechnung/Zahlung": "2025-04-30",
+        "Anfrage/Lead": "2025-05-20",
+        "Abnahme/Übergabe": "2025-06-06",
+        "Produktion": "2025-06-10",
+        "Montage": "2025-06-10",
+        "Auftrag/Freigabe": "2025-06-10",
+        "Bestellung": "2025-06-11",
+        "Termin/Aufmaß": "2025-06-24",
+        "Lieferung": "2025-07-18",
+        "Service/Reklam.": "2025-08-25"
+      }
+    },
+    "p_hh_eurogate_dk": {
+      "type": "Gewerbe/Großprojekt",
+      "phase": "p",
+      "phases": {
+        "Auftrag/Freigabe": "2025-01-21",
+        "Rechnung/Zahlung": "2025-02-04",
+        "Angebot/Kalkul.": "2025-03-24",
+        "Bestellung": "2025-03-24",
+        "Lieferung": "2025-03-24"
+      }
+    },
+    "p_hh_engelken2_dk": {
+      "type": "Kleinauftrag/Restpunkt",
+      "phase": "p",
+      "phases": {
+        "Lieferung": "2025-01-20"
+      }
+    },
+    "a_hh_griese_k27_dk_jlb": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2026-04-20",
+        "Angebot/Kalkul.": "2026-04-20"
+      }
+    },
+    "a_hh_baron-voght-strasse_dk": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Angebot/Kalkul.": "2026-01-15",
+        "Planung/Entwurf": "2026-02-06",
+        "Anfrage/Lead": "2026-02-20",
+        "Lieferung": "2026-02-20",
+        "Rechnung/Zahlung": "2026-02-27",
+        "Auftrag/Freigabe": "2026-03-04",
+        "Montage": "2026-04-16",
+        "Bestellung": "2026-05-05",
+        "Abnahme/Übergabe": "2026-05-05"
+      }
+    },
+    "p_hh_jagalla_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Angebot/Kalkul.": "2025-05-20",
+        "Planung/Entwurf": "2025-05-21",
+        "Auftrag/Freigabe": "2025-05-21",
+        "Anfrage/Lead": "2025-05-23",
+        "Montage": "2025-06-16"
+      }
+    },
+    "a_h_von_stromberg": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2025-07-04",
+        "Planung/Entwurf": "2025-07-04",
+        "Montage": "2025-07-04"
+      }
+    },
+    "p_hh_niemann2_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Angebot/Kalkul.": "2025-01-14",
+        "Auftrag/Freigabe": "2025-01-16",
+        "Planung/Entwurf": "2025-01-16",
+        "Produktion": "2025-01-16",
+        "Montage": "2025-01-16",
+        "Rechnung/Zahlung": "2025-01-16",
+        "Termin/Aufmaß": "2025-01-22",
+        "Anfrage/Lead": "2025-01-23",
+        "Bestellung": "2025-02-03",
+        "Lieferung": "2025-02-18",
+        "Abnahme/Übergabe": "2025-02-28",
+        "Service/Reklam.": "2025-03-11"
+      }
+    },
+    "p_hh_plass": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Rechnung/Zahlung": "2025-07-17",
+        "Angebot/Kalkul.": "2025-08-17",
+        "Planung/Entwurf": "2025-08-27",
+        "Montage": "2025-09-01",
+        "Anfrage/Lead": "2025-10-01",
+        "Bestellung": "2025-10-01",
+        "Abnahme/Übergabe": "2025-10-21",
+        "Lieferung": "2025-12-10"
+      }
+    },
+    "p_hh_ammer_dk": {
+      "type": "Privatküche – Standard/klein",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-03-31",
+        "Anfrage/Lead": "2025-03-31",
+        "Angebot/Kalkul.": "2025-03-31",
+        "Montage": "2025-04-08"
+      }
+    },
+    "p_hh_heimhuder8_jb": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-02-04",
+        "Angebot/Kalkul.": "2025-03-24",
+        "Auftrag/Freigabe": "2025-04-28",
+        "Rechnung/Zahlung": "2025-05-09",
+        "Termin/Aufmaß": "2025-05-26",
+        "Abnahme/Übergabe": "2025-07-11",
+        "Anfrage/Lead": "2025-07-23",
+        "Service/Reklam.": "2025-10-17",
+        "Montage": "2025-10-27"
+      }
+    },
+    "p_hh_schwab_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Bestellung": "2025-01-06",
+        "Lieferung": "2025-01-06",
+        "Termin/Aufmaß": "2025-01-09",
+        "Montage": "2025-01-16",
+        "Service/Reklam.": "2025-01-16",
+        "Auftrag/Freigabe": "2025-01-17",
+        "Angebot/Kalkul.": "2025-01-17",
+        "Planung/Entwurf": "2025-01-17",
+        "Abnahme/Übergabe": "2025-02-04",
+        "Rechnung/Zahlung": "2025-02-04"
+      }
+    },
+    "p_hh_arntzen_dk": {
+      "type": "Kleinauftrag/Restpunkt",
+      "phase": "p",
+      "phases": {
+        "Angebot/Kalkul.": "2025-01-02",
+        "Rechnung/Zahlung": "2025-01-02",
+        "Montage": "2025-01-13"
+      }
+    },
+    "a_paysen_vzug": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2026-01-21",
+        "Termin/Aufmaß": "2026-01-21",
+        "Planung/Entwurf": "2026-01-21",
+        "Montage": "2026-01-21"
+      }
+    },
+    "p_b_taktonika_woo": {
+      "type": "Gewerbe/Großprojekt",
+      "phase": "p",
+      "phases": {
+        "Angebot/Kalkul.": "2025-02-17",
+        "Lieferung": "2025-03-31",
+        "Produktion": "2025-03-31"
+      }
+    },
+    "a_hh_frankenheim_meckpom": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2025-02-11"
+      }
+    },
+    "p_ma_pohl_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Angebot/Kalkul.": "2025-01-14",
+        "Bestellung": "2025-01-21",
+        "Lieferung": "2025-01-21",
+        "Anfrage/Lead": "2025-01-23",
+        "Planung/Entwurf": "2025-01-24",
+        "Montage": "2025-01-24",
+        "Termin/Aufmaß": "2025-01-27",
+        "Auftrag/Freigabe": "2025-02-10",
+        "Produktion": "2025-02-25",
+        "Rechnung/Zahlung": "2025-03-25",
+        "Service/Reklam.": "2025-05-20",
+        "Abnahme/Übergabe": "2025-07-09"
+      }
+    },
+    "a_hh_heinz_joh": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2025-12-10",
+        "Planung/Entwurf": "2025-12-10",
+        "Rechnung/Zahlung": "2025-12-10",
+        "Angebot/Kalkul.": "2025-12-16",
+        "Montage": "2025-12-17",
+        "Termin/Aufmaß": "2025-12-19",
+        "Lieferung": "2025-12-19",
+        "Produktion": "2026-01-08",
+        "Abnahme/Übergabe": "2026-02-25"
+      }
+    },
+    "p_hh_amoulong_jj": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Termin/Aufmaß": "2025-01-29",
+        "Planung/Entwurf": "2025-01-29",
+        "Angebot/Kalkul.": "2025-01-29",
+        "Produktion": "2025-01-29",
+        "Anfrage/Lead": "2025-02-17",
+        "Auftrag/Freigabe": "2025-03-03",
+        "Rechnung/Zahlung": "2025-03-03",
+        "Abnahme/Übergabe": "2025-04-07",
+        "Bestellung": "2025-05-23",
+        "Montage": "2025-05-28",
+        "Lieferung": "2025-08-13",
+        "Service/Reklam.": "2026-02-11"
+      }
+    },
+    "a_hh_trautwein": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2025-11-10",
+        "Montage": "2025-11-11"
+      }
+    },
+    "p_hh_baum_jj": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Anfrage/Lead": "2025-01-20",
+        "Planung/Entwurf": "2025-01-20",
+        "Rechnung/Zahlung": "2025-01-27",
+        "Angebot/Kalkul.": "2025-01-28",
+        "Termin/Aufmaß": "2025-02-14",
+        "Montage": "2025-02-14"
+      }
+    },
+    "a_b_san-vicente_ps": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2025-01-20"
+      }
+    },
+    "a_hh_pahmeier_sen": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2026-03-17",
+        "Montage": "2026-04-21",
+        "Produktion": "2026-05-05"
+      }
+    },
+    "p_b_hamilton_affin_dk": {
+      "type": "Privatküche – Standard/klein",
+      "phase": "p",
+      "phases": {
+        "Angebot/Kalkul.": "2025-01-07",
+        "Auftrag/Freigabe": "2025-01-07",
+        "Bestellung": "2025-01-30",
+        "Rechnung/Zahlung": "2025-03-03",
+        "Montage": "2025-04-24",
+        "Abnahme/Übergabe": "2025-05-19"
+      }
+    },
+    "p_b_schäferbad_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Angebot/Kalkul.": "2025-01-06",
+        "Auftrag/Freigabe": "2025-01-08",
+        "Planung/Entwurf": "2025-01-20",
+        "Montage": "2025-02-03",
+        "Rechnung/Zahlung": "2025-02-17",
+        "Bestellung": "2025-04-28",
+        "Termin/Aufmaß": "2025-05-09"
+      }
+    },
+    "a_b_pfahlert": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2025-02-14",
+        "Angebot/Kalkul.": "2025-02-14",
+        "Anfrage/Lead": "2025-03-03"
+      }
+    },
+    "a_hh_corbelin_jo": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2025-05-07",
+        "Produktion": "2025-05-07",
+        "Angebot/Kalkul.": "2025-05-09"
+      }
+    },
+    "p_hh_junge_dk_jlb_jb": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2026-01-19",
+        "Angebot/Kalkul.": "2026-01-19",
+        "Rechnung/Zahlung": "2026-02-02",
+        "Termin/Aufmaß": "2026-03-04",
+        "Montage": "2026-03-04",
+        "Bestellung": "2026-03-11",
+        "Abnahme/Übergabe": "2026-03-11"
+      }
+    },
+    "a_sa_hustadt_jo": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2026-04-20",
+        "Angebot/Kalkul.": "2026-04-30",
+        "Anfrage/Lead": "2026-05-13",
+        "Lieferung": "2026-05-19",
+        "Montage": "2026-05-19",
+        "Auftrag/Freigabe": "2026-05-20"
+      }
+    },
+    "a_hh_dornebusch": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2025-10-22",
+        "Montage": "2025-10-22",
+        "Angebot/Kalkul.": "2025-10-23",
+        "Anfrage/Lead": "2025-10-23"
+      }
+    },
+    "p_hh_stilcken_ausbau_jo_dk": {
+      "type": "Privatküche – Standard/klein",
+      "phase": "p",
+      "phases": {
+        "Lieferung": "2025-01-20",
+        "Montage": "2025-01-27",
+        "Planung/Entwurf": "2025-01-27",
+        "Produktion": "2025-01-27",
+        "Rechnung/Zahlung": "2025-03-20"
+      }
+    },
+    "a_hh_cirnavuk": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2026-05-06",
+        "Anfrage/Lead": "2026-05-13",
+        "Angebot/Kalkul.": "2026-05-20",
+        "Bestellung": "2026-05-21",
+        "Produktion": "2026-05-21",
+        "Montage": "2026-05-21"
+      }
+    },
+    "p_hh_kötter_dk": {
+      "type": "Privatküche – Standard/klein",
+      "phase": "p",
+      "phases": {
+        "Lieferung": "2025-01-14",
+        "Rechnung/Zahlung": "2025-01-14",
+        "Angebot/Kalkul.": "2025-01-23",
+        "Bestellung": "2025-01-23",
+        "Termin/Aufmaß": "2025-02-18",
+        "Planung/Entwurf": "2025-03-06"
+      }
+    },
+    "a_hh_saga_jlb": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2026-01-19",
+        "Planung/Entwurf": "2026-01-19",
+        "Angebot/Kalkul.": "2026-01-19",
+        "Montage": "2026-01-19",
+        "Produktion": "2026-01-21",
+        "Bestellung": "2026-01-22"
+      }
+    },
+    "a_hh_leif-müller_jlb": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Termin/Aufmaß": "2026-03-25",
+        "Anfrage/Lead": "2026-04-09",
+        "Planung/Entwurf": "2026-04-09",
+        "Angebot/Kalkul.": "2026-04-13",
+        "Montage": "2026-04-13",
+        "Produktion": "2026-04-14",
+        "Lieferung": "2026-04-14",
+        "Rechnung/Zahlung": "2026-04-17",
+        "Bestellung": "2026-04-29"
+      }
+    },
+    "p_hh_nicklin_nn": {
+      "type": "Kleinauftrag/Restpunkt",
+      "phase": "p",
+      "phases": {
+        "Termin/Aufmaß": "2026-01-13"
+      }
+    },
+    "p_fl_issel_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Angebot/Kalkul.": "2025-07-10",
+        "Planung/Entwurf": "2025-07-10",
+        "Montage": "2025-07-14",
+        "Lieferung": "2025-07-14",
+        "Termin/Aufmaß": "2025-07-18",
+        "Anfrage/Lead": "2025-08-05",
+        "Rechnung/Zahlung": "2025-08-25",
+        "Produktion": "2025-10-21",
+        "Auftrag/Freigabe": "2025-10-24",
+        "Bestellung": "2025-10-24",
+        "Abnahme/Übergabe": "2026-03-04",
+        "Service/Reklam.": "2026-03-26"
+      }
+    },
+    "p_hh_hommerich_ropohl_dk": {
+      "type": "Privatküche – Standard/klein",
+      "phase": "p",
+      "phases": {
+        "Anfrage/Lead": "2025-03-03"
+      }
+    },
+    "a_b_loidl-bank_lb": {
+      "type": "Gewerbe/Großprojekt",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2026-04-20",
+        "Planung/Entwurf": "2026-04-20",
+        "Produktion": "2026-04-21",
+        "Angebot/Kalkul.": "2026-04-22",
+        "Montage": "2026-04-24",
+        "Lieferung": "2026-05-06"
+      }
+    },
+    "a_hh_knauss_jj": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2025-01-28",
+        "Angebot/Kalkul.": "2025-01-28",
+        "Planung/Entwurf": "2025-04-01",
+        "Montage": "2025-04-01",
+        "Lieferung": "2025-04-08"
+      }
+    },
+    "a_hh_stange_sen": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2025-10-01",
+        "Planung/Entwurf": "2025-10-01",
+        "Angebot/Kalkul.": "2025-10-01"
+      }
+    },
+    "p_hh_studioausbau_dk": {
+      "type": "Intern/Showroom/Entwicklung",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-03-31",
+        "Angebot/Kalkul.": "2025-04-10",
+        "Lieferung": "2025-04-10",
+        "Montage": "2025-04-10",
+        "Anfrage/Lead": "2025-05-12",
+        "Bestellung": "2025-10-10",
+        "Auftrag/Freigabe": "2025-10-10",
+        "Produktion": "2026-05-12"
+      }
+    },
+    "p_hh_damann_meyer_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Montage": "2025-01-13",
+        "Rechnung/Zahlung": "2025-01-13",
+        "Abnahme/Übergabe": "2025-01-17",
+        "Termin/Aufmaß": "2025-01-20",
+        "Anfrage/Lead": "2025-01-21",
+        "Angebot/Kalkul.": "2025-01-21",
+        "Planung/Entwurf": "2025-01-21",
+        "Service/Reklam.": "2025-01-22",
+        "Auftrag/Freigabe": "2025-01-23",
+        "Bestellung": "2025-01-27",
+        "Produktion": "2025-02-03",
+        "Lieferung": "2025-02-10"
+      }
+    },
+    "a_b_pasztori_dk": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2025-06-13"
+      }
+    },
+    "a_hh_tommi_koenig_jlb": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2026-06-15",
+        "Angebot/Kalkul.": "2026-06-17"
+      }
+    },
+    "p_hh_pyke_jo": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-04-16",
+        "Angebot/Kalkul.": "2025-04-16",
+        "Auftrag/Freigabe": "2025-05-07",
+        "Anfrage/Lead": "2025-05-19",
+        "Termin/Aufmaß": "2025-05-19",
+        "Lieferung": "2025-06-02",
+        "Produktion": "2025-06-10",
+        "Montage": "2025-06-10",
+        "Bestellung": "2025-07-02",
+        "Abnahme/Übergabe": "2025-07-28",
+        "Rechnung/Zahlung": "2025-08-18",
+        "Service/Reklam.": "2025-09-18"
+      }
+    },
+    "a_siz_bellavance_jo": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2026-01-13",
+        "Termin/Aufmaß": "2026-01-15",
+        "Montage": "2026-01-15",
+        "Angebot/Kalkul.": "2026-01-29",
+        "Auftrag/Freigabe": "2026-02-05"
+      }
+    },
+    "p_hh_fuckner_huetter_se": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-01-20",
+        "Angebot/Kalkul.": "2025-02-17",
+        "Montage": "2025-02-17",
+        "Anfrage/Lead": "2025-03-17",
+        "Bestellung": "2025-03-18",
+        "Termin/Aufmaß": "2025-03-19",
+        "Lieferung": "2025-04-23",
+        "Abnahme/Übergabe": "2025-05-06",
+        "Auftrag/Freigabe": "2025-05-09",
+        "Rechnung/Zahlung": "2025-05-21",
+        "Produktion": "2025-11-27",
+        "Service/Reklam.": "2026-05-27"
+      }
+    },
+    "p_hh_klippgen_dk_se": {
+      "type": "Kleinauftrag/Restpunkt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-01-20"
+      }
+    },
+    "p_lb_janka_öljeschlager_joh": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Bestellung": "2025-11-28",
+        "Montage": "2025-12-01",
+        "Planung/Entwurf": "2025-12-02",
+        "Auftrag/Freigabe": "2025-12-03",
+        "Abnahme/Übergabe": "2025-12-03",
+        "Produktion": "2025-12-04",
+        "Lieferung": "2025-12-12",
+        "Termin/Aufmaß": "2026-01-07",
+        "Angebot/Kalkul.": "2026-01-20",
+        "Anfrage/Lead": "2026-01-26",
+        "Rechnung/Zahlung": "2026-01-27"
+      }
+    },
+    "p_hh_waldenfels_dk": {
+      "type": "Privatküche – Standard/klein",
+      "phase": "p",
+      "phases": {
+        "Termin/Aufmaß": "2025-02-05",
+        "Angebot/Kalkul.": "2025-02-05",
+        "Service/Reklam.": "2025-02-19",
+        "Auftrag/Freigabe": "2025-04-14"
+      }
+    },
+    "a_hh_edenharder": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Montage": "2025-06-04",
+        "Planung/Entwurf": "2025-06-06",
+        "Produktion": "2025-06-06",
+        "Angebot/Kalkul.": "2025-06-10"
+      }
+    },
+    "a_ber_sylvain_dkjlb": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Planung/Entwurf": "2026-03-16",
+        "Anfrage/Lead": "2026-03-16"
+      }
+    },
+    "p_hh_ritz_jl": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-01-06",
+        "Auftrag/Freigabe": "2025-01-06",
+        "Montage": "2025-01-06",
+        "Angebot/Kalkul.": "2025-01-07",
+        "Lieferung": "2025-01-09",
+        "Anfrage/Lead": "2025-01-09",
+        "Bestellung": "2025-01-22",
+        "Produktion": "2025-02-24",
+        "Rechnung/Zahlung": "2025-03-18",
+        "Termin/Aufmaß": "2025-04-15",
+        "Abnahme/Übergabe": "2025-04-15"
+      }
+    },
+    "p_hh_neuhaus_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-01-06",
+        "Rechnung/Zahlung": "2025-02-02",
+        "Anfrage/Lead": "2025-04-14",
+        "Angebot/Kalkul.": "2025-04-14",
+        "Auftrag/Freigabe": "2025-04-28",
+        "Montage": "2025-06-23",
+        "Produktion": "2025-06-26",
+        "Lieferung": "2025-06-27",
+        "Bestellung": "2025-07-16",
+        "Service/Reklam.": "2025-07-16",
+        "Termin/Aufmaß": "2025-08-21",
+        "Abnahme/Übergabe": "2025-10-15"
+      }
+    },
+    "p_schw_schneider_dk": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Planung/Entwurf": "2025-12-01",
+        "Angebot/Kalkul.": "2025-12-01",
+        "Termin/Aufmaß": "2025-12-08",
+        "Anfrage/Lead": "2025-12-08",
+        "Montage": "2026-01-12",
+        "Bestellung": "2026-02-12",
+        "Auftrag/Freigabe": "2026-02-13",
+        "Abnahme/Übergabe": "2026-03-20",
+        "Produktion": "2026-04-03",
+        "Lieferung": "2026-04-29",
+        "Rechnung/Zahlung": "2026-06-09"
+      }
+    },
+    "a_hh_zitscher_jo": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Montage": "2025-09-08",
+        "Planung/Entwurf": "2026-01-26",
+        "Angebot/Kalkul.": "2026-01-26",
+        "Termin/Aufmaß": "2026-02-02",
+        "Lieferung": "2026-02-09",
+        "Anfrage/Lead": "2026-02-09",
+        "Bestellung": "2026-02-12",
+        "Rechnung/Zahlung": "2026-03-27"
+      }
+    },
+    "a_hh_hoppe_dk": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Termin/Aufmaß": "2025-03-13",
+        "Planung/Entwurf": "2025-03-13",
+        "Montage": "2025-03-28",
+        "Angebot/Kalkul.": "2025-03-28"
+      }
+    },
+    "p_ebs_stahl_entwicklung": {
+      "type": "Gewerbe/Großprojekt",
+      "phase": "p",
+      "phases": {
+        "Anfrage/Lead": "2025-08-04",
+        "Produktion": "2025-08-04",
+        "Angebot/Kalkul.": "2025-08-04",
+        "Termin/Aufmaß": "2025-08-04",
+        "Bestellung": "2025-08-17",
+        "Lieferung": "2025-08-26",
+        "Abnahme/Übergabe": "2025-08-26",
+        "Auftrag/Freigabe": "2026-01-21"
+      }
+    },
+    "a_hh_rehder_dk": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Anfrage/Lead": "2025-12-05",
+        "Planung/Entwurf": "2025-12-05",
+        "Angebot/Kalkul.": "2025-12-08",
+        "Montage": "2025-12-18"
+      }
+    },
+    "p_b_langner_group_ff": {
+      "type": "Gewerbe/Großprojekt",
+      "phase": "p",
+      "phases": {
+        "Anfrage/Lead": "2025-11-24",
+        "Angebot/Kalkul.": "2025-11-24",
+        "Auftrag/Freigabe": "2025-11-24",
+        "Rechnung/Zahlung": "2025-11-24",
+        "Lieferung": "2025-11-27",
+        "Abnahme/Übergabe": "2025-11-27",
+        "Bestellung": "2025-12-18",
+        "Montage": "2026-02-12",
+        "Service/Reklam.": "2026-02-18"
+      }
+    },
+    "p_hh_natalie-delhaes_jlb_dk": {
+      "type": "Privatküche – Standard/klein",
+      "phase": "p",
+      "phases": {
+        "Termin/Aufmaß": "2026-05-11",
+        "Planung/Entwurf": "2026-05-11",
+        "Anfrage/Lead": "2026-05-12",
+        "Lieferung": "2026-05-12",
+        "Angebot/Kalkul.": "2026-05-13",
+        "Montage": "2026-05-13",
+        "Bestellung": "2026-05-13",
+        "Rechnung/Zahlung": "2026-05-22"
+      }
+    },
+    "a_hh_vonboch_jb": {
+      "type": "Angebot/Pitch",
+      "phase": "a",
+      "phases": {
+        "Termin/Aufmaß": "2026-06-08"
+      }
+    },
+    "p_hh_wartenberg_joh": {
+      "type": "Privatküche – Vollprojekt",
+      "phase": "p",
+      "phases": {
+        "Produktion": "2025-11-05",
+        "Bestellung": "2025-11-07",
+        "Anfrage/Lead": "2025-11-10",
+        "Angebot/Kalkul.": "2025-11-10",
+        "Planung/Entwurf": "2025-11-27",
+        "Rechnung/Zahlung": "2025-11-27",
+        "Auftrag/Freigabe": "2026-05-11",
+        "Termin/Aufmaß": "2026-05-13",
+        "Montage": "2026-06-16",
+        "Lieferung": "2026-06-17"
+      }
+    }
+  }
+}

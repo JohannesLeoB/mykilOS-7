@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mykilOS · ClickUp im Projekt (Entwurf)</title>
+<style>
+  :root{
+    --paper:#FAF9F5; --card:#FFFFFF; --ink:#2C2C2A; --sub:#5F5E5A; --mut:#9C9A92;
+    --line:rgba(0,0,0,.10); --line2:rgba(0,0,0,.18);
+    --ochre:#B98A30; --ochre-bg:#F4ECDA;
+    --terra:#C26B4A; --terra-bg:#F6E7DF;
+    --indigo:#4C6280; --indigo-bg:#E4E9F0;
+    --sage:#6E8B6A; --plum:#8A5B73;
+    --risk:#C44536; --risk-bg:#F7E2DD;
+    --done:#1D9E75;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#262624; --card:#302F2C; --ink:#E9E7DD; --sub:#B4B2A9; --mut:#8B897F;
+      --line:rgba(255,255,255,.12); --line2:rgba(255,255,255,.22);
+      --ochre:#D7A94A; --ochre-bg:#3A3220;
+      --terra:#D98763; --terra-bg:#3A2820;
+      --indigo:#8AA0C0; --indigo-bg:#1E2735;
+      --sage:#93AE8F; --plum:#B98AA0;
+      --risk:#E07A66; --risk-bg:#3C211B;
+      --done:#4FBF95;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;padding:26px 20px 44px}
+  .wrap{max-width:880px;margin:0 auto}
+  .titleline{font-size:12px;color:var(--mut);margin:0 0 14px}
+  .pane{border:0.5px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
+
+  /* HERO */
+  .hero{padding:20px 22px 16px;border-bottom:0.5px solid var(--line)}
+  .hero h1{font-size:21px;font-weight:500;margin:0 0 4px;letter-spacing:-.2px}
+  .meta{font-size:13px;color:var(--sub)}
+  .heroflags{float:right;margin-top:2px}
+  .risk{font-size:11px;color:var(--risk);background:var(--risk-bg);border-radius:20px;padding:2px 9px;font-weight:500}
+  /* phase rail */
+  .rail{display:flex;gap:3px;margin:16px 0 7px}
+  .seg{height:6px;border-radius:3px;flex:1;background:var(--line)}
+  .seg.past{background:var(--ochre);opacity:.42}
+  .seg.now{background:var(--ochre)}
+  .raillabel{font-size:12px;color:var(--sub)}
+  .raillabel b{color:var(--ochre);font-weight:500}
+
+  /* BOARD */
+  .board{display:grid;grid-template-columns:1fr 1fr;gap:13px;padding:16px}
+  .w{border:0.5px solid var(--line);border-radius:12px;padding:13px 14px;background:var(--card)}
+  .wh{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:500;margin-bottom:11px}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .wh .count{color:var(--mut);font-weight:400;margin-left:auto}
+  /* routine list */
+  .step{display:flex;align-items:center;gap:9px;font-size:13px;padding:3px 0;color:var(--ink)}
+  .box{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--line2);flex:none}
+  .box.on{background:var(--done);border-color:var(--done)}
+  .step.now{color:var(--ochre);font-weight:500}
+  .step.now .box{border-color:var(--ochre)}
+  .muted{color:var(--mut)}
+  .add{font-size:12px;color:var(--ochre);margin-top:10px;display:inline-flex;align-items:center;gap:5px;border:0.5px solid var(--line);border-radius:8px;padding:4px 9px}
+  /* tasks */
+  .task{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:0.5px solid var(--line);font-size:13px}
+  .task:last-of-type{border-bottom:0}
+  .av{width:20px;height:20px;border-radius:50%;background:var(--sage);color:#fff;font-size:10px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .tt{flex:1;min-width:0}
+  .due{font-size:11px;color:var(--mut);white-space:nowrap}
+  .due.over{color:var(--risk);font-weight:500}
+  .due.ok{color:var(--done)}
+  /* doc + money rows */
+  .row{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0}
+  .tag{font-size:10px;font-weight:500;border-radius:5px;padding:1px 6px}
+  .tag.terra{color:var(--terra);background:var(--terra-bg)}
+  .big{font-size:19px;font-weight:500;letter-spacing:-.2px}
+
+  /* confirm card */
+  .confirm{margin:0 16px 16px;border:0.5px solid var(--ochre);border-radius:12px;background:var(--ochre-bg);padding:12px 14px;display:flex;align-items:center;gap:12px}
+  .confirm .txt{flex:1;font-size:13px}
+  .confirm .txt b{font-weight:500}
+  .confirm .sub{font-size:11px;color:var(--sub);margin-top:2px}
+  .btn{font-size:12px;font-weight:500;border-radius:8px;padding:6px 13px;border:0.5px solid var(--line2);color:var(--ink);background:var(--card)}
+  .btn.primary{background:var(--ochre);color:#fff;border-color:var(--ochre)}
+  .legend{font-size:11px;color:var(--mut);margin-top:14px;display:flex;gap:16px;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .sw{width:9px;height:9px;border-radius:50%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="titleline">mykilOS · Projektansicht — ClickUp nativ integriert (Entwurf, nicht final)</p>
+
+  <div class="pane">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="heroflags"><span class="risk">⚑ Risiko · Fremdgewerke</span></div>
+      <h1>Fuckner / Hütter</h1>
+      <div class="meta">Hofweg 55 · Hamburg · Kdnr 12399 · Lead: Jasper · Vollprojekt</div>
+      <div class="rail" aria-hidden="true">
+        <span class="seg past"></span><span class="seg past"></span><span class="seg past"></span>
+        <span class="seg past"></span><span class="seg past"></span><span class="seg past"></span>
+        <span class="seg past"></span><span class="seg past"></span><span class="seg now"></span>
+        <span class="seg"></span><span class="seg"></span>
+      </div>
+      <div class="raillabel">Phase <b>9 / 11 · Montage</b> &nbsp;·&nbsp; aus ClickUp · tippen zum Ändern</div>
+    </div>
+
+    <!-- WIDGET BOARD -->
+    <div class="board">
+
+      <!-- Routine (Ochre = Aufgaben) -->
+      <div class="w">
+        <div class="wh"><span class="dot" style="background:var(--ochre)"></span>Routine<span class="count">12 / 16</span></div>
+        <div class="step"><span class="box on"></span>Angebot raus · AN-MK 0090</div>
+        <div class="step"><span class="box on"></span>AB + Anzahlung</div>
+        <div class="step"><span class="box on"></span>Bestellung Meylahn / Geräte</div>
+        <div class="step"><span class="box on"></span>Lieferung an Degela</div>
+        <div class="step now"><span class="box"></span>Montage</div>
+        <div class="step muted"><span class="box"></span>Abnahmeprotokoll + Mängelliste</div>
+        <div class="step muted"><span class="box"></span>Schlussrechnung</div>
+        <span class="add">+ Schritt abhaken</span>
+      </div>
+
+      <!-- Nächste Schritte (Ochre) -->
+      <div class="w">
+        <div class="wh"><span class="dot" style="background:var(--ochre)"></span>Nächste Schritte<span class="count">3 offen</span></div>
+        <div class="task"><span class="av" style="background:var(--sage)">Ja</span><span class="tt">Kolja: Einbautermin bestätigen</span><span class="due over">überfällig</span></div>
+        <div class="task"><span class="av" style="background:var(--plum)">Ji</span><span class="tt">Lichtauslässe vor Ort prüfen</span><span class="due">Fr</span></div>
+        <div class="task"><span class="av" style="background:var(--indigo)">Fr</span><span class="tt">Modular-Leuchten freigeben</span><span class="due ok">erledigt</span></div>
+        <span class="add">+ Aufgabe</span>
+      </div>
+
+      <!-- Dokumente (Terrakotta) -->
+      <div class="w">
+        <div class="wh"><span class="dot" style="background:var(--terra)"></span>Dokumente</div>
+        <div class="row"><span class="tag terra">ANGEBOT</span> AN-MK_A 2025-09-0090</div>
+        <div class="row"><span class="tag terra">AUFTRAG</span> AB-1932 · Kdnr 12399</div>
+        <div class="row muted" style="font-size:12px">verknüpft aus Drive · read-only</div>
+      </div>
+
+      <!-- Geld (Indigo) -->
+      <div class="w">
+        <div class="wh"><span class="dot" style="background:var(--indigo)"></span>Geld</div>
+        <div class="row"><span class="big">185.812 €</span> <span class="muted" style="font-size:12px">Auftrag</span></div>
+        <div class="row" style="font-size:13px"><span style="color:var(--done)">Anzahlung ✓</span> &nbsp;·&nbsp; <span class="muted">Schlussrechnung offen</span></div>
+        <div class="row muted" style="font-size:12px">Sevdesk · read-only</div>
+      </div>
+
+    </div>
+
+    <!-- CONFIRM CARD (write = bestätigt + auditiert) -->
+    <div class="confirm">
+      <div class="txt">
+        <b>Status → „Abnahme/Übergabe" setzen?</b>
+        <div class="sub">Schreibt nach ClickUp · wird im Audit-Log protokolliert</div>
+      </div>
+      <button class="btn">Abbrechen</button>
+      <button class="btn primary">Bestätigen</button>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <span><span class="sw" style="background:var(--ochre)"></span>Aufgaben / ClickUp</span>
+    <span><span class="sw" style="background:var(--terra)"></span>Dateien</span>
+    <span><span class="sw" style="background:var(--indigo)"></span>Geld</span>
+    <span><span class="sw" style="background:var(--sage)"></span>Menschen</span>
+    <span><span class="sw" style="background:var(--plum)"></span>Notizen</span>
+    <span><span class="sw" style="background:var(--risk)"></span>Risiko</span>
+  </div>
+</div>
+</body>
+</html>
