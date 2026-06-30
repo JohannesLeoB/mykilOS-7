@@ -3,94 +3,189 @@ import MykilosDesign
 import MykilosServices
 import MykilosKit
 
-// MARK: - Kontakte-Katalog (Google-Workspace-Verzeichnis, read-only, S19)
+// MARK: - Kontakte-Katalog (Airtable-Kontaktverzeichnis, S19)
+// Ersetzt die frühere Google-Workspace-Directory-Ansicht. Zeigt alle Kontakte aus
+// der Airtable-Tabelle „Kontakte": sortierbar, filterbar nach Kategorie und Suche.
+// Read-only-Anzeige — Schreiben über Assistent-Bestätigungskarten.
 
 @MainActor
 struct KontakteKatalogTab: View {
+    @State private var loader = AirtableContactsLoader()
     @State private var query: String = ""
-    @State private var results: [GoogleContact] = []
-    @State private var state: LoadPhase = .idle
+    @State private var selectedKategorie: String? = nil
 
-    private enum LoadPhase: Equatable { case idle, loading, loaded, notConnected, error(String) }
-    private let client: GoogleContactsFetching = GoogleContactsClient()
+    private static let kategorien = [
+        "Projektkunde", "Lieferant", "Handwerker",
+        "Architekt-Planer", "MYKILOS-Team", "Sonstige"
+    ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            searchBar
-            switch state {
+            toolbar
+            switch loader.state {
             case .idle:
-                hint("Suche im mykilOS.com-Workspace-Verzeichnis: Team-Profile und vom Admin geteilte Domain-Kontakte (Name, Firma, E-Mail).")
+                hint("Kontaktverzeichnis wird geladen …")
             case .loading:
-                VStack { Spacer(); ProgressView("Suche …").font(.mykSmall); Spacer() }.frame(maxWidth: .infinity)
+                VStack { Spacer(); ProgressView("Lade Kontakte …").font(.mykSmall).foregroundStyle(MykColor.muted.color); Spacer() }
+                    .frame(maxWidth: .infinity)
             case .notConnected:
-                hint("Google nicht verbunden bzw. Verzeichnis-Berechtigung fehlt — in den Einstellungen neu verbinden (directory.readonly).")
+                hint("Airtable nicht verbunden — in den Einstellungen verbinden.")
             case .error(let msg):
                 hint("Fehler: \(msg)")
-            case .loaded:
-                if results.isEmpty { hint("Keine Verzeichnis-Treffer für \"\(query)\".") } else { list }
+            case .empty:
+                hint("Keine Kontakte in Airtable gefunden.")
+            case .content:
+                contactTable
             }
         }
+        .task { await loader.load() }
     }
 
-    private var searchBar: some View {
-        HStack(spacing: MykSpace.s3) {
-            Image(systemName: "magnifyingglass").font(.mykCaption).foregroundStyle(MykColor.muted.color)
-            TextField("Verzeichnis durchsuchen (Name, Firma, E-Mail) …", text: $query)
-                .font(.mykBody).textFieldStyle(.plain)
-                .onSubmit { Task { await search() } }
-            Button("Suchen") { Task { await search() } }
-                .font(.mykSmall).buttonStyle(.plain).foregroundStyle(MykColor.people.color)
-        }
-        .padding(MykSpace.s4)
-        .background(MykColor.card.color)
-        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
-        .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
-        .padding(MykSpace.s9)
-    }
+    // MARK: Toolbar: Suche + Kategorie-Filter + Reload
 
-    private var list: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(results) { contact in
-                    HStack(spacing: MykSpace.s4) {
-                        Image(systemName: "person.crop.circle")
-                            .font(.mykHeadline).foregroundStyle(MykColor.people.color)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(contact.displayName).font(.mykBody).foregroundStyle(MykColor.ink.color)
-                            if let org = contact.organization, !org.isEmpty {
-                                Text(org).font(.mykSmall).foregroundStyle(MykColor.muted.color)
-                            }
-                        }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 2) {
-                            if let mail = contact.email { Text(mail).font(.mykMono(10)).foregroundStyle(MykColor.muted.color) }
-                            if let phone = contact.phone { Text(phone).font(.mykMono(10)).foregroundStyle(MykColor.faint.color) }
-                        }
-                    }
-                    .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s3)
-                    Divider().overlay(MykColor.line.color)
+    private var toolbar: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s3) {
+            HStack(spacing: MykSpace.s3) {
+                Image(systemName: "magnifyingglass").font(.mykCaption).foregroundStyle(MykColor.muted.color)
+                TextField("Kontakt suchen (Name, Firma, Projekt) …", text: $query)
+                    .font(.mykBody).textFieldStyle(.plain)
+                if !query.isEmpty {
+                    Button { query = "" } label: {
+                        Image(systemName: "xmark.circle.fill").font(.mykCaption).foregroundStyle(MykColor.faint.color)
+                    }.buttonStyle(.plain)
+                }
+                Button { Task { await loader.load() } } label: {
+                    Image(systemName: "arrow.clockwise").font(.mykCaption).foregroundStyle(MykColor.people.color)
+                }.buttonStyle(.plain)
+                if case .content(let c) = loader.state {
+                    Text("\(c.count) Kontakte · AIRTABLE")
+                        .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
                 }
             }
+            .padding(MykSpace.s4)
+            .background(MykColor.card.color)
+            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: MykSpace.s2) {
+                    kategoriePill(nil, label: "Alle")
+                    ForEach(Self.kategorien, id: \.self) { kat in
+                        kategoriePill(kat, label: kat)
+                    }
+                }
+                .padding(.horizontal, MykSpace.s9)
+            }
         }
+        .padding(.horizontal, MykSpace.s9)
+        .padding(.top, MykSpace.s9)
+        .padding(.bottom, MykSpace.s3)
+    }
+
+    private func kategoriePill(_ value: String?, label: String) -> some View {
+        let active = selectedKategorie == value
+        return Button { selectedKategorie = value } label: {
+            Text(label).font(.mykMono(9.5))
+                .foregroundStyle(active ? MykColor.paper.color : MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s3).padding(.vertical, MykSpace.s2)
+                .background(active ? MykColor.people.color : MykColor.card.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+        }.buttonStyle(.plain)
+    }
+
+    // MARK: Tabelle
+
+    private var contactTable: some View {
+        let filtered = filteredContacts
+        return VStack(spacing: 0) {
+            tableHeader
+            if filtered.isEmpty {
+                hint("Keine Treffer.")
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(filtered) { contact in
+                            KontakteRow(contact: contact)
+                            Divider().overlay(MykColor.line.color)
+                        }
+                    }
+                }
+                Text("\(filtered.count) Kontakte angezeigt")
+                    .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                    .padding(.vertical, MykSpace.s3).padding(.horizontal, MykSpace.s9)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+    }
+
+    private var tableHeader: some View {
+        HStack(spacing: 0) {
+            Text("Name").frame(width: 160, alignment: .leading)
+            Text("Organisation").frame(width: 160, alignment: .leading)
+            Text("E-Mail").frame(maxWidth: .infinity, alignment: .leading)
+            Text("Telefon").frame(width: 130, alignment: .leading)
+            Text("Kategorie").frame(width: 120, alignment: .leading)
+        }
+        .font(.mykMono(9)).foregroundStyle(MykColor.muted.color)
+        .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s2)
+        .background(MykColor.paper2.color)
+    }
+
+    private var filteredContacts: [StudioContact] {
+        var contacts = loader.contacts
+        if let kat = selectedKategorie {
+            contacts = contacts.filter { ($0.kategorie ?? "") == kat }
+        }
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if q.isEmpty == false {
+            contacts = contacts.filter { $0.matches(q) }
+        }
+        return contacts
     }
 
     private func hint(_ text: String) -> some View {
         VStack { Spacer(); Text(text).font(.mykSmall).foregroundStyle(MykColor.muted.color).multilineTextAlignment(.center); Spacer() }
             .frame(maxWidth: .infinity).padding(MykSpace.s9)
     }
+}
 
-    private func search() async {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.isEmpty == false else { state = .idle; results = []; return }
-        state = .loading
-        do {
-            results = try await client.searchDirectory(query: trimmed)
-            state = .loaded
-        } catch GoogleContactsError.notConnected {
-            state = .notConnected
-        } catch {
-            state = .error(error.localizedDescription)
+// MARK: - KontakteRow
+
+private struct KontakteRow: View {
+    let contact: StudioContact
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(spacing: 0) {
+            HStack(spacing: MykSpace.s3) {
+                Image(systemName: "person.crop.circle")
+                    .font(.mykBody).foregroundStyle(MykColor.people.color)
+                Text(contact.name)
+                    .lineLimit(1)
+            }
+            .frame(width: 160, alignment: .leading)
+
+            Text(contact.organisation ?? "–")
+                .lineLimit(1).foregroundStyle(MykColor.muted.color)
+                .frame(width: 160, alignment: .leading)
+
+            Text(contact.email ?? "–")
+                .lineLimit(1).foregroundStyle(MykColor.muted.color)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(contact.telefon ?? "–")
+                .lineLimit(1).foregroundStyle(MykColor.muted.color)
+                .frame(width: 130, alignment: .leading)
+
+            Text(contact.kategorie ?? "–")
+                .lineLimit(1).foregroundStyle(MykColor.people.color.opacity(0.8))
+                .frame(width: 120, alignment: .leading)
         }
+        .font(.mykMono(10)).foregroundStyle(MykColor.ink.color)
+        .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s3)
+        .background(isHovered ? MykColor.paper2.color : Color.clear)
+        .onHover { isHovered = $0 }
     }
 }
 

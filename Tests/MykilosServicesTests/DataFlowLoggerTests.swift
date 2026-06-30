@@ -68,7 +68,10 @@ struct DataFlowLoggerTests {
     // MARK: Whitelist-Konstanten korrekt
     @Test func whitelistKonstanten() {
         #expect(AirtableClient.writableBaseID == "appuVMh3KDfKw4OoQ")
-        #expect(AirtableClient.writableTables == ["Datenstrom-Handbuch", "Datenstrom-Log"])
+        // S19: "Kontakte" wurde als schreibbare Tabelle hinzugefügt (Kontakt anlegen/aktualisieren)
+        #expect(AirtableClient.writableTables.contains("Datenstrom-Handbuch"))
+        #expect(AirtableClient.writableTables.contains("Datenstrom-Log"))
+        #expect(AirtableClient.writableTables.contains("Kontakte"))
     }
 }
 

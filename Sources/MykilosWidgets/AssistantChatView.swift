@@ -24,6 +24,8 @@ public struct AssistantChatView: View {
     let onCreateContact: ((ContactDraft) async -> ContactCreateOutcome)?
     // S14: Bestätigung legt einen Gmail-ENTWURF an (App-Layer: Gmail-API + Audit).
     let onCreateDraft: ((EmailDraft) async -> DraftCreateOutcome)?
+    // S19: Bestätigung legt Airtable-Kontakt an oder aktualisiert ihn (App-Layer + Audit).
+    let onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)?
 
     @Environment(StudioContext.self) private var context
     @State private var draft = ""
@@ -44,7 +46,8 @@ public struct AssistantChatView: View {
         focusedClickUpListID: String? = nil,
         profile: UserProfile? = nil,
         onCreateContact: ((ContactDraft) async -> ContactCreateOutcome)? = nil,
-        onCreateDraft: ((EmailDraft) async -> DraftCreateOutcome)? = nil
+        onCreateDraft: ((EmailDraft) async -> DraftCreateOutcome)? = nil,
+        onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)? = nil
     ) {
         self.scope = scope
         self.chatStore = chatStore
@@ -58,6 +61,7 @@ public struct AssistantChatView: View {
         self.profile = profile
         self.onCreateContact = onCreateContact
         self.onCreateDraft = onCreateDraft
+        self.onWriteAirtableContact = onWriteAirtableContact
     }
 
     private var messages: [ChatMessage] { chatStore.messages(for: scope) }
@@ -87,7 +91,7 @@ public struct AssistantChatView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: MykSpace.s5) {
                     if messages.isEmpty { emptyState }
-                    ForEach(messages) { ChatMessageBubble(message: $0, onCreateContact: onCreateContact, onCreateDraft: onCreateDraft).id($0.id) }
+                    ForEach(messages) { ChatMessageBubble(message: $0, onCreateContact: onCreateContact, onCreateDraft: onCreateDraft, onWriteAirtableContact: onWriteAirtableContact).id($0.id) }
                 }
                 .padding(.horizontal, MykSpace.s9)
                 .padding(.vertical, MykSpace.s7)
@@ -248,6 +252,7 @@ struct ChatMessageBubble: View {
     let message: ChatMessage
     var onCreateContact: ((ContactDraft) async -> ContactCreateOutcome)? = nil
     var onCreateDraft: ((EmailDraft) async -> DraftCreateOutcome)? = nil
+    var onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)? = nil
     @State private var cursorVisible = true
     @State private var previewFile: DriveFileRef?
 
@@ -278,6 +283,10 @@ struct ChatMessageBubble: View {
                 // Mail-Entwurf-Bestätigungskarten nach der Antwort (S14).
                 ForEach(Array(emailDrafts.enumerated()), id: \.offset) { _, draft in
                     DraftActionCard(draft: draft, onConfirm: onCreateDraft)
+                }
+                // Airtable-Kontakt-Bestätigungskarten nach der Antwort (S19).
+                ForEach(Array(airtableContactDrafts.enumerated()), id: \.offset) { _, draft in
+                    AirtableContactActionCard(draft: draft, onConfirm: onWriteAirtableContact)
                 }
                 // Anklickbare Datei-Ergebnisse mit In-App-Vorschau (S22).
                 ForEach(Array(driveFileBlocks.enumerated()), id: \.offset) { _, block in
@@ -327,6 +336,12 @@ struct ChatMessageBubble: View {
     private var emailDrafts: [EmailDraft] {
         message.blocks.compactMap {
             if case let .draftAction(draft) = $0 { draft } else { nil }
+        }
+    }
+
+    private var airtableContactDrafts: [AirtableContactDraft] {
+        message.blocks.compactMap {
+            if case let .airtableContactAction(draft) = $0 { draft } else { nil }
         }
     }
 
@@ -802,5 +817,88 @@ struct KalkulationsSchaetzungCard: View {
                 .foregroundStyle(MykColor.ink.color)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - AirtableContactActionCard (S19)
+// Bestätigungskarte für einen vom Assistenten vorgeschlagenen Airtable-Kontakt-Entwurf.
+// Schreibt nichts, bis der Nutzer bestätigt. create → POST, update → PATCH. Kein Delete.
+struct AirtableContactActionCard: View {
+    let draft: AirtableContactDraft
+    var onConfirm: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)?
+
+    private enum CardPhase: Equatable { case idle, saving, done(String), failed(String) }
+    @State private var phase: CardPhase = .idle
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s3) {
+            HStack(spacing: MykSpace.s3) {
+                Image(systemName: draft.intent == .create ? "person.crop.circle.badge.plus" : "person.crop.circle.badge.checkmark")
+                    .font(.mykCaption).foregroundStyle(MykColor.people.color)
+                Text(draft.intent == .create ? "Kontakt in Airtable anlegen" : "Kontakt in Airtable aktualisieren")
+                    .font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
+            }
+            Text(draft.displayName).font(.mykBody).foregroundStyle(MykColor.ink.color)
+            ForEach(detailLines, id: \.self) { line in
+                Text(line).font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+            }
+            actionRow
+        }
+        .padding(.horizontal, MykSpace.s5)
+        .padding(.vertical, MykSpace.s4)
+        .background(
+            RoundedRectangle(cornerRadius: MykRadius.md)
+                .fill(MykColor.card.color)
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.md)
+                    .stroke(MykColor.people.color.opacity(0.3), lineWidth: 1))
+        )
+        .frame(maxWidth: 380)
+    }
+
+    private var detailLines: [String] {
+        var lines: [String] = []
+        if let mail = draft.email        { lines.append("✉︎ \(mail)") }
+        if let tel  = draft.telefon      { lines.append("☎ \(tel)") }
+        if let org  = draft.organisation { lines.append("⌂ \(org)") }
+        if let kat  = draft.kategorie    { lines.append("[\(kat)]") }
+        if draft.intent == .update, let rid = draft.recordID { lines.append("ID: \(rid)") }
+        return lines
+    }
+
+    @ViewBuilder
+    private var actionRow: some View {
+        switch phase {
+        case .idle:
+            Button {
+                guard let onConfirm else { phase = .failed("Schreiben hier nicht verfügbar."); return }
+                phase = .saving
+                Task {
+                    let outcome = await onConfirm(draft)
+                    switch outcome {
+                    case .created(let name): phase = .done("Angelegt: \(name)")
+                    case .updated(let name): phase = .done("Aktualisiert: \(name)")
+                    case .failed(let msg):   phase = .failed(msg)
+                    }
+                }
+            } label: {
+                Text(draft.intent == .create ? "Kontakt anlegen" : "Änderung übernehmen")
+                    .font(.mykMono(10)).foregroundStyle(MykColor.paper.color)
+                    .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s2)
+                    .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.people.color))
+            }
+            .buttonStyle(.plain)
+            .disabled(onConfirm == nil)
+        case .saving:
+            HStack(spacing: MykSpace.s2) {
+                ProgressView().controlSize(.small)
+                Text("Schreibe …").font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+            }
+        case .done(let msg):
+            Label(msg, systemImage: "checkmark.circle.fill")
+                .font(.mykMono(9.5)).foregroundStyle(MykColor.positive.color)
+        case .failed(let msg):
+            Label(msg, systemImage: "exclamationmark.triangle")
+                .font(.mykMono(9.5)).foregroundStyle(MykColor.critical.color)
+        }
     }
 }

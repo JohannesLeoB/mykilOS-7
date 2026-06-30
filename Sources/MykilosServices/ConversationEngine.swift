@@ -274,6 +274,10 @@ public final class ConversationEngine {
                     // Anklickbare Datei-Ergebnisse (In-App-Vorschau) — nur Anzeige.
                     activities.append(.driveFiles(label: "Gefundene Dokumente", files: result.driveFiles))
                 }
+                if let airtableDraft = result.airtableContactDraft {
+                    // Airtable-Kontakt-Bestätigungskarte (S19) — schreibt erst auf Bestätigung.
+                    activities.append(.airtableContactAction(draft: airtableDraft))
+                }
                 if let s = result.schaetzung {
                     // Schätzungskarte — nur Anzeige, nie an die API gesendet.
                     activities.append(.kalkulationsSchaetzung(

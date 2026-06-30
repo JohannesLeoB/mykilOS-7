@@ -17,9 +17,16 @@ public protocol AirtableFetching: Sendable {
 
 // MARK: - AirtableRecordCreating
 // Eng begrenzter, append-only Schreibpfad. Bewusst getrennt vom Lese-Protokoll,
-// damit Schreib-Aufrufer explizit sein müssen. KEIN update/delete — existiert nicht.
+// damit Schreib-Aufrufer explizit sein müssen.
 public protocol AirtableRecordCreating: Sendable {
     func createRecord(baseID: String, table: String, fields: [String: AirtableFieldValue]) async throws -> String
+}
+
+// MARK: - AirtableRecordUpdating
+// HTTP PATCH auf einen bestehenden Record — nur Felder, die geändert werden sollen.
+// KEIN DELETE. Wirft `invalidBaseID`, wenn Base/Tabelle nicht auf der Whitelist.
+public protocol AirtableRecordUpdating: Sendable {
+    func updateRecord(baseID: String, table: String, recordID: String, fields: [String: AirtableFieldValue]) async throws
 }
 
 // MARK: - AirtableFieldValue
@@ -65,17 +72,20 @@ public enum AirtableFieldValue: Sendable, Equatable, Decodable {
 }
 
 // MARK: - AirtableClient
-public struct AirtableClient: AirtableFetching, AirtableRecordCreating {
+public struct AirtableClient: AirtableFetching, AirtableRecordCreating, AirtableRecordUpdating {
     private let credentialsStore: AirtableCredentialsStoring
     private let session: URLSession
     private let apiBase = "https://api.airtable.com/v0"
 
     // MARK: NO-GO-Schreibgrenzen (unverhandelbar)
     // Geschrieben wird AUSSCHLIESSLICH in die eigene Mastermind-Base und nur in
-    // die zwei Schaltzentrum-Tabellen. Nie die geteilte Base, nie Projekt-/Kunden-
-    // /Kalkulations-Daten, nie DELETE/PATCH (existieren nicht).
+    // explizit freigegebene Tabellen. Nie die geteilte Base (appkPzoEiI5eSMkNK),
+    // nie fremde Bases, kein DELETE.
     public static let writableBaseID = "appuVMh3KDfKw4OoQ"
-    public static let writableTables: Set<String> = ["Datenstrom-Handbuch", "Datenstrom-Log"]
+    public static let writableTables: Set<String> = [
+        "Datenstrom-Handbuch", "Datenstrom-Log",
+        "Kontakte",   // S19: Kontakt anlegen/aktualisieren via Bestätigungskarte
+    ]
 
     public init(
         credentialsStore: AirtableCredentialsStoring = KeychainAirtableCredentialsStore(),
@@ -143,6 +153,48 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating {
         guard (200...299).contains(http.statusCode) else { throw AirtableError.httpError(http.statusCode) }
         let decoded = try? JSONDecoder().decode(CreateRecordResponse.self, from: data)
         return decoded?.records.first?.id ?? ""
+    }
+
+    // MARK: - Update (PATCH, bestätigungspflichtig, hart begrenzt)
+
+    /// Aktualisiert EINEN bestehenden Record via HTTP PATCH. Wirft `invalidBaseID`,
+    /// wenn Base oder Tabelle nicht auf der Whitelist — kein Schreiben in fremde Bases.
+    /// Gibt nur geänderte Felder mit — Felder, die nicht im Dict stehen, bleiben unverändert.
+    public func updateRecord(baseID: String, table: String, recordID: String, fields: [String: AirtableFieldValue]) async throws {
+        guard baseID == Self.writableBaseID, Self.writableTables.contains(table) else {
+            throw AirtableError.invalidBaseID("Schreiben nur in \(Self.writableTables) der Mastermind-Base erlaubt (versucht: \(table)@\(baseID))")
+        }
+        guard let credentials = try? credentialsStore.load() else {
+            throw AirtableError.notConnected
+        }
+        let encoded = table.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? table
+        guard let url = URL(string: "\(apiBase)/\(baseID)/\(encoded)/\(recordID)") else {
+            throw AirtableError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
+        request.setValue("Bearer \(credentials.pat)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let payload: [String: Any] = ["fields": fields.mapValues(\.jsonValue)]
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+
+        let (_, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw AirtableError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw AirtableError.httpError(http.statusCode) }
+    }
+
+    // MARK: - Testbare Bausteine für updateRecord
+
+    /// Baut die PATCH-URL: api.airtable.com/v0/{baseID}/{table}/{recordID}.
+    static func buildPatchURL(apiBase: String, baseID: String, table: String, recordID: String) -> URL? {
+        let encoded = table.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? table
+        return URL(string: "\(apiBase)/\(baseID)/\(encoded)/\(recordID)")
+    }
+
+    /// Serialisiert den PATCH-Payload. Rein und testbar.
+    static func encodePatchPayload(fields: [String: AirtableFieldValue]) throws -> Data {
+        let payload: [String: Any] = ["fields": fields.mapValues(\.jsonValue)]
+        return try JSONSerialization.data(withJSONObject: payload)
     }
 
     // MARK: - Reine, testbare Bausteine

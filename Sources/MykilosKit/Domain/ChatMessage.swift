@@ -92,6 +92,10 @@ public enum ChatContentBlock: Codable, Sendable, Equatable {
     // Kostenschätzungs-Karte (S18). Nur Anzeige — die Werte kommen aus der
     // lokalen KalkulationsEngine, werden nie an die API zurückgespielt.
     case kalkulationsSchaetzung(schaetzungsID: String, projektID: String, minNetto: Double, maxNetto: Double, mitteNetto: Double, confidence: Double, evidenceCount: Int)
+    // Aktionskarte für einen vorgeschlagenen Airtable-Kontakt (S19). Schreibt NICHTS
+    // automatisch — erst die Bestätigung an der Karte legt den Kontakt an oder
+    // aktualisiert ihn (+ Audit). KEIN Delete.
+    case airtableContactAction(draft: AirtableContactDraft)
     case image(ChatAttachmentRef)
     case document(ChatAttachmentRef)
 }

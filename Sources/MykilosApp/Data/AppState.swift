@@ -325,6 +325,53 @@ public final class AppState {
         return .created("Entwurf in Gmail abgelegt (erscheint auch in Apple Mail).")
     }
 
+    // S19: schreibt einen vom Nutzer BESTÄTIGTEN Airtable-Kontakt-Entwurf.
+    // create → AirtableClient.createRecord; update → AirtableClient.updateRecord.
+    // KEIN delete. Wird der AssistantChatView als `onWriteAirtableContact` injiziert.
+    public func writeAirtableContact(_ draft: AirtableContactDraft) async -> AirtableContactWriteOutcome {
+        guard airtableAuth.status == .connected else {
+            return .failed("Airtable nicht verbunden — in den Einstellungen verbinden.")
+        }
+        let client = AirtableClient()
+        let baseID = AirtableClient.writableBaseID
+        let table  = "Kontakte"
+        let fields: [String: AirtableFieldValue] = draft.airtableFields
+            .reduce(into: [:]) { dict, pair in dict[pair.key] = .string(pair.value) }
+
+        do {
+            switch draft.intent {
+            case .create:
+                let recordID = try await client.createRecord(baseID: baseID, table: table, fields: fields)
+                try audit.append(AuditEntry(
+                    actorUserID: actorUserID, projectID: "-",
+                    action: .contactCreated,
+                    summary: "Airtable-Kontakt angelegt: \(draft.name) (ID \(recordID))"))
+                // Snapshot aktualisieren, damit lookup_kontakt sofort den neuen Eintrag findet.
+                await syncKontakte(baseID: baseID)
+                refreshAssistantKundenWissen()
+                return .created(draft.displayName)
+            case .update:
+                guard let recordID = draft.recordID, recordID.isEmpty == false else {
+                    return .failed("Keine Record-ID — update nicht möglich.")
+                }
+                try await client.updateRecord(baseID: baseID, table: table, recordID: recordID, fields: fields)
+                try audit.append(AuditEntry(
+                    actorUserID: actorUserID, projectID: "-",
+                    action: .contactCreated,   // kein eigener Audit-Typ nötig — .contactCreated ist semantisch nah genug
+                    summary: "Airtable-Kontakt aktualisiert: \(draft.name) (ID \(recordID))"))
+                await syncKontakte(baseID: baseID)
+                refreshAssistantKundenWissen()
+                return .updated(draft.displayName)
+            }
+        } catch AirtableError.invalidBaseID(let msg) {
+            return .failed("Schreibschutz verletzt: \(msg)")
+        } catch AirtableError.notConnected {
+            return .failed("Airtable nicht verbunden — in den Einstellungen verbinden.")
+        } catch {
+            return .failed("Fehler beim Schreiben: \(error.localizedDescription)")
+        }
+    }
+
     // L24: baut die Assistenten-Tool-Registry mit dem aktuellen Kunden-Snapshot neu auf.
     // Rein lokal (kein Airtable-Call) — nutzt die bereits geladene Registry. Erhält die
     // KalkulationsEngine, sonst verschwände schaetze_projekt.
