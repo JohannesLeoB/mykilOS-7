@@ -7,10 +7,12 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
-APP_BUNDLE="$DIST_DIR/mykilOS 7.5.app"
-DMG_NAME="mykilOS-7.6.6"
+# EINE Quelle für die Versionsnummer (synchron mit build_and_run.sh).
+APP_VERSION="7.6.6"
+APP_BUNDLE="$DIST_DIR/mykilOS $APP_VERSION.app"
+DMG_NAME="mykilOS-$APP_VERSION"
 DMG_PATH="$DIST_DIR/$DMG_NAME.dmg"
-VOLUME_NAME="mykilOS 7.6"
+VOLUME_NAME="mykilOS $APP_VERSION"
 
 # Build falls nötig — ohne Start (Packaging-Lauf, kein Schlüsselbund-Prompt).
 if [ ! -d "$APP_BUNDLE" ]; then
