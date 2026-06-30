@@ -47,7 +47,8 @@ public final class AppState {
     public let assistantTasks: AssistantTasksStore
 
     // S13: Snapshot der Airtable-Tabelle „Kontakte" (Adresse/Telefon/E-Mail) für lookup_kontakt.
-    private var studioContacts: [StudioContact] = []
+    // public(set) damit KontakteKatalogTab den Snapshot direkt lesen kann (read-only).
+    public private(set) var studioContacts: [StudioContact] = []
 
     // Projekt-Boards on-demand (pro geöffnetem Projekt)
     private var projectBoards: [String: WidgetBoardStore] = [:]

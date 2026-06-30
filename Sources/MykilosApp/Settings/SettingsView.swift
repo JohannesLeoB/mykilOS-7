@@ -36,6 +36,7 @@ struct SettingsView: View {
                     .font(.mykDisplay)
                     .foregroundStyle(MykColor.ink.color)
                 identitySection
+                mailSignaturSection
                 integrationStatusSection
                 googleSection
                 airtableSection
@@ -136,6 +137,49 @@ struct SettingsView: View {
             }
             Text("Name und Rolle fließen in den System-Prompt des Assistenten ein.")
                 .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.faint.color)
+        }
+        .padding(MykSpace.s6)
+        .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
+        .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
+    }
+
+    // MARK: - Mail-Signatur
+
+    /// Signatur wird per @AppStorage gespeichert (UserDefaults) — kein GRDB nötig,
+    /// rein lokaler Einstellungswert. ComposeMailView liest dieselbe Key "mail.signature"
+    /// und hängt sie beim Anlegen des Entwurfs an den Body an (Gmail macht das NICHT automatisch).
+    @AppStorage("mail.signature") private var mailSignature: String = ""
+
+    private var mailSignaturSection: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s4) {
+            HStack {
+                Image(systemName: "signature")
+                    .foregroundStyle(MykColor.personal.color)
+                Text("Mail-Signatur")
+                    .font(.mykHeadline)
+                    .foregroundStyle(MykColor.ink.color)
+            }
+            Text("Wird beim Verfassen eines Entwurfs ans Ende des Textes angehängt. Gmail hängt Signaturen bei API-Entwürfen nicht automatisch an.")
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.muted.color)
+                .fixedSize(horizontal: false, vertical: true)
+            TextEditor(text: $mailSignature)
+                .font(.mykMono(11))
+                .foregroundStyle(MykColor.ink.color)
+                .scrollContentBackground(.hidden)
+                .padding(MykSpace.s3)
+                .frame(minHeight: 90, maxHeight: 160)
+                .background(
+                    RoundedRectangle(cornerRadius: MykRadius.sm)
+                        .fill(MykColor.paper.color)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: MykRadius.sm)
+                        .stroke(MykColor.line.color, lineWidth: 1)
+                )
+            Text("Wird sofort gespeichert · LOKAL (UserDefaults)")
+                .font(.mykMono(9))
                 .foregroundStyle(MykColor.faint.color)
         }
         .padding(MykSpace.s6)
