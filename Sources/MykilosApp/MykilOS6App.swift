@@ -202,6 +202,8 @@ struct ContentView: View {
     @Environment(AppState.self) private var appState
     @AppStorage("onboarding.hasCompleted") private var hasCompleted = false
     @State private var showOnboarding = false
+    // mykilOS 8, Block B: Check-in-Dialog (aus Sidebar-Pille) — global über allen Modulen.
+    @State private var timerCheckInRequested = false
 
     // Direkt nutzbar: der Wizard erzwingt sich beim ersten Start NUR, wenn Claude
     // fehlt (= Assistent stumm). Google ist "empfohlen", nicht Pflicht — wer nur
@@ -215,6 +217,9 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             shell
+            // mykilOS 8, Block B: zeit-bezogene Dialoge (Übernahme/Buchung/Check-in) —
+            // über allen Modulen, unter dem Onboarding.
+            TimerGlobalDialogs(checkInRequested: $timerCheckInRequested)
             if isOnboardingUp {
                 MykColor.ink.color.opacity(0.55).ignoresSafeArea()
                     .onTapGesture { }   // blockierender Backdrop — kein Durchklicken
@@ -245,7 +250,8 @@ struct ContentView: View {
                 onOpenProfile: {
                     if appState.profile.profile?.isComplete == true { module = .settings }
                     else { showOnboarding = true }
-                }
+                },
+                timerCheckInRequested: $timerCheckInRequested
             )
             .fixedSize(horizontal: true, vertical: false)
             .layoutPriority(1)

@@ -249,6 +249,52 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v15_time_tracking (mykilOS 8, Block B / S1) — lokales Zeit-Subsystem.
+        // Drei Tabellen, alle rein lokal, kein externer Write:
+        //   activeTimer        — Single-Row (id="singleton"), der EINE laufende Timer.
+        //   timeSegmentDrafts  — abgeschlossene, noch nicht gebuchte Abschnitte des
+        //                        aktuellen Laufs (Kostenstellen-/Projektwechsel + letzter
+        //                        Abschnitt beim Stopp). Erst die Doppelbestätigung bucht sie.
+        //   timeSegments       — gebuchte Abschnitte (append-only, echtes Buchungsergebnis).
+        //   projectZielkontingente — Soll-Stunden je Projekt (Feldgerüst, S2 befüllt auto).
+        migrator.registerMigration("v15_time_tracking") { db in
+            try db.create(table: "activeTimer") { t in
+                t.primaryKey("id", .text)                 // immer "singleton"
+                t.column("projektNummer", .text).notNull()
+                t.column("projektTitel",  .text).notNull()
+                t.column("kostenstelle",  .text).notNull()
+                t.column("runSince",      .double).notNull()
+                t.column("pausedAccumulatedSeconds", .double).notNull().defaults(to: 0)
+                t.column("isPaused",      .boolean).notNull().defaults(to: false)
+                t.column("segmentStartedAt", .double).notNull()
+            }
+            try db.create(table: "timeSegmentDrafts") { t in
+                t.primaryKey("id", .text)
+                t.column("projektNummer", .text).notNull().indexed()
+                t.column("projektTitel",  .text).notNull()
+                t.column("kostenstelle",  .text).notNull()
+                t.column("startedAt",     .double).notNull()
+                t.column("endedAt",       .double).notNull()
+                t.column("seconds",       .double).notNull()
+            }
+            try db.create(table: "timeSegments") { t in
+                t.primaryKey("id", .text)
+                t.column("projektNummer", .text).notNull().indexed()
+                t.column("projektTitel",  .text).notNull()
+                t.column("kostenstelle",  .text).notNull()
+                t.column("startedAt",     .double).notNull()
+                t.column("endedAt",       .double).notNull()
+                t.column("seconds",       .double).notNull()
+                t.column("bookedAt",      .double).notNull().indexed()
+            }
+            try db.create(table: "projectZielkontingente") { t in
+                t.primaryKey("projektNummer", .text)
+                t.column("zielStunden", .double).notNull()
+                t.column("herkunft",    .text).notNull()
+                t.column("updatedAt",   .double).notNull()
+            }
+        }
+
         try migrator.migrate(queue)
     }
 

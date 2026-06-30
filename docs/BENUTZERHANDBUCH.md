@@ -531,5 +531,44 @@ gesamten Code, die überhaupt eine DELETE-Anfrage absetzen kann.
 
 ---
 
+## mykilOS 8, Block B — Lokales Zeit-Subsystem (Zeiterfassung)
+
+Block B bringt die **lokale Zeiterfassung** — alles rein lokal (GRDB), kein externer Write
+(Clockodo-Upload folgt in einem späteren Block). Farbe: Salbei (Zeit/Menschen).
+
+**Projekt-Timer (Projekt-Detailseite → Tab „Zeit").** Großes Clock-Display, Start/Pause/Stopp.
+Pro Projekt 3–5 **Kostenstellen-Buttons** (S1: Planung/Beratung/Montage/Fahrtzeit/Sonstiges —
+später aus Airtable). Eine Kostenstelle wechseln während der Timer läuft beendet sauber das
+laufende Segment und startet ein neues — **keine Zeit geht verloren**, keine Stunde landet im
+falschen Topf. *Wo:* Projekt öffnen → Tab „Zeit".
+
+**Single-Instance-Invariante.** Es läuft nie mehr als ein Timer gleichzeitig. Startet man einen
+Timer, während in einem anderen Projekt schon einer läuft, erscheint eine **Übernahme-Karte**
+(Nachfragen, kein automatisches Umschalten): „Übernehmen" stoppt den alten (→ dessen Buchung wird
+bestätigt) und startet danach den neuen.
+
+**Aktiv-Timer-Pille in der Sidebar.** Sichtbar nur wenn ein Timer läuft — Play/Pause-Symbol,
+Projekt + Kostenstelle + tickende Zeit. Läuft nichts, ist die Pille unsichtbar. Klick auf die
+Pille öffnet den **Check-in**.
+
+**Puls-Erinnerung.** Nach dem eingestellten Intervall (Default 60 Min) **pulsiert die ganze
+Sidebar** dezent — ein Hinweis „läuft der Timer noch?". Ignoriert man den Puls, **beruhigt er sich
+nach 3 Minuten** wieder bis zur nächsten Marke. Klick auf die Pille → Check-in „Jetzt stoppen" /
+„Läuft weiter" (Letzteres setzt die Erinnerungs-Uhr zurück).
+
+**Doppelte Buchungs-Bestätigung.** Stopp zeigt zuerst eine **Übersicht** (welche Kostenstellen,
+wie viel Zeit), erst ein zweiter expliziter **„Ja, buchen"** committet die Zeit lokal. Verwerfen
+oder Zurück jederzeit möglich. Eine offene Buchung überlebt den App-Neustart (die Karte erscheint
+wieder).
+
+**Zielkontingent je Projekt.** Lokal editierbares Soll-Stunden-Kontingent mit Fortschrittsbalken
+(gebucht / Ziel) und Herkunfts-Markierung (S1: manuell; automatische Herleitung folgt mit der
+Airtable-Anbindung).
+
+*Einschränkungen S1:* alles lokal, keine Clockodo-Buchung; Kostenstellen noch statisch (nicht aus
+Airtable); Zielkontingent nur manuell.
+
+---
+
 *Dieses Dokument wird mit jedem Feature-Commit aktualisiert.*
-*Letzte Änderung: 2026-06-30 · feat/mykilos8-block-a-fundament · mykilOS 8 Block A (Eine Wahrheit + Sicherheits-Sockel, Grundgerüst)*
+*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-b-zeit-subsystem · mykilOS 8 Block B (Lokales Zeit-Subsystem, S1)*

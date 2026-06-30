@@ -40,6 +40,10 @@ public final class AppState {
     // `Projekte` kein Projektnummer-Feld hat). Siehe ProjectNumberBindingStore.swift.
     public let projectNumberBindings: ProjectNumberBindingStore
 
+    // mykilOS 8, Block B (S1): lokales Zeit-Subsystem (Timer/Pause/Buchung/Puls).
+    // Rein lokal, kein externer Write — Clockodo-Upload ist S3. Siehe TimerStore.swift.
+    public let timer: TimerStore
+
     // MARK: Integrationen
     public let googleAuth: GoogleAuthService
     public let clockodoAuth: ClockodoAuthService
@@ -162,6 +166,7 @@ public final class AppState {
             self.externalMapping = nil
         }
         self.projectNumberBindings = ProjectNumberBindingStore(db: database)
+        self.timer = TimerStore(db: database)
         let claudeCredentials = KeychainClaudeCredentialsStore()
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
         self.assistantLLM = ClaudeMessagesClient(credentialsStore: claudeCredentials)
@@ -285,6 +290,7 @@ public final class AppState {
         try? favorites.load()   // leere Favoritenmenge ist kein Fehler (L25)
         try? provisioningMode.load()   // mykilOS 8, Block A: ungefunden = Default .test
         try? projectNumberBindings.load()   // mykilOS 8, Block A: ungefunden = leere Liste
+        try? timer.load()              // mykilOS 8, Block B: laufender Timer/offene Buchung überlebt Neustart
         // Registry seeden/laden
         await registry.seedIfEmpty()
         await registry.load()

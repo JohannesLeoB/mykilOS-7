@@ -22,6 +22,10 @@ public extension Font {
     static func mykMono(_ size: CGFloat = 10.5) -> Font {
         .custom("ABCMonumentGroteskMono-Regular", size: size, relativeTo: .caption)
     }
+
+    // Timer-Uhr (mykilOS 8, Block B): große, leichte Ziffernanzeige. Mit
+    // `.monospacedDigit()` kombinieren → tabulare Ziffern, kein Springen beim Ticken.
+    static var mykTimerClock: Font { .custom("ABCMonumentGrotesk-Regular", size: 38, relativeTo: .largeTitle) }
 }
 
 // MARK: - Widget-Titel (Versalien, Mono-ähnlich)

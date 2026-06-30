@@ -30,6 +30,27 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-07-01 · Claude Code (Opus 4.8, Ultracode) — mykilOS 8 Block B: Lokales Zeit-Subsystem (S1)
+
+```
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Branch: feat/mykilos8-block-b-zeit-subsystem
+Build:  ✅ swift build grün
+Tests:  ✅ 672 Tests grün (13 neu)
+```
+
+Lokale Zeiterfassung komplett (rein lokal, kein externer Write): `TimeTracking.swift` (Domain),
+GRDB-Migration `v15_time_tracking` (4 Tabellen, additiv), `TimerStore` (Single-Instance-Invariante,
+Pause/Stopp, Kostenstellen-Wechsel ohne Zeitverlust via Draft-Modell, Übernahme-Queue, doppelte
+Buchungs-Bestätigung, Puls-Logik), Projekt-Timer-Widget (Tab „Zeit"), Sidebar-Pille + Puls-
+Erinnerung (beruhigt nach 3 Min — Johannes' Wahl), globale Dialoge (Übernahme/Buchung/Check-in).
+Johannes' Defaults: Projektwechsel nachfragen (nicht auto), Puls beruhigt nach 3 Min.
+ZIEL-CHECK mit adversarialem Multi-Agent-Review (4 Dimensionen, 12 Findings, 8 gefixt inkl. 1
+critical: `runQueuedStartIfNeeded` schluckte Fehler). Details:
+[HANDOFF_MYKILOS8_BLOCK_B.md](handoffs/HANDOFF_MYKILOS8_BLOCK_B.md). DMG 7.9.0.
+
+---
+
 ## 2026-06-30 · Claude Code (Sonnet 5) — mykilOS 8 Block A: Fundament (Eine Wahrheit + Sicherheits-Sockel)
 
 ```

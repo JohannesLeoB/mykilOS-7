@@ -170,6 +170,8 @@ struct ProjectDetailView: View {
                 driveFolderID: project.links.driveFolderID,
                 driveFolderPath: project.links.driveFolderPath
             )
+        case .zeit:
+            ProjektTimerView(projektNummer: project.projectNumber, projektTitel: project.title)
         case .material:
             MaterialTabView(
                 projectID: project.projectNumber,
@@ -301,6 +303,7 @@ private struct RowLayout: Identifiable {
 // MARK: - Tab-Helfer
 enum ProjectTab: String, CaseIterable, Identifiable {
     case overview = "Übersicht"; case chat = "Assistent"
+    case zeit = "Zeit"
     case files = "Dateien"; case offers = "Angebote"
     case timeline = "Timeline"; case material = "Material"
     var id: String { rawValue }

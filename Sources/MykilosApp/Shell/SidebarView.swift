@@ -9,6 +9,8 @@ struct SidebarView: View {
     @Binding var selection: AppModule
     @Binding var isCompact: Bool
     var onOpenProfile: () -> Void = {}
+    // mykilOS 8, Block B: Klick auf die Aktiv-Timer-Pille öffnet den globalen Check-in.
+    @Binding var timerCheckInRequested: Bool
     @Environment(AppState.self) private var appState
     @State private var profileHovered = false
     @State private var brandHovered = false
@@ -19,6 +21,9 @@ struct SidebarView: View {
             brand
             Spacer().frame(height: MykSpace.s8)
             navItems
+            // mykilOS 8, Block B: minimale Aktiv-Timer-Pille (nur sichtbar wenn ein Timer läuft).
+            TimerSidebarPill(compact: isCompact, checkInRequested: $timerCheckInRequested)
+                .padding(.top, MykSpace.s4)
             Spacer()
             AppDockStrip(store: appShortcuts, compact: isCompact)
             navFoot
@@ -27,6 +32,8 @@ struct SidebarView: View {
         .padding(.vertical, MykSpace.s7)
         .frame(width: isCompact ? 64 : 212)
         .background(MykColor.paper.color)
+        // mykilOS 8, Block B: sanfter Puls über die ganze Sidebar bei Erinnerungs-Marke.
+        .background(SidebarPulseBackground())
     }
 
     // MARK: Brand — toggelt kompakt/breit
