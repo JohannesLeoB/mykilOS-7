@@ -5,14 +5,18 @@ import MykilosKit
 
 // MARK: - KatalogTab
 // Die Unter-Tabs der Kataloge-Seite. Reihenfolge ist umsortierbar (Drag) und wird
-// in @AppStorage gemerkt. „Geräte" ist der read-only Gerätekatalog, „Kontakte" die
-// Google-Kontaktsuche, „Notizen"/„Aufgaben" die lokalen Assistenten-Stores (S4/S6).
+// in @AppStorage gemerkt.
+// Phase 3 (Webshop): neue Tabs „Artikel/Shop", „Lager", „Angebote" hinzugekommen.
+// „Angebote" ersetzt AppModule.offers in der Sidebar (analog zur Mail-Lösung).
 enum KatalogTab: String, CaseIterable, Identifiable {
-    case geraete, kontakte, notizen, aufgaben
+    case artikel, lager, angebote, geraete, kontakte, notizen, aufgaben
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .artikel:  "Artikel / Shop"
+        case .lager:    "Lager"
+        case .angebote: "Angebote"
         case .geraete:  "Geräte"
         case .kontakte: "Kontakte"
         case .notizen:  "Notizen"
@@ -21,6 +25,9 @@ enum KatalogTab: String, CaseIterable, Identifiable {
     }
     var icon: String {
         switch self {
+        case .artikel:  "cart"
+        case .lager:    "archivebox"
+        case .angebote: "doc.text"
         case .geraete:  "square.grid.2x2"
         case .kontakte: "person.2"
         case .notizen:  "note.text"
@@ -29,6 +36,9 @@ enum KatalogTab: String, CaseIterable, Identifiable {
     }
     var accent: MykColor {
         switch self {
+        case .artikel:  .tasks
+        case .lager:    .drive
+        case .angebote: .cash
         case .geraete:  .tasks
         case .kontakte: .people
         case .notizen:  .personal
@@ -36,38 +46,93 @@ enum KatalogTab: String, CaseIterable, Identifiable {
         }
     }
 
-    static var defaultOrder: [KatalogTab] { [.geraete, .kontakte, .notizen, .aufgaben] }
+    static var defaultOrder: [KatalogTab] {
+        [.artikel, .lager, .angebote, .geraete, .kontakte, .notizen, .aufgaben]
+    }
 }
 
 // MARK: - KatalogeView
 // Hülle mit umsortierbarer Tab-Leiste; der aktive Tab füllt den Rest.
+// Phase 3: Warenkorb-State ist @State hier, damit er alle Tabs überlebt.
+// Shared Stores: ArtikelKatalogStore + LagerlisteStore werden einmal erstellt und an
+// Artikel-Tab + Lager-Tab weitergegeben — nicht doppelt geladen.
 @MainActor
 struct KatalogeView: View {
+    @Environment(AppState.self) private var appState
     @AppStorage("kataloge.taborder") private var orderRaw: String = ""
     @State private var order: [KatalogTab] = KatalogTab.defaultOrder
-    @State private var selected: KatalogTab = .geraete
+    @State private var selected: KatalogTab = .artikel
+
+    // Webshop Phase 3: listenübergreifender Warenkorb (lokal, in-session)
+    @State private var warenkorb = WarenkorbState()
+    // Shared data stores — einmal initialisiert, an beide Shop-Tabs weitergegeben
+    @State private var artikelStore = ArtikelKatalogStore()
+    @State private var lagerStore = LagerlisteStore()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            tabStrip
-            Divider().overlay(MykColor.line.color)
-            content
+        ZStack(alignment: .topTrailing) {
+            VStack(alignment: .leading, spacing: 0) {
+                header
+                tabStrip
+                Divider().overlay(MykColor.line.color)
+                content
+            }
+            .background(MykColor.paper.color)
+            .onAppear { loadOrder() }
+
+            // Warenkorb-Floating-Panel (rechts oben eingeblendet)
+            if warenkorb.showPanel {
+                WarenkorbPanel(warenkorb: warenkorb)
+                    .padding(.top, MykSpace.s9)
+                    .padding(.trailing, MykSpace.s7)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    ))
+                    .zIndex(10)
+            }
         }
-        .background(MykColor.paper.color)
-        .onAppear { loadOrder() }
+        .animation(.easeInOut(duration: 0.2), value: warenkorb.showPanel)
     }
 
     // MARK: Header + Tab-Leiste
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: MykSpace.s2) {
-            Text("Kataloge")
-                .font(.mykDisplay)
-                .foregroundStyle(MykColor.ink.color)
-            Text("Geräte, Kontakte, Notizen, Aufgaben \u{00B7} Tabs ziehen zum Umsortieren")
-                .font(.mykMono(10))
-                .foregroundStyle(MykColor.muted.color)
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: MykSpace.s2) {
+                Text("Kataloge")
+                    .font(.mykDisplay)
+                    .foregroundStyle(MykColor.ink.color)
+                Text("Artikel, Lager, Angebote, Geräte, Kontakte, Notizen \u{00B7} Tabs ziehen zum Umsortieren")
+                    .font(.mykMono(10))
+                    .foregroundStyle(MykColor.muted.color)
+            }
+            Spacer()
+            // Warenkorb-Badge-Button
+            Button {
+                warenkorb.showPanel.toggle()
+            } label: {
+                HStack(spacing: MykSpace.s2) {
+                    Image(systemName: warenkorb.istLeer ? "cart" : "cart.badge.plus")
+                        .font(.mykBody)
+                        .foregroundStyle(warenkorb.istLeer ? MykColor.faint.color : MykColor.tasks.color)
+                    if !warenkorb.istLeer {
+                        Text("\(warenkorb.anzahl)")
+                            .font(.mykMono(10))
+                            .foregroundStyle(MykColor.tasks.color)
+                    }
+                }
+                .padding(.horizontal, MykSpace.s4)
+                .padding(.vertical, MykSpace.s2)
+                .background(MykColor.card.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                .overlay(
+                    RoundedRectangle(cornerRadius: MykRadius.sm)
+                        .stroke(warenkorb.istLeer ? MykColor.line.color : MykColor.tasks.color.opacity(0.4), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .help(warenkorb.istLeer ? "Warenkorb (leer)" : "Warenkorb (\(warenkorb.anzahl) Pos.)")
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.top, MykSpace.s9)
@@ -118,6 +183,12 @@ struct KatalogeView: View {
     @ViewBuilder
     private var content: some View {
         switch selected {
+        case .artikel:
+            ArtikelShopTab(warenkorb: warenkorb, artikelStore: artikelStore, lagerStore: lagerStore)
+        case .lager:
+            LagerTab(warenkorb: warenkorb, lagerStore: lagerStore)
+        case .angebote:
+            GlobalOffersView()
         case .geraete:  GeraeteKatalogTab()
         case .kontakte: KontakteKatalogTab()
         case .notizen:  NotizenKatalogTab()

@@ -155,13 +155,14 @@ struct DatabaseRecoveryView: View {
 // MARK: - AppModule
 // Mail ist KEIN eigener Sidebar-Eintrag mehr — es lebt als Toggle innerhalb
 // des Assistenten (AssistantPageView). Daher kein `.mail`-Case mehr hier.
+// Angebote (offers) ist KEIN eigener Sidebar-Eintrag mehr — es lebt als Tab
+// innerhalb von KatalogeView (Kataloge → Angebote). Analog zur Mail-Lösung.
 enum AppModule: String, CaseIterable, Identifiable {
     case today        = "Heute"
     case projects     = "Projekte"
     case assistant    = "Assistent"
     case brands       = "Integrationen"
     case kataloge     = "Kataloge"
-    case offers       = "Angebote"
     case settings     = "Einstellungen"
     var id: String { rawValue }
     var icon: String {
@@ -171,7 +172,6 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .assistant:   "sparkles"
         case .brands:      "building.2"
         case .kataloge:    "books.vertical"
-        case .offers:      "doc.text"
         case .settings:    "gearshape"
         }
     }
@@ -295,7 +295,6 @@ struct ContentView: View {
         case .today:       TodayView()
         case .projects:    ProjectGalleryView()
         case .assistant:   AssistantPageView()
-        case .offers:      GlobalOffersView()
         case .brands:      BrandsView(onNavigateToSettings: { module = .settings })
         case .kataloge:    KatalogeView()
         case .settings:    SettingsView()
@@ -534,8 +533,6 @@ struct AppCommands: Commands {
             Button("Integrationen")   { activeModule = .brands }
                 .keyboardShortcut("4", modifiers: .command)
             Button("Kataloge")        { activeModule = .kataloge }
-                .keyboardShortcut("8", modifiers: .command)
-            Button("Angebote")        { activeModule = .offers }
                 .keyboardShortcut("5", modifiers: .command)
             Button("Einstellungen")   { activeModule = .settings }
                 .keyboardShortcut("7", modifiers: .command)
