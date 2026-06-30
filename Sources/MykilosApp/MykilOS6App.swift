@@ -161,6 +161,7 @@ enum AppModule: String, CaseIterable, Identifiable {
     case kataloge     = "Kataloge"
     case offers       = "Angebote"
     case kalkulation  = "Kalkulation"
+    case mail         = "Mail"
     case settings     = "Einstellungen"
     var id: String { rawValue }
     var icon: String {
@@ -172,6 +173,7 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .kataloge:    "books.vertical"
         case .offers:      "doc.text"
         case .kalkulation: "eurosign.square"
+        case .mail:        "envelope"
         case .settings:    "gearshape"
         }
     }
@@ -321,6 +323,7 @@ struct ContentView: View {
         case .brands:      BrandsView(onNavigateToSettings: { module = .settings })
         case .kataloge:    KatalogeView()
         case .kalkulation: KalkulationsPageView()
+        case .mail:        MailClientView()
         case .settings:    SettingsView()
         }
     }
@@ -548,6 +551,8 @@ struct AppCommands: Commands {
                 .keyboardShortcut("5", modifiers: .command)
             Button("Kalkulation")     { activeModule = .kalkulation }
                 .keyboardShortcut("6", modifiers: .command)
+            Button("Mail")            { activeModule = .mail }
+                .keyboardShortcut("9", modifiers: .command)
             Button("Einstellungen")   { activeModule = .settings }
                 .keyboardShortcut("7", modifiers: .command)
         }
