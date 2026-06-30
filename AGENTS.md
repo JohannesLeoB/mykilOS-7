@@ -1,4 +1,43 @@
-# mykilOS 6 — Codex Projektgedächtnis
+# mykilOS 7 — VERBINDLICHE Regeln für ALLE Agenten & Mitwirkenden
+
+> Diese Datei lesen Codex, fremde Claude-Code-Sessions und externe Mitwirkende **ZUERST**.
+> Lebender App-Stand: **[CLAUDE.md](CLAUDE.md)** + **[HYPERBUILD.md](HYPERBUILD.md)** + Projektgedächtnis.
+> Der historische Codex-Verlauf (Akt 0–5) steht weiter unten — ihm für den *aktuellen* Stand **NICHT** trauen.
+> Aktuelle Version: **mykilOS 7.7.0** (Tag `v7.7.0`).
+
+## Wer darf was (Ownership)
+- **Johannes Leo Berger** = Owner der App. **NUR Johannes (bzw. Agenten in SEINER Session) committen App-Code und mergen nach `main`.** Er allein baut die App real weiter.
+- **Daniel Klapsing** = **Backend**: Airtable-Schema, Sevdesk-Anbindung (über Make.com), Datenbanken, Datenverträge. Repo-Rechte: **Lesen · eigene Branches anlegen · ausprobieren (Tryout)**. **KEIN** Merge nach `main`, **KEIN** „echtes" App-Weiterbauen. Seine Arbeit dockt über **Branches + Pull Requests** an, die Johannes prüft und merged.
+- Andere Agenten (Codex / weitere Claude-Sessions, z. B. ausgelagerte Coding-Blöcke): arbeiten auf **eigenen Branches**, **nie** direkt auf `main`, **nie** force-push. Ergebnis = PR an Johannes.
+
+## Eiserne Regeln (nicht verhandelbar)
+1. **Kanonischer Ordner:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`. Desktop-Worktrees sind Wegwerfkopien.
+2. **`main` ist heilig:** nie direkt committen, nie force-pushen, nur Johannes merged (Fast-Forward/PR). Tag `v7.0.0` (Safe State) ist unantastbar.
+3. **Signierte Commits** (SSH), **Conventional Commits**; bei Claude-Arbeit Suffix `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
+4. **Gate:** `swift build` UND `swift test` müssen grün sein. Rot = kein Merge. Keine Versions-/Build-Skripte heimlich ändern.
+5. **Parallele Agenten IMMER in isolierten git-Worktrees** (`isolation: worktree`). Nie konkurrierende Git-Ops im selben Arbeitsbaum (sonst landen Commits auf dem falschen Branch).
+6. **Secrets** (Tokens/PATs/API-Keys) nur Keychain — nie ins Repo/Logs. **EK-Preise & Kundendaten nie ins Repo.**
+7. **Token-Disziplin** (MykColor/MykSpace/Font.myk…); Architektur-Grenzen (MykilosKit nie SwiftUI/GRDB; MykilosWidgets nie GRDB; Schreiben nur über Stores); jeder Schreibvorgang `throws` + Cold-Start-Test bei Persistenz.
+8. **Persistierte Typen NIE ohne tolerantes Decoding ändern** (neues nicht-optionales Codable-Feld bricht alte Daten → `decodeIfPresent ?? default`). Diese Lektion hat schon ein Chat-Archiv gekostet.
+
+## Externe Daten — harte NO-GOs (für ALLE)
+- **Sevdesk:** mykilOS ruft Sevdesk **NIE** selbst. Sevdesk-Anbindung läuft über die Airtable-Checkbox „Angebot an sevDesk senden" → **Make.com** (Daniels Backend).
+- **Airtable:** nur CREATE/PATCH, **NIE DELETE/Overwrite**. Inaktivieren nur über Status-/Archiv-Feld (append-only). Warenkörbe nur fortschreiben + archivieren.
+- Base `appkPzoEiI5eSMkNK` (stillgelegt) **tabu**. Drive-NO-GO-Ordner `0AOeReQBQKkKBUk9PVA` nie schreiben.
+- Schreibbare Bases (gated, Token braucht `data.records:write`): Mastermind `appuVMh3KDfKw4OoQ` (Kontakte/Projekte/Kalkulation) + Artikel-&-Einkauf `appdxTeT6bhSBmwx5` (NUR Tabellen `Lagerliste`/`Projektartikel`/`Warenkörbe`).
+
+## Schnittstelle App ↔ Backend (Daniel)
+- System-of-Record = **Airtable** (`appuVMh3KDfKw4OoQ` + `appdxTeT6bhSBmwx5`). App liest/schreibt gated; Backend pflegt Schema + Make-Automationen + Sevdesk.
+- Datenverträge (Tabellen-/Feld-IDs, Datenströme) im **Datenstrom-Handbuch** (Airtable `tblaUVftka0GvXzeU`) + Handoffs. Schema-Änderung → beide Seiten + Doku synchron halten, sonst bricht der App-Sync.
+
+Details: **[docs/handoffs/HANDOFF_COLLABORATION.md](docs/handoffs/HANDOFF_COLLABORATION.md)** ·
+geplante Features: **[docs/handoffs/HANDOFF_PLANNED_FEATURES.md](docs/handoffs/HANDOFF_PLANNED_FEATURES.md)**.
+
+---
+
+> **⬇️ Ab hier: historischer Codex-Verlauf (Akt 0–5, mykilOS 6). NUR Archiv — nicht für den aktuellen Stand.**
+
+# mykilOS 6 — Codex Projektgedächtnis (Archiv)
 
 **Smarte Projektplanung und Management mit intelligenten Automationen und Integrationen.**
 Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
