@@ -78,18 +78,24 @@ freigibt. So fließt nie versehentlich Echtbetrieb.
 
 ## 7. Write-Backup-Base (Sicherheitskopie ALLER Schreibvorgänge — append-only, KEIN DELETE)
 
-> **Status (Block A, aktualisiert 2026-06-30): Base von Johannes live angelegt.** „mykilOS 8
-> Backup Base" (`app56DTbSoqPvZhom`, Tabelle vermutlich `Write-Shadow-Log`, Table-ID
-> `tblYQVdeHP2Zvgt8m`) ist verdrahtet — `AppState.writeShadow` zeigt jetzt auf diese Base,
-> `AirtableClient.writableMap` erlaubt CREATE in `app56DTbSoqPvZhom: ["Write-Shadow-Log"]`.
-> **Unverifiziert:** der für diese Session verfügbare Airtable-MCP konnte das Schema NICHT
-> gegenprüfen (403 — sieht nur Mastermind). Stimmt der Tabellenname/die Feldnamen nicht exakt
-> (`Zeitstempel`/`Nutzer`/`Aktion`/`Ziel-System`/`Ziel-Base`/`Ziel-Tabelle`/`Ziel-Record-ID`/
-> `Payload-JSON`/`Vorwert-JSON`/`TEST-PROD`/`Ergebnis`), scheitert NUR der externe Spiegel
-> (non-fatal, jetzt sichtbar geloggt unter `WRITE_SHADOW_BACKUP_FEHLT` mit Fehlertext) — der
-> lokale GRDB-Eintrag (die eigentliche Sicherheitskopie) passiert immer. **Nächster Schritt:**
-> Johannes verifiziert live (echten Write auslösen, z. B. Intake-Submit, dann in der Backup-Base
-> nachschauen, ob der Record ankommt).
+> **Status (Block A, final 2026-06-30): live verifiziert.** „mykilOS 8 Backup Base"
+> (`app56DTbSoqPvZhom`) ist angelegt, die Tabelle `Table 1` → `Write-Shadow-Log`
+> (`tblYQVdeHP2Zvgt8m`) umbenannt und um alle 11 Felder ergänzt (`Zeitstempel`/`Nutzer`/`Aktion`/
+> `Ziel-System`/`Ziel-Base`/`Ziel-Tabelle`/`Ziel-Record-ID`/`Payload-JSON`/`Vorwert-JSON`/
+> `TEST-PROD`/`Ergebnis`) — per Airtable-Meta-API, nach ausdrücklicher Freigabe durch Johannes
+> (Schema-Änderung an geteilter Infrastruktur, sonst von der Sicherheitsprüfung blockiert).
+> Ein echter Write-Test (`POST .../Write-Shadow-Log`) kam mit `200 OK` an, Record
+> `reccrqZjooHtLWWmI` korrekt befüllt. `AppState.writeShadow` zeigt auf diese Base,
+> `AirtableClient.writableMap` erlaubt CREATE in `app56DTbSoqPvZhom: ["Write-Shadow-Log"]`. Der
+> Mirror in `WriteShadowRecorder.mirrorToBackupBase` ist damit Ende-zu-Ende bestätigt — lokaler
+> GRDB-Eintrag UND Airtable-Spiegel funktionieren beide.
+>
+> **Nebenbefund (Token-Hygiene):** Beim Einrichten des neuen App-PAT ist ein Token-Fragment
+> versehentlich im Terminal sichtbar geworden (zsh interpretierte einen per `read -p` eingelesenen
+> Token als Befehl). Johannes hat den betroffenen Token sofort widerrufen und einen neuen über
+> `pbpaste` (keine Terminal-Eingabe des Geheimnisses) gesetzt — sauberer Pfad für künftige
+> Token-Rotation: `security add-generic-password -U -s "com.mykilos6.airtable" -a "pat" -w
+> "$(pbpaste)"` nach Kopieren des Tokens in die Zwischenablage.
 
 **Jeder Schreibvorgang in die Datenkerne** (Airtable CREATE/PATCH, Drive-Ordner/Datei-Anlage, künftig
 Clockodo/ClickUp-Writes) wird **zusätzlich als Sicherheitskopie** in eine **separate Backup-Base** geschrieben —
