@@ -20,9 +20,9 @@ struct FragebogenView: View {
     @State private var ergebnis: IntakeErgebnis? = nil
     @State private var schreibPhase: SchreibPhase = .idle
 
-    // Export
-    private let pdfRenderer: FragebogenPDFRendering = FragebogenPDFRenderingStub()
-    private let driveUploader: FragebogenDriveUploading = FragebogenDriveUploadingStub()
+    // Export (echte Verdrahtung: MykPDFRenderer + Drive-Upload)
+    private let pdfRenderer: FragebogenPDFRendering = MykFragebogenPDFRenderer()
+    private let driveUploader: FragebogenDriveUploading = MykFragebogenDriveUploader()
 
     init(modell: FragebogenModel = FragebogenModel(), onDismiss: @escaping () -> Void) {
         self.modell = modell
