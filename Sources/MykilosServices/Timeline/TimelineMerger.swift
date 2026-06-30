@@ -35,6 +35,7 @@ public extension AuditEntry.Action {
         case .calibrationPromoted:"Kalibrierung übernommen"
         case .contactCreated:     "Kontakt angelegt"
         case .driveFileUploaded:  "Datei hochgeladen"
+        case .warenkorbGesendet:  "Warenkorb gesendet"
         }
     }
 }

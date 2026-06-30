@@ -78,14 +78,42 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
     private let apiBase = "https://api.airtable.com/v0"
 
     // MARK: NO-GO-Schreibgrenzen (unverhandelbar)
-    // Geschrieben wird AUSSCHLIESSLICH in die eigene Mastermind-Base und nur in
-    // explizit freigegebene Tabellen. Nie die geteilte Base (appkPzoEiI5eSMkNK),
-    // nie fremde Bases, kein DELETE.
-    public static let writableBaseID = "appuVMh3KDfKw4OoQ"
-    public static let writableTables: Set<String> = [
+    // Geschrieben wird AUSSCHLIESSLICH in explizit freigegebene Bases und Tabellen.
+    // Nie die geteilte Base (appkPzoEiI5eSMkNK), nie fremde Bases, kein DELETE.
+    //
+    // Freigegebene Bases + Tabellen (Stand 2026-06-30):
+    //   appuVMh3KDfKw4OoQ  — Mastermind (eigene Schaltzentrale)
+    //   appdxTeT6bhSBmwx5  — Artikel & Einkauf (Webshop-Phase 1, gated, von Johannes freigegeben)
+    //
+    // NIEMALS andere Tabellen dieser Bases, NIEMALS andere Bases, KEIN DELETE.
+    public static let writableBaseID = "appuVMh3KDfKw4OoQ"   // Rückwärtskompatibilität
+    public static let writableTables: Set<String> = [          // Rückwärtskompatibilität (Mastermind)
         "Datenstrom-Handbuch", "Datenstrom-Log",
         "Kontakte",   // S19: Kontakt anlegen/aktualisieren via Bestätigungskarte
     ]
+
+    /// Vollständige Schreib-Whitelist: Base-ID → erlaubte Tabellen.
+    /// createRecord und updateRecord prüfen gegen diese Map.
+    public static let writableMap: [String: Set<String>] = [
+        // Mastermind-Base (eigene Schaltzentrale)
+        "appuVMh3KDfKw4OoQ": [
+            "Datenstrom-Handbuch", "Datenstrom-Log",
+            "Kontakte",
+        ],
+        // Artikel & Einkauf (Webshop-Phase 1, gated, von Johannes freigegeben 2026-06-30)
+        // NIEMALS: Artikel-Stamm, Lieferanten, Preise oder andere Tabellen dieser Base.
+        "appdxTeT6bhSBmwx5": [
+            "Lagerliste",      // tblh8j1Rykv12T2Dx
+            "Projektartikel",  // tblirHIicPP3qdcDp
+            "Warenkörbe",      // tblhZujm3Ig6hlafX
+        ],
+    ]
+
+    /// Prüft, ob Base + Tabelle auf der Schreib-Whitelist stehen.
+    /// Wird von createRecord und updateRecord verwendet.
+    static func isWritable(baseID: String, table: String) -> Bool {
+        writableMap[baseID]?.contains(table) == true
+    }
 
     public init(
         credentialsStore: AirtableCredentialsStoring = KeychainAirtableCredentialsStore(),
@@ -130,8 +158,8 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
     /// kein Schreiben in Projekt-/Kunden-/Kalkulationsdaten, kein Schreiben in
     /// fremde Basen. Gibt die neue Record-ID zurück.
     public func createRecord(baseID: String, table: String, fields: [String: AirtableFieldValue]) async throws -> String {
-        guard baseID == Self.writableBaseID, Self.writableTables.contains(table) else {
-            throw AirtableError.invalidBaseID("Schreiben nur in \(Self.writableTables) der Mastermind-Base erlaubt (versucht: \(table)@\(baseID))")
+        guard Self.isWritable(baseID: baseID, table: table) else {
+            throw AirtableError.invalidBaseID("Schreiben in \(table)@\(baseID) nicht erlaubt — Whitelist: \(Self.writableMap)")
         }
         guard let credentials = try? credentialsStore.load() else {
             throw AirtableError.notConnected
@@ -161,8 +189,8 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
     /// wenn Base oder Tabelle nicht auf der Whitelist — kein Schreiben in fremde Bases.
     /// Gibt nur geänderte Felder mit — Felder, die nicht im Dict stehen, bleiben unverändert.
     public func updateRecord(baseID: String, table: String, recordID: String, fields: [String: AirtableFieldValue]) async throws {
-        guard baseID == Self.writableBaseID, Self.writableTables.contains(table) else {
-            throw AirtableError.invalidBaseID("Schreiben nur in \(Self.writableTables) der Mastermind-Base erlaubt (versucht: \(table)@\(baseID))")
+        guard Self.isWritable(baseID: baseID, table: table) else {
+            throw AirtableError.invalidBaseID("Schreiben in \(table)@\(baseID) nicht erlaubt — Whitelist: \(Self.writableMap)")
         }
         guard let credentials = try? credentialsStore.load() else {
             throw AirtableError.notConnected

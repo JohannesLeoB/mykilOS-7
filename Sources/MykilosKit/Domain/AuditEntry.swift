@@ -5,7 +5,8 @@ import Foundation
 // Persistiert via AuditStore in der GRDB-Tabelle `auditEntries`.
 public struct AuditEntry: Codable, Identifiable, Sendable {
     public enum Action: String, Codable, Sendable {
-        case offerImported, draftCreated, draftSent, projectLinked, noteUpdated, estimateAdjusted, calibrationPromoted, contactCreated, driveFileUploaded
+        case offerImported, draftCreated, draftSent, projectLinked, noteUpdated, estimateAdjusted, calibrationPromoted, contactCreated, driveFileUploaded,
+             warenkorbGesendet   // Webshop Phase 1: Warenkorb-Version in Airtable gespeichert (append-only)
     }
     public let id: UUID
     public let timestamp: Date

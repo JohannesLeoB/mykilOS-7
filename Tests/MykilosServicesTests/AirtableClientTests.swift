@@ -124,6 +124,89 @@ struct AirtableClientTests {
             #expect(error as? AirtableError == .notConnected)
         }
     }
+
+    // MARK: - Whitelist-Map Tests (Phase 1: Webshop-Bases)
+
+    @Test func whitelistMapEnthaeltMastermindUndArtikelBase() {
+        #expect(AirtableClient.writableMap["appuVMh3KDfKw4OoQ"] != nil)
+        #expect(AirtableClient.writableMap["appdxTeT6bhSBmwx5"] != nil)
+    }
+
+    @Test func isWritableErlaubtMastermindTabellen() {
+        #expect(AirtableClient.isWritable(baseID: "appuVMh3KDfKw4OoQ", table: "Datenstrom-Handbuch"))
+        #expect(AirtableClient.isWritable(baseID: "appuVMh3KDfKw4OoQ", table: "Datenstrom-Log"))
+        #expect(AirtableClient.isWritable(baseID: "appuVMh3KDfKw4OoQ", table: "Kontakte"))
+    }
+
+    @Test func isWritableErlaubtArtikelBaseTabellen() {
+        #expect(AirtableClient.isWritable(baseID: "appdxTeT6bhSBmwx5", table: "Lagerliste"))
+        #expect(AirtableClient.isWritable(baseID: "appdxTeT6bhSBmwx5", table: "Projektartikel"))
+        #expect(AirtableClient.isWritable(baseID: "appdxTeT6bhSBmwx5", table: "Warenkörbe"))
+    }
+
+    @Test func isWritableVerbietedFremdeBasen() {
+        // Die geteilte Base darf NIEMALS beschrieben werden
+        #expect(!AirtableClient.isWritable(baseID: "appkPzoEiI5eSMkNK", table: "Projekte"))
+        #expect(!AirtableClient.isWritable(baseID: "appkPzoEiI5eSMkNK", table: "Kunden"))
+        // Unbekannte Bases
+        #expect(!AirtableClient.isWritable(baseID: "appUNKNOWN123", table: "Projekte"))
+    }
+
+    @Test func isWritableVerbietedNichtFreigegebeneTabellenInArtikelBase() {
+        // In der Artikel-Base dürfen nur die drei freigegebenen Tabellen beschrieben werden
+        #expect(!AirtableClient.isWritable(baseID: "appdxTeT6bhSBmwx5", table: "Artikel"))
+        #expect(!AirtableClient.isWritable(baseID: "appdxTeT6bhSBmwx5", table: "Lieferanten"))
+        #expect(!AirtableClient.isWritable(baseID: "appdxTeT6bhSBmwx5", table: "Preise"))
+    }
+
+    @Test func isWritableVerbietedNichtFreigegebeneTabellenInMastermind() {
+        // In der Mastermind-Base gibt es mehr Tabellen, die NICHT freigebeben sind
+        #expect(!AirtableClient.isWritable(baseID: "appuVMh3KDfKw4OoQ", table: "Projekte"))
+        #expect(!AirtableClient.isWritable(baseID: "appuVMh3KDfKw4OoQ", table: "Kunden"))
+    }
+
+    @Test func createRecordWirftBeiVerbotenerBase() async {
+        let store = InMemoryAirtableCredentialsStore(
+            credentials: AirtableCredentials(pat: "fake", baseID: "appXYZ")
+        )
+        let client = AirtableClient(credentialsStore: store)
+        do {
+            _ = try await client.createRecord(
+                baseID: "appkPzoEiI5eSMkNK",
+                table: "Projekte",
+                fields: ["Titel": .string("Test")]
+            )
+            Issue.record("sollte invalidBaseID werfen")
+        } catch let err as AirtableError {
+            if case .invalidBaseID = err { } else {
+                Issue.record("Falscher Fehler: \(err)")
+            }
+        } catch {
+            Issue.record("Unbekannter Fehler: \(error)")
+        }
+    }
+
+    @Test func updateRecordWirftBeiVerbotenerTabelle() async {
+        let store = InMemoryAirtableCredentialsStore(
+            credentials: AirtableCredentials(pat: "fake", baseID: "appXYZ")
+        )
+        let client = AirtableClient(credentialsStore: store)
+        do {
+            try await client.updateRecord(
+                baseID: "appdxTeT6bhSBmwx5",
+                table: "Artikel",          // nicht freigebeben
+                recordID: "rec123",
+                fields: ["Name": .string("Test")]
+            )
+            Issue.record("sollte invalidBaseID werfen")
+        } catch let err as AirtableError {
+            if case .invalidBaseID = err { } else {
+                Issue.record("Falscher Fehler: \(err)")
+            }
+        } catch {
+            Issue.record("Unbekannter Fehler: \(error)")
+        }
+    }
 }
 
 // MARK: - InMemoryAirtableCredentialsStore
