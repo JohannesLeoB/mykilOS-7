@@ -10,14 +10,24 @@ import MykilosServices
 // Kontakt-Quelle: StudioContact aus Airtable Mastermind-Base (appuVMh3KDfKw4OoQ),
 // Tabelle „Kontakte" (tblncfQzQa8TzCZQC) — vom App-Layer injiziert, kein direkter
 // Airtable-Fetch hier (Widgets-Schicht kennt keinen Netzwerk-Client).
+// prefilledTo: optionaler Vorbelegung des „An"-Feldes (z. B. aus Kontaktkarte).
+// Signatur: @AppStorage "mail.signature" — Gmail hängt sie NICHT automatisch an,
+// deshalb fügt ComposeMailView sie beim Anlegen des Entwurfs selbst in den Body ein.
 @MainActor
 struct ComposeMailView: View {
     let contacts: [StudioContact]
+    /// Optionaler vorausgefüllter Empfänger — z. B. E-Mail-Adresse eines Kontakts.
+    var prefilledTo: String? = nil
     @Environment(\.dismiss) private var dismiss
+
+    /// Eigene Mail-Signatur (persistent via UserDefaults — kein GRDB nötig, rein lokal).
+    @AppStorage("mail.signature") private var savedSignature: String = ""
 
     @State private var toField: String = ""
     @State private var subjectField: String = ""
     @State private var bodyText: String = ""
+    /// Signatur anhängen (An/Aus). Default: an, falls Signatur nicht leer.
+    @State private var appendSignature: Bool = true
     @State private var attachments: [DraftAttachment] = []
     @State private var phase: ComposePhase = .idle
     @State private var showContactPicker = false
@@ -27,8 +37,17 @@ struct ComposeMailView: View {
         case idle, saving, saved(String), failed(String)
     }
 
+    /// Body mit optionaler Signatur (wird erst beim Speichern zusammengebaut — nicht live).
+    private var effectiveBody: String {
+        let sig = savedSignature.trimmingCharacters(in: .whitespacesAndNewlines)
+        if appendSignature && !sig.isEmpty {
+            return bodyText.isEmpty ? "\n\n-- \n\(sig)" : "\(bodyText)\n\n-- \n\(sig)"
+        }
+        return bodyText
+    }
+
     private var draft: EmailDraft {
-        EmailDraft(to: toField.isEmpty ? nil : toField, subject: subjectField, body: bodyText, attachments: attachments)
+        EmailDraft(to: toField.isEmpty ? nil : toField, subject: subjectField, body: effectiveBody, attachments: attachments)
     }
 
     var body: some View {
@@ -45,6 +64,12 @@ struct ComposeMailView: View {
         }
         .frame(width: 640, height: 540)
         .background(MykColor.paper.color)
+        .onAppear {
+            // Empfänger vorausfüllen (z. B. aus Kontaktkarte)
+            if let pre = prefilledTo, !pre.isEmpty {
+                toField = pre
+            }
+        }
     }
 
     // MARK: Sheet Header
@@ -214,6 +239,16 @@ struct ComposeMailView: View {
                     .foregroundStyle(MykColor.critical.color)
             }
             Spacer()
+            // Signatur-Schalter (nur sichtbar wenn Signatur in Einstellungen hinterlegt)
+            if !savedSignature.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Toggle(isOn: $appendSignature) {
+                    Text("Signatur")
+                        .font(.mykMono(9))
+                        .foregroundStyle(MykColor.muted.color)
+                }
+                .toggleStyle(.checkbox)
+                .font(.mykMono(9))
+            }
         }
         .padding(.horizontal, MykSpace.s6)
         .padding(.vertical, MykSpace.s4)

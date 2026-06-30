@@ -6,13 +6,16 @@ import MykilosKit
 // MARK: - Kontakte-Katalog (Airtable-Kontaktverzeichnis, S19)
 // Ersetzt die frühere Google-Workspace-Directory-Ansicht. Zeigt alle Kontakte aus
 // der Airtable-Tabelle „Kontakte": sortierbar, filterbar nach Kategorie und Suche.
-// Read-only-Anzeige — Schreiben über Assistent-Bestätigungskarten.
+// Kontakt-Zeilen klickbar → KontaktDetailSheet (anzeigen / bearbeiten / Mail schreiben).
+// Schreiben: AppState.writeAirtableContact (gated: Intent .update + Audit + SaveState).
 
 @MainActor
 struct KontakteKatalogTab: View {
+    @Environment(AppState.self) private var appState
     @State private var loader = AirtableContactsLoader()
     @State private var query: String = ""
     @State private var selectedKategorie: String? = nil
+    @State private var selectedContact: StudioContact? = nil
 
     private static let kategorien = [
         "Projektkunde", "Lieferant", "Handwerker",
@@ -39,6 +42,19 @@ struct KontakteKatalogTab: View {
             }
         }
         .task { await loader.load() }
+        .sheet(item: $selectedContact) { contact in
+            KontaktDetailSheet(
+                contact: contact,
+                allContacts: loader.contacts,
+                onSave: { draft in
+                    Task {
+                        let _ = await appState.writeAirtableContact(draft)
+                        await loader.load()
+                    }
+                },
+                onClose: { selectedContact = nil }
+            )
+        }
     }
 
     // MARK: Toolbar: Suche + Kategorie-Filter + Reload
@@ -106,12 +122,12 @@ struct KontakteKatalogTab: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(filtered) { contact in
-                            KontakteRow(contact: contact)
+                            KontakteRow(contact: contact, onSelect: { selectedContact = contact })
                             Divider().overlay(MykColor.line.color)
                         }
                     }
                 }
-                Text("\(filtered.count) Kontakte angezeigt")
+                Text("\(filtered.count) Kontakte angezeigt · Zeile klicken zum Öffnen")
                     .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
                     .padding(.vertical, MykSpace.s3).padding(.horizontal, MykSpace.s9)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -154,6 +170,7 @@ struct KontakteKatalogTab: View {
 
 private struct KontakteRow: View {
     let contact: StudioContact
+    let onSelect: () -> Void
     @State private var isHovered = false
 
     var body: some View {
@@ -181,11 +198,19 @@ private struct KontakteRow: View {
             Text(contact.kategorie ?? "–")
                 .lineLimit(1).foregroundStyle(MykColor.people.color.opacity(0.8))
                 .frame(width: 120, alignment: .leading)
+
+            // Pfeil-Indikator für Klickbarkeit
+            Image(systemName: "chevron.right")
+                .font(.mykMono(9))
+                .foregroundStyle(isHovered ? MykColor.people.color : MykColor.faint.color)
+                .frame(width: MykSpace.s7, alignment: .trailing)
         }
         .font(.mykMono(10)).foregroundStyle(MykColor.ink.color)
         .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s3)
         .background(isHovered ? MykColor.paper2.color : Color.clear)
+        .contentShape(Rectangle())
         .onHover { isHovered = $0 }
+        .onTapGesture { onSelect() }
     }
 }
 
