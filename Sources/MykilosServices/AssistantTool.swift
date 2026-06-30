@@ -34,12 +34,18 @@ public struct ToolRunResult: Sendable, Equatable {
     /// Optionale anklickbare Datei-Ergebnisse (S22) — die Engine speichert sie als
     /// `.driveFiles`-Block (In-App-Vorschau). Nur Anzeige, nie an die API gesendet.
     public let driveFiles: [DriveFileRef]
+    /// Optionaler Airtable-Kontakt-Entwurf (S19) — die Engine speichert ihn als
+    /// `.airtableContactAction`-Block. Schreibt NICHTS; erst die Bestätigung legt an
+    /// oder aktualisiert via AirtableClient.createRecord/updateRecord (+ Audit).
+    public let airtableContactDraft: AirtableContactDraft?
     public init(text: String, isError: Bool = false, actionURL: String? = nil,
                 schaetzung: KostenSchaetzung? = nil, contactDraft: ContactDraft? = nil,
-                emailDraft: EmailDraft? = nil, driveFiles: [DriveFileRef] = []) {
+                emailDraft: EmailDraft? = nil, driveFiles: [DriveFileRef] = [],
+                airtableContactDraft: AirtableContactDraft? = nil) {
         self.text = text; self.isError = isError; self.actionURL = actionURL
         self.schaetzung = schaetzung; self.contactDraft = contactDraft
         self.emailDraft = emailDraft; self.driveFiles = driveFiles
+        self.airtableContactDraft = airtableContactDraft
     }
 }
 
@@ -1205,6 +1211,188 @@ struct CreateContactTool: AssistantTool {
     }
 }
 
+// MARK: - Airtable-Kontakte-Tools (S19)
+//
+// list_airtable_kontakte — liest den geladenen Snapshot; kein Live-Call.
+// search_airtable_kontakt — Freitextsuche im Snapshot.
+// create_airtable_kontakt — Entwurf → Bestätigungskarte → AirtableClient.createRecord.
+// update_airtable_kontakt — Entwurf → Bestätigungskarte → AirtableClient.updateRecord.
+// KEIN delete. Nie in fremde Bases. Audit bei jedem bestätigten Schreibvorgang.
+
+// MARK: ListAirtableKontakteTool (read-only, Snapshot)
+struct ListAirtableKontakteTool: AssistantTool {
+    private let directory: ContactDirectory
+    init(directory: ContactDirectory) { self.directory = directory }
+
+    var name: String { "list_airtable_kontakte" }
+    var description: String {
+        "Listet alle Kontakte aus dem Airtable-Kontaktverzeichnis (Kunden, Lieferanten, "
+        + "Handwerker, Team, Sonstige). Optional 'kategorie' filtern. Gibt Name, Organisation, "
+        + "E-Mail, Telefon und Adresse zurück. Nur lesen, kein Live-API-Call."
+    }
+    var parameters: [ToolParameter] {
+        [ToolParameter(name: "kategorie",
+                       description: "Optionaler Kategorie-Filter (z. B. Projektkunde, Lieferant, Handwerker, MYKILOS-Team, Sonstige)",
+                       required: false)]
+    }
+
+    func run(input: [String: String]) async -> ToolRunResult {
+        let katFilter = (input["kategorie"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        var contacts = directory.contacts
+        if katFilter.isEmpty == false {
+            contacts = contacts.filter { ($0.kategorie ?? "").lowercased().contains(katFilter) }
+        }
+        guard contacts.isEmpty == false else {
+            let suffix = katFilter.isEmpty ? "" : " mit Kategorie '\(katFilter)'"
+            return ToolRunResult(text: "Keine Kontakte im Verzeichnis\(suffix) gefunden.")
+        }
+        let lines = contacts.prefix(50).map { c -> String in
+            var head = "• \(c.name)"
+            if let org = c.organisation { head += " · \(org)" }
+            if let kat = c.kategorie    { head += " [\(kat)]" }
+            var detail: [String] = []
+            if let tel  = c.telefon  { detail.append("☎ \(tel)") }
+            if let mail = c.email    { detail.append("✉ \(mail)") }
+            if let adr  = c.adresse  { detail.append("⌂ \(adr)") }
+            return detail.isEmpty ? head : "\(head)\n  " + detail.joined(separator: " · ")
+        }
+        let more = contacts.count > 50 ? "\n… und \(contacts.count - 50) weitere." : ""
+        return ToolRunResult(text: "Kontaktverzeichnis (\(contacts.count)):\n" + lines.joined(separator: "\n") + more)
+    }
+}
+
+// MARK: SearchAirtableKontaktTool (read-only, Snapshot-Suche)
+struct SearchAirtableKontaktTool: AssistantTool {
+    private let directory: ContactDirectory
+    init(directory: ContactDirectory) { self.directory = directory }
+
+    var name: String { "search_airtable_kontakt" }
+    var description: String {
+        "Sucht einen Kontakt im Airtable-Verzeichnis nach Name, Organisation oder Projekt. "
+        + "Liefert Kontaktdetails (E-Mail, Telefon, Adresse, Kategorie, Airtable-ID). "
+        + "Nutze DIESES Tool, wenn du Kontaktdaten zu einer Person oder Firma brauchst. Nur lesen."
+    }
+    var parameters: [ToolParameter] {
+        [ToolParameter(name: "query", description: "Name, Organisation oder Projekt")]
+    }
+
+    func run(input: [String: String]) async -> ToolRunResult {
+        let query = (input["query"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard query.isEmpty == false else {
+            return ToolRunResult(text: "Wonach soll ich suchen? (Name/Firma/Projekt)", isError: true)
+        }
+        let hits = directory.search(query, limit: 10)
+        guard hits.isEmpty == false else {
+            return ToolRunResult(text: "Keine Kontakte f\u{00FC}r \"\(query)\" im Verzeichnis gefunden.")
+        }
+        let lines = hits.map { c -> String in
+            var head = "• \(c.name)"
+            if let org = c.organisation { head += " · \(org)" }
+            if let kat = c.kategorie    { head += " [\(kat)]" }
+            var detail: [String] = ["ID: \(c.id)"]
+            if let tel  = c.telefon { detail.append("☎ \(tel)") }
+            if let mail = c.email   { detail.append("✉ \(mail)") }
+            if let adr  = c.adresse { detail.append("⌂ \(adr)") }
+            if let proj = c.projekt { detail.append("Projekt \(proj)") }
+            return "\(head)\n  " + detail.joined(separator: " · ")
+        }
+        return ToolRunResult(text: lines.joined(separator: "\n"))
+    }
+}
+
+// MARK: CreateAirtableKontaktTool (bestätigungspflichtig, S19)
+// Liefert nur einen AirtableContactDraft — KEIN automatisches Schreiben.
+// Erst die Bestätigungskarte ruft AppState.writeAirtableContact an (+ Audit).
+struct CreateAirtableKontaktTool: AssistantTool {
+    var name: String { "create_airtable_kontakt" }
+    var description: String {
+        "Schlägt einen NEUEN Kontakt im Airtable-Verzeichnis vor. Schreibt NICHTS automatisch — "
+        + "der Nutzer bestätigt an einer Karte. Pflichtfeld: Name. KEIN Delete."
+    }
+    var parameters: [ToolParameter] {
+        [ToolParameter(name: "name",         description: "Vollständiger Name (Pflicht)"),
+         ToolParameter(name: "organisation", description: "Firma/Organisation (optional)", required: false),
+         ToolParameter(name: "email",        description: "E-Mail (optional)", required: false),
+         ToolParameter(name: "telefon",      description: "Telefon (optional)", required: false),
+         ToolParameter(name: "adresse",      description: "Adresse (optional)", required: false),
+         ToolParameter(name: "kategorie",    description: "Kategorie: Projektkunde / Lieferant / Handwerker / Architekt-Planer / MYKILOS-Team / Sonstige",
+                       required: false)]
+    }
+
+    func run(input: [String: String]) async -> ToolRunResult {
+        func clean(_ key: String) -> String? {
+            let v = (input[key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            return v.isEmpty ? nil : v
+        }
+        guard let name = clean("name") else {
+            return ToolRunResult(text: "Kein Name für den Kontakt angegeben.", isError: true)
+        }
+        let draft = AirtableContactDraft(
+            intent: .create, name: name,
+            organisation: clean("organisation"),
+            email: clean("email"),
+            telefon: clean("telefon"),
+            adresse: clean("adresse"),
+            kategorie: clean("kategorie")
+        )
+        var parts = ["Airtable-Kontakt-Entwurf: \(draft.name)"]
+        if let m = draft.email        { parts.append(m) }
+        if let p = draft.telefon      { parts.append(p) }
+        if let o = draft.organisation { parts.append(o) }
+        let summary = parts.joined(separator: " · ")
+        return ToolRunResult(
+            text: "\(summary). Zeige dem Nutzer die Bestätigungskarte — der Kontakt wird "
+                + "erst nach Bestätigung in Airtable angelegt, nicht von dir.",
+            airtableContactDraft: draft)
+    }
+}
+
+// MARK: UpdateAirtableKontaktTool (bestätigungspflichtig, S19)
+// Ändert Felder eines bestehenden Kontakts. Nutzer muss die Airtable-Record-ID kennen
+// (aus search_airtable_kontakt ermittelbar). Kein automatisches Schreiben.
+struct UpdateAirtableKontaktTool: AssistantTool {
+    var name: String { "update_airtable_kontakt" }
+    var description: String {
+        "Schlägt eine ÄNDERUNG an einem bestehenden Airtable-Kontakt vor. Schreibt NICHTS "
+        + "automatisch — Bestätigungskarte erforderlich. 'record_id' = Airtable-Record-ID "
+        + "(aus search_airtable_kontakt ermittelbar). Nur geänderte Felder angeben. KEIN Delete."
+    }
+    var parameters: [ToolParameter] {
+        [ToolParameter(name: "record_id",    description: "Airtable-Record-ID des Kontakts (rec…)"),
+         ToolParameter(name: "name",         description: "Neuer Name (optional)", required: false),
+         ToolParameter(name: "organisation", description: "Neue Firma (optional)", required: false),
+         ToolParameter(name: "email",        description: "Neue E-Mail (optional)", required: false),
+         ToolParameter(name: "telefon",      description: "Neues Telefon (optional)", required: false),
+         ToolParameter(name: "adresse",      description: "Neue Adresse (optional)", required: false),
+         ToolParameter(name: "kategorie",    description: "Neue Kategorie (optional)", required: false)]
+    }
+
+    func run(input: [String: String]) async -> ToolRunResult {
+        func clean(_ key: String) -> String? {
+            let v = (input[key] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            return v.isEmpty ? nil : v
+        }
+        guard let recordID = clean("record_id") else {
+            return ToolRunResult(text: "Keine Record-ID angegeben. Ermittle sie erst mit search_airtable_kontakt.", isError: true)
+        }
+        let name = clean("name") ?? "(unverändert)"
+        let draft = AirtableContactDraft(
+            intent: .update,
+            recordID: recordID,
+            name: name,
+            organisation: clean("organisation"),
+            email: clean("email"),
+            telefon: clean("telefon"),
+            adresse: clean("adresse"),
+            kategorie: clean("kategorie")
+        )
+        return ToolRunResult(
+            text: "Kontakt-Änderungs-Entwurf für ID \(recordID): \(name). Zeige dem Nutzer "
+                + "die Bestätigungskarte — die Änderung wird erst nach Bestätigung übernommen.",
+            airtableContactDraft: draft)
+    }
+}
+
 // MARK: - AssistantToolRegistry (Whitelist, default-deny)
 public struct AssistantToolRegistry: Sendable {
     private let tools: [any AssistantTool]
@@ -1253,6 +1441,11 @@ public struct AssistantToolRegistry: Sendable {
         }
         if let contactDirectory {
             tools.append(LookupKontaktTool(directory: contactDirectory))
+            // S19: Airtable-Kontakte-Tools (list/search/create/update, kein delete)
+            tools.append(ListAirtableKontakteTool(directory: contactDirectory))
+            tools.append(SearchAirtableKontaktTool(directory: contactDirectory))
+            tools.append(CreateAirtableKontaktTool())
+            tools.append(UpdateAirtableKontaktTool())
         }
         if clickUpListings.isEmpty == false {
             tools.append(AllClickUpTasksTool(client: clickUp, listings: clickUpListings))

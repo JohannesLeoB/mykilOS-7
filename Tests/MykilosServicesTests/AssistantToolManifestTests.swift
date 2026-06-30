@@ -43,6 +43,9 @@ struct AssistantToolManifestTests {
             "create_note", "list_notes", "update_note", "delete_note",
             "create_task", "list_tasks", "complete_task", "delete_task",
             "schaetze_projekt",
+            // S19: Airtable-Kontakte via Bestätigungs-Gate
+            "list_airtable_kontakte", "search_airtable_kontakt",
+            "create_airtable_kontakt", "update_airtable_kontakt",
         ]
         #expect(Set(AssistantToolManifest.toolToManifestID.keys) == erwartet,
                 "Map-Schlüssel weichen von den kanonischen Tool-Namen ab")

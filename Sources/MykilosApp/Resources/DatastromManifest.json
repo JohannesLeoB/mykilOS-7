@@ -236,5 +236,19 @@
     "system": "Lokal",
     "direction": "WRITE",
     "link": "mykilos://datastream/ASSISTANT_TASKS"
+  },
+  {
+    "integrationID": "AIRTABLE_KONTAKTE_CREATE",
+    "name": "Airtable Kontakt anlegen (S19, Bestätigungs-Gate)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_KONTAKTE_CREATE"
+  },
+  {
+    "integrationID": "AIRTABLE_KONTAKTE_UPDATE",
+    "name": "Airtable Kontakt aktualisieren (S19, Bestätigungs-Gate)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_KONTAKTE_UPDATE"
   }
 ]
