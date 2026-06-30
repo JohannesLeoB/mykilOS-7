@@ -26,10 +26,21 @@ public struct AssistantChatView: View {
     let onCreateDraft: ((EmailDraft) async -> DraftCreateOutcome)?
     // S19: Bestätigung legt Airtable-Kontakt an oder aktualisiert ihn (App-Layer + Audit).
     let onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)?
+    // feat/assistant-file-drop: Upload-Callback (App-Layer: GoogleDriveClient + Audit).
+    // Nil wenn Drive-Upload nicht verfügbar (z. B. kein fokussierter Ordner).
+    let onUploadFileToDrive: ((DroppedFile) async -> DriveUploadOutcome)?
+    // feat/assistant-file-drop: Mail-Anhang-Callback (App-Layer: Gmail createDraft + Audit).
+    let onAttachFileToMailDraft: ((DroppedFile) async -> DraftCreateOutcome)?
 
     @Environment(StudioContext.self) private var context
     @State private var draft = ""
     @State private var showClearConfirm = false
+    // feat/assistant-file-drop: aktuell gedropte Datei (nil = keine Drop-Karte sichtbar).
+    @State private var droppedFile: DroppedFile? = nil
+    // feat/assistant-file-drop: vorgeschlagener Drive-Ordner (wird beim Drop aufgelöst).
+    @State private var driveFolder: (id: String, name: String)? = nil
+    // feat/assistant-file-drop: Highlight wenn Datei über dem Chat schwebt.
+    @State private var isDropTargeted = false
     // S27: Assistent ist immer live (Tools an) — kein Opt-in-Toggle, kein
     // Schätzchat-Modus mehr. Live-Zugriffe + Kostenschätzung sind fester Teil des Chats.
     private let toolsEnabled = true
@@ -47,7 +58,9 @@ public struct AssistantChatView: View {
         profile: UserProfile? = nil,
         onCreateContact: ((ContactDraft) async -> ContactCreateOutcome)? = nil,
         onCreateDraft: ((EmailDraft) async -> DraftCreateOutcome)? = nil,
-        onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)? = nil
+        onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)? = nil,
+        onUploadFileToDrive: ((DroppedFile) async -> DriveUploadOutcome)? = nil,
+        onAttachFileToMailDraft: ((DroppedFile) async -> DraftCreateOutcome)? = nil
     ) {
         self.scope = scope
         self.chatStore = chatStore
@@ -62,6 +75,8 @@ public struct AssistantChatView: View {
         self.onCreateContact = onCreateContact
         self.onCreateDraft = onCreateDraft
         self.onWriteAirtableContact = onWriteAirtableContact
+        self.onUploadFileToDrive = onUploadFileToDrive
+        self.onAttachFileToMailDraft = onAttachFileToMailDraft
     }
 
     private var messages: [ChatMessage] { chatStore.messages(for: scope) }
@@ -70,6 +85,20 @@ public struct AssistantChatView: View {
         VStack(spacing: 0) {
             if isConnected {
                 conversation
+                // feat/assistant-file-drop: Drop-Karte zwischen Verlauf und Composer.
+                if let file = droppedFile {
+                    FileDropCardView(
+                        file: file,
+                        suggestedFolderID: driveFolder?.id,
+                        suggestedFolderName: driveFolder?.name,
+                        onUploadToDrive: onUploadFileToDrive,
+                        onAttachToMailDraft: onAttachFileToMailDraft,
+                        onDismiss: { droppedFile = nil; driveFolder = nil }
+                    )
+                    .padding(.horizontal, MykSpace.s9)
+                    .padding(.top, MykSpace.s3)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
                 composer
             } else {
                 notConnected
@@ -83,6 +112,81 @@ public struct AssistantChatView: View {
         } message: {
             Text("Der gesamte Chat-Verlauf dieses Threads wird unwiderruflich gelöscht.")
         }
+        // feat/assistant-file-drop: Dateien per Drag-and-Drop in den Chat
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let url = urls.first else { return false }
+            handleDrop(url: url)
+            return true
+        } isTargeted: { targeted in
+            withAnimation(.easeInOut(duration: 0.15)) { isDropTargeted = targeted }
+        }
+        .overlay(
+            // Hover-Highlight beim Drag-Over (nicht-intrusiv, fein)
+            RoundedRectangle(cornerRadius: MykRadius.md)
+                .stroke(MykColor.drive.color.opacity(isDropTargeted ? 0.6 : 0), lineWidth: 2)
+                .animation(.easeInOut(duration: 0.15), value: isDropTargeted)
+                .allowsHitTesting(false)
+        )
+        .animation(.easeOut(duration: 0.2), value: droppedFile != nil)
+    }
+
+    // MARK: - Drop-Handler
+    // Liest die URL, mappt sie auf DroppedFile (Bytes im RAM), löst den Drive-Ordner auf.
+    private func handleDrop(url: URL) {
+        // Zugriff starten (Security-Scoped oder normal)
+        let securityScoped = url.startAccessingSecurityScopedResource()
+        defer { if securityScoped { url.stopAccessingSecurityScopedResource() } }
+
+        guard let data = try? Data(contentsOf: url) else { return }
+        let fileName = url.lastPathComponent
+        let mimeType = Self.mimeType(for: url)
+        let file = DroppedFile(fileName: fileName, mimeType: mimeType, data: data)
+
+        droppedFile = file
+        driveFolder = nil   // zurücksetzen — wird asynchron aufgelöst
+
+        // Drive-Ordner für fokussiertes Projekt vorschlagen (best-effort, kein Fehler)
+        if let driveFolderID = focusedDriveFolderID {
+            Task {
+                let resolver = DriveFolderSuggestionResolver(driveClient: GoogleDriveClient())
+                if let suggestion = try? await resolver.suggest(
+                    projectDriveFolderID: driveFolderID,
+                    preferredSubfolderKeyword: Self.subfolderKeyword(for: mimeType)
+                ) {
+                    driveFolder = (id: suggestion.folderID, name: suggestion.folderName)
+                } else {
+                    // Kein Unterordner gefunden → nil lassen (Card zeigt generisches Label)
+                }
+            }
+        }
+    }
+
+    /// MIME-Typ aus URL-Extension (UTType.preferredMIMEType, Fallback application/octet-stream).
+    private static func mimeType(for url: URL) -> String {
+        if #available(macOS 12, *) {
+            if let uti = try? url.resourceValues(forKeys: [.contentTypeKey]).contentType,
+               let mime = uti.preferredMIMEType {
+                return mime
+            }
+        }
+        let ext = url.pathExtension.lowercased()
+        switch ext {
+        case "pdf":  return "application/pdf"
+        case "png":  return "image/png"
+        case "jpg", "jpeg": return "image/jpeg"
+        case "heic": return "image/heic"
+        case "gif":  return "image/gif"
+        case "txt":  return "text/plain"
+        case "rtf":  return "text/rtf"
+        default:     return "application/octet-stream"
+        }
+    }
+
+    /// Wählt ein Unterordner-Schlüsselwort basierend auf MIME-Typ.
+    private static func subfolderKeyword(for mimeType: String) -> String? {
+        if mimeType == "application/pdf" { return "Angebote" }
+        if mimeType.hasPrefix("image/")  { return "Fotos" }
+        return nil
     }
 
     // MARK: Verlauf

@@ -147,7 +147,16 @@ struct ProjectDetailView: View {
                 focusedClickUpListID: project.links.clickUpListID,
                 profile: appState.profile.profile,
                 onCreateContact: { await appState.createContact($0) },
-                onCreateDraft: { await appState.createDraft($0) }
+                onCreateDraft: { await appState.createDraft($0) },
+                onUploadFileToDrive: { [driveFolderID = project.links.driveFolderID] file in
+                    // Ordner-ID zum Zeitpunkt des Drops aufgelöst (via FileDropCardView /
+                    // DriveFolderSuggestionResolver). Hier kennen wir ihn direkt.
+                    guard let folderID = driveFolderID, !folderID.isEmpty else {
+                        return .failed("Kein Drive-Ordner für dieses Projekt konfiguriert.")
+                    }
+                    return await appState.uploadFileToDrive(file, parentFolderID: folderID)
+                },
+                onAttachFileToMailDraft: { await appState.createDraftWithAttachment($0) }
             )
         case .files:
             FilesTabView(
