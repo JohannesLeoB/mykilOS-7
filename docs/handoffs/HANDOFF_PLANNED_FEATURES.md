@@ -32,15 +32,22 @@ voll funktional, mykilOS-Stil (MykColor/MykSpace/Font.myk…), alle Felder der Z
 
 ## FEATURE B — Projekt anlegen (Simple / Umfangreich) + Artikel-Verknüpfung
 
+> **✅ PDF GELIEFERT (2026-06-30).** Vollständig entschlüsselt + geordnet in
+> **[HANDOFF_PROJEKT_INTAKE.md](HANDOFF_PROJEKT_INTAKE.md)** — der maßgebliche Bau-Vertrag für den
+> umfangreichen Modus (24 Sektionen, Mapping Kunde/Projekt+Ordner/Erst-Warenkorb, Geräte→Artikel-Picker,
+> lokaler Artikel-Spiegel). Diese Sektion hier ist nur noch die Kurzfassung.
+
 - **Simple:** wenige Felder (Projektname, Kunde, Status) → schneller Projekt-Anlage-Record.
-- **Umfangreich:** **großer Projektfragebogen** — Johannes liefert die genaue Feldstruktur als **PDF**
-  (TODO: PDF einlesen, Felder ableiten). Der Fragebogen wird **direkt mit der Artikelliste verknüpft**:
-  beim/aus dem Projekt heraus können Artikel (aus Shop/Lager) als Projektartikel gesammelt werden.
+- **Umfangreich:** der **Küchen-Projekt-Fragebogen** aus dem Erstgespräch. Erzeugt in EINEM Durchlauf
+  **Kunde + Projekt (mit Drive-Ordner-Schema) + Erst-Warenkorb + erste Preisschätzung**. Geräte-Sektionen
+  bieten je eine **konkrete Artikel-Auswahl** (gefiltert nach Geräteklasse €/€€/€€€) **plus Freitext**.
+- **Assets vorhanden:** `Archiv.zip → Linienzeichnungen_Fragen/` enthält die **Strichzeichnungen** zu den
+  Optionen (Armatur-Formen, Schubladen-Bedienung, Möbelkörper, Spülbecken-Bauart …) — ideal als
+  Option-Illustrationen in der geführten Maske.
 - Ziel-Tabelle: `Projekte` (`appdxTeT6bhSBmwx5` tblOXF9Cv8Jze6595, hat die Sevdesk-/Make-Felder) ODER
-  Mastermind-Projekte — **vor Bau klären, welche Projekt-Tabelle führend ist** (es gibt zwei: Drive-geroutete
-  Mastermind-Projekte vs. Artikel-DB-Projekte mit Sevdesk-Pipeline). Für den Warenkorb→Sevdesk-Fluss ist die
-  Artikel-DB-`Projekte` die richtige.
-- **Offen für Johannes:** PDF des Fragebogens schicken + entscheiden, welche Projekt-Tabelle führt.
+  Mastermind-Projekte — **vor Bau klären, welche Projekt-Tabelle führend ist**. Für den Warenkorb→Sevdesk-Fluss
+  ist die Artikel-DB-`Projekte` die richtige.
+- **Offen für Johannes:** (1) welche Projekt-Tabelle führt, (2) Drive-Ordner-Unterordner-Schema bestätigen.
 
 ## FEATURE C — Warenkorb → Projekt + Warenkorb-Widget auf der Projekt-Detailseite
 
@@ -68,7 +75,30 @@ korrekt lesbar/anzeigbar, wenn sich der Katalog später ändert. Das `Positionen
 `AufLagerMatcher`, `ArtikelKatalogStore`, `LagerlisteStore`. Neu: Projekt-Detail-Warenkorb-Widget +
 „In Projekt schreiben"-Pfad + „aus Widget editieren → Kataloge"-Rückweg.
 
+## FEATURE D — Export: Fragebogen & Warenkörbe als PDF / CSV
+
+**Wunsch (Johannes, 2026-06-30):** Nach dem Ausfüllen soll der **Projektfragebogen** als **PDF oder
+Excel/CSV** exportierbar sein; ebenso **Warenkörbe** nach Bedarf.
+
+- **Warenkorb-Export (klein, zuerst):**
+  - **CSV:** eine Zeile je Position aus dem `Positionen (JSON)`-Snapshot (Artikelnummer, Bezeichnung,
+    Hersteller, Kategorie, Menge, EK, VK, Summe) + Kopf (Bezeichnung, Projekt, Datum, Version) +
+    Summenzeile. Reiner String → `.fileExporter` / Speicherort-Dialog. Excel öffnet CSV direkt.
+  - **PDF:** druckbare Tabelle (mykilOS-Stil, Logo, Kopf, Positionsliste, Summen EK/VK) via
+    SwiftUI→`ImageRenderer`/`NSPrintOperation` oder `PDFKit`. Read-only Snapshot, kein Airtable-Write.
+  - **Wo:** Button „Exportieren ▾" (CSV / PDF) im Warenkorb-Panel und im neuen **Warenkörbe-Tab** (je Zeile).
+  - Passt natürlich an den Warenkörbe-Tab aus Webshop-Phase 4 — dort als kleiner Folgeschliff einbauen.
+- **Fragebogen-Export (mit Feature B):**
+  - **PDF:** der ausgefüllte Bogen als sauberes Dokument (alle 24 Sektionen + Auswahl/Freitext + Erst-Warenkorb
+    + Schätzung) — das Beratungs-Protokoll zum Mitgeben/Ablegen. Optional in den Projekt-Drive-Ordner.
+  - **CSV/Excel:** flache Schlüssel-Wert-Liste (Sektion · Feld · Wert) für Weiterverarbeitung.
+  - Baustein gemeinsam mit Warenkorb-PDF: ein wiederverwendbarer `MykPDFRenderer` (Kopf/Logo/Tabelle/Summen).
+- **Regeln:** rein lesend, keine Airtable-Mutation. Datei-Schreiben über System-Speicherdialog
+  (`.fileExporter`), kein stiller Download. Token-Disziplin im UI.
+
 ## Reihenfolge (Vorschlag, bruchsicher)
 1. Feature A („+"-Masken) — abgegrenzt, sofort nützlich.
 2. Feature C (Warenkorb→Projekt + Widget) — baut auf 7.7.0-Warenkorb auf.
-3. Feature B (Projektfragebogen) — wartet auf Johannes' PDF + Projekt-Tabellen-Entscheidung.
+3. Feature D **Warenkorb-Export** (CSV zuerst, dann PDF) — klein, an Phase-4-Warenkörbe-Tab andocken.
+4. Feature B (Projektfragebogen, siehe HANDOFF_PROJEKT_INTAKE.md) + **Fragebogen-Export** — wartet auf
+   Projekt-Tabellen-Entscheidung (siehe [AIRTABLE_DATENFLUSS_AUDIT.md](../AIRTABLE_DATENFLUSS_AUDIT.md) §3).
