@@ -90,6 +90,26 @@ Ein Block ist erst „fertig", wenn ALLE sechs Punkte nachweislich grün sind:
 
 > **Regel:** Lieber ein Block länger offen, als ein Detail „durchgewunken". „Behauptet fertig" ≠ „live verifiziert".
 
+## 3b. Hart gelernte Fallstricke (haben diese App mehrfach Zeit/Daten gekostet — lies sie ZUERST)
+
+1. **Assistent wird stumm / „Archiv weg" / empfängt nichts = Codable-Rückwärtsinkompatibilität.** Ein
+   **nicht-optionales** neues Feld an einem persistierten Typ (real: `EmailDraft.attachments`) killt das Decodieren
+   ALLER alten Records → der ganze Verlauf wirkt gelöscht. **Regel:** persistierte Codable-Typen nie ohne
+   `decodeIfPresent ?? default`; Decode resilient (ein kaputter Block ≠ Totalausfall); **Cold-Start-Test mit ALTEN Daten.**
+2. **Layout-Drift / Sidebar = UI-Änderung verschiebt/beschneidet woanders.** Real: die „Übersicht" überlagerte die
+   Sidebar (überbreite Hit-Test-Fläche, Klicks ins Leere); Mail-Fenster sprang; Spacing-Drift im Mini-Modus.
+   `.clipped()` begrenzt nur die Ausgabe, NICHT Hit-Testing. **Regel:** nach jeder UI-Änderung Quer-Wirkung
+   **gegen Screenshots** prüfen (Sidebar breit+mini, Übersicht, Detail-Tabs, Galerie). **Build-grün ≠ Layout-korrekt.**
+3. **Airtable-Records verschwinden STILL = Mapping-Falle.** `fetchRecords` liefert Felder per **NAME, nicht ID**;
+   und `stringValue` ist **nil bei Zahlenfeldern** (z. B. `Artikelnummer`) → `guard` verwirft alle 13.419 Records
+   lautlos. **Regel:** per Feld-NAME mappen + `anyStringValue` für evtl. numerische Felder; gegen ECHTE Feldnamen+Typen testen.
+4. **Agenten verlieren unkommittierte Arbeit (Prozess-Neustart) oder kollidieren (gemeinsamer Worktree).**
+   **Regel:** **isolierte Worktrees**, „selbst bauen, keine Sub-Agenten", **früh committen**, und **jeden
+   „fertig"-Bericht auf der Platte verifizieren** (eigener `swift build`/`swift test`, `git show --stat`) — nie blind glauben.
+5. **Split-Brain / zwei Wahrheiten** (zwei Kunden-/Projekte-Tabellen Mastermind↔Artikel) → §0: eine SoR pro Datum,
+   ein Resolver. Vor Provisioning auflösen.
+6. **Tote Doku-Verweise** (Datei liegt im `_archiv/`) → Verweise vor Übergabe prüfen.
+
 ## 4. Rolling-Mechanik (automatisch)
 - Reihenfolge **A → B → C → D → E → F → G**. Abhängigkeiten: B baut auf A (Sicherheit/Truth); C auf A; D auf C
   (Nomenklatur/Registry) + A (Sandbox); E auf C; F auf A (Widgets, gated); G auf allem.

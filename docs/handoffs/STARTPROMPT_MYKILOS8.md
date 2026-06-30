@@ -29,7 +29,8 @@ TEST-scoped), Sevdesk nie direkt.
 
 LIES IN DIESER REIHENFOLGE, BEVOR DU ETWAS TUST:
 1. docs/handoffs/HANDOFF_MYKILOS8_ROLLING_PLAN.md — der Orchestrierungs-Plan: §0 Eine-Wahrheit + SoR-Karte,
-   §2 die Blöcke A–G (je bestes Modell), §3 der ZIEL-CHECK, §4 Rolling-Mechanik.
+   §2 die Blöcke A–G (je bestes Modell), §3 der ZIEL-CHECK, **§3b Hart gelernte Fallstricke (ZUERST lesen —
+   Codable-Gedächtnisverlust, Layout-Drift, Airtable-Mapping, Agenten-Disziplin)**, §4 Rolling-Mechanik.
 2. docs/handoffs/HANDOFF_MYKILOS8_KICKOFF.md — Brücke Briefing↔echter Code. WICHTIG: §2 (wo das Briefing vom
    Code abweicht — z. B. ExternalMappingRegistry existiert NOCH NICHT) und §4 (Clockodo ist schon entworfen).
 3. CLAUDE.md + AGENTS.md — die eisernen Regeln (main heilig, isolierte Worktrees, Design-Tokens, jeder Write
