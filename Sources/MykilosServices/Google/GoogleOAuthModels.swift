@@ -27,14 +27,17 @@ public enum GoogleOAuthScope: String, CaseIterable, Codable, Sendable {
     case userinfoEmail          = "https://www.googleapis.com/auth/userinfo.email"
     case userinfoProfile        = "https://www.googleapis.com/auth/userinfo.profile"
     // Schreibender Drive-Scope (feat/assistant-write-tier): nötig für files.create
-    // (Datei-Drop → Drive ablegen). Erlaubt NUR Dateien, die die App selbst erstellt hat.
-    // NICHT in readOnlyDefaults — erst nach explizitem Re-Consent von Johannes aktivieren.
+    // (Datei-Drop → Drive ablegen). Erlaubt NUR Dateien, die die App selbst erstellt hat
+    // (least-privilege — KEIN Zugriff aufs ganze Drive). Aktiv nach Re-Consent von Johannes.
     case driveFile              = "https://www.googleapis.com/auth/drive.file"
 
     public static let readOnlyDefaults: [GoogleOAuthScope] = [
         // drive.readonly: nötig für downloadContent (PDF-Vorschau) + thumbnailLink.
         // Erfordert einmaliges Re-Consent von Johannes nach diesem Update.
         .driveReadonly, .driveMetadataReadonly,
+        // drive.file: Schreibrechte NUR für app-eigene Dateien (Datei-Drop → Drive ablegen).
+        // Erfordert Re-Consent (Trennen→Verbinden) — Johannes hat Schreibzugriff freigegeben.
+        .driveFile,
         .calendarEventsReadonly, .gmailReadonly, .gmailCompose,
         // contacts (Schreiben, S9) ersetzt contacts.readonly — schließt Lesen ein.
         // Erfordert einmaliges Re-Consent (M2). Lesen funktioniert weiter darüber.
