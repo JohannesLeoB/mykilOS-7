@@ -457,6 +457,104 @@ public final class AppState {
             notesStore: assistantNotes, tasksStore: assistantTasks, projectDirectory: dir))
     }
 
+    // MARK: - Projekt-Intake (Fragebogen → Kunde + Projekt + Warenkorb)
+    // Gated: NUR CREATE, NIE update/delete bestehender Records.
+    // Reihenfolge: 1. Kunde anlegen → Record-ID → 2. Projekt mit Kunden-Link anlegen →
+    //              3. Warenkorb (falls Positionen vorhanden) via CartStore senden.
+    // Bases: Mastermind (appuVMh3KDfKw4OoQ) für Kunden, Artikel-DB (appdxTeT6bhSBmwx5) für Projekte.
+    public func erzeugeKundeUndProjekt(ergebnis: IntakeErgebnis) async throws -> String {
+        let client = AirtableClient()
+
+        // SCHRITT 1: Kunde in Artikel-Base anlegen (gleiche Base wie Projekt → Record-Link gültig)
+        let kundeBaseID = CartStore.artikelBaseID  // appdxTeT6bhSBmwx5
+        let kundeTable  = "Kunden"
+        let kundeFelder: [String: AirtableFieldValue] = ergebnis.kundeFelder
+            .reduce(into: [:]) { dict, pair in dict[pair.key] = .string(pair.value) }
+
+        let kundeRecordID: String
+        do {
+            kundeRecordID = try await client.createRecord(
+                baseID: kundeBaseID, table: kundeTable, fields: kundeFelder)
+        } catch AirtableError.invalidBaseID(let msg) {
+            throw IntakeSchreibFehler.whitelist(msg)
+        } catch AirtableError.notConnected {
+            throw IntakeSchreibFehler.nichtVerbunden
+        } catch AirtableError.httpError(let code) {
+            throw IntakeSchreibFehler.http(code)
+        }
+
+        do {
+            try audit.append(AuditEntry(
+                actorUserID: actorUserID, projectID: "-",
+                action: .contactCreated,
+                summary: "Intake: Kunde angelegt (\(ergebnis.kundeFelder["Nachname"] ?? "?"), ID: \(kundeRecordID))"))
+        } catch {
+            MykLog.lifecycle.error("Audit Kunde-Anlage fehlgeschlagen: \(String(describing: error), privacy: .public)")
+        }
+
+        // SCHRITT 2: Projekt in Artikel-DB anlegen (+ Kunden-Link als Klartext-ID)
+        let projektBaseID = CartStore.artikelBaseID      // appdxTeT6bhSBmwx5
+        let projektTable  = "Projekte"
+        var projektFelder: [String: AirtableFieldValue] = ergebnis.projektFelder
+            .reduce(into: [:]) { dict, pair in dict[pair.key] = .string(pair.value) }
+        // Kunden-Verknüpfung: multipleRecordLinks — als Array übergeben.
+        // Airtable verlangt für Link-Felder ein JSON-Array. .array([]) ist der korrekte Typ.
+        if kundeRecordID.isEmpty == false {
+            projektFelder["Kunde"] = .array([kundeRecordID])
+        }
+
+        let projektRecordID: String
+        do {
+            projektRecordID = try await client.createRecord(
+                baseID: projektBaseID, table: projektTable, fields: projektFelder)
+        } catch AirtableError.invalidBaseID(let msg) {
+            throw IntakeSchreibFehler.whitelist("Projekt: \(msg)")
+        } catch AirtableError.notConnected {
+            throw IntakeSchreibFehler.nichtVerbunden
+        } catch AirtableError.httpError(let code) {
+            throw IntakeSchreibFehler.http(code)
+        }
+
+        do {
+            try audit.append(AuditEntry(
+                actorUserID: actorUserID, projectID: "-",
+                action: .contactCreated,    // kein separater Intake-AuditTyp nötig — nahe genug
+                summary: "Intake: Projekt angelegt (\(ergebnis.projektFelder["Projektname"] ?? "?"), ID: \(projektRecordID), KundeID: \(kundeRecordID))"))
+        } catch {
+            MykLog.lifecycle.error("Audit Projekt-Anlage fehlgeschlagen: \(String(describing: error), privacy: .public)")
+        }
+
+        // SCHRITT 3: Warenkorb (falls Positionen vorhanden), append-only via CartStore
+        if !ergebnis.warenkorb.items.isEmpty {
+            let warenkorb = Warenkorb(
+                items: ergebnis.warenkorb.items,
+                projektRecordID: projektRecordID,
+                projektName: ergebnis.projektFelder["Projektname"])
+            let cartStore = CartStore(
+                fetcher: AirtableClient(),
+                creator: AirtableClient(),
+                updater: AirtableClient(),
+                auditStore: audit,
+                actorUserID: actorUserID
+            )
+            // Fehler beim Warenkorb-Senden sind nicht fatal (Kunde + Projekt sind schon angelegt).
+            do {
+                _ = try await cartStore.sendWarenkorbToAirtable(warenkorb)
+            } catch {
+                MykLog.lifecycle.error("Intake Warenkorb-Senden fehlgeschlagen: \(String(describing: error), privacy: .public)")
+                // Fehler wird geloggt aber nicht weitergeworfen — Kunde + Projekt sind live.
+            }
+        }
+
+        // Registry aktualisieren (neue Projekte/Kunden sofort sichtbar)
+        await registry.syncFromAirtable(baseID: AirtableClient.writableBaseID, auth: airtableAuth)
+        refreshAssistantKundenWissen()
+
+        let kundeName = ergebnis.kundeFelder["Nachname"] ?? "Kunde"
+        let projektName = ergebnis.projektFelder["Projektname"] ?? "Projekt"
+        return "\(kundeName) + \(projektName) erfolgreich angelegt"
+    }
+
     // MARK: - Backup (Mandate G)
     // Erzwungener WAL-Checkpoint + konsistentes Backup, off-main ausgeführt.
     // Lokal, read-only auf die DB — kein externer Schreibzugriff.

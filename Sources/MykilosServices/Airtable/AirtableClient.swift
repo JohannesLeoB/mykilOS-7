@@ -113,14 +113,17 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
         // Mastermind-Base (eigene Schaltzentrale)
         "appuVMh3KDfKw4OoQ": [
             "Datenstrom-Handbuch", "Datenstrom-Log",
-            "Kontakte",
+            "Kontakte",            // S19: Kontakt anlegen/aktualisieren
         ],
         // Artikel & Einkauf (Webshop-Phase 1, gated, von Johannes freigegeben 2026-06-30)
+        // Intake-Fragebogen legt neue Kunden- + Projekt-Records an (append-only, gated, Record-Link gültig).
         // NIEMALS: Artikel-Stamm, Lieferanten, Preise oder andere Tabellen dieser Base.
         "appdxTeT6bhSBmwx5": [
             "Lagerliste",      // tblh8j1Rykv12T2Dx
             "Projektartikel",  // tblirHIicPP3qdcDp
             "Warenkörbe",      // tblhZujm3Ig6hlafX
+            "Projekte",        // Intake: neues Projekt anlegen (tblOXF9Cv8Jze6595, gated)
+            "Kunden",          // Intake: neuen Kunden anlegen (tblImZ3fKYBXBT7Wb, gated)
         ],
     ]
 
