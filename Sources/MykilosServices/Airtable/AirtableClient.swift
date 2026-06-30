@@ -29,6 +29,17 @@ public protocol AirtableRecordUpdating: Sendable {
     func updateRecord(baseID: String, table: String, recordID: String, fields: [String: AirtableFieldValue]) async throws
 }
 
+// MARK: - AirtableRecordDeleting
+// mykilOS 8, Block A: NUR für TEST-Sandbox-Cleanup (HANDOFF_TEST_SANDBOX.md §2/§5).
+// Bewusst ein EIGENES, von `AirtableRecordCreating`/`-Updating` getrenntes Protokoll
+// — kein Aufrufer „stolpert versehentlich" über eine Delete-Fähigkeit. Geprüft gegen
+// `AirtableClient.testDeletableMap`, eine eigene, von `writableMap` UNABHÄNGIGE und
+// absichtlich winzige Whitelist (Stand 2026-06-30: LEER — es gibt noch keine echte
+// TEST-Tabelle; Block D befüllt sie, wenn S4-Provisioning TEST-Artefakte erzeugt).
+public protocol AirtableRecordDeleting: Sendable {
+    func deleteRecord(baseID: String, table: String, recordID: String) async throws
+}
+
 // MARK: - AirtableFieldValue
 public enum AirtableFieldValue: Sendable, Equatable, Decodable {
     case string(String)
@@ -87,7 +98,7 @@ public enum AirtableFieldValue: Sendable, Equatable, Decodable {
 }
 
 // MARK: - AirtableClient
-public struct AirtableClient: AirtableFetching, AirtableRecordCreating, AirtableRecordUpdating {
+public struct AirtableClient: AirtableFetching, AirtableRecordCreating, AirtableRecordUpdating, AirtableRecordDeleting {
     private let credentialsStore: AirtableCredentialsStoring
     private let session: URLSession
     private let apiBase = "https://api.airtable.com/v0"
@@ -229,6 +240,40 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
         guard (200...299).contains(http.statusCode) else { throw AirtableError.httpError(http.statusCode) }
     }
 
+    // MARK: - Löschpfad (NUR TEST-Sandbox-Cleanup, Block A)
+    // Eigene, winzige Whitelist — VÖLLIG unabhängig von `writableMap`. Stand
+    // 2026-06-30 bewusst LEER: es gibt noch keine echte TEST-Tabelle (S4-Provisioning
+    // kommt erst in Block D). Erst wenn eine konkrete TEST-Tabelle hier eingetragen
+    // wird, kann überhaupt irgendetwas gelöscht werden — auch über `TestSandboxCleaner`.
+    public static let testDeletableMap: [String: Set<String>] = [:]
+
+    static func isTestDeletable(baseID: String, table: String) -> Bool {
+        testDeletableMap[baseID]?.contains(table) == true
+    }
+
+    /// Löscht EINEN Record. Wirft `invalidBaseID`, wenn Base/Tabelle nicht auf der
+    /// TEST-Delete-Whitelist stehen — das ist die einzige Stelle im gesamten Code,
+    /// die überhaupt einen Airtable-DELETE-Request absetzen kann.
+    public func deleteRecord(baseID: String, table: String, recordID: String) async throws {
+        guard Self.isTestDeletable(baseID: baseID, table: table) else {
+            throw AirtableError.invalidBaseID("Löschen in \(table)@\(baseID) nicht erlaubt — TEST-Delete-Whitelist: \(Self.testDeletableMap)")
+        }
+        guard let credentials = try? credentialsStore.load() else {
+            throw AirtableError.notConnected
+        }
+        let encoded = table.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? table
+        guard let url = URL(string: "\(apiBase)/\(baseID)/\(encoded)/\(recordID)") else {
+            throw AirtableError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(credentials.pat)", forHTTPHeaderField: "Authorization")
+
+        let (_, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw AirtableError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw AirtableError.httpError(http.statusCode) }
+    }
+
     // MARK: - Testbare Bausteine für updateRecord
 
     /// Baut die PATCH-URL: api.airtable.com/v0/{baseID}/{table}/{recordID}.
@@ -327,6 +372,53 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
                 links: links,
                 phase: fields["Phase"]?.stringValue,
                 airtableRecordID: recordID
+            )
+        }
+    }
+
+    // MARK: - Geschäfts-Mapping (Artikel-Base appdxTeT6bhSBmwx5, Block A)
+    // Feldnamen sind code-verifiziert aus `IntakeResultBuilder.mapKundeFelder`/
+    // `mapProjektFelder` — der einzige real schreibende Pfad in diese Tabellen
+    // (Stand 2026-06-30). Bewusst tolerant: ein fehlendes Feld verwirft NIE den
+    // ganzen Record (Fallstrick „Records verschwinden still", siehe ROLLING_PLAN §3b).
+    public static func mapBusinessCustomers(from records: [[String: AirtableFieldValue]]) -> [BusinessCustomer] {
+        records.compactMap { fields in
+            guard let recordID = fields["_airtableRecordID"]?.stringValue, !recordID.isEmpty else { return nil }
+            let nachname = fields["Nachname"]?.stringValue
+            let vorname  = fields["Vorname"]?.stringValue
+            let firma    = fields["Firma"]?.stringValue
+            // Mindestens ein Namens-/Firmenfeld muss da sein, sonst ist der Record kein
+            // brauchbarer Kunde (z. B. eine leere Vorlagenzeile).
+            guard (nachname?.isEmpty == false) || (firma?.isEmpty == false) else { return nil }
+            return BusinessCustomer(
+                airtableRecordID: recordID,
+                nachname: nachname,
+                vorname: vorname,
+                firma: firma,
+                email: fields["Kontakt 1 Email"]?.stringValue,
+                telefon: fields["Kontakt 1 Telefon"]?.stringValue
+            )
+        }
+    }
+
+    public static func mapBusinessProjects(from records: [[String: AirtableFieldValue]]) -> [BusinessProject] {
+        records.compactMap { fields in
+            guard let recordID = fields["_airtableRecordID"]?.stringValue, !recordID.isEmpty,
+                  let name = fields["Projektname"]?.stringValue, !name.isEmpty else { return nil }
+            let kundeIDs: [String]
+            if case .array(let arr)? = fields["Kunde"] { kundeIDs = arr }
+            else if let single = fields["Kunde"]?.stringValue { kundeIDs = [single] }
+            else { kundeIDs = [] }
+            // Existiert heute nicht im Artikel-Schema (Stand 2026-06-30) — bleibt nil,
+            // bis das Feld ergänzt wird. Lookup per Feld-NAME, nicht erraten.
+            let projectNumber = fields["Projektnummer"]?.stringValue
+            return BusinessProject(
+                airtableRecordID: recordID,
+                projektname: name,
+                projektstatus: fields["Projektstatus"]?.stringValue,
+                budget: fields["Budget"]?.numberValue ?? fields["Budget"]?.anyStringValue.flatMap(Double.init),
+                kundeRecordIDs: kundeIDs,
+                projectNumber: (projectNumber?.isEmpty == false) ? projectNumber : nil
             )
         }
     }

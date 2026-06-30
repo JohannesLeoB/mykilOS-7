@@ -200,6 +200,41 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v12_write_shadow_log (mykilOS 8, Block A) — lokale, unverlierbare Kopie
+        // JEDES externen Schreibvorgangs (Airtable/Drive/künftig Clockodo/ClickUp).
+        // Gespiegelt nach Airtable-Base `mykilOS-Backup` (append-only, sobald angelegt) —
+        // lokal ist die Tabelle hier IMMER die Wahrheit, der Airtable-Spiegel ist Komfort.
+        // Gleiches Muster wie `dataFlowLog` (lokal zuerst, nicht-fataler externer Spiegel).
+        migrator.registerMigration("v12_write_shadow_log") { db in
+            try db.create(table: "writeShadowLog") { t in
+                t.primaryKey("id", .text)
+                t.column("timestamp",        .double).notNull().indexed()
+                t.column("actorUserID",      .text).notNull()
+                t.column("action",           .text).notNull()       // create/update
+                t.column("targetSystem",     .text).notNull()       // airtable/drive/clockodo/clickup
+                t.column("targetBase",       .text)
+                t.column("targetTable",      .text)
+                t.column("targetRecordID",   .text)
+                t.column("payloadJSON",      .text).notNull()
+                t.column("previousValueJSON", .text)
+                t.column("mode",             .text).notNull()       // test/prod
+                t.column("result",           .text).notNull()       // ok/error
+                t.column("errorMessage",     .text)
+                t.column("mirroredToBackupBase", .boolean).notNull().defaults(to: false)
+            }
+        }
+
+        // v13_app_settings (mykilOS 8, Block A) — generische Key-Value-Tabelle für
+        // App-weite Schalter. Erster Nutzer: `provisioningMode` (.test/.prod, Default
+        // .test). Additiv, kein bestehender Code betroffen.
+        migrator.registerMigration("v13_app_settings") { db in
+            try db.create(table: "appSettings") { t in
+                t.primaryKey("key", .text)
+                t.column("value", .text).notNull()
+                t.column("updatedAt", .double).notNull()
+            }
+        }
+
         try migrator.migrate(queue)
     }
 

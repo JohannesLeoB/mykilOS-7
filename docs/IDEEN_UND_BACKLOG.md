@@ -250,6 +250,25 @@ das Kalkulationsmodul live geht. Bürogeheimnis, nicht in Code/Docs.
 
 ## Architektur & Datenfluss
 
+### 🚨 Budget hat HEUTE zwei Quellen (Mastermind `Project.links.budget` vs. Artikel `BusinessProject.budget`)
+**Quelle:** mykilOS 8 Block A, S0-Audit (2026-06-30), code-verifiziert. `CashWidget` liest
+`project.links.budget` aus dem Mastermind-Cache (Soll-Wert für den Ist-vs-Budget-Balken). Die
+neue `ExternalMappingRegistry` (Block A) liest Budget aus der Artikel-Base als die eigentliche
+Geschäfts-Wahrheit (siehe SoR-Karte in `AIRTABLE_DATENFLUSS_AUDIT.md` §3) — beide Felder existieren
+parallel und können auseinanderlaufen. **Bewusst NICHT in Block A gefixt** (CashWidget-Umbau wäre
+Scope-Creep + Layout-/Regressionsrisiko außerhalb des Block-A-Auftrags). **Plan:** sobald
+Geschäftsprojekte über die Projektnummer gebunden sind (siehe `businessOnlyUnbound`-Eintrag
+darunter), `CashWidget` auf `ExternalMappingRegistry.resolve(...).business?.budget` umstellen und
+`Project.links.budget` als reinen Altlast-Fallback behandeln oder entfernen.
+
+### 🚨 Artikel-Base `Projekte` hat kein `Projektnummer`-Feld → neue Geschäftsprojekte sind unverbindbar
+**Quelle:** mykilOS 8 Block A, S0-Audit (2026-06-30), code-verifiziert (Feldnamen aus
+`IntakeResultBuilder.mapProjektFelder`: `Projektname`/`Projektstatus`/`Budget`/Adresse — kein
+Nummernfeld). `ExternalMappingRegistry` markiert solche Records als `businessOnlyUnbound`
+(abrufbar über `unboundBusinessProjects()`). **Plan:** entweder Daniel ergänzt das Feld in der
+Artikel-Base (Datenstrom-Handbuch-Eintrag `AIRTABLE_GESCHAEFT_KUNDEN_PROJEKTE` verweist darauf),
+oder Block C (Nomenklatur/`NumberAuthority`) schreibt die Projektnummer beim Anlegen direkt mit.
+
 ### 📋 ClickUp als Quelle für `ProjectKind`
 **Quelle:** Live-Wiring-Session 1 (2026-06-27). Drive-Ordnernamen lassen
 `ProjectKind` (kitchen/lighting/addendum/lead/quote) nicht erkennen.

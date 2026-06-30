@@ -25,6 +25,16 @@ public final class AppState {
     // Schaltzentrum-Logbuch: jeder externe Datensync hinterlässt hier einen
     // Handshake (lokal + Airtable-Spiegel). Siehe DataFlowLogger.
     public let dataFlow:   DataFlowLogger
+    // mykilOS 8, Block A: vollständige, unverlierbare Kopie jedes externen
+    // Schreibvorgangs (lokal GRDB immer, Airtable-Backup-Base sobald angelegt).
+    public let writeShadow: WriteShadowRecorder
+    // mykilOS 8, Block A: TEST/PROD-Schalter (Default .test, .prod gesperrt).
+    public let provisioningMode: ProvisioningModeStore
+    // mykilOS 8, Block A: der EINZIGE Resolver für Routing (Mastermind) ↔
+    // Geschäft (Artikel-Base) über die Projektnummer. Siehe ExternalMappingRegistry.swift.
+    // Optional wie `RegistryStore`s privater Cache: Verzeichnis-Init-Fehler = kein
+    // Resolver statt Absturz (derselbe begründete try?-Ausnahmefall wie dort).
+    public let externalMapping: ExternalMappingRegistry?
 
     // MARK: Integrationen
     public let googleAuth: GoogleAuthService
@@ -128,7 +138,23 @@ public final class AppState {
         self.airtableAuth = AirtableAuthService()
         // Logger spiegelt nach Airtable über den eng begrenzten Schreibpfad
         // (nur Datenstrom-Log der Mastermind-Base; Whitelist im AirtableClient).
-        self.dataFlow = DataFlowLogger(db: database, airtable: AirtableClient())
+        let dataFlowLogger = DataFlowLogger(db: database, airtable: AirtableClient())
+        self.dataFlow = dataFlowLogger
+        // mykilOS 8, Block A: backupBaseID ist absichtlich nil (mykilOS-Backup-Base
+        // existiert noch nicht — siehe WriteShadowRecorder.swift Kopfkommentar). Der
+        // lokale GRDB-Eintrag passiert trotzdem immer; sobald die Base + ID feststehen,
+        // hier nur die ID einsetzen.
+        self.writeShadow = WriteShadowRecorder(
+            db: database, airtable: AirtableClient(), backupBaseID: nil, dataFlow: dataFlowLogger)
+        self.provisioningMode = ProvisioningModeStore(db: database)
+        // Begründeter try?-Ausnahmefall (wie RegistryStore.init): Verzeichnis-Init-
+        // Fehler ergibt keinen Resolver statt Absturz; der echte Fehler würde ohnehin
+        // beim ersten echten Dateizugriff auftreten, nicht hier.
+        if let routingCache = try? CachedProjectRegistry(), let businessCache = try? CachedBusinessRegistry() {
+            self.externalMapping = ExternalMappingRegistry(routing: routingCache, business: businessCache)
+        } else {
+            self.externalMapping = nil
+        }
         let claudeCredentials = KeychainClaudeCredentialsStore()
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
         self.assistantLLM = ClaudeMessagesClient(credentialsStore: claudeCredentials)
@@ -250,6 +276,7 @@ public final class AppState {
         }
         try? dataFlow.load()
         try? favorites.load()   // leere Favoritenmenge ist kein Fehler (L25)
+        try? provisioningMode.load()   // mykilOS 8, Block A: ungefunden = Default .test
         // Registry seeden/laden
         await registry.seedIfEmpty()
         await registry.load()
@@ -476,12 +503,21 @@ public final class AppState {
             kundeRecordID = try await client.createRecord(
                 baseID: kundeBaseID, table: kundeTable, fields: kundeFelder)
         } catch AirtableError.invalidBaseID(let msg) {
+            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: msg)
             throw IntakeSchreibFehler.whitelist(msg)
         } catch AirtableError.notConnected {
+            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "notConnected")
             throw IntakeSchreibFehler.nichtVerbunden
         } catch AirtableError.httpError(let code) {
+            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "httpError(\(code))")
             throw IntakeSchreibFehler.http(code)
         }
+
+        // mykilOS 8, Block A: vollständige Sicherheitskopie des Writes (siehe
+        // WriteShadowRecorder.swift) — nicht-fatal, blockiert den Intake nie.
+        try? writeShadow.recordAirtableWrite(
+            action: .create, actorUserID: actorUserID, baseID: kundeBaseID, table: kundeTable,
+            recordID: kundeRecordID, fields: kundeFelder, mode: provisioningMode.mode, result: .ok)
 
         do {
             try audit.append(AuditEntry(
@@ -508,12 +544,19 @@ public final class AppState {
             projektRecordID = try await client.createRecord(
                 baseID: projektBaseID, table: projektTable, fields: projektFelder)
         } catch AirtableError.invalidBaseID(let msg) {
+            recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: msg)
             throw IntakeSchreibFehler.whitelist("Projekt: \(msg)")
         } catch AirtableError.notConnected {
+            recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: "notConnected")
             throw IntakeSchreibFehler.nichtVerbunden
         } catch AirtableError.httpError(let code) {
+            recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: "httpError(\(code))")
             throw IntakeSchreibFehler.http(code)
         }
+
+        try? writeShadow.recordAirtableWrite(
+            action: .create, actorUserID: actorUserID, baseID: projektBaseID, table: projektTable,
+            recordID: projektRecordID, fields: projektFelder, mode: provisioningMode.mode, result: .ok)
 
         do {
             try audit.append(AuditEntry(
@@ -548,11 +591,44 @@ public final class AppState {
 
         // Registry aktualisieren (neue Projekte/Kunden sofort sichtbar)
         await registry.syncFromAirtable(baseID: AirtableClient.writableBaseID, auth: airtableAuth)
+        // mykilOS 8, Block A: der Intake schreibt nach Artikel-Base, `registry` syncFromAirtable
+        // (oben) liest aber Mastermind — ohne diesen zweiten Sync wäre der neue Kunde/Projekt
+        // in der Geschäfts-Wahrheit unsichtbar, bis irgendwann ein Mastermind-Routing-Eintrag
+        // entsteht. Siehe ExternalMappingRegistry.swift / AIRTABLE_DATENFLUSS_AUDIT.md §3.
+        await syncBusinessRegistry()
         refreshAssistantKundenWissen()
 
         let kundeName = ergebnis.kundeFelder["Nachname"] ?? "Kunde"
         let projektName = ergebnis.projektFelder["Projektname"] ?? "Projekt"
         return "\(kundeName) + \(projektName) erfolgreich angelegt"
+    }
+
+    /// mykilOS 8, Block A: synct die Geschäfts-Wahrheit (Artikel-Base `Kunden`/
+    /// `Projekte`) in den `ExternalMappingRegistry`-Business-Cache. Fehler sind
+    /// nicht-fatal (Komfort-Sichtbarkeit, kein Boot-/Intake-Blocker) — sichtbar via
+    /// os.Logger, wie `syncKontakte`.
+    public func syncBusinessRegistry() async {
+        guard let externalMapping else { return }
+        do {
+            try await externalMapping.syncBusiness(client: AirtableClient(), baseID: CartStore.artikelBaseID)
+            dataFlow.log(integrationID: "AIRTABLE_GESCHAEFT_KUNDEN_PROJEKTE", actorUserID: actorUserID,
+                         action: .success, summary: "Geschäfts-Kunden/Projekte aus Artikel-Base synchronisiert")
+        } catch {
+            dataFlow.log(integrationID: "AIRTABLE_GESCHAEFT_KUNDEN_PROJEKTE", actorUserID: actorUserID,
+                         action: .error, summary: "Business-Registry-Sync fehlgeschlagen")
+            MykLog.lifecycle.error("Business-Registry-Sync fehlgeschlagen: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    /// mykilOS 8, Block A: spiegelt einen FEHLGESCHLAGENEN Airtable-Write — die
+    /// Backup-Base-Doku verlangt ausdrücklich „auch fehlgeschlagene Versuche".
+    private func recordWriteShadowFailure(
+        table: String, baseID: String, fields: [String: AirtableFieldValue], errorMessage: String
+    ) {
+        try? writeShadow.recordAirtableWrite(
+            action: .create, actorUserID: actorUserID, baseID: baseID, table: table,
+            recordID: nil, fields: fields, mode: provisioningMode.mode,
+            result: .error, errorMessage: errorMessage)
     }
 
     // MARK: - Backup (Mandate G)

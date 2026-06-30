@@ -347,18 +347,21 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 
 ---
 
-### Alle Weichen (Stand 2026-06-29 · 35 Weichen)
+### Alle Weichen (Stand 2026-06-30 · 37 Weichen)
 
 #### Airtable
 
 | Integrations-ID | Name | Richtung | Trigger | NO-GO | Notiz |
 |---|---|---|---|---|---|
 | `AIRTABLE_KUNDEN_PROJEKTE` | Kunden & Projekte | READ | App-Start + manuell | read-only | System-of-Record für Projekte/Kunden. Paginiert (offset). Schreibt nie zurück. |
+| `AIRTABLE_GESCHAEFT_KUNDEN_PROJEKTE` | Geschäfts-Kunden & -Projekte (Artikel-Base) | READ | App-Start + nach Intake-Submit | read-only | mykilOS 8, Block A: zweite Hälfte der SoR-Karte — Geschäfts-Wahrheit (Status/Budget/Sevdesk) aus der Artikel-Base, getrennt gecacht vom Mastermind-Routing. Resolver: `ExternalMappingRegistry`. Join über Projektnummer — Artikel-`Projekte` hat das Feld heute noch nicht, daher laufen neue Intake-Projekte vorerst als `businessOnlyUnbound`. |
 | `AIRTABLE_KUNDEN_LOOKUP` | Kunden-Lookup (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `lookup_kunde` über den **lokalen** Sync-Cache (kein Live-Call): Name, Kundennummer, Projektanzahl. Adresse/Telefon → `lookup_kontakt`. Eigene Weiche (L24). |
 | `AIRTABLE_KONTAKTE_LOOKUP` | Kontakte-Lookup (Assistent) | READ | App-Start (Sync) + Tool-Call | read-only | Read-only Sync der Mastermind-Tabelle `Kontakte` (~914 Records) in lokalen `ContactDirectory`-Snapshot; Tool `lookup_kontakt` liefert Name/Organisation/**Telefon**/E-Mail/**Adresse**/Projekt. Beantwortet „Adresse Cirnavuk?" ohne Google/M2. Eigene Weiche (S13). |
 | `DATAFLOW_LOG_WRITE` | Datenstrom-Log | WRITE | Ereignisgesteuert | append-only (Mastermind) | Jeder Sync-Handshake landet hier. Harte Whitelist im AirtableClient: nur diese Tabelle + Handbuch. |
 | `DATAFLOW_HANDBOOK_WRITE` | Datenstrom-Handbuch | WRITE | onDemand (Session) | append-only (Mastermind) | Diese Karte selbst. Jede neue Weiche wird hier registriert. |
 | `POLISH_LOG_WRITE` | Dampflok Polish-Log | WRITE | onDemand (Session) | append-only (Mastermind) | Nur Claude-Code-Agent, nicht die App. Tabelle `tblberJMgRArGSypE`. |
+| `WRITE_SHADOW_LOG` | Write-Shadow-Log (Backup-Base) | WRITE | onDemand (jeder Write) | append-only (Mastermind) | **Geplant** — mykilOS 8, Block A. `WriteShadowRecorder` schreibt JETZT schon vollständig lokal (GRDB `writeShadowLog`, Cold-Start-getestet); der Airtable-Spiegel nach einer eigenen Base `mykilOS-Backup` ist im Code verdrahtet, aber `backupBaseID` ist noch `nil` — die Base muss live angelegt werden. |
+| `WRITE_SHADOW_BACKUP_FEHLT` | Write-Shadow ohne Backup-Base (Warnung) | READ | onDemand (jeder Write, solange Backup-Base fehlt) | keine | Lokale Sichtbarkeits-Warnung, kein echter Datenstrom — macht die Lücke aus `WRITE_SHADOW_LOG` im Schaltzentrum sichtbar statt sie zu verstecken. Verschwindet automatisch, sobald `backupBaseID` gesetzt ist. |
 
 #### Google Drive
 
@@ -484,5 +487,39 @@ nach **Bestätigung**: ein **Kunde** + ein **Projekt** (Airtable Artikel-Base, n
 
 ---
 
+---
+
+## mykilOS 8, Block A — Fundament: Eine Wahrheit + Sicherheit (Grundgerüst, keine UI)
+
+Block A baut die **Mechanik**, nicht die Oberfläche — es gibt noch keinen Settings-Schalter
+oder Cleanup-Button dafür. Trotzdem live im laufenden Code, weil spätere Blöcke (C, D, E, F)
+direkt darauf aufbauen.
+
+**`ExternalMappingRegistry`** löst die Split-Brain-Verletzung (zwei `Kunden`-/`Projekte`-Tabellen,
+Mastermind vs. Artikel-Base) auf: Routing-Wahrheit bleibt Mastermind, Geschäfts-Wahrheit ist die
+Artikel-Base, beide werden in **getrennten** lokalen Caches gehalten und nur über die
+**Projektnummer** gejoint — nie geraten, nie per Namens-Fuzzy-Match. Solange die Artikel-Base
+kein `Projektnummer`-Feld hat (Stand 2026-06-30), bleiben neue Intake-Projekte `businessOnlyUnbound`
+— sichtbar über `unboundBusinessProjects()`, nicht versteckt.
+
+**`WriteShadowRecorder`** spiegelt jeden Airtable-Write (aktuell: den Intake-Schreibpfad) als
+vollständige Sicherheitskopie — lokal in GRDB (`writeShadowLog`, immer, Cold-Start-getestet)
+und perspektivisch nach einer eigenen Airtable-Base `mykilOS-Backup` (append-only, keine
+Löschrechte). Die Backup-Base existiert noch nicht; bis sie angelegt ist, bleibt der lokale
+GRDB-Eintrag die einzige Kopie, und jeder Write meldet das ehrlich über `WRITE_SHADOW_BACKUP_FEHLT`.
+
+**`ProvisioningModeStore`** ist der TEST/PROD-Schalter (Default `.test`). `.prod` ist hart im
+Code gesperrt — es gibt keinen Parameter, der das umgeht — bis Nomenklatur (Block C),
+Lern-Runde und Johannes' ausdrückliche Freigabe vorliegen.
+
+**`TestSandboxCleaner`** findet und löscht ausschließlich Airtable-Records mit doppeltem
+TEST-Marker (Namens-Präfix `TEST_` UND Feld `Quelle = "TEST"`), zusätzlich abgesichert durch
+eine eigene, von der Schreib-Whitelist unabhängige Lösch-Whitelist (`AirtableClient.
+testDeletableMap`, Stand 2026-06-30 **leer** — es gibt noch keine echte TEST-Tabelle) und einen
+Re-Fetch direkt vor jedem Löschen. `AirtableClient.deleteRecord` ist die einzige Stelle im
+gesamten Code, die überhaupt eine DELETE-Anfrage absetzen kann.
+
+---
+
 *Dieses Dokument wird mit jedem Feature-Commit aktualisiert.*
-*Letzte Änderung: 2026-06-30 · feat/intake-suite · 7.7.2 (Webshop Phase 4, Projektfragebogen, Drive-PDF)*
+*Letzte Änderung: 2026-06-30 · feat/mykilos8-block-a-fundament · mykilOS 8 Block A (Eine Wahrheit + Sicherheits-Sockel, Grundgerüst)*

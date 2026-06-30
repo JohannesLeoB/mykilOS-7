@@ -250,5 +250,19 @@
     "system": "Airtable",
     "direction": "WRITE",
     "link": "mykilos://datastream/AIRTABLE_KONTAKTE_UPDATE"
+  },
+  {
+    "integrationID": "AIRTABLE_GESCHAEFT_KUNDEN_PROJEKTE",
+    "name": "Airtable Geschäfts-Kunden & -Projekte (Artikel-Base, ExternalMappingRegistry)",
+    "system": "Airtable",
+    "direction": "READ",
+    "link": "mykilos://datastream/AIRTABLE_GESCHAEFT_KUNDEN_PROJEKTE"
+  },
+  {
+    "integrationID": "WRITE_SHADOW_BACKUP_FEHLT",
+    "name": "Write-Shadow ohne mykilOS-Backup-Base (Sichtbarkeits-Warnung, Block A)",
+    "system": "Lokal",
+    "direction": "READ",
+    "link": "mykilos://datastream/WRITE_SHADOW_BACKUP_FEHLT"
   }
 ]

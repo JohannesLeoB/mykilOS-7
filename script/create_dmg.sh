@@ -8,7 +8,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"
 # EINE Quelle für die Versionsnummer (synchron mit build_and_run.sh).
-APP_VERSION="7.7.2"
+APP_VERSION="7.8.0"
 APP_BUNDLE="$DIST_DIR/mykilOS $APP_VERSION.app"
 DMG_NAME="mykilOS-$APP_VERSION"
 DMG_PATH="$DIST_DIR/$DMG_NAME.dmg"

@@ -7,6 +7,16 @@ Zweck:   Phase-1-Writes (neue Drive-Ordner, Airtable-Records, perspektivisch Clo
 Regel:   Produktivdaten bleiben unangetastet. DELETE NUR für TEST-markierte/TEST-eigene Daten. Sevdesk nie.
 ```
 
+> **Status (mykilOS 8, Block A, 2026-06-30): Mechanik gebaut, zwei Stellen offen.**
+> Gebaut + getestet: `ProvisioningModeStore` (§6, `.test`-Default, `.prod` hart gesperrt),
+> `TestSandboxCleaner` (§3/§5, Doppel-Marker + eigene Lösch-Whitelist + Re-Fetch-Verifikation vor
+> jedem Delete), `AirtableClient.deleteRecord` (einzige Stelle im Code, die überhaupt DELETE kann).
+> **Offen:** (1) `AirtableClient.testDeletableMap` ist bewusst LEER — es gibt noch keine echte
+> TEST-Tabelle, die Block D beim S4-Provisioning befüllt. (2) Der Drive-Teil von §3 (`_TEST_
+> PROVISIONING`-Ordner) ist NICHT gebaut — `GoogleDriveClient` hat noch keine Delete-Fähigkeit, und
+> es gibt vor Block D ohnehin keine Drive-TEST-Artefakte zu löschen. Details + Code:
+> `Sources/MykilosServices/ProvisioningMode.swift`, `TestSandboxCleaner.swift`.
+
 ## 1. Aktuelle Rechte-Matrix (alle Integrationen außer Sevdesk)
 
 | Integration | Lesen | Schreiben (heute im Code) | Scope/Gate |
@@ -67,6 +77,15 @@ dem Bestand gelaufen ist, (c) Johannes die Produktiv-Scopes (`drive` voll, ggf. 
 freigibt. So fließt nie versehentlich Echtbetrieb.
 
 ## 7. Write-Backup-Base (Sicherheitskopie ALLER Schreibvorgänge — append-only, KEIN DELETE)
+
+> **Status (Block A): `WriteShadowRecorder` ist im Code fertig und in `erzeugeKundeUndProjekt`
+> verdrahtet — der lokale GRDB-Eintrag (`writeShadowLog`, vollständiges Payload-JSON, Cold-Start-
+> getestet) passiert JETZT bei jedem Write. Die Base `mykilOS-Backup` selbst existiert noch nicht:
+> der für diese Session verfügbare Airtable-MCP sieht nur die Mastermind-Base und liefert keine
+> `workspaceId` (`list_workspaces` → leer), `create_base` braucht aber genau die. Muss entweder
+> live mit Johannes angelegt werden (dann nur `backupBaseID` in `AppState.init` setzen — kein
+> Code-Umbau), oder der Airtable-MCP bekommt breiteren Workspace-Zugriff. Bis dahin meldet jeder
+> Write eine sichtbare Warnung (`WRITE_SHADOW_BACKUP_FEHLT`) statt die Lücke zu verstecken.
 
 **Jeder Schreibvorgang in die Datenkerne** (Airtable CREATE/PATCH, Drive-Ordner/Datei-Anlage, künftig
 Clockodo/ClickUp-Writes) wird **zusätzlich als Sicherheitskopie** in eine **separate Backup-Base** geschrieben —

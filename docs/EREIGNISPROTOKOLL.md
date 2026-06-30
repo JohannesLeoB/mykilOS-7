@@ -30,6 +30,29 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-06-30 · Claude Code (Sonnet 5) — mykilOS 8 Block A: Fundament (Eine Wahrheit + Sicherheits-Sockel)
+
+```
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Branch: feat/mykilos8-block-a-fundament (von docs/mykilos8-handoff)
+Build:  ✅ swift build grün
+Tests:  ✅ 652 Tests grün (0 fehlgeschlagen)
+```
+
+S0-Audit + Verständnis-Report bestätigt, danach Block A nach Johannes' „nach deinen besten
+Empfehlungen": `ExternalMappingRegistry` (löst Split-Brain Mastermind↔Artikel über Projektnummer-
+Join auf, code-verifizierte Lücke: Artikel-`Projekte` hat noch kein Projektnummer-Feld →
+`businessOnlyUnbound`), `WriteShadowRecorder` (lokal GRDB vollständig + Backup-Base-Spiegel
+verdrahtet, Base selbst noch nicht angelegt — Airtable-MCP dieser Session sieht keine
+`workspaceId`), `ProvisioningModeStore` (.test-Default, .prod hart gesperrt), `TestSandboxCleaner`
+(Doppel-Marker + eigene Lösch-Whitelist + Re-Fetch-Verifikation, `AirtableClient.deleteRecord`
+neu — einzige DELETE-fähige Stelle im Code). Datenstrom-Handbuch (2 neue Weichen),
+`docs/BENUTZERHANDBUCH.md`, `AIRTABLE_DATENFLUSS_AUDIT.md`, `HANDOFF_TEST_SANDBOX.md`,
+`IDEEN_UND_BACKLOG.md` (Budget-Doppel-Wahrheit + Projektnummer-Lücke neu eingetragen) aktualisiert.
+Details: [HANDOFF_MYKILOS8_BLOCK_A.md](handoffs/HANDOFF_MYKILOS8_BLOCK_A.md).
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — S24: Assistent-„Fehler 400" behoben (Verlauf-Sanitizer)
 
 ```
