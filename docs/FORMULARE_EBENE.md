@@ -70,6 +70,28 @@ Formulare-Ebene
 
 ---
 
+## 3b. Vorlagen verwalten — ändern/ersetzen/löschen/skalieren (pro Kategorie)
+
+**Kernprinzip: Vorlagen sind DATEN, nicht Code.** Genau deshalb sind sie überhaupt
+verwaltbar — im Gegensatz zum heutigen Code-Renderer, wo jede Vorlage Swift-Code = ein
+Entwickler wäre. Jede Vorlage = HTML/CSS-Datei + Metadaten (`name`, `kategorie`,
+`seitenformat`, `thumbnail`, `version`).
+
+- **Kategorien:** jede Vorlage trägt eine `kategorie` (Brief, Moodboard, Abnahmeprotokoll,
+  Geräteliste, Präsentation …). Das Formulare-Modul gruppiert danach.
+- **Ändern:** Vorlage öffnen → HTML/CSS/Platzhalter anpassen oder Bild-Assets tauschen.
+- **Ersetzen:** neue Fassung importieren → als neue **Version** (alte bleibt, kein Verlust).
+- **Löschen:** **soft-delete/archivieren** (wie überall in mykilOS nie hart) — jederzeit
+  reaktivierbar, „Auf Standard zurücksetzen" möglich.
+- **Skalieren, zweifach:** (a) **beliebig viele** Vorlagen (jede ist nur eine Datei);
+  (b) **Ausgabeformat pro Vorlage** (A4/A3/Quer, Ränder) als Metadatum — nicht in Code.
+- **Speicherort (Vorschlag):** mitgelieferte **Standard-Vorlagen** (read-only Baseline) +
+  **Nutzer-/Team-Ebene**. Für ein Team, das dieselben Vorlagen teilt, ist eine **geteilte
+  Vorlagen-Bibliothek im Drive** (lokal gecacht) die eleganteste Variante — einer pflegt,
+  alle bekommen's.
+- **UI:** eigenes „Vorlagen"-Verwaltungs-Panel im Formulare-Modul: Liste je Kategorie,
+  je Eintrag Bearbeiten · Duplizieren · Archivieren · Format · Vorschau · „Neu".
+
 ## 4. Verbindungen zu bestehenden/geparkten Strängen
 
 - **Brand-Assets** (`docs/brand/README.md`): das Briefpapier/Logo/Schrift-Fundament dieser Ebene.
