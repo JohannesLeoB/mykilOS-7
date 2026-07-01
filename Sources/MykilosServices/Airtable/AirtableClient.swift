@@ -11,6 +11,12 @@ public enum AirtableError: Error, LocalizedError, Sendable, Equatable {
     case notConnected
     case invalidResponse
     case httpError(Int)
+    /// Härtung (2026-07-01, dritter unerklärter 422 in Folge): `httpError` trug bisher NUR
+    /// den HTTP-Status — Airtables Antwort-Body (der das konkrete Feld + den Grund nennt,
+    /// z. B. "Field \"Projektart\" cannot accept the provided value") wurde stillschweigend
+    /// verworfen. Jede weitere 422-Ursache musste deshalb blind erraten werden. Jetzt wird der
+    /// Body, wo vorhanden, mitgetragen — der Fehler diagnostiziert sich selbst.
+    case validationFailed(Int, String)
     case decodingFailed
     case invalidBaseID(String)
 
@@ -22,11 +28,32 @@ public enum AirtableError: Error, LocalizedError, Sendable, Equatable {
             return "Airtable-Antwort ungültig (keine HTTP-Antwort erhalten)."
         case .httpError(let code):
             return "Airtable-Fehler HTTP \(code)"
+        case .validationFailed(let code, let message):
+            return "Airtable-Fehler HTTP \(code): \(message)"
         case .decodingFailed:
             return "Airtable-Antwort konnte nicht gelesen werden (Decoding fehlgeschlagen)."
         case .invalidBaseID(let msg):
             return "Schreibschutz verletzt: \(msg)"
         }
+    }
+
+    /// Wirft `.validationFailed` mit dem aus dem Airtable-Fehler-Body extrahierten Text,
+    /// falls vorhanden (Format `{"error":{"type":...,"message":...}}`), sonst `.httpError`
+    /// mit nur dem Status-Code (z. B. wenn der Body leer/kein JSON ist).
+    static func throwForFailedResponse(statusCode: Int, body: Data) throws -> Never {
+        if let message = Self.extractErrorMessage(from: body) {
+            throw AirtableError.validationFailed(statusCode, message)
+        }
+        throw AirtableError.httpError(statusCode)
+    }
+
+    /// `internal` statt `private` — pur/testbar (siehe AirtableClientTests).
+    static func extractErrorMessage(from body: Data) -> String? {
+        struct ErrorBody: Decodable { struct Inner: Decodable { let type: String?; let message: String? }; let error: Inner? }
+        guard let decoded = try? JSONDecoder().decode(ErrorBody.self, from: body) else { return nil }
+        if let message = decoded.error?.message, message.isEmpty == false { return message }
+        if let type = decoded.error?.type, type.isEmpty == false { return type }
+        return nil
     }
 }
 
@@ -201,7 +228,7 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
 
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse else { throw AirtableError.invalidResponse }
-            guard (200...299).contains(http.statusCode) else { throw AirtableError.httpError(http.statusCode) }
+            guard (200...299).contains(http.statusCode) else { try AirtableError.throwForFailedResponse(statusCode: http.statusCode, body: data) }
 
             let page = try Self.parsePage(from: data)
             allRecords.append(contentsOf: page.records)
@@ -246,7 +273,7 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
 
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw AirtableError.invalidResponse }
-        guard (200...299).contains(http.statusCode) else { throw AirtableError.httpError(http.statusCode) }
+        guard (200...299).contains(http.statusCode) else { try AirtableError.throwForFailedResponse(statusCode: http.statusCode, body: data) }
         let decoded = try? JSONDecoder().decode(CreateRecordResponse.self, from: data)
         return decoded?.records.first?.id ?? ""
     }
@@ -257,6 +284,16 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
     /// wenn Base oder Tabelle nicht auf der Whitelist — kein Schreiben in fremde Bases.
     /// Gibt nur geänderte Felder mit — Felder, die nicht im Dict stehen, bleiben unverändert.
     public func updateRecord(baseID: String, table: String, recordID: String, fields: [String: AirtableFieldValue]) async throws {
+        try await updateRecord(baseID: baseID, table: table, recordID: recordID, fields: fields, typecast: false)
+    }
+
+    /// Härtung (2026-07-01, Audit): eigene Überladung NUR auf dem konkreten Typ (nicht Teil
+    /// von `AirtableRecordUpdating`, daher keine Änderung an bestehenden Protokoll-Aufrufern/
+    /// Test-Fakes nötig) — für den Fall, dass ein PATCH einen NEUEN Select-Optionswert setzt
+    /// (z. B. Phase="Lead"/Quelle="Fragebogen" beim Vervollständigen eines unvollständigen
+    /// Routing-Eintrags). Ohne dies würde ein PATCH mit einem noch nicht existierenden
+    /// Optionswert denselben HTTP-422-Fehler werfen wie ein CREATE ohne typecast.
+    public func updateRecord(baseID: String, table: String, recordID: String, fields: [String: AirtableFieldValue], typecast: Bool) async throws {
         guard Self.isWritable(baseID: baseID, table: table) else {
             throw AirtableError.invalidBaseID("Schreiben in \(table)@\(baseID) nicht erlaubt — Whitelist: \(Self.writableMap)")
         }
@@ -271,12 +308,13 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
         request.httpMethod = "PATCH"
         request.setValue("Bearer \(credentials.pat)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let payload: [String: Any] = ["fields": fields.mapValues(\.jsonValue)]
+        var payload: [String: Any] = ["fields": fields.mapValues(\.jsonValue)]
+        if typecast { payload["typecast"] = true }
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
 
-        let (_, response) = try await session.data(for: request)
+        let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw AirtableError.invalidResponse }
-        guard (200...299).contains(http.statusCode) else { throw AirtableError.httpError(http.statusCode) }
+        guard (200...299).contains(http.statusCode) else { try AirtableError.throwForFailedResponse(statusCode: http.statusCode, body: data) }
     }
 
     // MARK: - Löschpfad (NUR TEST-Sandbox-Cleanup, Block A)
@@ -308,9 +346,9 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(credentials.pat)", forHTTPHeaderField: "Authorization")
 
-        let (_, response) = try await session.data(for: request)
+        let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw AirtableError.invalidResponse }
-        guard (200...299).contains(http.statusCode) else { throw AirtableError.httpError(http.statusCode) }
+        guard (200...299).contains(http.statusCode) else { try AirtableError.throwForFailedResponse(statusCode: http.statusCode, body: data) }
     }
 
     // MARK: - Testbare Bausteine für updateRecord

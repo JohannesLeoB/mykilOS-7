@@ -5,6 +5,31 @@ import Foundation
 
 struct AirtableClientTests {
 
+    // MARK: - Härtung (2026-07-01): AirtableError trägt jetzt Airtables echten Fehler-Body,
+    // statt nur den HTTP-Status — sonst muss jeder 422 blind erraten werden (dritter Fall
+    // in Folge, live beobachtet).
+
+    @Test func extractErrorMessageLiestMessageAusEchtemAirtableFehlerFormat() {
+        let body = #"{"error":{"type":"INVALID_VALUE_FOR_COLUMN","message":"Field \"Projektart\" cannot accept the provided value."}}"#.data(using: .utf8)!
+        #expect(AirtableError.extractErrorMessage(from: body) == "Field \"Projektart\" cannot accept the provided value.")
+    }
+
+    @Test func extractErrorMessageFaelltAufTypeZurueckWennMessageFehlt() {
+        let body = #"{"error":{"type":"INVALID_REQUEST_UNKNOWN"}}"#.data(using: .utf8)!
+        #expect(AirtableError.extractErrorMessage(from: body) == "INVALID_REQUEST_UNKNOWN")
+    }
+
+    @Test func extractErrorMessageGibtNilBeiKaputtemOderLeeremBody() {
+        #expect(AirtableError.extractErrorMessage(from: Data()) == nil)
+        #expect(AirtableError.extractErrorMessage(from: "not json".data(using: .utf8)!) == nil)
+        #expect(AirtableError.extractErrorMessage(from: #"{"nichts":"passendes"}"#.data(using: .utf8)!) == nil)
+    }
+
+    @Test func airtableErrorValidationFailedZeigtCodeUndMessage() {
+        let error = AirtableError.validationFailed(422, "Field \"Budget\" cannot accept the provided value.")
+        #expect(error.errorDescription == "Airtable-Fehler HTTP 422: Field \"Budget\" cannot accept the provided value.")
+    }
+
     @Test func buildListURLEnthaeltBaseUndTable() {
         let url = AirtableClient.buildListURL(
             apiBase: "https://api.airtable.com/v0",

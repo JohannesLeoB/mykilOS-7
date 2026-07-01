@@ -7,7 +7,7 @@ import MykilosServices
 // Ordner/Ansichten-Auswahl — dezente mykilOS-Segment-Reihe (kein Apple-Mail-Klon).
 // Jeder Ordner hat eine Gmail-Query, ein SF-Symbol und einen kurzen Label.
 enum MailFolder: CaseIterable, Identifiable {
-    case inbox, starred, sent
+    case inbox, starred, sent, drafts
 
     var id: Self { self }
 
@@ -16,6 +16,7 @@ enum MailFolder: CaseIterable, Identifiable {
         case .inbox:   return "Eingang"
         case .starred: return "Markiert"
         case .sent:    return "Gesendet"
+        case .drafts:  return "Entwürfe"
         }
     }
 
@@ -24,6 +25,7 @@ enum MailFolder: CaseIterable, Identifiable {
         case .inbox:   return "tray"
         case .starred: return "flag"
         case .sent:    return "paperplane"
+        case .drafts:  return "doc.text"
         }
     }
 
@@ -34,6 +36,10 @@ enum MailFolder: CaseIterable, Identifiable {
         // Apple-Mail-Flags syncen zu Gmail-Sternen → is:starred
         case .starred: return "is:starred"
         case .sent:    return "in:sent"
+        // Härtung (2026-07-01, Johannes): "Entwürfe"-Ordner fehlte im Mail-Modus.
+        // Nutzt dieselbe generische searchMessages(query:)-Infrastruktur wie die
+        // anderen drei Ordner — Gmails messages.list-Suche versteht "in:drafts" genauso.
+        case .drafts:  return "in:drafts"
         }
     }
 }
@@ -45,6 +51,7 @@ enum MailFolder: CaseIterable, Identifiable {
 // Tabelle Kontakte (tblncfQzQa8TzCZQC) → StudioContact → Empfänger-Picker.
 @MainActor
 struct MailClientView: View {
+    @Environment(AppState.self) private var appState
     // Eingebettet im Assistenten-Toggle bringt die Seite ihren Titel schon mit —
     // dann KEINEN eigenen „Mail"-Kopf rendern (sonst steht „Mail" doppelt).
     var showsOwnHeader: Bool = true
@@ -108,6 +115,13 @@ struct MailClientView: View {
         let tableID = "tblncfQzQa8TzCZQC"
         guard let records = try? await client.fetchRecords(baseID: baseID, table: tableID) else { return }
         airtableContacts = AirtableClient.mapContacts(from: records)
+        // Härtung (2026-07-01, Audit): dritter, unabhängiger Reader derselben Kontakte-Tabelle
+        // (neben AppState.syncKontakte + AirtableContactsLoader) — bisher ohne jedes
+        // dataFlow.log. Nutzt dieselbe Manifest-ID wie AppState.syncKontakte, da es
+        // semantisch derselbe Lookup ist.
+        appState.dataFlow.log(integrationID: "AIRTABLE_KONTAKTE_LOOKUP", actorUserID: appState.actorUserID,
+                               action: .success, recordsRead: airtableContacts.count,
+                               summary: "Mail-Compose: Kontakte für Empfänger-Picker geladen")
     }
 
     // MARK: - Linke Spalte: Ordner + Suche + Nachrichtenliste

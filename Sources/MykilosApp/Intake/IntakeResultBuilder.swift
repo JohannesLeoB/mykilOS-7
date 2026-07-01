@@ -106,44 +106,66 @@ public enum IntakeResultBuilder {
         if !firma.isEmpty     { felder["Firma"]     = firma }
         if !email.isEmpty     { felder["Kontakt 1 Email"] = email }
         if !telefon.isEmpty   { felder["Kontakt 1 Telefon"] = telefon }
-        // Adressblock
-        var adressteile: [String] = []
-        if !strasse.isEmpty { adressteile.append(strasse) }
-        if !plz.isEmpty || !ort.isEmpty {
-            let plzOrt = [plz, ort].filter { !$0.isEmpty }.joined(separator: " ")
-            adressteile.append(plzOrt)
-        }
-        if !adressteile.isEmpty {
-            felder["Angebotsadresse Straße"] = adressteile.first ?? ""
-            if adressteile.count > 1 { felder["Angebotsadresse PLZ"] = plz }
-            if !ort.isEmpty { felder["Angebotsadresse Ort"] = ort }
-        }
-        // Fix (2026-07-01, Live-HTTP-422): unconditional -- selbst bei LEERER Auswahl wurde
-        // hier bisher ein leerer String gesendet, statt das Feld wegzulassen wie bei jedem
-        // anderen Feld in dieser Funktion (siehe die if-!isEmpty-Guards oben).
-        let quelle = m.quelle.map(\.rawValue).sorted().joined(separator: ", ")
-        if !quelle.isEmpty { felder["Quelle"] = quelle }
-        // Sonderwünsche / Notizen
-        let notizen = buildKundeNotizen(m)
-        if !notizen.isEmpty { felder["Notizen"] = notizen }
+        // Adressblock — Straße/PLZ/Ort unabhängig voneinander gesetzt, exakt wie
+        // mapProjektFelder unten. Fix (2026-07-01, Härtung): die vorherige kombinierte
+        // "adressteile"-Liste hat bei fehlender Straße (nur PLZ/Ort ausgefüllt) die
+        // PLZ+Ort-Kombination fälschlich ins Straßenfeld geschrieben und dabei die
+        // echte PLZ stillschweigend verworfen.
+        if !strasse.isEmpty { felder["Angebotsadresse Straße"] = strasse }
+        if !plz.isEmpty      { felder["Angebotsadresse PLZ"]    = plz }
+        if !ort.isEmpty      { felder["Angebotsadresse Ort"]    = ort }
+        // Härtung (2026-07-01, Live-Schema-Diagnose): die echten Kunden-Feldnamen wurden über
+        // ExternalMappingRegistry.syncBusiness ausgelesen (Vereinigung über alle 6 vorhandenen
+        // Records): Nachname, Vorname, Firma, Kontakt 1/2 Email, Kontakt 1/2 Telefon, Land,
+        // Angebotsadresse Straße/PLZ/Ort, Erstellt am, Projekte (Link), sevDesk Kontakt-ID.
+        // "Quelle" existiert NICHT (in keinem der 6 Records) — bisher blind gesendet, hätte
+        // (nach Behebung des Notizen-Fehlers) den nächsten HTTP 422 ausgelöst. Bewusst NICHT
+        // geraten — Feld weggelassen, bis Johannes den echten Feldnamen/Zielort nennt.
+        // let notizen = buildKundeNotizen(m)
+        // if !notizen.isEmpty { felder["Notizen"] = notizen }
+        // let notizen = buildKundeNotizen(m)
+        // if !notizen.isEmpty { felder["Notizen"] = notizen }
         return felder
     }
 
     private static func buildKundeNotizen(_ m: FragebogenModel) -> String {
         var teile: [String] = []
-        if !m.quelleFreitext.isEmpty { teile.append("Quelle: \(m.quelleFreitext)") }
-        if !m.entscheidungFreitext.isEmpty { teile.append("Entscheidung: \(m.entscheidungFreitext)") }
+        // Härtung (2026-07-01): getrimmt wie jeder andere Freitext-Guard in dieser Datei —
+        // ein reiner Leerzeichen-String war bisher "nicht leer" und landete als sichtbar
+        // leere Zeile ("Quelle: ") in den Notizen.
+        let quelleFreitext = m.quelleFreitext.trimmingCharacters(in: .whitespacesAndNewlines)
+        let entscheidungFreitext = m.entscheidungFreitext.trimmingCharacters(in: .whitespacesAndNewlines)
+        if m.quelle.count > 1 {
+            // Vollständige Mehrfachauswahl bleibt hier erhalten, da nur der erste Wert
+            // ins Airtable-Feld "Quelle" geschrieben wird (siehe mapKundeFelder oben).
+            teile.append("Quelle (alle): \(m.quelle.map(\.rawValue).sorted().joined(separator: ", "))")
+        }
+        if !quelleFreitext.isEmpty { teile.append("Quelle: \(quelleFreitext)") }
+        if !entscheidungFreitext.isEmpty { teile.append("Entscheidung: \(entscheidungFreitext)") }
         return teile.joined(separator: " | ")
     }
 
     // MARK: - Projekt-Felder (Artikel-DB "Projekte"-Tabelle)
 
+    // Härtung (2026-07-01, Live-Schema-Diagnose): die echten Feldnamen der Projekte-Tabelle
+    // wurden über einen bereits laufenden, echten Read (ExternalMappingRegistry.syncBusiness)
+    // ausgelesen (Vereinigung über alle 9 vorhandenen Records — kein Rätselraten mehr):
+    //   Projektname, Status, Kunde, Projektadresse Straße/PLZ/Ort, Projektartikel,
+    //   Summe EK/VK, Ertrag (€), Kostenabweichung, Marge %, Gesamtkosten geplant,
+    //   sevDesk Angebot-ID/-Link/Kostenstellen-ID, ClickUp Lead ID/Link, Firma/Nachname/
+    //   Vorname (from Kunde) [Lookups, nicht schreibbar], Angebot an sevDesk senden.
+    // "Projektstatus", "Budget" und "Projektart" existieren NICHT — sie wurden bisher blind
+    // gesendet und haben JEDE Projekt-Anlage mit HTTP 422 blockiert. "Status" existiert echt,
+    // aber der einzige bisher beobachtete Wert ist "In progress" (Englisch) — passt zu KEINER
+    // der 6 deutschen Picker-Optionen dieser App. Ohne die vollständige Options-Liste würde
+    // jeder geratene Wert erneut 422en (Select-Feld, kein typecast in dieser Base erlaubt).
+    // Alle drei bewusst weggelassen, bis Johannes die echten Status-Optionen nennt UND
+    // bestätigt, wo Budget/Projektart tatsächlich hingehören (evtl. in eine eigene Tabelle,
+    // siehe "Bau-Runde Intake+Webshop"-Notiz zu separaten, eigenen Tabellen).
     static func mapProjektFelder(_ m: FragebogenModel) -> [String: String] {
         var felder: [String: String] = [:]
         let name = m.projektName.trimmingCharacters(in: .whitespacesAndNewlines)
         if !name.isEmpty { felder["Projektname"] = name }
-        felder["Projektstatus"] = m.projektStatus
-        if let budget = m.budget { felder["Budget"] = String(budget) }
         // Projektadresse
         let strasse = m.projektStrasse.trimmingCharacters(in: .whitespacesAndNewlines)
         let plz     = m.projektPLZ.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -151,18 +173,18 @@ public enum IntakeResultBuilder {
         if !strasse.isEmpty { felder["Projektadresse Straße"] = strasse }
         if !plz.isEmpty     { felder["Projektadresse PLZ"]    = plz }
         if !ort.isEmpty     { felder["Projektadresse Ort"]    = ort }
-        // Projektart (immer kitchen bei Fragebogen)
-        felder["Projektart"] = "kitchen"
-        // Notizen aus Fragebogen
-        let notizen = buildProjektNotizen(m)
-        if !notizen.isEmpty { felder["Notizen"] = notizen }
         return felder
     }
 
     private static func buildProjektNotizen(_ m: FragebogenModel) -> String {
         var teile: [String] = []
-        if !m.raumBreite.isEmpty || !m.raumTiefe.isEmpty {
-            teile.append("Raum: \(m.raumBreite)m × \(m.raumTiefe)m (\(m.raumform.rawValue))")
+        // Härtung (2026-07-01): getrimmt wie die übrigen Freitext-Guards — ein reiner
+        // Leerzeichen-String war bisher "nicht leer" und erzeugte eine sichtbar leere Zeile.
+        let raumBreite = m.raumBreite.trimmingCharacters(in: .whitespacesAndNewlines)
+        let raumTiefe = m.raumTiefe.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sonderwuensche = m.sonderwuensche.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !raumBreite.isEmpty || !raumTiefe.isEmpty {
+            teile.append("Raum: \(raumBreite)m × \(raumTiefe)m (\(m.raumform.rawValue))")
         }
         if !m.einbausituation.isEmpty {
             teile.append("Einbau: \(m.einbausituation.map(\.rawValue).sorted().joined(separator: ", "))")
@@ -170,7 +192,7 @@ public enum IntakeResultBuilder {
         if !m.stil.isEmpty {
             teile.append("Stil: \(m.stil.map(\.rawValue).sorted().joined(separator: ", "))")
         }
-        if !m.sonderwuensche.isEmpty { teile.append("Sonderwünsche: \(m.sonderwuensche)") }
+        if !sonderwuensche.isEmpty { teile.append("Sonderwünsche: \(sonderwuensche)") }
         teile.append("Nächster Schritt: \(m.naechsterSchritt.rawValue)")
         teile.append("Planungsphase: \(m.planungsphase.rawValue)")
         teile.append("Budget-Kategorie: \(m.budgetKategorie.rawValue)")

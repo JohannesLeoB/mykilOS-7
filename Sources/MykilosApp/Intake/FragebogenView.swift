@@ -22,6 +22,18 @@ struct FragebogenView: View {
     // Anlege-Stufe (Johannes, 2026-07-01): am letzten Dialog gewählt, NICHT vorbelegt
     // mit der vollen Stufe — bewusste Entscheidung statt versehentlicher Volltreffer.
     @State private var triggerStufe: FragebogenTriggerStufe = .kontakt
+    // Erinnerungsfunktion (Johannes, 2026-07-01): "Ausgefüllte Daten bei Fensterwechsel oder
+    // temporärem Schließen noch bereithalten" + expliziter "Verwerfen"-Button. Das `modell`
+    // selbst wird vom Aufrufer (KatalogeView) NICHT mehr bei jedem Schließen zurückgesetzt —
+    // nur ein bewusstes "Verwerfen" hier oder ein erfolgreiches "Jetzt anlegen" leert es.
+    @State private var zeigeVerwerfenBestaetigung: Bool = false
+    // Härtung (2026-07-01, Audit): `schreibPhase` allein reicht NICHT, um "nach einem
+    // erfolgreichen Anlegen beim Schließen zurücksetzen" zu entscheiden — ein Stufenwechsel
+    // NACH einem Erfolg setzt schreibPhase zurück auf .idle (siehe schrittLeiste-Picker unten),
+    // wodurch der alte, auf schreibPhase gestützte Check beim Schließen silently nicht mehr
+    // feuerte, obwohl in dieser Sitzung bereits echt etwas angelegt wurde. Dieses Flag merkt
+    // sich den Erfolg unabhängig von schreibPhase, für die gesamte Dialog-Lebensdauer.
+    @State private var hatErfolgreichAngelegt: Bool = false
 
     init(modell: FragebogenModel = FragebogenModel(), onDismiss: @escaping () -> Void) {
         self.modell = modell
@@ -70,17 +82,75 @@ struct FragebogenView: View {
                     .foregroundStyle(MykColor.muted.color)
             }
             Spacer()
+            // Erinnerungsfunktion (Johannes, 2026-07-01): expliziter "Verwerfen"-Button, getrennt
+            // vom einfachen Schließen (X) — Schließen bewahrt die Eingaben jetzt auf, nur
+            // "Verwerfen" löscht sie endgültig.
             Button {
+                if modell.hatNennenswerteEingaben {
+                    zeigeVerwerfenBestaetigung = true
+                } else {
+                    verwerfen()
+                }
+            } label: {
+                Text("Verwerfen")
+                    .font(.mykSmall)
+                    .foregroundStyle(schreibPhase == .speichert ? MykColor.faint.color.opacity(0.4) : MykColor.critical.color)
+            }
+            .buttonStyle(.plain)
+            .disabled(schreibPhase == .speichert)
+            .confirmationDialog(
+                "Eingaben wirklich verwerfen?",
+                isPresented: $zeigeVerwerfenBestaetigung,
+                titleVisibility: .visible
+            ) {
+                Button("Verwerfen", role: .destructive) { verwerfen() }
+                Button("Abbrechen", role: .cancel) {}
+            } message: {
+                Text("Alle Eingaben in diesem Fragebogen gehen dabei verloren.")
+            }
+            Button {
+                // Härtung (2026-07-01, Johannes: Erinnerungsfunktion): nach ERFOLGREICHER
+                // Anlage wird das Modell geleert — ein Wiederöffnen soll nicht versehentlich
+                // dieselben, schon angelegten Daten nochmal anbieten. Bei jedem anderen
+                // Zustand (mittendrin, Fehler, noch nicht versucht) bleibt alles erhalten.
+                // Härtung (2026-07-01, Audit): `hatErfolgreichAngelegt` statt `schreibPhase`
+                // geprüft — ein Stufenwechsel nach dem Erfolg hätte sonst schreibPhase schon
+                // wieder auf .idle gesetzt und diesen Reset silently übersprungen.
+                if hatErfolgreichAngelegt {
+                    modell.reset()
+                    schritt = .kontakt
+                    zeigeBestaetigung = false
+                    ergebnis = nil
+                    schreibPhase = .idle
+                    triggerStufe = .kontakt
+                    hatErfolgreichAngelegt = false
+                }
                 onDismiss()
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.mykBody)
-                    .foregroundStyle(MykColor.faint.color)
-            }.buttonStyle(.plain)
+                    .foregroundStyle(schreibPhase == .speichert ? MykColor.faint.color.opacity(0.4) : MykColor.faint.color)
+            }
+            .buttonStyle(.plain)
+            // Härtung (2026-07-01, Audit): während ein Anlegen-Schreibvorgang läuft, würde
+            // Schließen die Airtable-/Drive-Schreibvorgänge unsichtbar im Hintergrund weiterlaufen
+            // lassen — ohne Rückmeldung UND ohne Möglichkeit, sie wirklich abzubrechen.
+            .disabled(schreibPhase == .speichert)
         }
         .padding(.horizontal, MykSpace.s7)
         .padding(.vertical, MykSpace.s5)
         .background(MykColor.card.color)
+    }
+
+    private func verwerfen() {
+        modell.reset()
+        schritt = .kontakt
+        zeigeBestaetigung = false
+        ergebnis = nil
+        schreibPhase = .idle
+        triggerStufe = .kontakt
+        hatErfolgreichAngelegt = false
+        onDismiss()
     }
 
     // MARK: Schritt-Leiste
@@ -206,12 +276,23 @@ struct FragebogenView: View {
                         .font(.mykBody)
                         .textFieldStyle(.plain)
                         .onChange(of: modell.budgetText) { _, v in
-                            modell.budget = Double(v.replacingOccurrences(of: ",", with: "."))
+                            modell.budget = FragebogenModel.parseGermanBudget(v)
                         }
                         .padding(MykSpace.s3)
                         .background(MykColor.card.color)
                         .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
-                        .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(
+                            budgetParseFehlgeschlagen ? MykColor.critical.color : MykColor.line.color,
+                            lineWidth: budgetParseFehlgeschlagen ? 1.5 : 1))
+                    // Härtung (2026-07-01, Audit): parseGermanBudget kann bei mehrdeutigem/
+                    // fehlerhaftem Format (z. B. mehreren Punkten ohne Komma) `nil` liefern —
+                    // bisher verschwand das Budget dann UNSICHTBAR aus dem Airtable-Write. Jetzt
+                    // sichtbarer Hinweis, statt stillschweigend nichts zu schreiben.
+                    if budgetParseFehlgeschlagen {
+                        Text("Format nicht erkannt — z. B. 25000 oder 25.000,50")
+                            .font(.mykMono(9))
+                            .foregroundStyle(MykColor.critical.color)
+                    }
                 }
             }
 
@@ -426,6 +507,13 @@ struct FragebogenView: View {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 180))], spacing: MykSpace.s2) {
                         ForEach(FragebogenTriggerStufe.allCases) { stufe in
                             pickButton(stufe.rawValue, active: triggerStufe == stufe) {
+                                // Härtung (2026-07-01, Audit): nur bei ECHTEM Stufenwechsel
+                                // zurücksetzen — ein Re-Klick auf die bereits aktive (und ggf.
+                                // bereits erfolgreich gespeicherte) Stufe darf `schreibPhase`
+                                // NICHT auf .idle zurückwerfen, sonst reaktiviert das "Jetzt
+                                // anlegen" für eine exakte Doppel-Anlage (zweiter Google-Kontakt/
+                                // zweite Projektnummer/zweiter Drive-Ordner ohne jeden Grund).
+                                guard stufe != triggerStufe else { return }
                                 triggerStufe = stufe
                                 // Fix (Live-Test, 2026-07-01): ein Fehler/Erfolg einer vorherigen
                                 // Stufe blieb sonst sichtbar stehen, obwohl noch gar kein Versuch
@@ -435,6 +523,11 @@ struct FragebogenView: View {
                             }
                         }
                     }
+                    // Härtung (2026-07-01, Audit): während eines laufenden Schreibvorgangs darf
+                    // die Stufe nicht wechselbar sein — sonst reaktiviert der obige Reset
+                    // "Jetzt anlegen" mitten im laufenden, noch nicht abgeschlossenen Schreiben
+                    // und ein zweiter Klick spawnt einen zweiten, konkurrierenden Schreib-Task.
+                    .disabled(schreibPhase == .speichert)
                     if let hinweis = stufeFehlenderHinweis(ergebnis: ergebnis) {
                         HStack(spacing: MykSpace.s2) {
                             Image(systemName: "exclamationmark.triangle.fill")
@@ -591,6 +684,14 @@ struct FragebogenView: View {
                 .font(.mykSmall)
                 .buttonStyle(.plain)
                 .foregroundStyle(MykColor.muted.color)
+                // Härtung (2026-07-01, Audit): "Abbrechen" hat noch nie den laufenden
+                // Schreib-Task abgebrochen (nur lokalen UI-State zurückgesetzt) — die echten
+                // Airtable-/Drive-Schreibvorgänge liefen bisher unsichtbar im Hintergrund weiter.
+                // Da eine echte Task-Abbruchmöglichkeit eine größere Änderung an AppState
+                // bräuchte (kooperative Cancellation über die ganze Schreibkette), wird
+                // stattdessen verhindert, dass der Nutzer während .speichert überhaupt auf
+                // "Abbrechen" klicken kann — kein täuschender Abbruch, der keiner ist.
+                .disabled(schreibPhase == .speichert)
             }
 
             // Weiter / Jetzt anlegen
@@ -604,7 +705,19 @@ struct FragebogenView: View {
                 }()
                 let kannAnlegen = schreibPhaseBereit && (ergebnis.map { stufeBereit(ergebnis: $0) } ?? false)
                 Button {
-                    if let e = ergebnis { Task { await anlegenBestaetigt(ergebnis: e) } }
+                    guard let e = ergebnis else { return }
+                    // Härtung (2026-07-01, Audit): synchron VOR dem Task-Start gesetzt, nicht
+                    // erst als erste Zeile im async Task-Body. `Task { }` startet nicht inline
+                    // mit dem Klick, sondern erst auf einem späteren MainActor-Turn — bis dahin
+                    // blieb `schreibPhase` sichtbar `.idle` und `kannAnlegen` damit `true`, was
+                    // ein zweiter, sehr schneller Klick (Doppelklick oder programmatisch) als
+                    // zweiten, konkurrierenden Schreib-Task ausnutzen konnte (TOCTOU).
+                    schreibPhase = .speichert
+                    // Härtung (2026-07-01, Audit): auf AppState gespiegelt, damit KatalogeView
+                    // die Sheet-Ebene selbst gegen Escape-Dismiss sperren kann — `schreibPhase`
+                    // ist reines FragebogenView-@State und für den Aufrufer nicht sichtbar.
+                    appState.fragebogenSchreibtGerade = true
+                    Task { await anlegenBestaetigt(ergebnis: e) }
                 } label: {
                     HStack(spacing: MykSpace.s2) {
                         if case .speichert = schreibPhase { ProgressView().scaleEffect(0.6) }
@@ -672,13 +785,22 @@ struct FragebogenView: View {
     }
 
     private func anlegenBestaetigt(ergebnis: IntakeErgebnis) async {
-        schreibPhase = .speichert
+        // schreibPhase = .speichert wird jetzt synchron im Button-Klick gesetzt (siehe fusszeile),
+        // nicht mehr hier — das schließt das TOCTOU-Doppelklick-Fenster (siehe Kommentar dort).
         do {
             let outcome = try await appState.erzeugeAusFragebogen(ergebnis: ergebnis, modell: modell, stufe: triggerStufe)
             schreibPhase = .gespeichert(outcome.summary)
+            hatErfolgreichAngelegt = true
         } catch {
             schreibPhase = .fehler(error.localizedDescription)
         }
+        appState.fragebogenSchreibtGerade = false
+    }
+
+    // Härtung (2026-07-01, Audit): true, wenn Text eingegeben wurde, der parseGermanBudget
+    // aber nicht in eine Zahl umwandeln konnte — sonst verschwindet das Budget unsichtbar.
+    private var budgetParseFehlgeschlagen: Bool {
+        !modell.budgetText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && modell.budget == nil
     }
 
     // MARK: - Anlege-Stufe-Readiness (Johannes, 2026-07-01: Minimum an Eingabedaten je Stufe)

@@ -134,11 +134,13 @@ struct CartStoreTests {
         let wk = Warenkorb(items: [item], projektName: "Küche Test")
         let pruefsumme = wk.pruefsumme
 
+        // Härtung (2026-07-01, Audit): NAME-keyed, wie Airtables echte List-Records-Antwort
+        // (nicht die Feld-IDs, die CartStore nur beim Schreiben nutzt).
         fake.existingRecords = [[
             "_airtableRecordID": .string("recALT"),
-            CartStore.feldPruefsumme: .string(pruefsumme),
-            CartStore.feldStatus: .string(CartStore.statusAktuell),
-            CartStore.feldVersion: .number(1.0),
+            CartStore.feldPruefsummeName: .string(pruefsumme),
+            CartStore.feldStatusName: .string(CartStore.statusAktuell),
+            CartStore.feldVersionName: .number(1.0),
         ]]
 
         let store = CartStore(fetcher: fake, creator: fake, updater: fake)
@@ -191,24 +193,25 @@ struct CartStoreTests {
         let pruefsumme = wk.pruefsumme
 
         // Ein Aktuell + Ein bereits Archiviert + Ein anderer Warenkorb
+        // Härtung (2026-07-01, Audit): NAME-keyed, wie Airtables echte List-Records-Antwort.
         fake.existingRecords = [
             [
                 "_airtableRecordID": .string("recAKTUELL"),
-                CartStore.feldPruefsumme: .string(pruefsumme),
-                CartStore.feldStatus: .string(CartStore.statusAktuell),
-                CartStore.feldVersion: .number(2.0),
+                CartStore.feldPruefsummeName: .string(pruefsumme),
+                CartStore.feldStatusName: .string(CartStore.statusAktuell),
+                CartStore.feldVersionName: .number(2.0),
             ],
             [
                 "_airtableRecordID": .string("recALTARCHIV"),
-                CartStore.feldPruefsumme: .string(pruefsumme),
-                CartStore.feldStatus: .string(CartStore.statusArchiviert),
-                CartStore.feldVersion: .number(1.0),
+                CartStore.feldPruefsummeName: .string(pruefsumme),
+                CartStore.feldStatusName: .string(CartStore.statusArchiviert),
+                CartStore.feldVersionName: .number(1.0),
             ],
             [
                 "_airtableRecordID": .string("recANDERER"),
-                CartStore.feldPruefsumme: .string("anderepruefsumme"),
-                CartStore.feldStatus: .string(CartStore.statusAktuell),
-                CartStore.feldVersion: .number(1.0),
+                CartStore.feldPruefsummeName: .string("anderepruefsumme"),
+                CartStore.feldStatusName: .string(CartStore.statusAktuell),
+                CartStore.feldVersionName: .number(1.0),
             ],
         ]
 

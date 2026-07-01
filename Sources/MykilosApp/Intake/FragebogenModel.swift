@@ -149,13 +149,6 @@ public final class FragebogenModel {
     public var naechsterSchritt: NaechsterSchritt = .angebot
     public var naechsterSchrittFreitext: String = ""
 
-    // MARK: - Anlege-Stufe (Johannes, 2026-07-01: "die Triggerstufe wird im letzten
-    // Dialog zur Auswahl angegeben" — je nach Stufe unterschiedliches Minimum an
-    // Eingabedaten UND unterschiedliche Schreibwirkung. Ausgewählt in der
-    // Bestätigungsansicht, NICHT vorbelegt mit der vollen Stufe — wer nur einen
-    // Kontakt speichern will, muss das nicht extra "herunterstufen".
-    public var triggerStufe: FragebogenTriggerStufe = .kontakt
-
     // MARK: - Validierung
 
     /// Universelles Mindest-Pflichtfeld für ALLE Stufen: der Nachname. Die feineren,
@@ -174,6 +167,159 @@ public final class FragebogenModel {
     }
 
     public init() {}
+
+    /// Härtung (2026-07-01, Johannes: "Verwerfen"-Button): setzt JEDES Feld auf seinen
+    /// Init-Default zurück — genutzt vom expliziten "Verwerfen" in FragebogenView UND vom
+    /// automatischen Zurücksetzen nach erfolgreichem "Jetzt anlegen" (siehe dort). Bewusst
+    /// keine neue Instanz (die würde das @Bindable-Binding der View brechen) — dieselbe
+    /// Instanz wird in-place auf den Leerzustand zurückgesetzt.
+    public func reset() {
+        kundeVorname = ""; kundeNachname = ""; kundeFirma = ""
+        kundeEmail = ""; kundeTelefon = ""
+        kundeStrasse = ""; kundePLZ = ""; kundeOrt = ""
+
+        projektName = ""; projektStrasse = ""; projektPLZ = ""; projektOrt = ""
+        projektStatus = "Lead"
+        budget = nil; budgetText = ""
+
+        raumBreite = ""; raumTiefe = ""; raumHoeheText = ""
+        raumform = .rechteckig; raumformFreitext = ""
+
+        einbausituation = []; einbausituationFreitext = ""
+        stil = []; stilFreitext = ""
+        griffkonzept = []; griffkonzeptFreitext = ""
+
+        frontenMaterial = []; frontenFreitext = ""; frontenArtikel = []
+        arbeitsplattenMaterial = []; arbeitsplattenFreitext = ""; arbeitsplattenArtikel = []
+        kochfeldTyp = []; kochfeldFreitext = ""; kochfeldArtikel = []
+        dunstabzugTyp = []; dunstabzugFreitext = ""
+        beleuchtung = []; beleuchtungFreitext = ""
+        backofenTyp = []; backofenFreitext = ""; backofenArtikel = []
+        spuelTyp = []; spuelFreitext = ""
+        kuehlgeraete = []; kuehlgeraeteFreitext = ""
+        schubladen = []; schubladenFreitext = ""
+        inneneinteilung = []; inneneinteilungFreitext = ""
+        haengeschraenke = []; haengeschraenkeFreitext = ""
+        haushaltsgerate = []; haushaltsgeraeteFreitext = ""; haushaltsgeraeteArtikel = []
+        technikWuensche = []; technikFreitext = ""; technikArtikel = []
+
+        planungsphase = .erstgespraech; wunschtermin = ""; planungsFreitext = ""
+        budgetKategorie = .mittel; budgetKategorieFreitext = ""
+
+        quelle = []; quelleFreitext = ""
+        bestandskueche = .nein; bestandsFreitext = ""
+        anschluesse = []; anschluessFreitext = ""
+        sonderwuensche = ""
+        entscheidungstraeger = .alleine; entscheidungFreitext = ""
+        naechsterSchritt = .angebot; naechsterSchrittFreitext = ""
+    }
+
+    /// Härtung (2026-07-01, Johannes: "Verwerfen"-Button): ob überhaupt etwas Nennenswertes
+    /// eingegeben wurde — steuert, ob "Verwerfen" ohne Rückfrage oder mit Sicherheitsabfrage
+    /// ausgeführt wird (ein leeres Formular verwerfen braucht keine Bestätigung).
+    /// Härtung (2026-07-01, Audit): geprüft wurden bisher NUR Kontakt/Projektname/Budget (7 von
+    /// 74 Feldern) — wer z. B. nur Raum/Einbau/Stil/Geräte ausgefüllt hatte, verlor beim
+    /// "Verwerfen" alles OHNE Sicherheitsabfrage. Jetzt EVERY Feld geprüft, die `reset()`
+    /// zurücksetzt — nicht getrimmt vs. `.trim()`, sondern exakt gegen den `reset()`-Leerwert.
+    public var hatNennenswerteEingaben: Bool {
+        !kundeVorname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !kundeNachname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !kundeFirma.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !kundeEmail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !kundeTelefon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !kundeStrasse.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !kundePLZ.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !kundeOrt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !projektName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !projektStrasse.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !projektPLZ.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !projektOrt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || projektStatus != "Lead"
+            || budget != nil
+            || !budgetText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !raumBreite.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !raumTiefe.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !raumHoeheText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || raumform != .rechteckig
+            || !raumformFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !einbausituation.isEmpty
+            || !einbausituationFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !stil.isEmpty
+            || !stilFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !griffkonzept.isEmpty
+            || !griffkonzeptFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !frontenMaterial.isEmpty
+            || !frontenFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !frontenArtikel.isEmpty
+            || !arbeitsplattenMaterial.isEmpty
+            || !arbeitsplattenFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !arbeitsplattenArtikel.isEmpty
+            || !kochfeldTyp.isEmpty
+            || !kochfeldFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !kochfeldArtikel.isEmpty
+            || !dunstabzugTyp.isEmpty
+            || !dunstabzugFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !beleuchtung.isEmpty
+            || !beleuchtungFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !backofenTyp.isEmpty
+            || !backofenFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !backofenArtikel.isEmpty
+            || !spuelTyp.isEmpty
+            || !spuelFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !kuehlgeraete.isEmpty
+            || !kuehlgeraeteFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !schubladen.isEmpty
+            || !schubladenFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !inneneinteilung.isEmpty
+            || !inneneinteilungFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !haengeschraenke.isEmpty
+            || !haengeschraenkeFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !haushaltsgerate.isEmpty
+            || !haushaltsgeraeteFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !haushaltsgeraeteArtikel.isEmpty
+            || !technikWuensche.isEmpty
+            || !technikFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !technikArtikel.isEmpty
+            || planungsphase != .erstgespraech
+            || !wunschtermin.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !planungsFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || budgetKategorie != .mittel
+            || !budgetKategorieFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !quelle.isEmpty
+            || !quelleFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || bestandskueche != .nein
+            || !bestandsFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !anschluesse.isEmpty
+            || !anschluessFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !sonderwuensche.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || entscheidungstraeger != .alleine
+            || !entscheidungFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || naechsterSchritt != .angebot
+            || !naechsterSchrittFreitext.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Härtung (2026-07-01, Audit): parst Budget-Eingaben im deutschen Zahlenformat
+    /// (Punkt = Tausendertrenner, Komma = Dezimaltrenner) statt naiv nur ',' → '.' zu tauschen —
+    /// das hätte "25.000" (25.000 €) auf 25.0 kollabiert und den falschen Wert unbemerkt nach
+    /// Airtable geschrieben (kein HTTP-Fehler, da 25.0 ein gültiger Number-Wert ist).
+    /// Heuristik: ein Komma ist immer der Dezimaltrenner (Punkte davor sind Tausendertrenner).
+    /// Ohne Komma gilt ein Punkt mit genau 3 Nachkommastellen als Tausendertrenner (z. B.
+    /// "25.000"), alles andere (z. B. "25.5") als normaler Dezimalpunkt.
+    public static func parseGermanBudget(_ input: String) -> Double? {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        if trimmed.contains(",") {
+            let ohneTausenderpunkte = trimmed.replacingOccurrences(of: ".", with: "")
+            return Double(ohneTausenderpunkte.replacingOccurrences(of: ",", with: "."))
+        }
+        if let punktIndex = trimmed.lastIndex(of: ".") {
+            let nachPunkt = trimmed[trimmed.index(after: punktIndex)...]
+            if nachPunkt.count == 3, nachPunkt.allSatisfy(\.isNumber) {
+                return Double(trimmed.replacingOccurrences(of: ".", with: ""))
+            }
+        }
+        return Double(trimmed)
+    }
 }
 
 // MARK: - FragebogenArtikelAuswahl

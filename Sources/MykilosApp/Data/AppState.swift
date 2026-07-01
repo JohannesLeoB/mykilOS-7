@@ -60,6 +60,20 @@ public final class AppState {
     public let provisioningService: ProjektProvisioningService
     public let clickUpRouting: ClickUpRoutingStore
 
+    // Härtung (2026-07-01, Johannes: Erinnerungsfunktion für den Fragebogen). Lebt hier auf
+    // AppState-Ebene statt als @State in KatalogeView — sonst zerstört ein Sidebar-
+    // Modulwechsel (der `switch module` in MykilOS6App.swift/moduleView ersetzt KatalogeView
+    // komplett durch eine andere View) KatalogeViews @State und damit den Entwurf, obwohl
+    // AppState selbst für die gesamte App-Sitzung erhalten bleibt.
+    public var fragebogenEntwurf = FragebogenModel()
+    public var zeigeFragebogen: Bool = false
+    // Härtung (2026-07-01, Audit): spiegelt FragebogenViews privates `schreibPhase == .speichert`
+    // nach außen — KatalogeView nutzt es, um die Sheet-Ebene selbst per `.interactiveDismissDisabled`
+    // gegen die Escape-Taste zu sperren (die sonst alle `.disabled(...)`-Gates in FragebogenView
+    // umgeht, weil sie direkt den `.sheet`-Bindingwert auf false setzt, ohne irgendeinen
+    // FragebogenView-Button-Handler aufzurufen).
+    public var fragebogenSchreibtGerade: Bool = false
+
     // MARK: Integrationen
     public let googleAuth: GoogleAuthService
     public let clockodoAuth: ClockodoAuthService
@@ -380,6 +394,22 @@ public final class AppState {
         // ersten Intake-Submit überhaupt Kandidaten.
         await syncBusinessRegistry()
         refreshAssistantKundenWissen()                   // frische Kunden + Kontakte → Assistent
+
+        // TEMPORÄRE SONDIERUNG (2026-07-01, Audit: CartStore-Feld-ID-vs-Name-Verdacht):
+        // fetchRecords() liefert Airtable-Felder standardmäßig NAME-keyed (returnFieldsByFieldId
+        // nie gesetzt), CartStore liest aber über Feld-IDs — würde das erklären, wieso
+        // Archivierung/Versionierung nie funktioniert hat? Rein lesend. Nach Auswertung entfernen.
+        do {
+            let wk = try await AirtableClient().fetchRecords(baseID: CartStore.artikelBaseID, table: CartStore.warenkorbTable)
+            let pa = try await AirtableClient().fetchRecords(baseID: CartStore.artikelBaseID, table: CartStore.projektartikelTable)
+            let wkFelder = Set(wk.flatMap(\.keys)).sorted()
+            let paFelder = Set(pa.flatMap(\.keys)).sorted()
+            let inhalt = "Warenkörbe (\(wk.count) Records): " + wkFelder.joined(separator: " | ")
+                + "\n\nProjektartikel (\(pa.count) Records): " + paFelder.joined(separator: " | ")
+            try? inhalt.write(toFile: NSHomeDirectory() + "/mykilos_cartstore_sondierung.txt", atomically: true, encoding: .utf8)
+        } catch {
+            try? "Fehlgeschlagen: \(String(describing: error))".write(toFile: NSHomeDirectory() + "/mykilos_cartstore_sondierung.txt", atomically: true, encoding: .utf8)
+        }
     }
 
     // S13: lädt die Airtable-Tabelle „Kontakte" einmalig (read-only) in den lokalen
@@ -499,6 +529,13 @@ public final class AppState {
                     actorUserID: actorUserID, projectID: "-",
                     action: .contactCreated,
                     summary: "Airtable-Kontakt angelegt: \(draft.name) (ID \(recordID))"))
+                // Härtung (2026-07-01, Audit): der ECHTE bestätigte Write hatte bisher keinen
+                // dataFlow.log — ConversationEngine loggt nur den Tool-Aufruf (Entwurfsphase,
+                // VOR der Bestätigung), was einen grünen Erfolg zeigen kann, bevor überhaupt
+                // etwas geschrieben wurde. Dieser Aufruf hier spiegelt den tatsächlichen Write.
+                dataFlow.log(integrationID: "AIRTABLE_KONTAKTE_CREATE", actorUserID: actorUserID,
+                             action: .success, recordsWritten: 1,
+                             summary: "Airtable-Kontakt angelegt: \(draft.name)")
                 // Snapshot aktualisieren, damit lookup_kontakt sofort den neuen Eintrag findet.
                 await syncKontakte(baseID: baseID)
                 refreshAssistantKundenWissen()
@@ -512,17 +549,32 @@ public final class AppState {
                     actorUserID: actorUserID, projectID: "-",
                     action: .contactCreated,   // kein eigener Audit-Typ nötig — .contactCreated ist semantisch nah genug
                     summary: "Airtable-Kontakt aktualisiert: \(draft.name) (ID \(recordID))"))
+                dataFlow.log(integrationID: "AIRTABLE_KONTAKTE_UPDATE", actorUserID: actorUserID,
+                             action: .success, recordsWritten: 1,
+                             summary: "Airtable-Kontakt aktualisiert: \(draft.name)")
                 await syncKontakte(baseID: baseID)
                 refreshAssistantKundenWissen()
                 return .updated(draft.displayName)
             }
         } catch AirtableError.invalidBaseID(let msg) {
+            dataFlow.log(integrationID: draft.intent == .create ? "AIRTABLE_KONTAKTE_CREATE" : "AIRTABLE_KONTAKTE_UPDATE",
+                         actorUserID: actorUserID, action: .error, errorMessage: msg, summary: "Airtable-Kontakt-Write fehlgeschlagen")
             return .failed("Schreibschutz verletzt: \(msg)")
         } catch AirtableError.notConnected {
+            dataFlow.log(integrationID: draft.intent == .create ? "AIRTABLE_KONTAKTE_CREATE" : "AIRTABLE_KONTAKTE_UPDATE",
+                         actorUserID: actorUserID, action: .error, errorMessage: "notConnected", summary: "Airtable-Kontakt-Write fehlgeschlagen")
             return .failed("Airtable nicht verbunden — Personal Access Token in den Einstellungen eintragen.")
         } catch AirtableError.httpError(let code) where code == 401 || code == 403 {
+            dataFlow.log(integrationID: draft.intent == .create ? "AIRTABLE_KONTAKTE_CREATE" : "AIRTABLE_KONTAKTE_UPDATE",
+                         actorUserID: actorUserID, action: .error, errorMessage: "httpError(\(code))", summary: "Airtable-Kontakt-Write fehlgeschlagen")
+            return .failed("Airtable-Token hat keine Schreibrechte (Fehler \(code)). In Airtable einen Token mit Scope „data.records:write\" für die Mastermind-Base erstellen und in den Einstellungen eintragen.")
+        } catch AirtableError.validationFailed(let code, let message) where code == 401 || code == 403 {
+            dataFlow.log(integrationID: draft.intent == .create ? "AIRTABLE_KONTAKTE_CREATE" : "AIRTABLE_KONTAKTE_UPDATE",
+                         actorUserID: actorUserID, action: .error, errorMessage: "validationFailed(\(code)): \(message)", summary: "Airtable-Kontakt-Write fehlgeschlagen")
             return .failed("Airtable-Token hat keine Schreibrechte (Fehler \(code)). In Airtable einen Token mit Scope „data.records:write\" für die Mastermind-Base erstellen und in den Einstellungen eintragen.")
         } catch {
+            dataFlow.log(integrationID: draft.intent == .create ? "AIRTABLE_KONTAKTE_CREATE" : "AIRTABLE_KONTAKTE_UPDATE",
+                         actorUserID: actorUserID, action: .error, errorMessage: error.localizedDescription, summary: "Airtable-Kontakt-Write fehlgeschlagen")
             return .failed("Fehler beim Schreiben: \(error.localizedDescription)")
         }
     }
@@ -623,14 +675,17 @@ public final class AppState {
             kundeRecordID = try await client.createRecord(
                 baseID: kundeBaseID, table: kundeTable, fields: kundeFelder)
         } catch AirtableError.invalidBaseID(let msg) {
-            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: msg)
+            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: msg, integrationID: "AIRTABLE_INTAKE_KUNDE_ANLEGEN")
             throw IntakeSchreibFehler.whitelist(msg)
         } catch AirtableError.notConnected {
-            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "notConnected")
+            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "notConnected", integrationID: "AIRTABLE_INTAKE_KUNDE_ANLEGEN")
             throw IntakeSchreibFehler.nichtVerbunden
         } catch AirtableError.httpError(let code) {
-            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "httpError(\(code))")
+            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "httpError(\(code))", integrationID: "AIRTABLE_INTAKE_KUNDE_ANLEGEN")
             throw IntakeSchreibFehler.http(code)
+        } catch AirtableError.validationFailed(let code, let message) {
+            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "validationFailed(\(code)): \(message)", integrationID: "AIRTABLE_INTAKE_KUNDE_ANLEGEN")
+            throw IntakeSchreibFehler.validationFailed(code, message)
         }
 
         // mykilOS 8, Block A: vollständige Sicherheitskopie des Writes (siehe
@@ -638,6 +693,11 @@ public final class AppState {
         try? writeShadow.recordAirtableWrite(
             action: .create, actorUserID: actorUserID, baseID: kundeBaseID, table: kundeTable,
             recordID: kundeRecordID, fields: kundeFelder, mode: provisioningMode.mode, result: .ok)
+        // Härtung (2026-07-01, Audit): der meistgenutzte Write der ganzen App hatte bisher
+        // KEINEN dataFlow.log-Aufruf — in der Schaltzentrale unsichtbar.
+        dataFlow.log(integrationID: "AIRTABLE_INTAKE_KUNDE_ANLEGEN", actorUserID: actorUserID,
+                     action: .success, recordsWritten: 1,
+                     summary: "Intake: Kunde angelegt (\(kundeRecordID))")
 
         do {
             try audit.append(AuditEntry(
@@ -673,13 +733,6 @@ public final class AppState {
         let projektTable  = "Projekte"
         var projektFelder: [String: AirtableFieldValue] = ergebnis.projektFelder
             .reduce(into: [:]) { dict, pair in dict[pair.key] = .string(pair.value) }
-        // Fix (2026-07-01, Live-Untersuchung HTTP 422): "Budget" ist in Airtable ein
-        // Number-Feld — `IntakeResultBuilder` liefert es als String (`String(budget)`),
-        // was Airtable mit INVALID_VALUE_FOR_COLUMN ablehnt. Hier auf `.number` umwandeln,
-        // statt den Rohwert blind als `.string` zu senden.
-        if let budgetString = ergebnis.projektFelder["Budget"], let budget = Double(budgetString) {
-            projektFelder["Budget"] = .number(budget)
-        }
         // Kunden-Verknüpfung: multipleRecordLinks — als Array übergeben.
         // Airtable verlangt für Link-Felder ein JSON-Array. .array([]) ist der korrekte Typ.
         if kundeRecordID.isEmpty == false {
@@ -695,19 +748,26 @@ public final class AppState {
                 projektRecordID = try await client.createRecord(
                     baseID: projektBaseID, table: projektTable, fields: projektFelder)
             } catch AirtableError.invalidBaseID(let msg) {
-                recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: msg)
+                recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: msg, integrationID: "AIRTABLE_INTAKE_PROJEKT_ANLEGEN")
                 throw IntakeSchreibFehler.whitelist("Projekt: \(msg)")
             } catch AirtableError.notConnected {
-                recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: "notConnected")
+                recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: "notConnected", integrationID: "AIRTABLE_INTAKE_PROJEKT_ANLEGEN")
                 throw IntakeSchreibFehler.nichtVerbunden
             } catch AirtableError.httpError(let code) {
-                recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: "httpError(\(code))")
+                recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: "httpError(\(code))", integrationID: "AIRTABLE_INTAKE_PROJEKT_ANLEGEN")
                 throw IntakeSchreibFehler.http(code)
+            } catch AirtableError.validationFailed(let code, let message) {
+                recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: "validationFailed(\(code)): \(message)", integrationID: "AIRTABLE_INTAKE_PROJEKT_ANLEGEN")
+                throw IntakeSchreibFehler.validationFailed(code, message)
             }
 
             try? writeShadow.recordAirtableWrite(
                 action: .create, actorUserID: actorUserID, baseID: projektBaseID, table: projektTable,
                 recordID: projektRecordID, fields: projektFelder, mode: provisioningMode.mode, result: .ok)
+            // Härtung (2026-07-01, Audit): analog zur Kunde-Anlage — bisher unsichtbar.
+            dataFlow.log(integrationID: "AIRTABLE_INTAKE_PROJEKT_ANLEGEN", actorUserID: actorUserID,
+                         action: .success, recordsWritten: 1,
+                         summary: "Intake: Projekt angelegt (\(projektRecordID))")
 
             do {
                 try audit.append(AuditEntry(
@@ -734,9 +794,19 @@ public final class AppState {
             )
             // Fehler beim Warenkorb-Senden sind nicht fatal (Kunde + Projekt sind schon angelegt).
             do {
-                _ = try await cartStore.sendWarenkorbToAirtable(warenkorb)
+                let outcome = try await cartStore.sendWarenkorbToAirtable(warenkorb)
+                // Härtung (2026-07-01, Audit): bisher kein dataFlow.log für diesen häufig
+                // getroffenen Write-Pfad — in der Schaltzentrale unsichtbar.
+                if case .success = outcome {
+                    dataFlow.log(integrationID: "AIRTABLE_WARENKORB_SENDEN", actorUserID: actorUserID,
+                                 action: .success, recordsWritten: 1,
+                                 summary: "Intake: Warenkorb gesendet (\(ergebnis.warenkorb.items.count) Positionen)")
+                }
             } catch {
                 MykLog.lifecycle.error("Intake Warenkorb-Senden fehlgeschlagen: \(String(describing: error), privacy: .public)")
+                dataFlow.log(integrationID: "AIRTABLE_WARENKORB_SENDEN", actorUserID: actorUserID,
+                             action: .error, errorMessage: error.localizedDescription,
+                             summary: "Intake: Warenkorb-Senden fehlgeschlagen")
                 // Fehler wird geloggt aber nicht weitergeworfen — Kunde + Projekt sind live.
             }
         }
@@ -762,6 +832,11 @@ public final class AppState {
         let summary: String
         if driveOrdnerID != nil {
             summary = "\(kundeName) + \(projektName) erfolgreich angelegt"
+        } else if IntakeAdresse.strNummerBildbar(ergebnis: ergebnis) == false {
+            // Härtung (2026-07-01, Audit): häufigster, konkret behebbarer Grund für Stufe
+            // „Lead" — statt des generischen Hinweises die tatsächliche, umsetzbare Ursache
+            // nennen (Lead-Stufe erlaubt bewusst eine adresslose Anlage, siehe FragebogenModel).
+            summary = "\(kundeName) + \(projektName) angelegt — kein Drive-Ordner/Galerie-Eintrag: dafür wird mindestens eine Adresse (Straße oder Ort, Kunden- oder Projektadresse) benötigt. Adresse ergänzen und Ordner danach manuell in Drive anlegen."
         } else {
             summary = "\(kundeName) + \(projektName) angelegt — Hinweis: Drive-Ordner/Galerie-Eintrag konnte nicht automatisch erstellt werden (Details in der Schaltzentrale), bitte Johannes informieren."
         }
@@ -803,6 +878,30 @@ public final class AppState {
         return treffer?["_airtableRecordID"]?.stringValue
     }
 
+    /// Dublettenschutz vor SCHRITT 4 (Härtung, 2026-07-01): sucht einen bestehenden Mastermind-
+    /// Routing-Eintrag mit exakt gleichem Kundennummer-Slug UND Titel — verhindert, dass ein
+    /// Retry nach fehlgeschlagener Provisionierung eine zweite Projektnummer/Drive-Ordner/
+    /// Routing-Zeile für denselben Kunden/Projekt erzeugt. Read-only; ein Fetch-Fehler ist
+    /// nicht fatal (dann läuft die Provisionierung wie bisher neu an).
+    /// Härtung (2026-07-01, Audit): zusätzlich `Quelle == "Fragebogen"` verlangt — Titel+
+    /// Kundennummer-Slug allein (z. B. zwei verschiedene "Schmidt"-Kunden mit demselben, weil
+    /// generischen Projektnamen wie "Küche") ist ein zu schwaches Signal für einen fremden,
+    /// z. B. aus dem Drive-Scan importierten Routing-Eintrag — engt den Treffer auf "ein
+    /// bereits per Fragebogen angelegter Eintrag für exakt diese Kombination" ein.
+    private func findeBestehendenRoutingEintrag(
+        kundeSlug: String, projektName: String?
+    ) async throws -> (recordID: String, driveOrdnerID: String?)? {
+        guard let projektName, projektName.isEmpty == false, kundeSlug.isEmpty == false else { return nil }
+        let records = try await AirtableClient().fetchRecords(baseID: AirtableClient.writableBaseID, table: "Projekte")
+        guard let treffer = records.first(where: { record in
+            record["Titel"]?.stringValue == projektName
+                && record["Kundennummer"]?.stringValue == kundeSlug
+                && record["Quelle"]?.stringValue == "Fragebogen"
+        }) else { return nil }
+        guard let recordID = treffer["_airtableRecordID"]?.stringValue else { return nil }
+        return (recordID, treffer["Drive-Ordner-ID"]?.stringValue)
+    }
+
     /// Reserviert eine echte Projektnummer, legt den Drive-Ordner an (Umfang je `ordnerModus`)
     /// und trägt einen Routing-Eintrag in die Mastermind-„Projekte"-Tabelle ein (macht das
     /// Projekt in der App-Galerie sichtbar). Bei `.vollstaendig` zusätzlich das Fragebogen-PDF
@@ -814,6 +913,42 @@ public final class AppState {
         ergebnis: IntakeErgebnis, modell: FragebogenModel, ordnerModus: ProjektOrdnerModus
     ) async -> String? {
         do {
+            // Härtung (2026-07-01, Audit): SCHRITT 1/2 (Kunde/Projekt in der Artikel-DB) sind
+            // dublettengeschützt (Fetch-vor-Create), SCHRITT 4 (Projektnummer + Drive-Ordner +
+            // Mastermind-Routing) war es bisher NICHT — ein Retry nach einem fehlgeschlagenen
+            // SCHRITT 4 (z. B. transienter Netzwerkfehler beim Routing-Write) hätte sonst bei
+            // jedem erneuten Versuch eine weitere, nie wiederverwendbare Projektnummer verbrannt
+            // und einen zweiten Drive-Ordner + Mastermind-Eintrag für denselben Kunden/Projekt
+            // angelegt. Gleiches Muster wie `findeBestehendenKunden`/`findeBestehendesProjekt`:
+            // Fetch-vor-Create, hier gegen die Mastermind-„Projekte"-Tabelle.
+            let kundeSlugFuerSuche = (ergebnis.kundeFelder["Nachname"] ?? "Projekt")
+                .replacingOccurrences(of: " ", with: "")
+            let projektNameFuerSuche = ergebnis.projektFelder["Projektname"]
+            // Härtung (2026-07-01, Audit): ein Treffer OHNE Drive-Ordner-ID (z. B. ein
+            // Legacy-/Teil-Eintrag) darf NICHT wie ein vollständiger Erfolg kurzgeschlossen
+            // werden — das wäre ein permanenter, nie behebbarer Sackgassen-Zustand (jeder
+            // erneute Versuch träfe wieder denselben unvollständigen Eintrag und läge wieder
+            // nil zurück). Nur ein Treffer MIT echter Drive-Ordner-ID wird kurzgeschlossen;
+            // ein unvollständiger Treffer wird unten stattdessen per `updateRecord`
+            // vervollständigt statt einen zweiten Routing-Eintrag anzulegen.
+            var bestehenderRoutingRecordID: String? = nil
+            if let bestehend = try? await findeBestehendenRoutingEintrag(
+                kundeSlug: kundeSlugFuerSuche, projektName: projektNameFuerSuche
+            ) {
+                if let driveOrdnerID = bestehend.driveOrdnerID, driveOrdnerID.isEmpty == false {
+                    MykLog.lifecycle.info("Echte Provisionierung übersprungen (Routing-Eintrag existiert bereits): \(driveOrdnerID, privacy: .public)")
+                    dataFlow.log(
+                        integrationID: "AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING", actorUserID: actorUserID,
+                        action: .success, recordsRead: 1,
+                        summary: "Provisionierung übersprungen — bestehender Routing-Eintrag gefunden (\(bestehend.recordID))")
+                    return driveOrdnerID
+                }
+                // Treffer existiert, aber ohne Drive-Ordner-ID — unten vervollständigen statt
+                // neu anlegen (kein zweiter Routing-Eintrag für denselben Kunden/Projekt).
+                bestehenderRoutingRecordID = bestehend.recordID
+                MykLog.lifecycle.info("Unvollständiger Routing-Eintrag gefunden (\(bestehend.recordID)) — wird vervollständigt statt dupliziert.")
+            }
+
             // Review-Fix (medium): die STR-Nr MUSS bildbar sein, BEVOR eine Projektnummer
             // reserviert wird — Projektnummern werden nie wiederverwendet (auch nicht bei
             // Archiv), eine erst NACH der Reservierung fehlschlagende STR-Nr-Bildung hätte
@@ -889,10 +1024,27 @@ public final class AppState {
                 "Quelle": .string("Fragebogen"),
                 "ParseConfidence": .string("full"),
             ]
+            // Härtung (2026-07-01, Audit): existiert bereits ein (unvollständiger) Treffer aus
+            // der Suche oben, wird er per updateRecord vervollständigt statt einen zweiten
+            // Routing-Eintrag für denselben Kunden/Projekt anzulegen.
             let routingRecordID: String
+            let routingAction: WriteShadowAction
             do {
-                routingRecordID = try await AirtableClient().createRecord(
-                    baseID: AirtableClient.writableBaseID, table: "Projekte", fields: routingFelder, typecast: true)
+                if let bestehenderRoutingRecordID {
+                    // Härtung (2026-07-01, Audit): typecast:true wie beim CREATE-Zweig unten —
+                    // sonst würde das Vervollständigen eines unvollständigen Eintrags an
+                    // Phase="Lead"/Quelle="Fragebogen" scheitern, falls diese Optionen dort
+                    // noch nicht existieren.
+                    try await AirtableClient().updateRecord(
+                        baseID: AirtableClient.writableBaseID, table: "Projekte",
+                        recordID: bestehenderRoutingRecordID, fields: routingFelder, typecast: true)
+                    routingRecordID = bestehenderRoutingRecordID
+                    routingAction = .update
+                } else {
+                    routingRecordID = try await AirtableClient().createRecord(
+                        baseID: AirtableClient.writableBaseID, table: "Projekte", fields: routingFelder, typecast: true)
+                    routingAction = .create
+                }
             } catch {
                 recordWriteShadowFailure(
                     table: "Projekte", baseID: AirtableClient.writableBaseID,
@@ -904,7 +1056,7 @@ public final class AppState {
                 throw error
             }
             try? writeShadow.recordAirtableWrite(
-                action: .create, actorUserID: actorUserID, baseID: AirtableClient.writableBaseID, table: "Projekte",
+                action: routingAction, actorUserID: actorUserID, baseID: AirtableClient.writableBaseID, table: "Projekte",
                 recordID: routingRecordID, fields: routingFelder, mode: provisioningMode.mode, result: .ok)
             dataFlow.log(
                 integrationID: "AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING", actorUserID: actorUserID,
@@ -940,6 +1092,13 @@ public final class AppState {
             return rootOrdnerID
         } catch {
             MykLog.lifecycle.error("Echte Provisionierung fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            // Härtung (2026-07-01, Audit): dieser äußere catch (z. B. Projektnummer-Reservierung
+            // oder Drive-Ordner-Erstellung schlägt fehl) loggte bisher nur in die Konsole — die
+            // Schaltzentrale zeigte also auch diesen Fehlerfall nicht an.
+            dataFlow.log(
+                integrationID: "DRIVE_FRAGEBOGEN_PROJEKT_ORDNER", actorUserID: actorUserID,
+                action: .error, errorMessage: String(describing: error),
+                summary: "Echte Provisionierung fehlgeschlagen")
             return nil
         }
     }
@@ -1023,17 +1182,35 @@ public final class AppState {
             actorUserID: actorUserID, projectID: candidate.projectNumber,
             action: .projectLinked,
             summary: "Geschäftsprojekt „\(candidate.businessProjektname)“ lokal an Projektnummer \(candidate.projectNumber) gebunden (manuell bestätigt)"))
+        // Härtung (2026-07-01, Datenstrom-Audit): der Manifest-Eintrag
+        // "PROJECT_NUMBER_LOCAL_BINDING" existierte bisher ohne EINEN einzigen echten
+        // dataFlow.log-Aufruf — die Schaltzentrale zeigte die Weiche permanent als
+        // "nie ausgelöst", obwohl die Bindung tatsächlich lief.
+        dataFlow.log(
+            integrationID: "PROJECT_NUMBER_LOCAL_BINDING", actorUserID: actorUserID,
+            action: .success, recordsWritten: 1,
+            summary: "Lokale Bindung bestätigt: \(candidate.businessProjektname) → \(candidate.projectNumber)")
     }
 
     /// mykilOS 8, Block A: spiegelt einen FEHLGESCHLAGENEN Airtable-Write — die
     /// Backup-Base-Doku verlangt ausdrücklich „auch fehlgeschlagene Versuche".
+    /// Härtung (2026-07-01, Audit): optionales `integrationID` — loggt den Fehlschlag
+    /// zusätzlich in die Schaltzentrale (bisher nur bei manchen Aufrufern separat gemacht,
+    /// beim Kunde-/Projekt-Anlegen-Pfad KOMPLETT gefehlt). `nil` für Aufrufer, die ihr
+    /// eigenes dataFlow.log daneben schon selbst setzen (kein Doppel-Log).
     private func recordWriteShadowFailure(
-        table: String, baseID: String, fields: [String: AirtableFieldValue], errorMessage: String
+        table: String, baseID: String, fields: [String: AirtableFieldValue], errorMessage: String,
+        integrationID: String? = nil
     ) {
         try? writeShadow.recordAirtableWrite(
             action: .create, actorUserID: actorUserID, baseID: baseID, table: table,
             recordID: nil, fields: fields, mode: provisioningMode.mode,
             result: .error, errorMessage: errorMessage)
+        if let integrationID {
+            dataFlow.log(integrationID: integrationID, actorUserID: actorUserID,
+                         action: .error, errorMessage: errorMessage,
+                         summary: "Airtable-Write fehlgeschlagen (\(table))")
+        }
     }
 
     // MARK: - Backup (Mandate G)

@@ -88,6 +88,7 @@ extension AllOffersSort {
 struct AllOffersView: View {
     let projects: [AllOffersCollector.ProjectRef]
 
+    @Environment(AppState.self) private var appState
     @State private var loader = AllOffersLoader()
     @State private var searchText = ""
     @State private var reloadToken = 0
@@ -115,6 +116,20 @@ struct AllOffersView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task(id: reloadToken) {
             await loader.load(projects: projects)
+            // Härtung (2026-07-01, Audit): DRIVE_ALL_OFFERS war zwar im Benutzerhandbuch
+            // dokumentiert, hatte aber weder einen Manifest-Eintrag noch einen echten
+            // dataFlow.log-Aufruf — in der Schaltzentrale unsichtbar.
+            switch loader.renderState {
+            case .content, .empty:
+                appState.dataFlow.log(integrationID: "DRIVE_ALL_OFFERS", actorUserID: appState.actorUserID,
+                                       action: .success, recordsRead: loader.offers.count,
+                                       summary: "Alle Angebote geladen (\(loader.offers.count) über \(projects.count) Projekte)")
+            case .error(let msg):
+                appState.dataFlow.log(integrationID: "DRIVE_ALL_OFFERS", actorUserID: appState.actorUserID,
+                                       action: .error, errorMessage: msg, summary: "Alle Angebote: Laden fehlgeschlagen")
+            case .loading, .permissionRequired, .offline:
+                break
+            }
         }
     }
 

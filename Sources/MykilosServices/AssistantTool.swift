@@ -1315,7 +1315,10 @@ struct CreateAirtableKontaktTool: AssistantTool {
          ToolParameter(name: "email",        description: "E-Mail (optional)", required: false),
          ToolParameter(name: "telefon",      description: "Telefon (optional)", required: false),
          ToolParameter(name: "adresse",      description: "Adresse (optional)", required: false),
-         ToolParameter(name: "kategorie",    description: "Kategorie: Projektkunde / Lieferant / Handwerker / Architekt-Planer / MYKILOS-Team / Sonstige",
+         // Härtung (2026-07-01, Audit): "Architekt/Planer" (Schrägstrich) ist die echte, live
+         // über die Mastermind-Base bestätigte Select-Option — "Architekt-Planer" (Bindestrich)
+         // hätte hier (kein typecast auf diesem Schreibpfad) einen HTTP 422 ausgelöst.
+         ToolParameter(name: "kategorie",    description: "Kategorie: Projektkunde / Lieferant / Handwerker / Architekt/Planer / MYKILOS-Team / Sonstige",
                        required: false)]
     }
 

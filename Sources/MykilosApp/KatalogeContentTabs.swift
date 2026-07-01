@@ -17,9 +17,12 @@ struct KontakteKatalogTab: View {
     @State private var selectedKategorie: String? = nil
     @State private var selectedContact: StudioContact? = nil
 
+    // Härtung (2026-07-01, Audit): "Architekt/Planer" (Schrägstrich) ist die echte, live
+    // bestätigte Airtable-Select-Option — sonst filtert dieser Picker gegen einen Wert,
+    // der in den echten Daten nie vorkommt.
     private static let kategorien = [
         "Projektkunde", "Lieferant", "Handwerker",
-        "Architekt-Planer", "MYKILOS-Team", "Sonstige"
+        "Architekt/Planer", "MYKILOS-Team", "Sonstige"
     ]
 
     var body: some View {

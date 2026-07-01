@@ -7,6 +7,20 @@
     "link": "mykilos://datastream/AIRTABLE_KUNDEN_PROJEKTE"
   },
   {
+    "integrationID": "WRITE_SHADOW_LOG",
+    "name": "Write-Shadow-Log (Backup-Base)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/WRITE_SHADOW_LOG"
+  },
+  {
+    "integrationID": "PROJECT_NUMBER_LOCAL_BINDING",
+    "name": "Projektnummer-Bindungs-Brücke (lokal)",
+    "system": "Lokal",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/PROJECT_NUMBER_LOCAL_BINDING"
+  },
+  {
     "integrationID": "DATAFLOW_LOG_WRITE",
     "name": "Schaltzentrum Sync-Log",
     "system": "Airtable",
@@ -278,5 +292,33 @@
     "system": "Airtable",
     "direction": "WRITE",
     "link": "mykilos://datastream/AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING"
+  },
+  {
+    "integrationID": "AIRTABLE_INTAKE_KUNDE_ANLEGEN",
+    "name": "Intake: Kunde in Artikel-DB anlegen (alle Anlege-Stufen)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_INTAKE_KUNDE_ANLEGEN"
+  },
+  {
+    "integrationID": "AIRTABLE_INTAKE_PROJEKT_ANLEGEN",
+    "name": "Intake: Projekt in Artikel-DB anlegen (Stufe Lead/Projekt mit Ordner)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_INTAKE_PROJEKT_ANLEGEN"
+  },
+  {
+    "integrationID": "AIRTABLE_WARENKORB_SENDEN",
+    "name": "Warenkorb an Airtable senden (Warenkörbe + Projektartikel)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_WARENKORB_SENDEN"
+  },
+  {
+    "integrationID": "DRIVE_ALL_OFFERS",
+    "name": "Alle Angebote (global)",
+    "system": "Google Drive",
+    "direction": "READ",
+    "link": "mykilos://datastream/DRIVE_ALL_OFFERS"
   }
 ]

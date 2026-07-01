@@ -71,9 +71,11 @@ struct KatalogeView: View {
     @State private var artikelStore = ArtikelKatalogStore()
     @State private var lagerStore = LagerlisteStore()
     @State private var warenkorbListeStore = WarenkorbListeStore()
-    // Intake: Fragebogen-Sheet
-    @State private var zeigeFragebogen: Bool = false
-    @State private var frageBogenModell = FragebogenModel()
+    // Intake: Fragebogen-Sheet. Der Entwurf selbst lebt in AppState (Erinnerungsfunktion,
+    // siehe dort) — hier nur noch ein lokaler Binding-Helfer für `.sheet(isPresented:)`.
+    private var zeigeFragebogenBinding: Binding<Bool> {
+        Binding(get: { appState.zeigeFragebogen }, set: { appState.zeigeFragebogen = $0 })
+    }
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -85,14 +87,23 @@ struct KatalogeView: View {
             }
             .background(MykColor.paper.color)
             .onAppear { loadOrder() }
-            .sheet(isPresented: $zeigeFragebogen, onDismiss: {
-                // Fragebogen-Modell nach Schließen zurücksetzen
-                frageBogenModell = FragebogenModel()
-            }) {
-                FragebogenView(modell: frageBogenModell) {
-                    zeigeFragebogen = false
+            .sheet(isPresented: zeigeFragebogenBinding) {
+                // Erinnerungsfunktion (Johannes, 2026-07-01): `appState.fragebogenEntwurf` wird
+                // HIER nicht bei jedem Schließen zurückgesetzt — sonst gingen alle Eingaben bei
+                // jedem temporären Schließen (z. B. während der 422-Fehlersuche) verloren, UND
+                // (Härtung) er lebt bewusst in AppState statt in KatalogeViews eigenem @State,
+                // damit ein Sidebar-Modulwechsel ihn nicht mitzerstört. FragebogenView selbst
+                // leert das Modell nur noch gezielt: nach einem bestätigten "Verwerfen" oder
+                // automatisch nach einer erfolgreichen Anlage (siehe dort).
+                FragebogenView(modell: appState.fragebogenEntwurf) {
+                    appState.zeigeFragebogen = false
                 }
                 .environment(appState)
+                // Härtung (2026-07-01, Audit): ohne dies dismisst macOS das Sheet per Escape-
+                // Taste direkt über das Binding — das umgeht ALLE `.disabled(schreibPhase ==
+                // .speichert)`-Sperren in FragebogenView (Verwerfen/X/Abbrechen/Stufen-Picker),
+                // weil dabei kein einziger FragebogenView-Button-Handler aufgerufen wird.
+                .interactiveDismissDisabled(appState.fragebogenSchreibtGerade)
             }
 
             // Warenkorb-Floating-Panel (rechts oben eingeblendet)
@@ -126,7 +137,7 @@ struct KatalogeView: View {
 
             // Intake: + Neues Projekt (Fragebogen)
             Button {
-                zeigeFragebogen = true
+                appState.zeigeFragebogen = true
             } label: {
                 HStack(spacing: MykSpace.s2) {
                     Image(systemName: "plus")

@@ -28,9 +28,12 @@ struct KontaktDetailSheet: View {
     @State private var showCompose: Bool = false
     @State private var isDirty: Bool = false
 
+    // Härtung (2026-07-01, Audit): "Architekt/Planer" (Schrägstrich) ist die echte, live
+    // bestätigte Airtable-Select-Option — "Architekt-Planer" (Bindestrich) hätte hier
+    // (kein typecast auf diesem Schreibpfad) einen HTTP 422 ausgelöst.
     private static let kategorien = [
         "Projektkunde", "Lieferant", "Handwerker",
-        "Architekt-Planer", "MYKILOS-Team", "Sonstige"
+        "Architekt/Planer", "MYKILOS-Team", "Sonstige"
     ]
 
     private enum DetailSavePhase: Equatable {

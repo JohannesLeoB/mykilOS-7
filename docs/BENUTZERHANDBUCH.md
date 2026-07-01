@@ -364,6 +364,9 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `WRITE_SHADOW_BACKUP_FEHLT` | Write-Shadow ohne Backup-Base (Warnung) | READ | onDemand (jeder Write, solange Spiegel scheitert) | keine | Lokale Sichtbarkeits-Warnung — feuert jetzt auch, wenn der Airtable-Spiegel trotz gesetzter `backupBaseID` fehlschlägt (z. B. falscher Tabellenname), nicht nur wenn die Base ganz fehlt. Macht jede Spiegel-Lücke sichtbar statt sie zu verstecken. |
 | `PROJECT_NUMBER_LOCAL_BINDING` | Projektnummer-Bindungs-Brücke (lokal) | WRITE | onDemand (manuelle Bestätigung) | keine | mykilOS 8, Block A-Erweiterung (Johannes-Entscheidung 2026-06-30): rein lokale GRDB-Tabelle (`projectNumberBindings`) — **kein Airtable-Write, rührt die Artikel-Projektliste nie an.** Bindet ein Geschäftsprojekt ohne Projektnummer-Feld an eine Mastermind-Projektnummer, NUR nach manueller Bestätigung eines automatisch erkannten (exakter Titel-Match) Kandidaten. |
 | `AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING` | Fragebogen: Mastermind-Routing-Eintrag | WRITE | onDemand (Fragebogen-Bestätigung, Stufe „Lead"/„Projekt mit Ordner") | append-only (Mastermind) | 2026-07-01, Johannes freigegeben: erster echter Write-Pfad in die Mastermind-Tabelle `Projekte` (`tblGJR13OliFt6Ewi`, bisher nur aus Drive-Scan befüllt) — macht ein per Fragebogen angelegtes Projekt in der App-Galerie sichtbar. Phase = „Aktiv" (Stufe „Projekt mit Ordner") oder „Lead" (Stufe „Als Lead anlegen", neue Select-Option). Dublettenschutz auf Kunde/Projekt-Ebene davor (Fetch-vor-Create), nicht-fatal bei Fehler; Provisionierung wird VOR der Projektnummern-Reservierung übersprungen, wenn keine STR-Nr bildbar ist (keine Nummer wird verschwendet). |
+| `AIRTABLE_INTAKE_KUNDE_ANLEGEN` | Intake: Kunde in Artikel-DB anlegen | WRITE | onDemand (Fragebogen-Bestätigung, jede Anlege-Stufe) | keine | Härtung 2026-07-01 (Datenstrom-Check): existierte im Code seit der Fragebogen-Einführung, hatte aber nie einen `dataFlow.log`-Aufruf — der meistgenutzte Write der App war in der Schaltzentrale unsichtbar. Dublettengeschützt (Fetch-vor-Create über Nachname+E-Mail/Telefon). |
+| `AIRTABLE_INTAKE_PROJEKT_ANLEGEN` | Intake: Projekt in Artikel-DB anlegen | WRITE | onDemand (Fragebogen-Bestätigung, Stufe „Lead"/„Projekt mit Ordner") | keine | Härtung 2026-07-01 (Datenstrom-Check): analoge Lücke wie beim Kunde-Anlegen, jetzt geschlossen. Dublettengeschützt (Fetch-vor-Create über Projektname+Kunden-Link). |
+| `AIRTABLE_WARENKORB_SENDEN` | Warenkorb an Airtable senden | WRITE | onDemand (Senden-Button / Fragebogen SCHRITT 3) | keine | Härtung 2026-07-01 (Datenstrom-Check): CartStore.sendWarenkorbToAirtable hatte keinen `dataFlow.log`. Zusätzlich gefunden: die Archivierungs-/Versionslogik matchte bisher über Feld-IDs statt der echten NAME-keyed Airtable-Antwort — Archivierung alter Versionen und Versionszählung liefen seit jeher ins Leere (jeder Send erschien als „Version 1"). Jetzt auf die echten Feldnamen (Prüfsumme/Status/Version) korrigiert. |
 
 #### Google Drive
 
@@ -499,10 +502,60 @@ Netzwerkfehler legt nie doppelt an). Ab „Als Lead anlegen" sind die weiteren S
 (Drive-Ordner, Routing-Eintrag, PDF) **nicht-fatal**: Kunde+Projekt sind bereits angelegt, bevor
 sie starten — schlägt z. B. der Drive-Ordner fehl, bleibt der Intake trotzdem erfolgreich, aber
 die Bestätigungskarte zeigt dann explizit einen Hinweis statt eines blanken Erfolgs, damit
-niemand fälschlich glaubt, das Projekt sei schon in der Galerie sichtbar.
+niemand fälschlich glaubt, das Projekt sei schon in der Galerie sichtbar. Fehlt speziell eine
+Adresse (Straße/Ort), nennt der Hinweis das konkret (statt eines allgemeinen „bitte Johannes
+informieren") — die Lead-Stufe erlaubt bewusst eine adresslose Anlage ohne Ordner.
+**Härtung (2026-07-01):** auch der Drive-Ordner/Routing-Schritt selbst ist jetzt dublettengeschützt
+(Fetch-vor-Create gegen die Mastermind-„Projekte"-Tabelle, Match auf Titel+Kundennummer) — ein
+erneuter Versuch nach einem fehlgeschlagenen Schritt verbrennt keine zweite Projektnummer und
+legt keinen zweiten Drive-Ordner/Routing-Eintrag mehr an.
 *Voraussetzung:* Google verbunden (Drive-Schreibrecht) für Stufe 2+3, Airtable verbunden für alle.
 *Einschränkung:* nur Anlegen, nie Ändern/Löschen bestehender Records — jeder Schritt ist ein
 reiner CREATE.
+
+**Erinnerungsfunktion + Verwerfen (Härtung, 2026-07-01, Johannes).** Der Fragebogen-Dialog verliert
+keine Eingaben mehr beim Schließen (X-Button, Fensterwechsel, Fensterwechsel innerhalb derselben
+App-Sitzung) — dieselbe Entwurfs-Instanz bleibt erhalten und ein Wiederöffnen zeigt exakt den
+Stand von vorher. Geleert wird der Entwurf nur in zwei Fällen: (1) nach einer **erfolgreichen**
+„Jetzt anlegen"-Anlage wird beim Schließen automatisch zurückgesetzt (kein versehentliches
+Doppelt-Anlegen derselben Daten), oder (2) über den neuen, expliziten **„Verwerfen"**-Button im
+Kopfbereich (mit Sicherheitsabfrage, außer das Formular ist noch leer). Die Persistenz gilt für
+die laufende App-Sitzung (kein GRDB/Neustart-Schutz) — passend zu „temporäres Schließen", nicht
+zu einem vollständigen App-Neustart.
+
+**Diagnose-Härtung (2026-07-01).** Airtable-Fehler HTTP 422 zeigen jetzt Airtables echte
+Fehlermeldung inklusive des betroffenen Feldnamens (`AirtableError.validationFailed`), statt nur
+des bloßen HTTP-Codes — damit lässt sich die Ursache (z. B. ein unbekannter Select-Options-Wert)
+direkt aus der Fehlermeldung ablesen, ohne weiter raten zu müssen.
+
+**Live-Schema-Korrektur (2026-07-01) — was wirklich in Airtable landet.** Ein wiederholter
+HTTP 422 („Unknown field name: 'Notizen'") deckte auf, dass mehrere Feldnamen im Kunden-/
+Projekt-Write reine Annahmen waren, nie gegen das echte Schema geprüft. Da kein Schema-
+Lesezugriff über den MCP-Connector besteht, wurden die echten Feldnamen stattdessen über den
+bereits laufenden, echten Read (`ExternalMappingRegistry.syncBusiness`, Vereinigung über alle
+vorhandenen Records) ermittelt. Ergebnis: **`Notizen`, `Quelle`, `Projektstatus`, `Budget` und
+`Projektart` existieren NICHT** als Felder der echten Kunden-/Projekte-Tabelle — sie wurden bei
+jeder Anlage blind gesendet und haben praktisch jede „Projekt mit Ordner"/„Lead"-Anlage blockiert.
+Alle fünf wurden aus dem Write entfernt (kein Raten eines Ersatzwerts). Real geschrieben werden
+nur noch: Kunden — `Nachname`/`Vorname`/`Firma`/`Kontakt 1 Email`/`Kontakt 1 Telefon`/
+`Angebotsadresse Straße`/`PLZ`/`Ort`; Projekte — `Projektname`/`Projektadresse Straße`/`PLZ`/`Ort`/
+`Kunde` (Link). **Konsequenz:** die ausführlichen Fragebogen-Angaben (Raumgröße, Stil, Geräte-
+Wünsche, Budget, Sonderwünsche, Zeitplanung, Quelle usw.) haben aktuell **keinen Ort in Airtable**
+— die Artikel-DB-Tabellen sind für Daniels Geschäfts-/sevDesk-Tracking gedacht, nicht für die
+Fragebogen-Detailtiefe. Diese Detaildaten sollen laut Johannes (2026-07-01) in eine **eigene,
+sichere Tabelle** in einer neuen, mykilOS-eigenen Airtable-Base (`app2XOhOxXfkLtGVC`) wandern —
+noch nicht gebaut, siehe „Warenkörbe-Migration" unten. Der echte `Status`-Wert der Projekte-
+Tabelle wird laut Johannes (2026-07-01) über ClickUp gesetzt, nicht über den Fragebogen — bleibt
+bewusst offen, bis das ClickUp-Setup steht.
+
+**Warenkörbe-Migration (angekündigt, 2026-07-01, Johannes).** Die Artikel-DB
+(`appdxTeT6bhSBmwx5`) darf künftig nicht mehr beschrieben werden — dort arbeitet Daniel an einem
+eigenen Strang, Lesen bleibt erlaubt. Geplanter Umzug: NUR die Tabellen `Warenkörbe` +
+`Projektartikel` ziehen in eigene, mykilOS-eigene Tabellen in der neuen Base
+(`app2XOhOxXfkLtGVC`, aktuell noch Airtables unveränderte Default-Vorlage) um; Kunden/Projekte
+bleiben in der Artikel-DB (nur lesend). Bestehende Warenkorb-Records werden dabei in die neue
+Base kopiert, nie aus der alten gelöscht. **Noch nicht umgesetzt** — Schema-Design für die neue
+Base steht noch aus.
 
 ---
 
@@ -668,4 +721,4 @@ Klärung echter Ordner vs. Sandbox).
 ---
 
 *Dieses Dokument wird mit jedem Feature-Commit aktualisiert.*
-*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · Fragebogen: echte Provisionierung (Drive+Mastermind-Routing) statt TEST-Sandbox-Testkarte*
+*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · Live-Schema-Diagnose (echte Kunden-/Projekte-Feldnamen via bereits laufendem Read), CartStore-Feld-ID-Fix, Mail-Entwürfe-Ordner, Datenstrom-Handbuch-Sync (Manifest + Code + live Airtable)*

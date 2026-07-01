@@ -184,6 +184,15 @@ public final class WriteShadowRecorder {
         Task {
             do {
                 _ = try await airtable.createRecord(baseID: baseID, table: "Write-Shadow-Log", fields: fields)
+                // Härtung (2026-07-01, Datenstrom-Audit): der Manifest-Eintrag "WRITE_SHADOW_LOG"
+                // existierte bisher ohne EINEN einzigen echten dataFlow.log-Aufruf — die
+                // Schaltzentrale zeigte die Weiche also permanent als "nie ausgelöst", obwohl
+                // docs/BENUTZERHANDBUCH.md sie als "Aktiv, live verifiziert" auswies.
+                dataFlow?.log(
+                    integrationID: "WRITE_SHADOW_LOG", actorUserID: actorUserID,
+                    action: .success, recordsWritten: 1,
+                    summary: "Write-Shadow-Spiegel nach mykilOS-Backup geschrieben (\(entry.targetSystem.rawValue)/\(entry.targetTable ?? "?"))"
+                )
             } catch {
                 // Nicht-fatal (Ziel-Write ist längst durch), aber SICHTBAR — sonst
                 // verschwindet ein falscher Tabellenname/Schema-Mismatch spurlos.

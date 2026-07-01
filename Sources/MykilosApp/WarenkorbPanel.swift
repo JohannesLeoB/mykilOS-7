@@ -476,8 +476,14 @@ struct WarenkorbVersandView: View {
         // Bezeichnung: eigener Freitext hat Priorität, dann Projektname
         let finalBezeichnung = effectiveBezeichnung
         let initialProjektName: String? = selectedProjekt.map { $0.title }
+        // Härtung (2026-07-01, Audit): `selectedProjekt.airtableRecordID` ist eine Record-ID
+        // aus der Mastermind-Base (appuVMh3KDfKw4OoQ, `registry.syncFromAirtable`). CartStore
+        // schreibt `projektRecordID` aber als Link-Feld in die ANDERE Base, die Artikel-DB
+        // (appdxTeT6bhSBmwx5) — ein Record-Link kann nie über Basen hinweg zeigen. Ohne einen
+        // echten Cross-Base-Lookup (der hier bewusst nicht geraten wird) bleibt nur der
+        // Projektname als Freitext-Zuordnung; ein blind falscher Link wäre schlimmer als keiner.
         let wk = warenkorb.makeWarenkorb(
-            projektRecordID: selectedProjekt?.airtableRecordID,
+            projektRecordID: nil,
             projektName: initialProjektName
         )
         let wkFinal: Warenkorb
@@ -499,11 +505,18 @@ struct WarenkorbVersandView: View {
             switch outcome {
             case .success(let id, let version):
                 sendState = .success(id, version)
+                // Härtung (2026-07-01, Audit): bisher kein dataFlow.log für diesen Write-Pfad.
+                appState.dataFlow.log(integrationID: "AIRTABLE_WARENKORB_SENDEN", actorUserID: appState.actorUserID,
+                                       action: .success, recordsWritten: 1,
+                                       summary: "Warenkorb gesendet (Version \(version), Record \(id))")
             case .leer:
                 sendState = .error("Warenkorb ist leer — nichts gesendet.")
             }
         } catch {
             sendState = .error(error.localizedDescription)
+            appState.dataFlow.log(integrationID: "AIRTABLE_WARENKORB_SENDEN", actorUserID: appState.actorUserID,
+                                   action: .error, errorMessage: error.localizedDescription,
+                                   summary: "Warenkorb-Senden fehlgeschlagen")
         }
     }
 
