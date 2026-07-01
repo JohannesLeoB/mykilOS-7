@@ -331,6 +331,40 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v17_provisioning (mykilOS 8, Block D / S4) — der Idempotenz-/Wiederaufnahme-Ledger
+        // der Projekt-Geburt. Schlüssel = Kdnr + Projektnummer. Hält die echten erzeugten IDs
+        // (Drive-Ordner, Airtable-Record) + erledigte Schritte → ein zweiter Lauf dupliziert
+        // nichts, ein Teilfehler ist sauber wiederaufnehmbar. clickUpRouting = Adapter-Gerüst (§9).
+        migrator.registerMigration("v17_provisioning") { db in
+            try db.create(table: "provisioningLedger") { t in
+                t.primaryKey("idempotenzSchluessel", .text)
+                t.column("projektnummer",        .text).notNull().indexed()
+                t.column("kdnr",                 .text).notNull().indexed()
+                t.column("status",               .text).notNull()
+                t.column("erledigteSchritteJSON", .text).notNull()
+                t.column("driveProjektOrdnerID", .text)
+                t.column("driveUnterordnerJSON", .text).notNull()   // {relPfad: folderID}
+                t.column("airtableRecordID",     .text)
+                t.column("letzterFehler",        .text)
+                t.column("updatedAt",            .double).notNull()
+            }
+            try db.create(table: "clickUpRouting") { t in
+                t.primaryKey("routingID", .text)
+                t.column("ebene",      .text).notNull()
+                t.column("richtung",   .text).notNull()
+                t.column("appObjekt",  .text).notNull()
+                t.column("clickUpObjekt", .text).notNull()
+                t.column("trigger",    .text).notNull()
+                t.column("userScope",  .text).notNull()
+                t.column("frequenz",   .text).notNull()
+                t.column("noGo",       .text)
+                t.column("clickUpRef", .text)
+                t.column("aktiv",      .boolean).notNull().defaults(to: false)
+                t.column("optin",      .boolean).notNull().defaults(to: false)
+                t.column("updatedAt",  .double).notNull()
+            }
+        }
+
         try migrator.migrate(queue)
     }
 

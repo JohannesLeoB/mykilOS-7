@@ -611,5 +611,39 @@ Backend-Feld; das echte Ordner-/Nummern-Provisioning kommt in Block D (Sandbox).
 
 ---
 
+## mykilOS 8, Block D — Provisioning in der Sandbox (S4)
+
+Block D macht aus der Nomenklatur (Block C) eine **Projekt-Geburt**: eine bestätigte Karte → ein
+neues Projekt entsteht in mehreren Systemen gleichzeitig. **Der erste Block, der echt nach außen
+schreibt** — aber ausschließlich gated in die **TEST-Sandbox** (Johannes' Entscheidung: echte
+Sandbox-Writes scharf, Clockodo erst Block E, ClickUp nur als Gerüst).
+
+**ProjektProvisioningService (Drive + Airtable).** Eine Geburt legt an:
+1. **Drive:** unter `_TEST_PROVISIONING/` einen Projektordner `JJJJ_NNN_Kunde_STR-Nr` + den
+   kompletten Unterordnerbaum aus FolderSchema v1 (über die Konnektoren).
+2. **Airtable:** einen Projekt-Record, **TEST-markiert** (Namens-Präfix `TEST_` + Feld `Quelle=TEST`).
+
+**Garantien (alle testbewiesen):**
+- **Idempotent** (Schlüssel Kdnr + Projektnummer): ein zweiter Lauf erzeugt nichts Neues — Drive über
+  find-or-create, Airtable über Bestandsprüfung + Ledger-ID.
+- **Teilfehler-fest:** nach jedem Schritt wird der Ledger persistiert; bricht Schritt 2 ab, bleibt
+  Schritt 1 sauber erledigt, ein Re-Run nimmt genau dort wieder auf.
+- **Jeder Schritt wirft**, die Geburt ist **ein** Audit-Eintrag + Write-Shadow je externem Write.
+- **Gated:** nur `ProvisioningMode = .test`; PROD bleibt gesperrt.
+
+**Live-Verifikation (Integrationen → Schaltzentrale → „Projekt-Geburt — TEST-Sandbox").** Eine
+nüchterne Test-Karte mit klarer TEST-Warnung: du gibst die Sandbox-Ziele (Drive-Parent-Ordner +
+Airtable-TEST-Tabelle) und ein Test-Projekt ein, ein Klick gebärt es reversibel in die Sandbox.
+
+**ClickUp-Routing-Gerüst.** Die Adapter-Tabelle (welcher User bekommt wann was, triggert wohin) als
+Datenmodell — **kein echter ClickUp-Write**; der konkrete Baum wird live in einer späteren Session
+geroutet.
+
+*Einschränkungen S4:* nur TEST-Sandbox (PROD gesperrt); Clockodo-Schritte erst Block E; ClickUp nur
+Gerüst; der Intake-Drive-Upload-Trigger ist noch nicht scharf (braucht `drive.file`-Re-Consent +
+Klärung echter Ordner vs. Sandbox).
+
+---
+
 *Dieses Dokument wird mit jedem Feature-Commit aktualisiert.*
-*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-c-identitaet-nomenklatur · mykilOS 8 Block C (Identität + Nomenklatur, S2)*
+*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · mykilOS 8 Block D (Provisioning in der Sandbox, S4)*

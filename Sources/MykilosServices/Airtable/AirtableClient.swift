@@ -146,7 +146,7 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
 
     /// Prüft, ob Base + Tabelle auf der Schreib-Whitelist stehen.
     /// Wird von createRecord und updateRecord verwendet.
-    static func isWritable(baseID: String, table: String) -> Bool {
+    public static func isWritable(baseID: String, table: String) -> Bool {
         writableMap[baseID]?.contains(table) == true
     }
 

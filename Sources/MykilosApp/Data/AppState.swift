@@ -49,6 +49,16 @@ public final class AppState {
     // austauschbarer Adapter für die spätere Sevdesk-Vorgabe). Rein lokal, kein externer Write.
     public let nomenklatur: NomenklaturStore
     public let numberAuthority: any NumberAuthority
+    // Review-Fix (high, Block D): konkreter Typ zusätzlich zum Protokoll gespeichert, damit
+    // numberAuthorityLocal() nie einen unsicheren `as?`-Fallback mit LEERER aktiveNummern-Closure
+    // bauen muss (Kollisionsgefahr bei Nummernvergabe). Ein Cast kann nie mehr fehlschlagen.
+    private let numberAuthorityConcrete: LocalSequentialAuthority
+
+    // mykilOS 8, Block D (S4): Provisioning. Ledger (Idempotenz/Teilfehler), Service
+    // (Mehrsystem-Geburt Drive+Airtable, gated TEST-Sandbox), ClickUp-Routing-Gerüst (§9, kein Write).
+    public let provisioningLedger: ProvisioningLedger
+    public let provisioningService: ProjektProvisioningService
+    public let clickUpRouting: ClickUpRoutingStore
 
     // MARK: Integrationen
     public let googleAuth: GoogleAuthService
@@ -179,7 +189,7 @@ public final class AppState {
         // die Authority kombiniert sie mit ihrem GRDB-Register (archiviert/reserviert).
         // Das Datei-IO läuft explizit off-main (Task.detached), damit ein Vergabe-Aufruf
         // nie den aufrufenden Kontext blockiert (Block-C-Review-Fix).
-        self.numberAuthority = LocalSequentialAuthority(
+        let localSequentialAuthority = LocalSequentialAuthority(
             db: database,
             aktiveNummern: {
                 await Task.detached(priority: .utility) {
@@ -187,6 +197,17 @@ public final class AppState {
                     return projekte.compactMap { Projektnummer(parsing: $0.projectNumber) }
                 }.value
             })
+        self.numberAuthority = localSequentialAuthority
+        self.numberAuthorityConcrete = localSequentialAuthority
+        // mykilOS 8, Block D (S4): Provisioning — Ledger + Service (Drive+Airtable, gated
+        // TEST-Sandbox) + ClickUp-Routing-Gerüst. Der Service nutzt echte Clients, schreibt
+        // aber NUR in die TEST-Sandbox (ProvisioningMode.test) und protokolliert via Write-Shadow.
+        let ledger = ProvisioningLedger(db: database)
+        self.provisioningLedger = ledger
+        self.provisioningService = ProjektProvisioningService(
+            drive: GoogleDriveClient(), airtableCreate: AirtableClient(), airtableFetch: AirtableClient(),
+            ledger: ledger, audit: self.audit, writeShadow: self.writeShadow)
+        self.clickUpRouting = ClickUpRoutingStore(db: database)
         let claudeCredentials = KeychainClaudeCredentialsStore()
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
         self.assistantLLM = ClaudeMessagesClient(credentialsStore: claudeCredentials)
@@ -312,6 +333,7 @@ public final class AppState {
         try? projectNumberBindings.load()   // mykilOS 8, Block A: ungefunden = leere Liste
         try? timer.load()              // mykilOS 8, Block B: laufender Timer/offene Buchung überlebt Neustart
         try? nomenklatur.load()        // mykilOS 8, Block C: Konnektoren (v1-Seed), Schema-Version, Kostenstellen-Overrides
+        try? clickUpRouting.load()     // mykilOS 8, Block D: ClickUp-Routing-Gerüst (Default-Zeilen seeden)
         // Registry seeden/laden
         await registry.seedIfEmpty()
         await registry.load()
@@ -640,6 +662,47 @@ public final class AppState {
         let kundeName = ergebnis.kundeFelder["Nachname"] ?? "Kunde"
         let projektName = ergebnis.projektFelder["Projektname"] ?? "Projekt"
         return "\(kundeName) + \(projektName) erfolgreich angelegt"
+    }
+
+    // MARK: - Projekt-Geburt (mykilOS 8, Block D / S4) — TEST-Sandbox
+    // Eine bestätigte Karte → ein neues Projekt in Drive + Airtable (TEST-Sandbox).
+    // Reserviert atomar die nächste Projektnummer, bildet die STR-Nr + den Ordnernamen,
+    // baut den Plan und ruft den idempotenten ProvisioningService. Gated über
+    // provisioningMode (.test). Liefert das Ergebnis (Drive-Ordner-ID, Airtable-Record-ID).
+    public func gebaereTestProjekt(
+        kundeName: String, kdnr: String, strasse: String?, hausnummer: String?, ort: String?,
+        driveParentID: String, airtableBaseID: String, airtableTabelle: String
+    ) async throws -> ProvisioningResult {
+        // 1. Nächste Projektnummer atomar reservieren.
+        let nummer = try await numberAuthorityLocal().nextAndReserve(jahr: Self.aktuellesJahr())
+        // 2. STR-Nr bilden — Schema-Bruch wird hier zur Warnung, kein kaputter Ordner.
+        let strErgebnis = STRNummer.bilde(strasse: strasse, hausnummer: hausnummer, ort: ort)
+        let strBlock: String
+        switch strErgebnis {
+        case .gebildet(let block, _): strBlock = block
+        case .nichtBildbar(let grund): throw ProvisioningError.ungueltigerPlan("STR-Nr: \(grund)")
+        }
+        let kundeSlug = kundeName.split(separator: " ").first.map(String.init) ?? kundeName
+        let ordnerName = "\(nummer.driveFormat)_\(kundeSlug)_\(strBlock)"
+        let plan = ProvisioningPlan(
+            projektnummer: nummer, kdnr: kdnr, kundeName: kundeName, ordnerName: ordnerName,
+            airtableFelder: ["Projektname": "\(kundeSlug) \(strBlock)"],
+            schema: nomenklatur.aktivesSchema())
+        // 3. Provisionieren (gated TEST-Sandbox, idempotent, teilfehler-fest).
+        return try await provisioningService.provision(
+            plan: plan, mode: provisioningMode.mode, driveParentID: driveParentID,
+            airtableBaseID: airtableBaseID, airtableTabelle: airtableTabelle, actorUserID: actorUserID)
+    }
+
+    /// Die konkrete LocalSequentialAuthority (für nextAndReserve, das nicht im Protokoll ist).
+    /// Review-Fix (high, Block D): kein `as?`-Cast mehr — der konkrete Typ wird im Init direkt
+    /// mitgespeichert, damit hier nie ein Fallback mit leerer aktiveNummern-Closure entstehen kann.
+    private func numberAuthorityLocal() -> LocalSequentialAuthority {
+        numberAuthorityConcrete
+    }
+
+    static func aktuellesJahr() -> Int {
+        Calendar.current.component(.year, from: Date())
     }
 
     /// mykilOS 8, Block A: synct die Geschäfts-Wahrheit (Artikel-Base `Kunden`/
