@@ -222,6 +222,19 @@ Freigabe von Johannes ausstehend, `createRecord` wirft bis dahin ehrlich
 
 ---
 
+## Darstellung — Hell/Dunkel/Auto (Settings → Darstellung, 2026-07-02)
+
+Neuer Abschnitt in den Einstellungen (direkt unter „Wer bin ich?"): ein
+Segment-Umschalter **Automatisch · Hell · Dunkel**. Die App-Ansicht richtet sich
+damit **nicht mehr stur nach dem System**, sondern nach deiner Wahl.
+- **Name · Was es tut:** legt das Farbschema der gesamten App fest (treibt alle
+  Design-Tokens `MykColor` um). „Automatisch" folgt weiter dem System.
+- **Wo zu finden:** Einstellungen → Darstellung.
+- **Voraussetzungen:** keine.
+- **Einschränkungen:** **pro Nutzer/Gerät** gespeichert (AppStorage `ui.appearance`,
+  UserDefaults) — nicht teamweit geteilt, passt zum local-first Ein-Nutzer-pro-Gerät-
+  Modell. Gilt sofort, auch fürs „Über"-Fenster.
+
 ## Integrationen (Settings → Integrationen)
 
 Übersicht aller verbundenen Dienste mit Verbindungsstatus.

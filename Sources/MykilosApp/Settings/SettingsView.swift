@@ -36,6 +36,7 @@ struct SettingsView: View {
                     .font(.mykDisplay)
                     .foregroundStyle(MykColor.ink.color)
                 identitySection
+                darstellungSection
                 mailSignaturSection
                 integrationStatusSection
                 googleSection
@@ -78,6 +79,30 @@ struct SettingsView: View {
                 claudeApiKey = creds.apiKey
                 claudeModel = creds.model
             }
+        }
+    }
+
+    // MARK: - Darstellung (Hell/Dunkel/Auto)
+    // Per-Nutzer-Wahl (AppStorage `ui.appearance`) — dieselbe Quelle wie die Scene
+    // in MykilOS6App. Nicht mehr stur nach System.
+    @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
+
+    private var darstellungSection: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            Text("Darstellung")
+                .font(.mykHeadline)
+                .foregroundStyle(MykColor.ink.color)
+            Picker("", selection: $appearanceRaw) {
+                ForEach(AppAppearance.allCases) { mode in
+                    Label(mode.label, systemImage: mode.symbol).tag(mode.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 360, alignment: .leading)
+            Text("Gilt nur für diese Ansicht, unabhängig vom System — pro Nutzer.")
+                .font(.mykCaption)
+                .foregroundStyle(MykColor.muted.color)
         }
     }
 

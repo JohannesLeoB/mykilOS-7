@@ -14,6 +14,9 @@ struct MykilOS6App: App {
     @State private var phase: BootPhase
     @State private var context = StudioContext()
     @Environment(\.scenePhase) private var scenePhase
+    // Hell/Dunkel/Auto (2026-07-02): per-Nutzer-Wahl statt System-Zwang.
+    @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
+    private var appearance: AppAppearance { AppAppearance.from(appearanceRaw) }
 
     init() {
         // Single-Instance-Guard: läuft bereits eine andere Instanz, diese aktivieren
@@ -41,6 +44,9 @@ struct MykilOS6App: App {
     var body: some Scene {
         WindowGroup {
             rootView
+                // Per-Nutzer-Wahl treibt die gesamte App-Darstellung; nil (=auto)
+                // folgt weiter dem System.
+                .preferredColorScheme(appearance.preferredColorScheme)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1340, height: 860)
@@ -52,8 +58,9 @@ struct MykilOS6App: App {
         // Damit bleibt die normale, stabile .automatic-Fensterlogik erhalten.
         .commands { AppCommands() }
 
-        WindowGroup("Über mykilOS 7.7", id: "about") {
+        WindowGroup("Über mykilOS", id: "about") {
             AboutMykilOSView()
+                .preferredColorScheme(appearance.preferredColorScheme)
         }
         .defaultSize(width: 440, height: 300)
         .windowResizability(.contentSize)
