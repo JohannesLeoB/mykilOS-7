@@ -69,17 +69,62 @@ mykilos Datenbank Zuliefererpreise Schätzung (`appkPzoEiI5eSMkNK`) — **niemal
 
 ---
 
-## 4. Kern-Schema-Entwurf (neue „Core"-Base, greenfield)
+## 4. Kern-Schema-Entwurf — neue Base `mykilOS_Core` (greenfield)
 
-Zwei sauber definierte Kern-Tabellen (Auszug — Felder als Vorschlag):
+**Entschieden (2026-07-01):** frische, saubere Core-Base als **einziger Master, mit dem
+die App spricht.** Native Record-Links innerhalb der Base machen die Beziehungsarbeit;
+jede Tabelle trägt zusätzlich den **Business-Key als Textfeld** (für basisübergreifende
+Übergaben). Zwei Typen von Tabellen:
+- **Eigene Tabellen** (App liest+schreibt): Kunden, Projekte, Positionen, Warenkörbe.
+- **Read-only Sync-Spiegel** von Daniels Base (App liest nur): Artikel, Lagerliste.
 
-### `Kunden` (Primärschlüssel: `Kundennummer`)
-`Kundennummer` (Text, UNIQUE) · `Nachname` · `Vorname` · `Firma` · `E-Mail 1/2` · `Telefon 1/2` · **`Adresse Straße` · `PLZ` · `Ort` · `Land`** · `Clockodo-Kunden-ID` · `sevDesk-Kontakt-ID` · `ClickUp-Lead-ID` · `Quelle` · `Projekte` (Link) · `Notizen`
+### `Kunden` — eigene Tabelle · Primär `Kundennummer`
+| Feld | Typ | Zweck |
+|---|---|---|
+| `Kundennummer` | Text, UNIQUE | Business-Key |
+| `Nachname` / `Vorname` / `Firma` | Text | Identität |
+| `E-Mail 1/2` / `Telefon 1/2` | E-Mail/Tel | Kontakt |
+| **`Adresse Straße` / `PLZ` / `Ort` / `Land`** | Text | **die fehlende Adresse — hier zuhause** |
+| `Clockodo-Kunden-ID` | Number | Feeder → Clockodo |
+| `sevDesk-Kontakt-ID` / `ClickUp-Lead-ID` | Text | Feeder-Rückweg an Daniels Pipeline |
+| `Quelle` | Select | Herkunft (Intake/Import) |
+| `Projekte` | Link → Projekte | Relation |
+| `Status` | Select (Aktiv/Archiv) | Inaktivierung, **nie löschen** |
+| `Notizen` | Long text | |
 
-### `Projekte` (Primärschlüssel: `Projektnummer`)
-`Projektnummer` (Text, UNIQUE, Format `JJJJ-NNN`) · `Titel` · `Kunde` (Link → Kunden) · `Art` · `Phase/Status` · **`Projektadresse Straße/PLZ/Ort`** · `Drive-Ordner-ID` · `ClickUp-Liste` · `sevdesk-Ref` · `Budget` · `Eltern-Projekt` (Link) · Finanz-Status (Anzahlung/Abschlag/Schluss) · `Positionen` (Link)
+### `Projekte` — eigene Tabelle · Primär `Projektnummer`
+| Feld | Typ | Zweck |
+|---|---|---|
+| `Projektnummer` | Text, UNIQUE, `JJJJ-NNN` | Business-Key |
+| `Titel` | Text | |
+| `Kunde` | Link → Kunden | Relation |
+| `Kundennummer` | Text (Lookup/Copy) | Übergabe-Key |
+| `Art` / `Phase` | Select | |
+| **`Projektadresse Straße/PLZ/Ort`** | Text | Lieferadresse |
+| `Drive-Ordner-ID` / `Drive-Ordnername` | Text | Drive-Routing |
+| `ClickUp-Liste` / `ClickUp-Lead-ID` | Text | ClickUp-Routing |
+| `sevdesk-Ref` / `sevDesk-Angebot-ID/Link` | Text/URL | Feeder ↔ sevDesk |
+| `Budget` | Number | |
+| `Eltern-Projekt` | Link (self) | Nachträge |
+| `Positionen` | Link → Positionen | |
+| `Finanz-Status` (Anzahlung/Abschlag/Schluss) | **read-only Spiegel** | von Daniels sevDesk-Pipeline zurückgefüttert |
+| `Status` | Select (Aktiv/Archiv) | nie löschen |
 
-> **Kern-Entscheidung (§8):** Wird diese Core-Base *neu* angelegt — oder wird Daniels Artikel-Base zum offiziellen Master erklärt und Mastermind darauf reduziert? Beides ist tragfähig; die Wahl bestimmt die Migrationsrichtung.
+### `Positionen` — eigene Tabelle (Projekt-Artikel-Zeilen)
+`Projektnummer` (Text-Key) · `Projekt` (Link) · `Artikelnummer` (Text-Key → Artikel-Spiegel) · `Menge` · `Rabatt %` · `Reihenfolge` · Preise per Lookup aus `Artikel`-Spiegel.
+
+### `Warenkörbe` — eigene Tabelle, **append-only**
+`Bezeichnung` · `Projektnummer` (Key) · `Prüfsumme` · `Version` · `Status` (Aktuell/Archiviert) · `Positionen (JSON)` · `Summe EK/VK` · `Erstellt-am`.
+
+### `Artikel` + `Lagerliste` — read-only **Airtable-Sync-Spiegel**
+1:1-Sync aus Daniels Artikel-Base (~13k Preise + Lager). Kein App-Kopier-Job — Airtable
+hält den Spiegel aktuell, die App liest nur. So bleiben Preise frisch ohne Pflegeaufwand.
+
+### Bewusst NICHT in Core v1 (Scope-Grenze)
+Adapter-Bases (Clockodo/ClickUp/Slack/Drive/Sevdesk/Weclapp) bleiben getrennt. Die
+Mastermind-Kontroll-Tabellen (Datenstrom-Handbuch/-Log, Clockodo-Nutzer/-Leistungen,
+Kalkulationen, Eingehende-Angebote) bleiben vorerst in Mastermind — ob sie später in
+Core wandern oder Mastermind als „Kontroll-Base" schlank weiterlebt, ist §8-Punkt 4.
 
 ---
 
@@ -99,14 +144,23 @@ Jeder Adapter ist eine IO-Grenze, die **auf einem Business-Key joint** (nie auf 
 
 ---
 
-## 6. Migrationsplan (Strangler — nie Big-Bang)
+## 6. Migrationsplan (Strangler — nie Big-Bang, Master = frische Core-Base)
 
-1. **Ziel-Modell fixieren** (dieses Dokument + Johannes/Daniel-Freigabe).
-2. **Greenfield Core-Base anlegen** (leer, reiner `create`, null Risiko).
-3. **Business-Keys überall nachziehen** (`Projektnummer`/`Kundennummer` als Textfeld in Daniels Base + Mastermind) — der eine hochwertige Vorab-Fix.
-4. **Kontrollierter Sync/Backfill** in den Core; App liest testweise dagegen; Alt-Mastermind bleibt Wahrheit bis grün.
-5. **Entität für Entität umschalten** (erst Kunden, dann Projekte, dann Artikel) — jeder Schritt einzeln, reversibel, 3-Kopien-Backup als Netz.
-6. **Alt-Tabellen stilllegen** (Status/Archiv-Feld, **nie löschen**).
+Empfohlene Sequenz: **nach 8.0-Abnahme**, als eigener ruhiger Strang.
+
+1. **Ziel-Modell fixieren** (dieses Dokument + Johannes ✅ / Daniel für die Schreib-Übergabe).
+2. **Greenfield `mykilOS_Core` anlegen** (leer, reiner `create`, null Risiko).
+3. **Business-Keys nachziehen:** `Projektnummer`/`Kundennummer` als Textfeld in Daniels Base
+   (braucht Daniel) — der eine hochwertige Vorab-Fix, ohne den keine saubere Übergabe geht.
+4. **READ-Seite zuerst (einfach):** Artikel + Lagerliste als read-only Airtable-Sync in Core
+   spiegeln; Kunden/Projekte/Warenkörbe per kontrolliertem Backfill re-mappen. App liest
+   testweise gegen Core; Alt-Quellen bleiben Wahrheit bis grün.
+5. **App-Umstellung Read:** `ArtikelKatalogStore`/`LagerlisteStore`/`WarenkorbListeStore`/
+   `CachedBusinessRegistry` lesen Core statt Daniels Base.
+6. **WRITE-Seite (die Arbeit):** Intake + Cart schreiben in Core; **Feeder-out** (Core →
+   Daniels Base/sevDesk über den Business-Key) füttert seine Pipeline weiter. `Finanz-Status`
+   kommt read-only zurück. `appdxTeT6bhSBmwx5` fällt aus `writableMap`.
+7. **Alt-Tabellen stilllegen** (Status/Archiv-Feld, **nie löschen**).
 
 ---
 
@@ -175,8 +229,8 @@ nie über basisübergreifende Record-Links (die es in Airtable nicht gibt).
 
 ## 8. Offene Entscheidungen (Johannes / Daniel)
 
-1. **Master für Kunde/Projekt:** neue Greenfield-Core-Base — ODER Daniels Artikel-Base offiziell zum Master erklären und Mastermind darauf reduzieren?
-2. **Sync-Richtung & -Mechanik:** Airtable-native Sync (read-only Spiegel) vs. App-getriebener Sync über die Keys.
+1. ✅ **ENTSCHIEDEN (2026-07-01):** neue Greenfield-Core-Base `mykilOS_Core` als Master; App vollständig von Daniels Base entkoppelt (§8b).
+2. **Sync-Richtung & -Mechanik:** Airtable-native Sync (read-only Spiegel — Favorit für Artikel/Lager) vs. App-getriebener Backfill über die Keys (für Kunden/Projekte, wg. Re-Mapping). Offen.
 3. **Wer trägt die Business-Keys zuerst nach** (`Projektnummer`/`Kundennummer` in Daniels Base) — und wann?
 4. **Adapter-Konsolidierung:** bleiben alle 6 Adapter-Bases getrennt (empfohlen) oder werden selten genutzte zusammengelegt?
 5. **Zeitpunkt:** vor oder nach dem 8.0-Merge? (Empfehlung: **nach** 8.0 — erst die laufende App abnehmen, dann die Airtable-Konsolidierung als eigener, ruhiger Strang.)
