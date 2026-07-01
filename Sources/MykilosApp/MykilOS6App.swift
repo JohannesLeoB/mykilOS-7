@@ -204,6 +204,9 @@ struct ContentView: View {
     @State private var showOnboarding = false
     // mykilOS 8, Block B: Check-in-Dialog (aus Sidebar-Pille) — global über allen Modulen.
     @State private var timerCheckInRequested = false
+    // Härtung 2026-07-01: kurzer Start-Hinweis, welcher Build gerade läuft (Antwort
+    // auf wiederholte Verwechslungen zwischen parallel installierten Versionen).
+    @State private var showFreshnessBanner = true
 
     // Direkt nutzbar: der Wizard erzwingt sich beim ersten Start NUR, wenn Claude
     // fehlt (= Assistent stumm). Google ist "empfohlen", nicht Pflicht — wer nur
@@ -238,6 +241,18 @@ struct ContentView: View {
             if new != nil { module = .projects }
         }
         .guardWindowPosition(on: module)
+        .overlay(alignment: .top) {
+            if showFreshnessBanner {
+                AppFreshnessBanner(onDismiss: { showFreshnessBanner = false })
+                    .padding(.top, MykSpace.s4)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: showFreshnessBanner)
+        .task {
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            showFreshnessBanner = false
+        }
     }
 
     private var shell: some View {
@@ -409,6 +424,40 @@ struct ComingSoonView: View {
     }
 }
 
+// Härtung 2026-07-01: kurzer Start-Hinweis, welcher Build gerade läuft — Antwort
+// auf wiederholte Verwechslungen zwischen mehreren parallel installierten
+// mykilOS-Versionen (siehe script/cleanup_old_app_versions.sh). Zeigt nur den
+// eigenen Build-Fingerabdruck aus AppIdentity (Version, Commit, Datum) — keine
+// Behauptung "das ist weltweit die neueste Version" (dafür gäbe es in einer
+// local-first App keine Vergleichsgrundlage), sondern ehrlich "das läuft hier
+// gerade". Auto-Dismiss nach 6s (ContentView.task) + manueller Schließen-Button.
+private struct AppFreshnessBanner: View {
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: MykSpace.s4) {
+            Image(systemName: "checkmark.seal.fill")
+                .foregroundStyle(MykColor.positive.color)
+            Text("mykilOS \(AppIdentity.version) · Commit \(AppIdentity.gitCommit) · gebaut \(AppIdentity.buildDate)")
+                .font(.mykMono(10.5))
+                .foregroundStyle(MykColor.ink.color)
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.mykCaption)
+                    .foregroundStyle(MykColor.muted.color)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, MykSpace.s5)
+        .padding(.vertical, MykSpace.s3)
+        .background(
+            RoundedRectangle(cornerRadius: MykRadius.md)
+                .fill(MykColor.card.color)
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
+        )
+    }
+}
+
 struct AboutMykilOSView: View {
     // Alle Diagnose-Werte aus der EINEN Quelle (AppIdentity) — kein Netzwerk,
     // kein Keychain, keine zweite Pfad-/Versionsberechnung.
@@ -424,14 +473,14 @@ struct AboutMykilOSView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: MykRadius.md)
                         .fill(MykColor.ink.color)
-                    Text("7.7")
+                    Text(version)
                         .font(.mykHeadline)
                         .foregroundStyle(MykColor.paper.color)
                 }
                 .frame(width: 64, height: 64)
 
                 VStack(alignment: .leading, spacing: MykSpace.s2) {
-                    Text("mykilOS 7.7")
+                    Text("mykilOS \(version)")
                         .font(.mykDisplay)
                         .foregroundStyle(MykColor.ink.color)
                     Text("Version \(version) · Build \(build)")

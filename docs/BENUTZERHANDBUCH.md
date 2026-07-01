@@ -540,6 +540,27 @@ oder außerhalb der App entstehen. Zwei Härtungen:
    + Straßen-Code) manuell anpassen — die laufende Projektnummer selbst ist **nie** editierbar,
    die kommt ausschließlich aus der kollisionsgeprüften Vergabe.
 
+**Start-Hinweis "aktueller Build" + Aufräumen von Alt-Versionen (Härtung, 2026-07-01, Johannes).**
+Auslöser: mehrere parallel installierte mykilOS-Versionen unter `/Applications/` (5.app, 7.5.app,
+7.6.6.app, 7.6.8.app, 7.11.0.app — teils mit Ordnername/interner Version auseinanderlaufend, z. B.
+"7.5.app" enthielt intern 7.6.1) führten zu einer echten Verwechslung beim Screenshotten (Johannes
+testete versehentlich eine alte Version und hielt das für einen Feature-Verlust). Drei Bausteine:
+1. **Aufgeräumt:** Alle Alt-Versionen außer der neuesten (`7.11.0.app`) in den Papierkorb verschoben
+   (nicht hart gelöscht), eine Sicherungskopie von `7.11.0.app` liegt zusätzlich unter
+   `~/mykilOS-App-Backups/`. `MYKILOS Assistent 2.0.app` (andere Bundle-ID `com.mykilos.assistent`,
+   eigenständiges Produkt) blieb unangetastet.
+2. **`script/cleanup_old_app_versions.sh`** (neu): erkennt alle `/Applications/*.app` mit Bundle-ID
+   `de.mykilos.mykilos6`, behält die N neuesten (Default 2), verschiebt den Rest per Finder-Delete
+   in den Papierkorb. In `script/create_dmg.sh` mit `KEEP=1` eingehängt — jede künftige Release-
+   Session trimmt automatisch vor dem Bauen einer neuen DMG, sodass nach der nächsten Installation
+   nie mehr als „aktuell + vorherig" existieren.
+3. **`AppFreshnessBanner`** (`MykilOS6App.swift`): kurzes Banner beim App-Start, zeigt Version,
+   Git-Commit und Build-Datum aus `AppIdentity` (dieselbe Quelle wie das About-Fenster) — auto-
+   verschwindet nach 6 s, manuell schließbar. Zeigt ehrlich „das läuft hier gerade", keine
+   Behauptung „das ist weltweit die neueste Version" (dafür gibt es in einer local-first App keine
+   Vergleichsgrundlage). Nebenbei behoben: `AboutMykilOSView` zeigte hartkodiert „mykilOS 7.7" statt
+   der echten `AppIdentity.version` — seit 8.0.0 falsch, jetzt dynamisch.
+
 **Assistent: Loop-Härtung gegen endloses/teures Suchen (Härtung, 2026-07-01, Johannes).**
 Der konversationelle Assistent (`ConversationEngine`) konnte bisher bis zu 6 volle
 Claude-Runden brauchen, bevor er aufgab — auch wenn er dieselbe erfolglose Anfrage (z. B. eine
@@ -784,4 +805,5 @@ Clockodo-Adapter-Base aufgebaut
 Tabelle), Bestandskunde-auswählen im Fragebogen (Airtable+Google), Artikel-Katalog-Cache,
 Gmail-Parallelfetch, Assistent-Chat-Scroll-Fix, Live-Schema-Diagnose, CartStore-Feld-ID-Fix,
 Mail-Entwürfe-Ordner, Assistent-Loop-Härtung (Wiederholungs-Erkennung, Tool-Timeout 15s,
-Turn-Deadline 45s, echter Abbrechen-Button, Netzwerk-Timeout ClaudeChatClient)*
+Turn-Deadline 45s, echter Abbrechen-Button, Netzwerk-Timeout ClaudeChatClient), Alt-Versionen-
+Aufräumen + Retention-Skript + AppFreshnessBanner-Starthinweis*
