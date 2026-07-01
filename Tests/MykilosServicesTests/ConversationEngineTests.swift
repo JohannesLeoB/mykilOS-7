@@ -194,6 +194,56 @@ struct ConversationEngineTests {
         #expect(logger.entries.first?.action == .success)
     }
 
+    // MARK: Härtung 2026-07-01 — Loop-Effizienz (Wiederholungs-Erkennung + Timeout)
+    // Claude fragt fünfmal identisch nach demselben (leeren) Ergebnis. Die Schleife
+    // muss das nach der zweiten identischen Runde erkennen und sofort abbrechen,
+    // statt bis maxToolRounds (6) durchzulaufen — sonst würde jede Wiederholung
+    // eine volle, kostenpflichtige Claude-Runde kosten.
+    @Test func toolSchleifeBrichtBeiWiederholtemIdentischenAufrufAb() async throws {
+        let store = ChatStore(db: try GRDBDatabase.inMemory())
+        let fakeGmail = FakeGmailForEngine(messages: [])
+        let registry = AssistantToolRegistry.standard(gmail: fakeGmail)
+        let toolUse = ClaudeToolUse(id: "tu_1", name: "search_gmail", inputJSON: Data(#"{"query":"from:nobody"}"#.utf8))
+        let repeated = ClaudeChatResponse(text: "", toolUses: [toolUse], stopReason: "tool_use")
+        let provider = ScriptedProvider(responses: Array(repeating: repeated, count: 6))
+        let engine = ConversationEngine(chatStore: store, provider: provider, registry: registry)
+
+        await engine.send("Suche nach nichts", scope: .home, focusedProjectID: nil, signals: [], projects: [], toolsEnabled: true)
+
+        // Bricht nach der zweiten (wiederholten) Runde ab — nicht erst bei maxToolRounds=6.
+        #expect(provider.callCount == 2)
+        let last = store.messages(for: .home).last
+        #expect(last?.status == .complete)
+        #expect(last?.text.contains("keine neuen Daten") == true)
+    }
+
+    // Ein hängendes Tool darf die Runde nicht blockieren — winzig injiziertes Timeout
+    // (statt der Produktions-15s) hält den Test schnell, prüft aber denselben Pfad.
+    @Test func toolSchleifeBrichtHaengendenToolCallPerTimeoutAb() async throws {
+        let store = ChatStore(db: try GRDBDatabase.inMemory())
+        let slowTool = SlowAssistantTool()
+        let registry = AssistantToolRegistry(tools: [slowTool])
+        let toolUse = ClaudeToolUse(id: "tu_slow", name: "slow_tool", inputJSON: Data("{}".utf8))
+        let provider = ScriptedProvider(responses: [
+            ClaudeChatResponse(text: "", toolUses: [toolUse], stopReason: "tool_use"),
+            textResponse("Fertig trotz Zeitüberschreitung."),
+        ])
+        let engine = ConversationEngine(
+            chatStore: store, provider: provider, registry: registry, toolTimeoutSeconds: 0.05
+        )
+
+        await engine.send("Frag das langsame Tool", scope: .home, focusedProjectID: nil, signals: [], projects: [], toolsEnabled: true)
+
+        let last = store.messages(for: .home).last
+        #expect(last?.status == .complete)
+        #expect(last?.text == "Fertig trotz Zeitüberschreitung.")
+        // Tool-Spur zeigt einen Fehler (Zeitüberschreitung), nicht das eigentliche Ergebnis.
+        let hasErrorActivity = last?.blocks.contains {
+            if case .toolActivity(_, let isError) = $0 { isError } else { false }
+        } == true
+        #expect(hasErrorActivity)
+    }
+
     // MARK: Mandate E — search_gmail loggt unter GMAIL_SEARCH (Hustadt-Gate)
     // Beweist genau die Schaltzentrum-Bedingung: nach einem echten search_gmail-
     // Tool-Lauf existiert ein DataFlow-Eintrag mit integrationID == "GMAIL_SEARCH"
@@ -248,6 +298,19 @@ private final class MultiDeltaProvider: AssistantConversing, @unchecked Sendable
                 continuation.finish()
             }
         }
+    }
+}
+
+// Härtung 2026-07-01: simuliert einen hängenden Tool-Call (z. B. ein Google-Client
+// ohne Antwort). Nutzt Task.sleep statt Thread.sleep, damit Task-Cancellation
+// (via runToolWithTimeout's group.cancelAll()) den Test nicht ausbremst.
+private final class SlowAssistantTool: AssistantTool, @unchecked Sendable {
+    let name = "slow_tool"
+    let description = "Testtool, das absichtlich hängt (Timeout-Test)."
+    let parameters: [ToolParameter] = []
+    func run(input: [String: String]) async -> ToolRunResult {
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        return ToolRunResult(text: "Doch noch fertig geworden.")
     }
 }
 

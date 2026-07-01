@@ -540,6 +540,28 @@ oder außerhalb der App entstehen. Zwei Härtungen:
    + Straßen-Code) manuell anpassen — die laufende Projektnummer selbst ist **nie** editierbar,
    die kommt ausschließlich aus der kollisionsgeprüften Vergabe.
 
+**Assistent: Loop-Härtung gegen endloses/teures Suchen (Härtung, 2026-07-01, Johannes).**
+Der konversationelle Assistent (`ConversationEngine`) konnte bisher bis zu 6 volle
+Claude-Runden brauchen, bevor er aufgab — auch wenn er dieselbe erfolglose Anfrage (z. B. eine
+leere Airtable-Suche) mehrfach identisch wiederholte, und ein einzelner hängender Tool-Call
+(Google/Airtable/ClickUp ohne Antwort) konnte die ganze Runde blockieren, ohne dass der Nutzer
+sie abbrechen konnte. Vier Bausteine:
+1. **Wiederholungs-Erkennung:** Stellt Claude innerhalb desselben Chat-Turns denselben Tool-Call
+   (Name + Argumente identisch) ein zweites Mal, bricht die Schleife sofort ab, statt bis
+   `maxToolRounds` (6) weiterzulaufen — mit einer ehrlichen Antwort („konnte dazu keine neuen
+   Daten finden"), statt teure Wiederholungsrunden zu verbrauchen.
+2. **Turn-Deadline (45 s):** Unabhängig von der Rundenzahl bricht die gesamte Antwort nach 45
+   Sekunden mit einer freundlichen Meldung ab.
+3. **Tool-Timeout (15 s):** Ein einzelner Tool-Call, der nicht antwortet, wird nach 15 Sekunden
+   als Fehler an Claude zurückgegeben (statt die Runde unbegrenzt zu blockieren) — Claude sieht
+   den Fehler wie jeden anderen und kann reagieren.
+4. **Echter Abbrechen-Button:** Der Senden-Button im Chat-Composer wechselt während einer
+   laufenden Antwort zu einem Stopp-Symbol und bricht bei Klick über `engine.cancel()` wirklich
+   ab (kooperative Swift-Task-Cancellation, propagiert bis in den laufenden HTTP-Call) — vorher
+   war der Button während der Antwortzeit nur deaktiviert, ohne Abbruchmöglichkeit.
+Zusätzlich: `ClaudeChatClient` setzt jetzt `request.timeoutInterval = 30` als Netzwerk-Level-
+Absicherung gegen echte HTTP-Hänger (unabhängig von der App-Logik).
+
 **Bestandskunde auswählen (Härtung, 2026-07-01, Johannes).** Im ersten Fragebogen-Schritt
 („Kundenkontakt") steht jetzt oberhalb der manuellen Felder ein Suchfeld „Bestandskunde suchen
 (Airtable + Google Kontakte)". Ab 2 Zeichen erscheinen Treffer aus zwei bereits vorhandenen
@@ -759,4 +781,5 @@ GmailCacheStore verdrahtet, M3 ClickUp-Listen-IDs live verlinkt, Clockodo-Adapte
 (Stundensätze/Kostenstellen-Stammdaten + ClockodoAdapterWriter: Timer-Buchungen → Zeitbuchungen-
 Tabelle), Bestandskunde-auswählen im Fragebogen (Airtable+Google), Artikel-Katalog-Cache,
 Gmail-Parallelfetch, Assistent-Chat-Scroll-Fix, Live-Schema-Diagnose, CartStore-Feld-ID-Fix,
-Mail-Entwürfe-Ordner*
+Mail-Entwürfe-Ordner, Assistent-Loop-Härtung (Wiederholungs-Erkennung, Tool-Timeout 15s,
+Turn-Deadline 45s, echter Abbrechen-Button, Netzwerk-Timeout ClaudeChatClient)*

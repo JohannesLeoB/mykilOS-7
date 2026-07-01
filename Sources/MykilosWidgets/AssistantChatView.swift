@@ -301,13 +301,20 @@ public struct AssistantChatView: View {
                         .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
                 )
                 .onSubmit { send(draft) }
-            Button { send(draft) } label: {
-                Image(systemName: engine.isResponding ? "ellipsis" : "arrow.up.circle.fill")
+            // Härtung (2026-07-01, Loop-Effizienz): während einer laufenden Antwort
+            // bricht derselbe Button-Slot sie über engine.cancel() wirklich ab, statt
+            // nur deaktiviert dazustehen — der Nutzer muss nicht auf maxToolRounds/
+            // die Turn-Deadline warten, wenn er merkt, dass die Frage feststeckt.
+            Button {
+                if engine.isResponding { engine.cancel() } else { send(draft) }
+            } label: {
+                Image(systemName: engine.isResponding ? "stop.circle.fill" : "arrow.up.circle.fill")
                     .font(.mykHeadline)
-                    .foregroundStyle(canSend ? MykColor.ink.color : MykColor.faint.color)
+                    .foregroundStyle(engine.isResponding ? MykColor.critical.color : (canSend ? MykColor.ink.color : MykColor.faint.color))
             }
             .buttonStyle(.plain)
-            .disabled(canSend == false)
+            .disabled(engine.isResponding == false && canSend == false)
+            .help(engine.isResponding ? "Antwort abbrechen" : "Senden")
         }
         .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s5)
         .overlay(alignment: .top) { Divider().overlay(MykColor.line.color) }

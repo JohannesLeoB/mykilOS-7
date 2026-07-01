@@ -152,6 +152,11 @@ public struct ClaudeChatClient: AssistantConversing {
         request.setValue(credentials.apiKey, forHTTPHeaderField: "x-api-key")
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.httpBody = try JSONEncoder().encode(payload)
+        // Härtung (2026-07-01, Loop-Effizienz): ohne explizites Timeout gilt Apples
+        // Default (~60s) — hier bewusst verkürzt. Gilt bei URLSession als "keine neuen
+        // Daten seit N Sekunden", nicht als harte Gesamtdauer — läuft beim SSE-Stream
+        // also NICHT während aktiv Text eintrifft ab, sondern nur bei echtem Hänger.
+        request.timeoutInterval = 30
         return request
     }
 

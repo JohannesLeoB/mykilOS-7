@@ -81,22 +81,45 @@ public final class ConversationEngine {
         self.registry = newRegistry
     }
     private static let maxToolRounds = 6
+    // Härtung (2026-07-01, Loop-Effizienz): verhindert endloses/teures Weitersuchen.
+    // toolTimeoutSeconds bricht einen einzelnen hängenden Tool-Call ab (z. B. Google/
+    // Airtable/ClickUp ohne Antwort); turnDeadlineSeconds begrenzt die gesamte Runde
+    // unabhängig von maxToolRounds (schützt vor vielen schnellen, aber in Summe
+    // langen Runden). Instanz-Properties (statt static let) — Tests injizieren winzige
+    // Werte, damit das Timeout-Verhalten geprüft werden kann, ohne real 15s zu warten.
+    private let toolTimeoutSeconds: Double
+    private let turnDeadlineSeconds: Double
 
     public private(set) var isResponding = false
 
     // S26 — das in der letzten Runde per Auto-Routing gewählte Modell (für die UI-Quellzeile).
     public private(set) var lastRoutedModel: String?
 
+    // Härtung (2026-07-01, Loop-Effizienz): der laufende Antwort-Task, damit die UI
+    // eine hängende/zu lange Anfrage wirklich abbrechen kann (nicht nur optisch).
+    private var activeTask: Task<Void, Never>?
+
+    /// Bricht die aktuell laufende Antwort ab (No-op, wenn gerade nichts läuft).
+    /// Kooperative Swift-Cancellation propagiert bis in den laufenden Claude-HTTP-
+    /// Call hinein (URLSession bricht bei Task-Cancellation selbst ab).
+    public func cancel() {
+        activeTask?.cancel()
+    }
+
     public init(
         chatStore: ChatStore,
         provider: any AssistantConversing,
         registry: AssistantToolRegistry? = nil,
-        dataFlowLogger: DataFlowLogger? = nil
+        dataFlowLogger: DataFlowLogger? = nil,
+        toolTimeoutSeconds: Double = 15,
+        turnDeadlineSeconds: Double = 45
     ) {
         self.chatStore = chatStore
         self.provider = provider
         self.registry = registry
         self.dataFlowLogger = dataFlowLogger
+        self.toolTimeoutSeconds = toolTimeoutSeconds
+        self.turnDeadlineSeconds = turnDeadlineSeconds
     }
 
     public func send(
@@ -182,29 +205,43 @@ public final class ConversationEngine {
             tools = (toolsEnabled ? registry?.definitions() : nil) ?? []
         }
 
-        do {
-            var activities: [ChatContentBlock] = []
-            let placeholderID = placeholder.id
-            let onTextDelta: (String) -> Void = { [chatStore] text in
-                chatStore.updateStreamingText(id: placeholderID, text: text, in: scope)
+        // Als eigener, abbrechbarer Task geführt (statt inline try/await), damit
+        // `cancel()` von außen wirklich eingreifen kann — nicht nur den UI-Zustand
+        // umschaltet. `Task { }` ohne `.detached` erbt hier die @MainActor-Isolation
+        // von `send(...)`, Zugriffe auf `chatStore`/`convo` bleiben unverändert sicher.
+        let task = Task { [weak self] in
+            guard let self else { return }
+            do {
+                var activities: [ChatContentBlock] = []
+                let placeholderID = placeholder.id
+                let onTextDelta: (String) -> Void = { [chatStore] text in
+                    chatStore.updateStreamingText(id: placeholderID, text: text, in: scope)
+                }
+                let finalText = try await self.runLoop(
+                    convo: &convo, activities: &activities, system: system, tools: tools, model: routedModel,
+                    focusedProjectID: effectiveProjectID, focusedDriveFolderID: focusedDriveFolderID,
+                    focusedClickUpListID: focusedClickUpListID, onTextDelta: onTextDelta
+                )
+                // Tool-Spuren (Transparenz) vor die Antwort; nur Anzeige, nicht an die API.
+                try chatStore.updateAssistantTurn(
+                    id: placeholder.id, blocks: activities + [.text(finalText)], status: .complete, in: scope
+                )
+            } catch is CancellationError {
+                try? chatStore.updateAssistantTurn(
+                    id: placeholder.id, blocks: [.text("Abgebrochen.")], status: .complete, in: scope
+                )
+            } catch {
+                let message = Self.describe(error)
+                // try? begründet: scheitert sogar das Finalisieren, ist der Fehler über
+                // chatStore.saveState sichtbar; ein erneuter Wurf verpufft im UI-.task.
+                try? chatStore.updateAssistantTurn(
+                    id: placeholder.id, blocks: [.text(message)], status: .failed(message), in: scope
+                )
             }
-            let finalText = try await runLoop(
-                convo: &convo, activities: &activities, system: system, tools: tools, model: routedModel,
-                focusedProjectID: effectiveProjectID, focusedDriveFolderID: focusedDriveFolderID,
-                focusedClickUpListID: focusedClickUpListID, onTextDelta: onTextDelta
-            )
-            // Tool-Spuren (Transparenz) vor die Antwort; nur Anzeige, nicht an die API.
-            try chatStore.updateAssistantTurn(
-                id: placeholder.id, blocks: activities + [.text(finalText)], status: .complete, in: scope
-            )
-        } catch {
-            let message = Self.describe(error)
-            // try? begründet: scheitert sogar das Finalisieren, ist der Fehler über
-            // chatStore.saveState sichtbar; ein erneuter Wurf verpufft im UI-.task.
-            try? chatStore.updateAssistantTurn(
-                id: placeholder.id, blocks: [.text(message)], status: .failed(message), in: scope
-            )
         }
+        activeTask = task
+        await task.value
+        activeTask = nil
     }
 
     // MARK: - Gedächtnis-Fenster
@@ -243,9 +280,18 @@ public final class ConversationEngine {
             return try await streamingFinalAnswer(convo: convo, system: system, model: model, onTextDelta: onTextDelta)
         }
 
+        let deadline = Date().addingTimeInterval(turnDeadlineSeconds)
         var rounds = 0
+        // Härtung: identische Tool-Calls (Name+Argumente) innerhalb dieser einen
+        // Turn-Ausführung nicht ein zweites Mal stellen — Claude, das dreimal dieselbe
+        // leere Airtable-Query wiederholt, wird beim zweiten Versuch gestoppt statt
+        // erst nach maxToolRounds.
+        var seenToolCalls: Set<String> = []
         while true {
             rounds += 1
+            if Date() >= deadline {
+                return "Das dauert gerade zu lange — bitte versuche es erneut oder formuliere die Frage einfacher."
+            }
             let response = try await provider.respond(messages: convo, system: system, tools: tools, maxTokens: 1024, model: model)
 
             if response.toolUses.isEmpty || rounds >= Self.maxToolRounds {
@@ -260,9 +306,24 @@ public final class ConversationEngine {
 
             // Tools ausführen → tool_result-Turn (role user) anhängen + Anzeige-Spur.
             var resultBlocks: [ChatContentBlock] = []
+            var repeatDetected = false
             for toolUse in response.toolUses {
-                let result = await (registry?.run(name: toolUse.name, inputJSON: toolUse.inputJSON, projektID: focusedProjectID, driveFolderID: focusedDriveFolderID, clickUpListID: focusedClickUpListID)
-                    ?? ToolRunResult(text: "Keine Tools verfügbar.", isError: true))
+                let callKey = Self.callKey(name: toolUse.name, inputJSON: toolUse.inputJSON)
+                let isRepeat = seenToolCalls.contains(callKey)
+                seenToolCalls.insert(callKey)
+                let result: ToolRunResult
+                if isRepeat {
+                    repeatDetected = true
+                    result = ToolRunResult(
+                        text: "Diese Anfrage wurde in diesem Gespräch bereits identisch gestellt — wird nicht wiederholt.",
+                        isError: true
+                    )
+                } else {
+                    result = await runToolWithTimeout(
+                        name: toolUse.name, inputJSON: toolUse.inputJSON,
+                        projektID: focusedProjectID, driveFolderID: focusedDriveFolderID, clickUpListID: focusedClickUpListID
+                    )
+                }
                 // Mandate E / Forensik F12: die kanonische Manifest-ID loggen, nicht
                 // den rohen Tool-Namen — sonst findet das SchaltzentrumView nie einen
                 // Handshake (es matcht auf integrationID aus dem Manifest).
@@ -312,7 +373,42 @@ public final class ConversationEngine {
                 }
             }
             convo.append(ChatMessage(role: .user, blocks: resultBlocks, status: .complete))
+            // Sofort ehrlich aufhören statt eine weitere (kostenpflichtige) Runde zu
+            // riskieren, wenn Claude gerade nachweislich nichts Neues gefunden hat.
+            if repeatDetected {
+                return "Ich konnte dazu keine neuen Daten finden — magst du die Frage anders stellen oder mir mehr Kontext geben?"
+            }
         }
+    }
+
+    // Führt einen einzelnen Tool-Call mit hartem Zeitlimit aus (Härtung 2026-07-01):
+    // ein hängender Google/Airtable/ClickUp-Call darf nicht die ganze Runde blockieren.
+    // `registry` wird als lokaler Sendable-Wert gebunden, damit der Timeout-Task ihn
+    // ohne @MainActor-Capture von `self` ausführen kann.
+    private func runToolWithTimeout(
+        name: String, inputJSON: Data, projektID: String?, driveFolderID: String?, clickUpListID: String?
+    ) async -> ToolRunResult {
+        guard let registry else { return ToolRunResult(text: "Keine Tools verfügbar.", isError: true) }
+        let timeout = toolTimeoutSeconds   // lokal gebunden, kein self-Capture im Kind-Task nötig
+        return await withTaskGroup(of: ToolRunResult.self) { group in
+            group.addTask {
+                await registry.run(
+                    name: name, inputJSON: inputJSON, projektID: projektID,
+                    driveFolderID: driveFolderID, clickUpListID: clickUpListID
+                )
+            }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                return ToolRunResult(text: "Zeitüberschreitung — das Tool hat nicht rechtzeitig geantwortet.", isError: true)
+            }
+            let first = await group.next() ?? ToolRunResult(text: "Keine Antwort erhalten.", isError: true)
+            group.cancelAll()
+            return first
+        }
+    }
+
+    static func callKey(name: String, inputJSON: Data) -> String {
+        "\(name)|\(String(data: inputJSON, encoding: .utf8) ?? "")"
     }
 
     // Streamt die finale Textantwort via SSE. Akkumuliert Deltas und ruft
