@@ -523,6 +523,19 @@ Kopfbereich (mit Sicherheitsabfrage, außer das Formular ist noch leer). Die Per
 die laufende App-Sitzung (kein GRDB/Neustart-Schutz) — passend zu „temporäres Schließen", nicht
 zu einem vollständigen App-Neustart.
 
+**Bestandskunde auswählen (Härtung, 2026-07-01, Johannes).** Im ersten Fragebogen-Schritt
+(„Kundenkontakt") steht jetzt oberhalb der manuellen Felder ein Suchfeld „Bestandskunde suchen
+(Airtable + Google Kontakte)". Ab 2 Zeichen erscheinen Treffer aus zwei bereits vorhandenen
+Quellen: sofort, lokal aus den bereits geladenen Mastermind-Kontakten (`AppState.studioContacts`)
+und – nach kurzer Verzögerung, um nicht bei jedem Tastendruck einen Netzwerkaufruf auszulösen –
+live aus der echten Google-Kontakte-Suche (People API, gleicher Client wie Kontakte-Widget und
+Mail-Assistent). Jede Zeile zeigt Name, Organisation/E-Mail/Telefon und eine Quellen-Markierung
+(„Airtable"/„Google"). Ein Klick füllt Vorname, Nachname, Firma, E-Mail und Telefon vor — die
+Adresse bleibt bewusst leer, weder die Airtable-Kontakte noch Google-Kontakte liefern strukturierte
+Straße/PLZ/Ort-Felder, ein automatisches Zerlegen der Freitext-Adresse wäre reines Raten. Kein
+neuer Datenstrom: beide Quellen wurden vorher schon anderswo in der App gelesen (Kontakte-Widget,
+Mail-Assistent), hier nur zusätzlich im Fragebogen zugänglich gemacht.
+
 **Diagnose-Härtung (2026-07-01).** Airtable-Fehler HTTP 422 zeigen jetzt Airtables echte
 Fehlermeldung inklusive des betroffenen Feldnamens (`AirtableError.validationFailed`), statt nur
 des bloßen HTTP-Codes — damit lässt sich die Ursache (z. B. ein unbekannter Select-Options-Wert)
@@ -721,4 +734,4 @@ Klärung echter Ordner vs. Sandbox).
 ---
 
 *Dieses Dokument wird mit jedem Feature-Commit aktualisiert.*
-*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · Live-Schema-Diagnose (echte Kunden-/Projekte-Feldnamen via bereits laufendem Read), CartStore-Feld-ID-Fix, Mail-Entwürfe-Ordner, Datenstrom-Handbuch-Sync (Manifest + Code + live Airtable)*
+*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · Bestandskunde-auswählen im Fragebogen (Airtable+Google), Artikel-Katalog-Cache (schnelleres Laden), Gmail-Parallelfetch, Assistent-Chat scrollt beim Öffnen ans Ende, Live-Schema-Diagnose (echte Kunden-/Projekte-Feldnamen via bereits laufendem Read), CartStore-Feld-ID-Fix, Mail-Entwürfe-Ordner, Datenstrom-Handbuch-Sync (Manifest + Code + live Airtable)*

@@ -7,6 +7,15 @@ import Foundation
 // Testet Mapping, clientseitiges Filtern und Store-Lifecycle ohne Netzwerk.
 struct ArtikelKatalogStoreTests {
 
+    // Härtung (2026-07-01): ArtikelKatalogStore hat jetzt einen lokalen Datei-Cache (gleiches
+    // Muster wie CachedBusinessRegistry) — OHNE isolierten Testordner würden Tests gegen das
+    // ECHTE ~/Library/Application Support/mykilOS6/-Verzeichnis des laufenden Nutzers lesen/
+    // schreiben und dessen realen Katalog-Cache mit Testdaten überschreiben.
+    private func tempDir() -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("myk6-artikel-cache-\(UUID().uuidString)", isDirectory: true)
+    }
+
     // MARK: - Mapping
 
     @Test func mappingErfordertArtikelnummer() {
@@ -178,11 +187,12 @@ struct ArtikelKatalogStoreTests {
     // MARK: - Store-Lifecycle
 
     @Test @MainActor func storeLoadtContentState() async {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
         let fake = FakeLagerFetcher(records: [
             ["_airtableRecordID": .string("r1"), "Artikelnummer": .string("ART-001")],
             ["_airtableRecordID": .string("r2"), "Artikelnummer": .string("ART-002")],
         ])
-        let store = ArtikelKatalogStore(client: fake)
+        let store = ArtikelKatalogStore(client: fake, cacheDirectory: dir)
         #expect(store.state == .idle)
         await store.load()
         if case .content(let items) = store.state {
@@ -195,38 +205,42 @@ struct ArtikelKatalogStoreTests {
     }
 
     @Test @MainActor func storeLaedtNichtZweiMalOhnereload() async {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
         var callCount = 0
         let fake = CountingFakeFetcher {
             callCount += 1
             return [["_airtableRecordID": .string("r1"), "Artikelnummer": .string("ART-001")]]
         }
-        let store = ArtikelKatalogStore(client: fake)
+        let store = ArtikelKatalogStore(client: fake, cacheDirectory: dir)
         await store.load()
         await store.load()  // zweiter Call — soll gecacht sein
         #expect(callCount == 1)
     }
 
     @Test @MainActor func storeReloadErzwingtNeuladung() async {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
         var callCount = 0
         let fake = CountingFakeFetcher {
             callCount += 1
             return [["_airtableRecordID": .string("r1"), "Artikelnummer": .string("ART-001")]]
         }
-        let store = ArtikelKatalogStore(client: fake)
+        let store = ArtikelKatalogStore(client: fake, cacheDirectory: dir)
         await store.load()
         await store.reload()
         #expect(callCount == 2)
     }
 
     @Test @MainActor func storeNotConnectedZustand() async {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
         let fake = FakeLagerFetcher(error: AirtableError.notConnected)
-        let store = ArtikelKatalogStore(client: fake)
+        let store = ArtikelKatalogStore(client: fake, cacheDirectory: dir)
         await store.load()
         #expect(store.state == .notConnected)
         #expect(!store.istGeladen)
     }
 
     @Test @MainActor func storeClientSeitigeSuche() async {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
         let fake = FakeLagerFetcher(records: [
             [
                 "_airtableRecordID": .string("r1"),
@@ -239,11 +253,56 @@ struct ArtikelKatalogStoreTests {
                 "Artikelbeschreibung": .string("Hansgrohe Ventil"),
             ],
         ])
-        let store = ArtikelKatalogStore(client: fake)
+        let store = ArtikelKatalogStore(client: fake, cacheDirectory: dir)
         await store.load()
         let ergebnisse = store.suche(term: "Eurosmart")
         #expect(ergebnisse.count == 1)
         #expect(ergebnisse[0].artikel.id == "r1")
+    }
+
+    // MARK: - Lokaler Datei-Cache (Härtung 2026-07-01: "Preislisten dauern sehr lange zu laden")
+
+    @Test @MainActor func neueInstanzZeigtSofortDenLetztenCacheStandOhneNetzwerk() async {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let fake = FakeLagerFetcher(records: [
+            ["_airtableRecordID": .string("r1"), "Artikelnummer": .string("ART-001")],
+        ])
+        let erste = ArtikelKatalogStore(client: fake, cacheDirectory: dir)
+        await erste.load()
+        #expect(erste.alleArtikel.count == 1)
+
+        // Zweite, FRISCHE Instanz (wie nach App-Neustart) mit einem Fetcher, der IMMER wirft —
+        // muss trotzdem sofort den Cache-Stand zeigen, ohne auf das (fehlschlagende) Netzwerk
+        // zu warten oder auf .error/.notConnected zu kippen.
+        let werfenderFake = FakeLagerFetcher(error: AirtableError.notConnected)
+        let zweite = ArtikelKatalogStore(client: werfenderFake, cacheDirectory: dir)
+        await zweite.load()
+        #expect(zweite.alleArtikel.count == 1)
+        if case .content = zweite.state {} else {
+            Issue.record("Erwarteter .content-State aus Cache trotz fehlschlagendem Netzwerk, bekam \(zweite.state)")
+        }
+    }
+
+    @Test @MainActor func erfolgreicherFetchSchreibtCacheFuerNaechsteInstanz() async {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let fake = FakeLagerFetcher(records: [
+            ["_airtableRecordID": .string("r1"), "Artikelnummer": .string("ART-001")],
+            ["_airtableRecordID": .string("r2"), "Artikelnummer": .string("ART-002")],
+        ])
+        let store = ArtikelKatalogStore(client: fake, cacheDirectory: dir)
+        await store.load()
+
+        let cache = try! FileBackedRepository<ArtikelItem>(filename: "artikel_katalog_cache", directory: dir)
+        let cached = try! cache.loadAll()
+        #expect(cached.count == 2)
+    }
+
+    @Test @MainActor func ohneVorhandenenCacheZeigtWeiterhinLoadingUndFehlerzustaende() async {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let fake = FakeLagerFetcher(error: AirtableError.notConnected)
+        let store = ArtikelKatalogStore(client: fake, cacheDirectory: dir)
+        await store.load()
+        #expect(store.state == .notConnected)
     }
 }
 

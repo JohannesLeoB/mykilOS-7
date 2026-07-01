@@ -411,7 +411,9 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
                 telefon: nonEmpty("Telefon"),
                 adresse: nonEmpty("Adresse"),
                 projekt: nonEmpty("Projekt") ?? fields["Projekt"]?.firstArrayValue,
-                kategorie: nonEmpty("Kategorie"))
+                kategorie: nonEmpty("Kategorie"),
+                vorname: nonEmpty("Vorname"),
+                nachname: nonEmpty("Nachname"))
         }
     }
 

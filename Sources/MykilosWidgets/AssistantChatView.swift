@@ -221,6 +221,15 @@ public struct AssistantChatView: View {
                 guard let last = messages.last?.id else { return }
                 proxy.scrollTo(last, anchor: .bottom)
             }
+            // Härtung (2026-07-01, Johannes): der Verlauf scrollte bisher NUR bei neuen/
+            // gestreamten Nachrichten nach unten — beim erneuten Öffnen mit bereits
+            // vorhandenem Verlauf (z. B. Tab-Wechsel zurück zum Assistenten) blieb die
+            // ScrollView beim SwiftUI-Standard oben stehen, man sah die ältesten statt der
+            // neuesten Nachrichten. Ohne Animation, damit das Öffnen nicht sichtbar "springt".
+            .onAppear {
+                guard let last = messages.last?.id else { return }
+                proxy.scrollTo(last, anchor: .bottom)
+            }
         }
     }
 

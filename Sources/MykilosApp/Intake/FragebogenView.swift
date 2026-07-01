@@ -218,6 +218,14 @@ struct FragebogenView: View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
             sektionHeader(icon: "person.fill", titel: "Kundenkontakt", farbe: .people)
 
+            BestandskontaktPicker(airtableKontakte: appState.studioContacts) { treffer in
+                modell.kundeVorname = treffer.vorname
+                modell.kundeNachname = treffer.nachname
+                modell.kundeFirma = treffer.organisation ?? modell.kundeFirma
+                modell.kundeEmail = treffer.email ?? modell.kundeEmail
+                modell.kundeTelefon = treffer.telefon ?? modell.kundeTelefon
+            }
+
             HStack(spacing: MykSpace.s4) {
                 IntakeTextFeld(label: "Vorname", icon: "person", text: $modell.kundeVorname)
                 IntakeTextFeld(label: "Nachname *", icon: "person", text: $modell.kundeNachname)
