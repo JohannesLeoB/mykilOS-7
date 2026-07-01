@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import MykilosKit
 import MykilosKalkulationsCore
 
@@ -24,9 +25,10 @@ public enum KalkulationsEngineError: Error, CustomStringConvertible {
 // sonst nil — der Lookup ist optional) + `recordAdjustment` (persistiert die
 // Anpassung im LearningStore und protokolliert sie als AuditEntry) + der sichtbare
 // Lern-Loop (`lernUebersicht` liest den Kalibrierungsstand, `promote` übernimmt
-// einen Kandidaten als aktiven Faktor und auditiert das). Bewusst noch Stub
-// (eigener Folgeschritt):
-// - `importPDF`     → braucht `GoogleDriveClient.downloadFile`.
+// einen Kandidaten als aktiven Faktor und auditiert das) + `importPDF` (Härtung
+// 2026-07-01: SHA256-Dedup + Ablage in Airtable „Eingehende-Angebote" — reine
+// Positions-/Preis-Anker-Extraktion aus dem PDF-Text ist bewusst NICHT Teil
+// davon, das bleibt ein eigenes, großes Folge-Feature, siehe IDEEN_UND_BACKLOG.md).
 //
 // Actor: die mitgeführten Kern-Objekte (Estimator/Parser/LearningStore) sind nicht
 // Sendable; die Actor-Isolation kapselt sie und passt zu den async-Protokollmethoden.
@@ -35,6 +37,15 @@ public actor KalkulationsEngine: KalkulationsEngineProviding {
     private let learningStore: LearningStore
     private let deviceCatalog: DeviceCatalog?
     private let auditStore: AuditStore?
+    // Ohne beide (Default nil) wirft importPDF weiterhin ehrlich .notYetImplemented
+    // statt mit Halb-Wahrheiten weiterzumachen (kein Drive-Zugriff ohne Google-
+    // Verbindung, kein Airtable-Schreibvorgang ohne Client).
+    private let drive: (any GoogleDriveFetching)?
+    private let airtable: (any AirtableRecordCreating)?
+    // Datenstrom-Handbuch-Pflicht (CLAUDE.md, Eiserne Regel): jede neue Daten-Weiche
+    // protokolliert sich selbst. @MainActor-isoliert, Zugriff aus diesem Actor daher
+    // per await (Cross-Actor-Hop) — log() schluckt eigene Fehler bewusst nicht-fatal.
+    private let dataFlowLogger: DataFlowLogger?
     private let parser = EstimateRequestParser()
     private let maxEvidences: Int
 
@@ -49,12 +60,18 @@ public actor KalkulationsEngine: KalkulationsEngineProviding {
         learningStore: LearningStore,
         deviceCatalog: DeviceCatalog? = nil,
         auditStore: AuditStore? = nil,
+        drive: (any GoogleDriveFetching)? = nil,
+        airtable: (any AirtableRecordCreating)? = nil,
+        dataFlowLogger: DataFlowLogger? = nil,
         maxEvidences: Int = 5
     ) {
         self.provider = provider
         self.learningStore = learningStore
         self.deviceCatalog = deviceCatalog
         self.auditStore = auditStore
+        self.drive = drive
+        self.airtable = airtable
+        self.dataFlowLogger = dataFlowLogger
         self.maxEvidences = maxEvidences
     }
 
@@ -76,10 +93,79 @@ public actor KalkulationsEngine: KalkulationsEngineProviding {
         return Self.double(preis)
     }
 
+    // Härtung 2026-07-01: lädt das PDF, hasht es (SHA256), prüft gegen bereits
+    // importierte Dokumente (document_imports, No-delete/append-only) und legt
+    // bei einem echten Neuzugang einen Record in Airtable „Eingehende-Angebote"
+    // (appuVMh3KDfKw4OoQ) an. Ein Duplikat erzeugt NUR einen lokalen Log-Eintrag,
+    // NIE einen zweiten Airtable-Record — das war der ursprüngliche Zweck der
+    // Dedup-Prüfung (keine doppelt gezählten Preis-Anker).
     public func importPDF(driveFileID: String, projektID: String) async throws {
-        throw KalkulationsEngineError.notYetImplemented(
-            "PDF-Import (SHA256-Dedup) braucht GoogleDriveClient.downloadFile."
+        guard let drive, let airtable else {
+            throw KalkulationsEngineError.notYetImplemented(
+                "PDF-Import braucht einen injizierten GoogleDriveFetching- und AirtableRecordCreating-Client."
+            )
+        }
+        let data = try await drive.downloadContent(fileID: driveFileID)
+        let sha256 = Self.sha256Hex(data)
+        let db = try learningStore.database()
+
+        if try db.documentImportExists(sha256: sha256) {
+            try db.write { conn in
+                try db.insert(DocumentImportEntry(
+                    recordID: UUID().uuidString, fileName: driveFileID, sha256: sha256, sizeBytes: data.count,
+                    isDuplicate: true, duplicateOf: sha256,
+                    note: "Duplikat erkannt (SHA256 bereits vorhanden) — kein Airtable-Schreibvorgang."
+                ), conn)
+            }
+            await dataFlowLogger?.log(
+                integrationID: "KALKULATION_PDF_IMPORT", actorUserID: "assistant", action: .success,
+                summary: "PDF-Import: Duplikat erkannt (SHA256), kein neuer Record."
+            )
+            return
+        }
+
+        // Bester Dateiname, den wir bekommen können — schlägt der Name-Lookup fehl
+        // (z. B. Berechtigungsproblem), fällt es ehrlich auf die Drive-File-ID zurück
+        // statt den Import ganz abzubrechen.
+        let fileName = (try? await drive.getFileName(folderID: driveFileID)) ?? driveFileID
+        let isoNow = ISO8601DateFormatter().string(from: Date())
+        // Werte gegen die echten Single-Select-Optionen der Airtable-Tabelle
+        // verifiziert (2026-07-01): "eingehend"/"Neu" existieren exakt so.
+        let airtableRecordID: String
+        do {
+            airtableRecordID = try await airtable.createRecord(
+                baseID: "appuVMh3KDfKw4OoQ",
+                table: "Eingehende-Angebote",
+                fields: [
+                    "SHA256": .string(sha256),
+                    "Datei-Name": .string(fileName),
+                    "Projekt-Nr": .string(projektID),
+                    "Richtung": .string("eingehend"),
+                    "Status": .string("Neu"),
+                    "Importiert-am": .string(isoNow),
+                ]
+            )
+        } catch {
+            await dataFlowLogger?.log(
+                integrationID: "KALKULATION_PDF_IMPORT", actorUserID: "assistant", action: .error,
+                errorMessage: String(describing: error), summary: "PDF-Import: Airtable-Schreibvorgang fehlgeschlagen."
+            )
+            throw error
+        }
+        try db.write { conn in
+            try db.insert(DocumentImportEntry(
+                recordID: airtableRecordID, fileName: fileName, sha256: sha256, sizeBytes: data.count,
+                isDuplicate: false, note: "Importiert nach Eingehende-Angebote."
+            ), conn)
+        }
+        await dataFlowLogger?.log(
+            integrationID: "KALKULATION_PDF_IMPORT", actorUserID: "assistant", action: .success,
+            recordsWritten: 1, summary: "PDF-Import: \(fileName) → Eingehende-Angebote (\(airtableRecordID))."
         )
+    }
+
+    private static func sha256Hex(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     public func recordAdjustment(schaetzungsID: String, faktor: Double, grund: String, lernen: Bool = false) async throws {

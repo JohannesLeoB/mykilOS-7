@@ -246,7 +246,14 @@ public final class AppState {
             ),
             learningStore: learningStore,
             deviceCatalog: DeviceCatalog.loadDefault(),
-            auditStore: audit   // bestätigte Anpassungen landen im Audit-Log
+            auditStore: audit,   // bestätigte Anpassungen landen im Audit-Log
+            // Härtung 2026-07-01: importPDF() (SHA256-Dedup + Airtable-Ablage) live.
+            // Schreibt trotzdem NICHT, solange "Eingehende-Angebote" nicht auf
+            // AirtableClient.writableMap steht (Johannes-Freigabe ausstehend) —
+            // createRecord wirft dann ehrlich .invalidBaseID statt still zu versagen.
+            drive: GoogleDriveClient(),
+            airtable: AirtableClient(),
+            dataFlowLogger: dataFlow
         )
         self.kalkulationsEngine = kalkulationsEngine
         let notes = AssistantNotesStore(db: database)

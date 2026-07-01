@@ -327,5 +327,12 @@
     "system": "Airtable",
     "direction": "WRITE",
     "link": "mykilos://datastream/AIRTABLE_CLOCKODO_ADAPTER_ZEITBUCHUNG"
+  },
+  {
+    "integrationID": "KALKULATION_PDF_IMPORT",
+    "name": "PDF-Import: SHA256-Dedup + Eingehende-Angebote",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/KALKULATION_PDF_IMPORT"
   }
 ]

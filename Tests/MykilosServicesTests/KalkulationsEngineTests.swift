@@ -41,16 +41,83 @@ struct KalkulationsEngineTests {
         #expect(schaetzung.minNetto <= schaetzung.maxNetto)
     }
 
-    @Test func nochNichtVerdrahteteFaehigkeitenWerfenKlar() async throws {
+    @Test func geraetepreisOhneKatalogIstNil() async throws {
         let engine = KalkulationsEngine(provider: StubAnchorProvider(), learningStore: try tempStore())
-
-        // importPDF bleibt bewusst ein Stub (braucht GoogleDriveClient).
-        await #expect(throws: KalkulationsEngineError.self) {
-            try await engine.importPDF(driveFileID: "x", projektID: "P-1")
-        }
         // Ohne injizierten Katalog ist geraetepreis bewusst nil (optionaler Lookup).
         let preis = await engine.geraetepreis(suchbegriff: "spüle")
         #expect(preis == nil)
+    }
+
+    // MARK: importPDF (Härtung 2026-07-01) — SHA256-Dedup + Airtable-Ablage
+
+    private struct FakeDrivePDF: GoogleDriveFetching {
+        let content: Data
+        let fileName: String
+        func listFolder(folderID: String) async throws -> [GoogleDriveFile] { [] }
+        func getFileName(folderID: String) async throws -> String { fileName }
+        func downloadContent(fileID: String) async throws -> Data { content }
+    }
+
+    private final class FakeAirtableCreate: AirtableRecordCreating, @unchecked Sendable {
+        private(set) var aufrufe = 0
+        private(set) var letzteFelder: [String: AirtableFieldValue]?
+        func createRecord(baseID: String, table: String, fields: [String: AirtableFieldValue]) async throws -> String {
+            aufrufe += 1
+            letzteFelder = fields
+            return "rec_import_\(aufrufe)"
+        }
+    }
+
+    @Test func importPDFOhneInjizierteAbhaengigkeitenWirftKlar() async throws {
+        let engine = KalkulationsEngine(provider: StubAnchorProvider(), learningStore: try tempStore())
+        await #expect(throws: KalkulationsEngineError.self) {
+            try await engine.importPDF(driveFileID: "x", projektID: "P-1")
+        }
+    }
+
+    @Test func importPDFLegtNeuenAirtableRecordUndDedupLogAn() async throws {
+        let store = try tempStore()
+        let airtable = FakeAirtableCreate()
+        let engine = KalkulationsEngine(
+            provider: StubAnchorProvider(), learningStore: store,
+            drive: FakeDrivePDF(content: Data("erstes-pdf".utf8), fileName: "Angebot_Tischler.pdf"),
+            airtable: airtable
+        )
+
+        try await engine.importPDF(driveFileID: "file-1", projektID: "2026-042")
+
+        #expect(airtable.aufrufe == 1)
+        #expect(airtable.letzteFelder?["Datei-Name"] == .string("Angebot_Tischler.pdf"))
+        #expect(airtable.letzteFelder?["Projekt-Nr"] == .string("2026-042"))
+        #expect(airtable.letzteFelder?["Richtung"] == .string("eingehend"))
+        #expect(airtable.letzteFelder?["Status"] == .string("Neu"))
+
+        let imports = try store.database().documentImports()
+        #expect(imports.count == 1)
+        #expect(imports.first?.isDuplicate == false)
+        #expect(imports.first?.recordID == "rec_import_1")
+    }
+
+    @Test func importPDFUeberspringtEchtesDuplikatOhneZweitenAirtableRecord() async throws {
+        let store = try tempStore()
+        let airtable = FakeAirtableCreate()
+        let sameContent = Data("identisches-pdf".utf8)
+        let engine = KalkulationsEngine(
+            provider: StubAnchorProvider(), learningStore: store,
+            drive: FakeDrivePDF(content: sameContent, fileName: "Angebot.pdf"),
+            airtable: airtable
+        )
+
+        try await engine.importPDF(driveFileID: "file-1", projektID: "2026-042")
+        try await engine.importPDF(driveFileID: "file-1-kopie", projektID: "2026-042")   // gleicher Inhalt
+
+        // NUR EIN Airtable-Record — das Duplikat erzeugt ausschließlich einen lokalen Log-Eintrag.
+        #expect(airtable.aufrufe == 1)
+
+        let imports = try store.database().documentImports()
+        #expect(imports.count == 2)
+        #expect(imports.filter { $0.isDuplicate }.count == 1)
+        #expect(imports.filter { $0.isDuplicate == false }.count == 1)
     }
 
     // MARK: recordAdjustment — persistiert die Anpassung append-only

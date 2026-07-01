@@ -60,6 +60,59 @@ struct ClockodoClientTests {
             #expect(error as? ClockodoError == .notConnected)
         }
     }
+
+    // MARK: Block E — createEntry (Härtung 2026-07-01)
+
+    @Test func buildCreateEntryBodyEnthaeltPflichtfelder() throws {
+        let since = Date(timeIntervalSince1970: 1_700_000_000)
+        let until = Date(timeIntervalSince1970: 1_700_003_600)
+        let body = ClockodoClient.buildCreateEntryBody(
+            customersID: 42, servicesID: 7, timeSince: since, timeUntil: until, billable: true, text: "CAD-Planung"
+        )
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+
+        #expect(json["customers_id"] as? Int == 42)
+        #expect(json["services_id"] as? Int == 7)
+        #expect(json["billable"] as? Int == 1)
+        #expect(json["text"] as? String == "CAD-Planung")
+        #expect(json["time_since"] != nil)
+        #expect(json["time_until"] != nil)
+    }
+
+    @Test func buildCreateEntryBodyOhneTextLaesstFeldWeg() throws {
+        let body = ClockodoClient.buildCreateEntryBody(
+            customersID: 1, servicesID: 1, timeSince: Date(), timeUntil: Date(), billable: false, text: nil
+        )
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        #expect(json["text"] == nil)
+        #expect(json["billable"] as? Int == 0)
+    }
+
+    @Test func parseCreateEntryResponseDekodiertID() throws {
+        let json = #"{"entry": {"id": 123456, "customers_id": 42}}"#
+        let id = try ClockodoClient.parseCreateEntryResponse(from: Data(json.utf8))
+        #expect(id == "123456")
+    }
+
+    @Test func parseCreateEntryResponseWirftBeiKaputtemJSON() {
+        #expect(throws: ClockodoError.decodingFailed) {
+            _ = try ClockodoClient.parseCreateEntryResponse(from: Data("nope".utf8))
+        }
+    }
+
+    @Test func createEntryWirftNotConnectedOhneCredentials() async {
+        let store = InMemoryClockodoCredentialsStore()
+        let client = ClockodoClient(credentialsStore: store)
+
+        do {
+            _ = try await client.createEntry(
+                customersID: 1, servicesID: 1, timeSince: Date(), timeUntil: Date(), billable: true, text: nil
+            )
+            Issue.record("sollte werfen")
+        } catch {
+            #expect(error as? ClockodoError == .notConnected)
+        }
+    }
 }
 
 // MARK: - InMemoryClockodoCredentialsStore

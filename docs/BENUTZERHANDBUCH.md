@@ -205,6 +205,21 @@ Min/Mitte/Max-Netto mit Konfidenz, direkt als Karte. Datenquellen unverändert:
 gespeichert. Kandidaten können per "Übernehmen" zu aktiven Faktoren promoted
 werden → zukünftige Schätzungen verschieben sich.
 
+**PDF-Import (Härtung, 2026-07-01).** `KalkulationsEngine.importPDF` lädt ein
+Lieferanten-PDF aus Drive, berechnet den SHA256-Hash und prüft gegen bereits
+importierte Dokumente (`document_imports`, append-only, No-delete). Ein echter
+Neuzugang legt einen Record in Airtable **Eingehende-Angebote**
+(`appuVMh3KDfKw4OoQ`) an (SHA256, Datei-Name, Projekt-Nr, Richtung=„eingehend",
+Status=„Neu", Importiert-am) — ein erkanntes Duplikat erzeugt **nur** einen
+lokalen Log-Eintrag, nie einen zweiten Airtable-Record (verhindert doppelt
+gezählte Preis-Anker). Datenstrom-ID `KALKULATION_PDF_IMPORT`.
+**Einschränkung:** reine Positions-/Preis-Anker-Extraktion aus dem PDF-Text
+ist bewusst NICHT Teil davon — eigenes, größeres Folge-Feature (Positions-
+Parser, siehe `docs/IDEEN_UND_BACKLOG.md`). **Schreiben aktuell blockiert:**
+`Eingehende-Angebote` steht noch nicht auf `AirtableClient.writableMap` —
+Freigabe von Johannes ausstehend, `createRecord` wirft bis dahin ehrlich
+`.invalidBaseID` statt eine Halbwahrheit zu schreiben.
+
 ---
 
 ## Integrationen (Settings → Integrationen)
@@ -828,4 +843,6 @@ Gmail-Parallelfetch, Assistent-Chat-Scroll-Fix, Live-Schema-Diagnose, CartStore-
 Mail-Entwürfe-Ordner, Assistent-Loop-Härtung (Wiederholungs-Erkennung, Tool-Timeout 15s,
 Turn-Deadline 45s, echter Abbrechen-Button, Netzwerk-Timeout ClaudeChatClient), Alt-Versionen-
 Aufräumen + Retention-Skript + AppFreshnessBanner-Starthinweis, destilliertes Gedächtnis Stufe 2
-(ChatMemoryStore, Verdichtung ab Schwelle statt endlos wachsender Rohverlauf)*
+(ChatMemoryStore, Verdichtung ab Schwelle statt endlos wachsender Rohverlauf), toter Code raus
+(ComingTabView/ComingSoonView), Clockodo-Schreibpfad-Grundlage (createEntry, POST /v2/entries),
+PDF-Import (SHA256-Dedup + Eingehende-Angebote, Schreiben blockiert bis Whitelist-Freigabe)*
