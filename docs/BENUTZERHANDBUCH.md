@@ -540,6 +540,27 @@ oder außerhalb der App entstehen. Zwei Härtungen:
    + Straßen-Code) manuell anpassen — die laufende Projektnummer selbst ist **nie** editierbar,
    die kommt ausschließlich aus der kollisionsgeprüften Vergabe.
 
+**Assistent: destilliertes Gedächtnis Stufe 2 (Härtung, 2026-07-01, Johannes).**
+Ergänzt Stufe 1 (System-Prompt-/Tool-Cache-Breakpoints): bei langen Chat-Threads wurde bisher der
+komplette Rohverlauf (bis zu 120 Nachrichten, siehe `memoryWindowDays`) bei jedem Turn neu an die
+API geschickt — teuer und irgendwann kontraproduktiv (endlos wachsender Kontext). Neu:
+- Sobald ein Scope (Home oder ein Projekt-Thread) mehr als 8 Rohnachrichten im Erinnerungsfenster
+  hat, werden alle bis auf die letzten 8 zu einer Zusammenfassung verdichtet — aber erst, sobald
+  seit der letzten Verdichtung mindestens 12 neue (alte) Nachrichten angefallen sind (Batching,
+  kein Verdichtungs-Call bei jedem einzelnen Turn).
+- Ein günstiger Haiku-Call (kein Tool-Zugriff) verschmilzt die bisherige Zusammenfassung + die
+  neuen alten Nachrichten zu EINER neuen Fassung — überschreibt, häuft nicht an. Ein überholter
+  Fakt fällt beim nächsten Verdichtungslauf raus, statt für immer im Kontext zu kleben ("nicht auf
+  Kontexte versteifen").
+- Die Zusammenfassung landet im System-Prompt (`AssistantGrounding.systemPrompt`), NICHT in der
+  Nachrichtenliste — profitiert dadurch vom bestehenden Cache-Breakpoint auf dem System-Block.
+  An Claude geht dann nur noch: Zusammenfassung (gecacht) + die letzten 8 Rohnachrichten + der
+  neue Turn — nicht mehr die komplette Historie.
+- Persistenz: neue GRDB-Tabelle `chatMemorySummaries` (ein Row je Scope, `ChatMemoryStore`),
+  Migration `v18_chat_memory_summary`. Cold-Start-getestet.
+- Fail-safe: schlägt die Verdichtung fehl (Netzwerk/Store), läuft der Turn unverändert mit der
+  vollen Rohhistorie weiter — kein sichtbarer Fehler für den Nutzer.
+
 **Start-Hinweis "aktueller Build" + Aufräumen von Alt-Versionen (Härtung, 2026-07-01, Johannes).**
 Auslöser: mehrere parallel installierte mykilOS-Versionen unter `/Applications/` (5.app, 7.5.app,
 7.6.6.app, 7.6.8.app, 7.11.0.app — teils mit Ordnername/interner Version auseinanderlaufend, z. B.
@@ -806,4 +827,5 @@ Tabelle), Bestandskunde-auswählen im Fragebogen (Airtable+Google), Artikel-Kata
 Gmail-Parallelfetch, Assistent-Chat-Scroll-Fix, Live-Schema-Diagnose, CartStore-Feld-ID-Fix,
 Mail-Entwürfe-Ordner, Assistent-Loop-Härtung (Wiederholungs-Erkennung, Tool-Timeout 15s,
 Turn-Deadline 45s, echter Abbrechen-Button, Netzwerk-Timeout ClaudeChatClient), Alt-Versionen-
-Aufräumen + Retention-Skript + AppFreshnessBanner-Starthinweis*
+Aufräumen + Retention-Skript + AppFreshnessBanner-Starthinweis, destilliertes Gedächtnis Stufe 2
+(ChatMemoryStore, Verdichtung ab Schwelle statt endlos wachsender Rohverlauf)*

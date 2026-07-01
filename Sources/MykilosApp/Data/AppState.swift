@@ -259,7 +259,8 @@ public final class AppState {
             chatStore: chatStore,
             provider: ClaudeChatClient(),
             registry: .standard(gmailCache: gmailCache, kalkulationsEngine: kalkulationsEngine, notesStore: notes, tasksStore: tasks),
-            dataFlowLogger: dataFlow
+            dataFlowLogger: dataFlow,
+            memoryStore: ChatMemoryStore(db: database)
         )
     }
 

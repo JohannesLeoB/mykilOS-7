@@ -11,6 +11,10 @@ public enum AssistantGrounding {
     public static func systemPrompt(
         profile: UserProfile? = nil,
         focusedProjectID: String?,
+        // Stufe 2 (Härtung 2026-07-01): destillierte Zusammenfassung älterer
+        // Gesprächsabschnitte — landet hier statt in der Nachrichtenliste, damit
+        // sie vom bestehenden System-Prompt-Cache-Breakpoint profitiert.
+        conversationSummary: String? = nil,
         signals: [WidgetSignal],
         projects: [Project],
         now: Date,

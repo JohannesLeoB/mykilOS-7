@@ -74,6 +74,9 @@ public final class ConversationEngine {
     private let provider: any AssistantConversing
     private var registry: AssistantToolRegistry?
     private let dataFlowLogger: DataFlowLogger?
+    // Härtung 2026-07-01 (API-Effizienz Stufe 2): optional — nil lässt das
+    // Verhalten exakt wie zuvor (volle Rohhistorie, kein Distillations-Overhead).
+    private let memoryStore: ChatMemoryStore?
 
     /// Ersetzt die Tool-Registry — z. B. nachdem Kunden geladen/synchronisiert wurden,
     /// damit `lookup_kunde` mit frischen Daten arbeitet (L24). Rein additiv, kein State-Bruch.
@@ -111,6 +114,7 @@ public final class ConversationEngine {
         provider: any AssistantConversing,
         registry: AssistantToolRegistry? = nil,
         dataFlowLogger: DataFlowLogger? = nil,
+        memoryStore: ChatMemoryStore? = nil,
         toolTimeoutSeconds: Double = 15,
         turnDeadlineSeconds: Double = 45
     ) {
@@ -118,6 +122,7 @@ public final class ConversationEngine {
         self.provider = provider
         self.registry = registry
         self.dataFlowLogger = dataFlowLogger
+        self.memoryStore = memoryStore
         self.toolTimeoutSeconds = toolTimeoutSeconds
         self.turnDeadlineSeconds = turnDeadlineSeconds
     }
@@ -156,10 +161,16 @@ public final class ConversationEngine {
         // plus die transienten tool_use/tool_result-Turns dieser Runde.
         // Gedächtnis-Fenster: nur die letzten ~4 Wochen mitschicken (definierter
         // Erinnerungshorizont + Token-/Kostengrenze, statt endlos den ganzen Verlauf).
-        var convo = Self.memoryWindow(
+        let windowed = Self.memoryWindow(
             chatStore.messages(for: scope).filter { $0.id != placeholder.id },
             now: now
         )
+        // Stufe 2 (Härtung 2026-07-01): alles jenseits der letzten paar Turns wird,
+        // sobald genug angefallen ist, zu einer Zusammenfassung verdichtet statt roh
+        // mitgeschickt — landet im System-Prompt (Cache-Breakpoint), nicht im
+        // Nachrichten-Array. Ohne memoryStore (nil) exakt das alte Verhalten.
+        let (distilledConvo, conversationSummary) = await applyMemoryDistillation(windowed: windowed, scope: scope)
+        var convo = distilledConvo
         let effectiveToolsEnabled = toolsEnabled || schaetzModusEnabled
         // S26 — Auto-Routing: günstigstes Modell, das der Aufgabe gewachsen ist.
         let routedModel = AssistantModelRouter.model(
@@ -185,6 +196,7 @@ public final class ConversationEngine {
         let fileReadEnabled   = !schaetzModusEnabled && has("read_drive_file")
         let system = AssistantGrounding.systemPrompt(
             profile: profile, focusedProjectID: effectiveProjectID,
+            conversationSummary: conversationSummary,
             signals: signals, projects: projects, now: now, toolsEnabled: effectiveToolsEnabled,
             kalkulationsEnabled: kalkulationsEnabled,
             driveEnabled: driveEnabled, contactsEnabled: contactsEnabled,
@@ -255,8 +267,91 @@ public final class ConversationEngine {
         let cutoff = now.addingTimeInterval(-Double(memoryWindowDays) * 24 * 3600)
         var windowed = messages.filter { $0.createdAt >= cutoff }
         if windowed.count > 120 { windowed = Array(windowed.suffix(120)) }
-        while let first = windowed.first, first.role != .user { windowed.removeFirst() }
-        return windowed
+        return trimToUserStart(windowed)
+    }
+
+    // Erste Nachricht muss role == .user sein (sonst bricht ein verwaister
+    // assistant-/tool-Turn die API) — von memoryWindow UND der Distillations-
+    // Tail-Bildung genutzt.
+    static func trimToUserStart(_ messages: [ChatMessage]) -> [ChatMessage] {
+        var trimmed = messages
+        while let first = trimmed.first, first.role != .user { trimmed.removeFirst() }
+        return trimmed
+    }
+
+    // MARK: - Gedächtnis-Distillation (Stufe 2, Härtung 2026-07-01)
+    // Verdichtet alles jenseits der letzten `distillationTailSize` Turns zu einer
+    // überschreibenden Zusammenfassung, sobald seit der letzten Verdichtung
+    // mindestens `distillationMinBatch` neue (alte) Turns angefallen sind — batcht
+    // die Kosten, statt bei jedem Turn neu zu verdichten. Nicht-fatal: jeder Fehler
+    // (Store/Netzwerk) fällt zurück auf die volle Rohhistorie, der Chat-Turn läuft
+    // unverändert weiter.
+    private static let distillationTailSize = 8
+    private static let distillationMinBatch = 12
+    // Günstigstes Modell (siehe AssistantModelRouter.haiku) — eine Zusammenfassung
+    // braucht kein teures Modell.
+    private static let distillationModel = "claude-haiku-4-5-20251001"
+
+    private func applyMemoryDistillation(
+        windowed: [ChatMessage], scope: ChatScope
+    ) async -> (convo: [ChatMessage], summary: String?) {
+        guard let memoryStore, windowed.count > Self.distillationTailSize else {
+            return (windowed, nil)
+        }
+        let tailStart = windowed.count - Self.distillationTailSize
+        do {
+            let existing = try memoryStore.summary(for: scope)
+            let coveredIndex = existing.flatMap { summary in
+                windowed.firstIndex { $0.id.uuidString == summary.coveredThroughMessageID }
+            } ?? -1
+            let newOldSlice = coveredIndex + 1 < tailStart ? Array(windowed[(coveredIndex + 1)..<tailStart]) : []
+
+            if newOldSlice.count >= Self.distillationMinBatch {
+                // Genug Neues seit der letzten Verdichtung — jetzt neu verdichten (überschreibt).
+                let newSummaryText = try await distill(existingSummaryText: existing?.summaryText, newMessages: newOldSlice)
+                try memoryStore.save(ChatMemorySummary(
+                    scopeKey: scope.rawKey,
+                    summaryText: newSummaryText,
+                    coveredThroughMessageID: newOldSlice.last!.id.uuidString,
+                    updatedAt: Date()
+                ))
+                return (Self.trimToUserStart(Array(windowed[tailStart...])), newSummaryText)
+            }
+            if let existing {
+                // Zu wenig Neues für eine erneute Verdichtung — bisherige Zusammenfassung weiterverwenden.
+                return (Self.trimToUserStart(Array(windowed[tailStart...])), existing.summaryText)
+            }
+            // Schwelle insgesamt noch nicht erreicht und noch nie verdichtet — volle Rohhistorie.
+            return (windowed, nil)
+        } catch {
+            return (windowed, nil)
+        }
+    }
+
+    // Ein günstiger, tool-loser Claude-Call, der eine bestehende Zusammenfassung
+    // (kann leer sein) mit neuen Turns zu EINER neuen Fassung verschmilzt — nie
+    // anhängt. Widersprüche löst der Prompt zugunsten der neueren Information auf.
+    private func distill(existingSummaryText: String?, newMessages: [ChatMessage]) async throws -> String {
+        let transcript = newMessages.map { m in
+            "\(m.role == .user ? "Nutzer" : "Assistent"): \(m.text)"
+        }.joined(separator: "\n")
+        let system = """
+        Du fasst einen Chatverlauf kompakt für ein Assistenten-Gedächtnis zusammen. Du bekommst eine \
+        bisherige Zusammenfassung (kann leer sein) und neue Nachrichten seit der letzten Zusammenfassung. \
+        Verschmelze beides zu EINER neuen, aktuellen Fassung — häufe nicht an. Widersprüche löst du \
+        zugunsten der neueren Information auf. Halte Entscheidungen, offene Punkte, Nutzer-Präferenzen/ \
+        -Korrekturen und projektrelevante Fakten fest. Antworte NUR mit der neuen Zusammenfassung als \
+        Fließtext, maximal 400 Wörter, keine Meta-Kommentare, keine Überschriften.
+        """
+        let existingPart = (existingSummaryText?.isEmpty == false) ? existingSummaryText! : "(noch keine)"
+        let userTurn = ChatMessage.text(
+            "BISHERIGE ZUSAMMENFASSUNG:\n\(existingPart)\n\nNEUE NACHRICHTEN SEIT DER LETZTEN ZUSAMMENFASSUNG:\n\(transcript)",
+            role: .user
+        )
+        let response = try await provider.respond(
+            messages: [userTurn], system: system, tools: [], maxTokens: 600, model: Self.distillationModel
+        )
+        return response.text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     // Agentische Schleife. Sammelt nebenbei sichtbare Tool-Spuren (activities)

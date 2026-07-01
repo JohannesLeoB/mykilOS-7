@@ -365,6 +365,18 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v18_chat_memory_summary — destilliertes Assistenten-Gedächtnis (Stufe 2,
+        // API-Effizienz-Härtung 2026-07-01). Ein Row je Chat-Scope, überschreibend
+        // (kein Verlauf) — siehe MykilosKit/Domain/ChatMemorySummary.swift.
+        migrator.registerMigration("v18_chat_memory_summary") { db in
+            try db.create(table: "chatMemorySummaries") { t in
+                t.primaryKey("scopeKey", .text)
+                t.column("summaryText",             .text).notNull()
+                t.column("coveredThroughMessageID", .text).notNull()
+                t.column("updatedAt",               .double).notNull()
+            }
+        }
+
         try migrator.migrate(queue)
     }
 
