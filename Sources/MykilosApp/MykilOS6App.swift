@@ -205,6 +205,7 @@ struct ContentView: View {
     @State private var module: AppModule = .today
     @AppStorage("ui.sidebarCollapsed") private var sidebarCollapsed = false
     @Environment(AppState.self) private var appState
+    @Environment(StudioContext.self) private var context
     @AppStorage("onboarding.hasCompleted") private var hasCompleted = false
     @State private var showOnboarding = false
     // mykilOS 8, Block B: Check-in-Dialog (aus Sidebar-Pille) — global über allen Modulen.
@@ -244,6 +245,12 @@ struct ContentView: View {
         // — das tatsächliche Öffnen übernimmt ProjectGalleryView selbst.
         .onChange(of: appState.pendingProjectSelection) { _, new in
             if new != nil { module = .projects }
+        }
+        // Mail-Compose-Weiche (StudioContext.mailComposeRequest): Klick auf eine
+        // Kontakt-Mail-Adresse → hier nur das Modul auf „Assistent" schalten. Das
+        // Öffnen des Mail-Tabs + Vorbefüllen des Entwurfs übernimmt AssistantPageView.
+        .onChange(of: context.mailComposeRequest) { _, new in
+            if new != nil { module = .assistant }
         }
         .guardWindowPosition(on: module)
         .overlay(alignment: .top) {
@@ -346,6 +353,9 @@ struct AssistantPageView: View {
     @Environment(AppState.self) private var appState
     @State private var activeTab: AssistantTab = .assistant
     @State private var mailCompose = false
+    // Vorbefüllter Empfänger aus einer Kontakt-Mail-Anfrage (StudioContext.mailComposeRequest).
+    // Wird an MailClientView durchgereicht und dort beim Öffnen des Entwurfs konsumiert (→ nil).
+    @State private var mailComposeTo: String? = nil
 
     var body: some View {
         // Wurzel VStack (kein äußeres ScrollView), damit der Chat eigenständig
@@ -409,11 +419,26 @@ struct AssistantPageView: View {
                     onAttachFileToMailDraft: { await appState.createDraftWithAttachment($0) }
                 )
             case .mail:
-                MailClientView(showsOwnHeader: false, showCompose: $mailCompose)
+                MailClientView(showsOwnHeader: false, showCompose: $mailCompose, composeToRequest: $mailComposeTo)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .background(MykColor.paper.color)
+        // Kontakt-Mail-Weiche: eine offene Anfrage (Klick auf Mail-Adresse) übernehmen —
+        // Mail-Tab öffnen + Empfänger vorbefüllen. onAppear fängt den Fall ab, dass diese
+        // Seite erst durch den Modulwechsel frisch montiert wird (dann feuert onChange nicht).
+        .onAppear { consumeMailComposeRequestIfNeeded() }
+        .onChange(of: context.mailComposeRequest) { _, _ in consumeMailComposeRequestIfNeeded() }
+    }
+
+    /// Übernimmt eine offene Mail-Compose-Anfrage aus dem StudioContext: schaltet auf den
+    /// Mail-Tab, merkt sich den Empfänger (MailClientView öffnet damit den Entwurf) und
+    /// gibt die Weiche im Context sofort wieder frei.
+    private func consumeMailComposeRequestIfNeeded() {
+        guard let email = context.mailComposeRequest else { return }
+        mailComposeTo = email
+        activeTab = .mail
+        context.clearMailComposeRequest()
     }
 }
 

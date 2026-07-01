@@ -185,11 +185,14 @@ Vier **umsortierbare Unter-Tabs** (Tab mit der Maus ziehen → Reihenfolge wird 
   Zeigt MYKILOS-VK. Quelle: `_Daten/Kalkulation/Devices/catalog.csv`
   (5.565 Artikel aus Airtable-DB `appdxTeT6bhSBmwx5` — nur Export, nie schreiben).
   **Voraussetzung:** CSV-Datei muss im `_Daten/`-Ordner liegen (nicht im Repo).
-- **Kontakte** — Freitextsuche im **Google-Workspace-Verzeichnis** der Domain mykilos.com
-  (S19): Team-Profile + vom Admin geteilte Domain-Kontakte (read-only, People API
-  `searchDirectoryPeople`). Voraussetzung: Google verbunden + `directory.readonly` (M2).
-  Hinweis: zeigt das **Verzeichnis**, nicht die persönlichen Google-Kontakte von info@ —
-  das geteilte Studio-Kontaktbuch liegt zusätzlich in Airtable (`lookup_kontakt`).
+- **Kontakte** — das geteilte **Airtable-Kontaktverzeichnis** (Mastermind-Base, Tabelle
+  „Kontakte"): Kunden, Lieferanten, Handwerker, Architekt/Planer, Team. Sortier- und filterbar
+  (Kategorie + Freitext über Name/Firma/Projekt). **Zeile klicken** → Detailkarte: alle Felder
+  **editierbar** (Name/Firma/Mail/Telefon/Adresse/Kategorie), Speichern läuft gated über
+  Karte→Bestätigung→Audit (`AppState.writeAirtableContact`, `.update` — kein Löschen).
+  **Neu (2026-07-02): Klick direkt auf die Mail-Adresse** → Rückfrage „Mail an … schreiben?" →
+  öffnet einen vorbefüllten Entwurf **im Assistenten-Mail-Fenster** (Assistent → Mail). Kein
+  Auto-Versand — nur Entwurf. Voraussetzung fürs Verzeichnis: Airtable verbunden.
 - **Notizen** — die lokalen Assistenten-Notizen (S4). Direkt hier anlegen (Sichern) und
   löschen, oder über den Assistenten-Chat. Rein lokal. **Zwei Ansichten umschaltbar (S18):**
   *Liste* (clean) oder *Wand* (bunte Notizzettel, je nach Notiz eingefärbt & leicht geneigt);

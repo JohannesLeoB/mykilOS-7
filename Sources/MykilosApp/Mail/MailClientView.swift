@@ -59,6 +59,10 @@ struct MailClientView: View {
     // über ein Fenster-Toolbar-Item, das beim Tab-Wechsel auftauchte/verschwand und
     // dabei den ganzen Inhalt verschob.
     @Binding var showCompose: Bool
+    // Vorbefüllter Empfänger aus einer Kontakt-Mail-Anfrage. Non-nil → Entwurf mit diesem
+    // „An" öffnen, danach die Weiche sofort auf nil zurücksetzen (kein stehenbleibender
+    // Prefill beim nächsten manuellen „Verfassen"). Getrennt von showCompose (= leerer Entwurf).
+    @Binding var composeToRequest: String?
     @State private var store = MailClientStore()
     @State private var airtableContacts: [StudioContact] = []
     @State private var composeConfig: ComposeConfig? = nil
@@ -99,12 +103,26 @@ struct MailClientView: View {
                 showCompose = false
             }
         }
+        // Kontakt-Mail-Weiche: vorbefüllten Empfänger übernehmen und Entwurf öffnen.
+        // onAppear deckt den Fall ab, dass diese View erst durch den Tab-Wechsel montiert wird.
+        .onAppear { openComposeFromRequestIfNeeded() }
+        .onChange(of: composeToRequest) { _, _ in openComposeFromRequestIfNeeded() }
         .task {
             // Auto-Posteingang: beim ersten Erscheinen sofort die Inbox laden,
             // sofern noch kein Suchergebnis vorliegt (store.phase == .idle).
             await store.loadInboxIfNeeded()
             await loadAirtableContacts()
         }
+    }
+
+    /// Öffnet einen Entwurf mit vorbefülltem Empfänger, sobald eine Kontakt-Mail-Anfrage
+    /// anliegt — und gibt die Weiche sofort wieder frei (nil), damit ein späteres manuelles
+    /// „Verfassen" nicht denselben Empfänger erbt.
+    private func openComposeFromRequestIfNeeded() {
+        guard let addr = composeToRequest?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !addr.isEmpty else { return }
+        composeConfig = ComposeConfig(to: addr)
+        composeToRequest = nil
     }
 
     /// Lädt Kontakte aus Airtable Mastermind-Base (appuVMh3KDfKw4OoQ).

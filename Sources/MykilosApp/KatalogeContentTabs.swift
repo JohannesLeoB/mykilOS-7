@@ -12,6 +12,7 @@ import MykilosKit
 @MainActor
 struct KontakteKatalogTab: View {
     @Environment(AppState.self) private var appState
+    @Environment(StudioContext.self) private var context
     @State private var loader = AirtableContactsLoader()
     @State private var query: String = ""
     @State private var selectedKategorie: String? = nil
@@ -125,7 +126,11 @@ struct KontakteKatalogTab: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(filtered) { contact in
-                            KontakteRow(contact: contact, onSelect: { selectedContact = contact })
+                            KontakteRow(
+                                contact: contact,
+                                onSelect: { selectedContact = contact },
+                                onWriteMail: { context.requestMailCompose(to: $0) }
+                            )
                             Divider().overlay(MykColor.line.color)
                         }
                     }
@@ -174,7 +179,19 @@ struct KontakteKatalogTab: View {
 private struct KontakteRow: View {
     let contact: StudioContact
     let onSelect: () -> Void
+    /// Klick auf die Mail-Adresse (nach Bestätigung) → Entwurf im Assistenten-Mail-Fenster.
+    let onWriteMail: (String) -> Void
     @State private var isHovered = false
+    @State private var emailHovered = false
+    /// Non-nil, solange der „Mail schreiben?"-Dialog offen ist (hält die Zieladresse).
+    @State private var mailConfirmAddress: String? = nil
+
+    /// Getrimmte, nicht-leere Mail-Adresse — oder nil (dann nur „–", kein Klick).
+    private var mailAddress: String? {
+        guard let raw = contact.email?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty else { return nil }
+        return raw
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -190,8 +207,7 @@ private struct KontakteRow: View {
                 .lineLimit(1).foregroundStyle(MykColor.muted.color)
                 .frame(width: 160, alignment: .leading)
 
-            Text(contact.email ?? "–")
-                .lineLimit(1).foregroundStyle(MykColor.muted.color)
+            emailCell
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(contact.telefon ?? "–")
@@ -214,6 +230,45 @@ private struct KontakteRow: View {
         .contentShape(Rectangle())
         .onHover { isHovered = $0 }
         .onTapGesture { onSelect() }
+    }
+
+    // Mail-Adresse als eigener Klick: öffnet einen Bestätigungsdialog, statt sofort die
+    // ganze Zeile (→ Detail-Sheet) zu triggern. Der Button „schluckt" den Tap, sodass die
+    // Zeilen-onTapGesture NICHT zusätzlich feuert.
+    @ViewBuilder
+    private var emailCell: some View {
+        if let addr = mailAddress {
+            Button {
+                mailConfirmAddress = addr
+            } label: {
+                Text(addr)
+                    .lineLimit(1)
+                    .foregroundStyle(MykColor.personal.color)
+                    .underline(emailHovered)
+            }
+            .buttonStyle(.plain)
+            .onHover { emailHovered = $0 }
+            .help("Mail an \(addr) schreiben")
+            .confirmationDialog(
+                "Mail an \(addr) schreiben?",
+                isPresented: Binding(
+                    get: { mailConfirmAddress != nil },
+                    set: { if !$0 { mailConfirmAddress = nil } }
+                ),
+                titleVisibility: .visible
+            ) {
+                Button("Mail schreiben") {
+                    if let a = mailConfirmAddress { onWriteMail(a) }
+                    mailConfirmAddress = nil
+                }
+                Button("Abbrechen", role: .cancel) { mailConfirmAddress = nil }
+            } message: {
+                Text("Öffnet einen Entwurf im Assistenten-Mail-Fenster.")
+            }
+        } else {
+            Text("–")
+                .lineLimit(1).foregroundStyle(MykColor.muted.color)
+        }
     }
 }
 

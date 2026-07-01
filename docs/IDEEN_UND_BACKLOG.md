@@ -72,6 +72,11 @@ Dokumente/Templates). Vereint Formulare-Ebene + Geräteliste + Moodboard + Angeb
 - **Kontakte klickbar:** Klick auf Mail-Adresse → „Mail schreiben?" → Entwurf im Assistenten-
   Mail-Fenster öffnen. (klein, jetzt baubar)
 - **Kontakte-Widget (Projekt-Übersicht):** klickbar/zuweisbar/editierbar machen (heute tot).
+  **Entschieden (Johannes 2026-07-02):** Datenquelle wird Airtable (nicht mehr read-only Google).
+  Vorgelagerter Daten-Job: **Google-Kontakte → Airtable importieren**, dabei auf **Dubletten**
+  prüfen und **Datensatz-Vollständigkeit** validieren. Einträge mit **nur Name** (ohne Mail/
+  Telefon/Web) werden **fallengelassen und als UNVOLLSTÄNDIG markiert**. Danach zeigt das
+  Projekt-Widget projekt-zugewiesene Airtable-Kontakte → klick/zuweis/editier/Mail.
 - **Teamkalender-Widget** in der Projekt-Übersicht: Teamtermine farbcodiert (Button-Farbe),
   Klick → Detail-Vorschau + editierbares Menü. Braucht Kalender-Schreibpfad.
 - **Mail: Senden** fehlt (nur Entwürfe) — Fähigkeit + Bestätigungs-Gate; braucht `gmail.send`-

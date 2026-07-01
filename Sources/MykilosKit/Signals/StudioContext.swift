@@ -10,7 +10,28 @@ public final class StudioContext {
     public private(set) var focusedProjectID: String?
     public private(set) var signals: [WidgetSignal] = []
 
+    /// Navigations-Absicht: „öffne das Assistenten-Mail-Fenster und lege einen Entwurf
+    /// an diese Adresse an". Wird von Kontakt-Oberflächen gesetzt (Klick auf eine
+    /// Mail-Adresse) und vom App-Root (Modulwechsel) + AssistantPageView (Tab + Compose)
+    /// konsumiert. `nil` = keine offene Anfrage. Spiegelt das Muster von
+    /// `AppState.pendingProjectSelection`, aber auf der Widget-erreichbaren Kit-Ebene.
+    public private(set) var mailComposeRequest: String?
+
     public init() {}
+
+    /// Fordert einen Mail-Entwurf an den gegebenen Empfänger im Assistenten-Mail-Fenster an.
+    /// Leere/whitespace-Adressen werden ignoriert (kein sinnvoller Entwurf).
+    public func requestMailCompose(to email: String) {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        mailComposeRequest = trimmed
+    }
+
+    /// Konsumiert (löscht) die offene Mail-Compose-Anfrage. Nur der Verbraucher ruft das,
+    /// sobald er sie übernommen hat — danach ist die Weiche wieder frei.
+    public func clearMailComposeRequest() {
+        mailComposeRequest = nil
+    }
 
     // Obergrenze für den Signal-Log. Verhindert unbegrenztes Wachstum über eine
     // lange Sitzung (jedes onAppear/Poll hängte bisher an). Alle Konsumenten
