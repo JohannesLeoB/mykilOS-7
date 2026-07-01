@@ -320,5 +320,12 @@
     "system": "Google Drive",
     "direction": "READ",
     "link": "mykilos://datastream/DRIVE_ALL_OFFERS"
+  },
+  {
+    "integrationID": "AIRTABLE_CLOCKODO_ADAPTER_ZEITBUCHUNG",
+    "name": "Zeitbuchung an Clockodo-Adapter (Vorgebucht)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_CLOCKODO_ADAPTER_ZEITBUCHUNG"
   }
 ]

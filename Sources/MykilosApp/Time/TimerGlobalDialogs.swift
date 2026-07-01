@@ -100,7 +100,16 @@ struct TimerGlobalDialogs: View {
                     .font(.mykBody).foregroundStyle(MykColor.inkSoft.color).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: MykSpace.s3) {
                     dialogButton("Zurück", style: .ghost) { bookingStep = 1 }
-                    dialogButton("Ja, buchen", style: .critical) { try? store.confirmBooking(); bookingStep = 1 }
+                    dialogButton("Ja, buchen", style: .critical) {
+                        // Vor confirmBooking() sichern — die Methode leert pendingDrafts.
+                        let gebuchteDrafts = store.pendingDrafts
+                        try? store.confirmBooking()
+                        bookingStep = 1
+                        // Best-effort-Spiegel in die Clockodo-Adapter-Base (Multi-Base-
+                        // Architektur v2) — läuft im Hintergrund, blockiert nie die UI.
+                        appState.synchronisiereZeitbuchungenZuClockodoAdapter(
+                            gebuchteDrafts.map { TimeSegment(fromDraft: $0) })
+                    }
                 }
             }
         }

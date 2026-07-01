@@ -163,7 +163,7 @@ Projektordner werden übersprungen und gezählt. **Voraussetzung:** Google-Konto
 (volle Drive-Vorschau via M2).
 
 ### Integrationen (⌘7)
-Datenstrom-Schaltzentrale: zeigt alle 28 Weichen aus `DatastromManifest.json`
+Datenstrom-Schaltzentrale: zeigt alle 47 Weichen aus `DatastromManifest.json`
 mit letztem Handshake-Zeitstempel und Verbindungsstatus (grün/rot/grau).
 Jede Weiche hat eine eindeutige `Integrations-ID` die exakt dem `DataFlowLogger`-Eintrag
 im Code entspricht.
@@ -442,6 +442,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `STUDIO_KNOWLEDGE_QUERY` | Studio-Wissensbasis-Abfrage | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `query_studio_knowledge` über die lokale `StudioBrain`-Projekthistorie. Eigene Weiche (Mandate E). |
 | `ASSISTANT_NOTES` | Assistenten-Notizen (lokal) | WRITE | onDemand (Tool-Call) | nur lokale eigene Daten | Tools `create_note`/`list_notes`/`update_note`/`delete_note`. Lokale Notizen in GRDB, **kein** externer Schreibzugriff. Persistent über Neustart (S4). |
 | `ASSISTANT_TASKS` | Assistenten-Aufgaben (lokal) | WRITE | onDemand (Tool-Call) | nur lokale eigene Daten | Tools `create_task`/`list_tasks`/`complete_task`/`delete_task`. Interne To-dos/Erinnerungen (optionales Fälligkeitsdatum) in GRDB v9, **kein** externer Schreibzugriff. Auch sichtbar im Kataloge-Tab „Aufgaben". Persistent über Neustart (S6). |
+| `AIRTABLE_CLOCKODO_ADAPTER_ZEITBUCHUNG` | Zeitbuchung an Clockodo-Adapter (Vorgebucht) | WRITE | onDemand (Buchungs-Bestätigung „Ja, buchen") | keine | 2026-07-01, Johannes freigegeben: `ClockodoAdapterWriter` spiegelt jedes lokal bestätigte `TimeSegment` (Timer-Buchung, 2. Schritt der Doppelbestätigung) als "Vorgebucht"-Zeile in die neue Airtable-Base `mykilOS-Adapter Clockodo` (appuQDCFGLmjo2L6T, Tabelle Zeitbuchungen) — nach Mitarbeiter (Vorname aus dem lokalen Profil)/Datum/Kalenderwoche/Projekt/Kostenstelle aufgegliedert. **Best-effort:** die lokale GRDB-Buchung bleibt in jedem Fall gültig, auch wenn dieser Sync fehlschlägt (offline/Airtable nicht verbunden) — kein Blocker, kein Datenverlust, nur ein Fehler im Datenstrom-Log. **Kein echter Clockodo-API-POST** — das bleibt ein separater, späterer Schritt (braucht den persönlichen Clockodo-API-Key je Nutzer aus der Private Area). Stammdaten (Clockodo-Leistungen mit Schätz-Stundensätzen, Kostenstellen) liegen in derselben Base, nur direkt in Airtable editierbar — kein App-Schreibpfad dafür. |
 
 ---
 
@@ -734,4 +735,4 @@ Klärung echter Ordner vs. Sandbox).
 ---
 
 *Dieses Dokument wird mit jedem Feature-Commit aktualisiert.*
-*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · Bestandskunde-auswählen im Fragebogen (Airtable+Google), Artikel-Katalog-Cache (schnelleres Laden), Gmail-Parallelfetch, Assistent-Chat scrollt beim Öffnen ans Ende, Live-Schema-Diagnose (echte Kunden-/Projekte-Feldnamen via bereits laufendem Read), CartStore-Feld-ID-Fix, Mail-Entwürfe-Ordner, Datenstrom-Handbuch-Sync (Manifest + Code + live Airtable)*
+*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · mykilOS-8.0-Konsolidierung: HYPERBUILD/CLAUDE.md-Doku-Wahrheit, toter Code raus (AssistantWidget, Fragebogen-Stubs, Bootstrap-Sondierung), Anthropic Prompt-Caching, GmailCacheStore verdrahtet, M3 ClickUp-Listen-IDs live verlinkt, Clockodo-Adapter-Base aufgebaut (Stundensätze/Kostenstellen-Stammdaten + ClockodoAdapterWriter: Timer-Buchungen → Zeitbuchungen-Tabelle), Bestandskunde-auswählen im Fragebogen (Airtable+Google), Artikel-Katalog-Cache, Gmail-Parallelfetch, Assistent-Chat-Scroll-Fix, Live-Schema-Diagnose, CartStore-Feld-ID-Fix, Mail-Entwürfe-Ordner*

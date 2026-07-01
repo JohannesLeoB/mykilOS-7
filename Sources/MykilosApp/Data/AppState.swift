@@ -1204,6 +1204,46 @@ public final class AppState {
         }
     }
 
+    // MARK: - Clockodo-Adapter-Sync (Multi-Base-Architektur v2, 2026-07-01)
+    // Spiegelt frisch lokal bestätigte Timer-Buchungen (TimerStore.confirmBooking hat
+    // bereits die "Karte→Bestätigung" durchlaufen) als "Vorgebucht"-Zeilen in die neue
+    // Airtable-Base mykilOS-Adapter Clockodo. Best-effort: die lokale GRDB-Buchung ist
+    // bereits vollständig und bleibt in jedem Fall gültig — dieser Sync läuft im
+    // Hintergrund und blockiert/wirft NIE zur UI hin (kein Datenverlust bei Offline/
+    // Airtable-nicht-verbunden, nur ein sichtbarer Fehler im Datenstrom-Log).
+    public func synchronisiereZeitbuchungenZuClockodoAdapter(_ segments: [TimeSegment]) {
+        guard airtableAuth.status == .connected, segments.isEmpty == false else { return }
+        let vollname = profile.profile?.displayName ?? ""
+        let mitarbeiter = vollname.split(separator: " ").first.map(String.init) ?? vollname
+        guard mitarbeiter.isEmpty == false else { return }
+        let writer = ClockodoAdapterWriter(creator: AirtableClient())
+        let uid = actorUserID
+        let mode = provisioningMode.mode
+        Task {
+            for segment in segments {
+                let fields = ClockodoAdapterWriter.felder(fuer: segment, mitarbeiter: mitarbeiter)
+                do {
+                    let recordID = try await writer.schreibeVorbuchung(segment, mitarbeiter: mitarbeiter)
+                    try? writeShadow.recordAirtableWrite(
+                        action: .create, actorUserID: uid, baseID: ClockodoAdapterWriter.baseID,
+                        table: ClockodoAdapterWriter.table, recordID: recordID, fields: fields,
+                        mode: mode, result: .ok)
+                    dataFlow.log(integrationID: "AIRTABLE_CLOCKODO_ADAPTER_ZEITBUCHUNG", actorUserID: uid,
+                                 action: .success, recordsWritten: 1,
+                                 summary: "Zeitbuchung gespiegelt: \(segment.projektTitel) · \(segment.kostenstelle)")
+                } catch {
+                    try? writeShadow.recordAirtableWrite(
+                        action: .create, actorUserID: uid, baseID: ClockodoAdapterWriter.baseID,
+                        table: ClockodoAdapterWriter.table, recordID: nil, fields: fields,
+                        mode: mode, result: .error, errorMessage: String(describing: error))
+                    dataFlow.log(integrationID: "AIRTABLE_CLOCKODO_ADAPTER_ZEITBUCHUNG", actorUserID: uid,
+                                 action: .error, errorMessage: String(describing: error),
+                                 summary: "Zeitbuchung-Sync fehlgeschlagen (lokale Buchung bleibt gültig)")
+                }
+            }
+        }
+    }
+
     // MARK: - Backup (Mandate G)
     // Erzwungener WAL-Checkpoint + konsistentes Backup, off-main ausgeführt.
     // Lokal, read-only auf die DB — kein externer Schreibzugriff.

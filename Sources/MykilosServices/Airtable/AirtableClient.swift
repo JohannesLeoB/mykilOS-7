@@ -194,6 +194,13 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
         "app56DTbSoqPvZhom": [
             "Write-Shadow-Log",   // tblYQVdeHP2Zvgt8m — Tabellenname unverifiziert, MCP sieht die Base nicht
         ],
+        // mykilOS-Adapter Clockodo (Multi-Base-Architektur v2, appuQDCFGLmjo2L6T,
+        // 2026-07-01 von Johannes freigegeben). NUR Zeitbuchungen (append-only, "vorgebuchte"
+        // Timer-Segmente) — Clockodo-Leistungen/Kostenstellen sind Stammdaten, nur direkt in
+        // Airtable editierbar, kein App-Schreibpfad dafür.
+        "appuQDCFGLmjo2L6T": [
+            "Zeitbuchungen",   // tbllYkxcHzI2YMUqn
+        ],
     ]
 
     /// Prüft, ob Base + Tabelle auf der Schreib-Whitelist stehen.
