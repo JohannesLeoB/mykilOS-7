@@ -168,7 +168,6 @@ enum AppModule: String, CaseIterable, Identifiable {
     case today        = "Heute"
     case projects     = "Projekte"
     case assistant    = "Assistent"
-    case brands       = "Integrationen"
     case kataloge     = "Kataloge"
     case settings     = "Einstellungen"
     var id: String { rawValue }
@@ -177,7 +176,6 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .today:       "sun.min"
         case .projects:    "square.grid.2x2"
         case .assistant:   "sparkles"
-        case .brands:      "building.2"
         case .kataloge:    "books.vertical"
         case .settings:    "gearshape"
         }
@@ -269,10 +267,10 @@ struct ContentView: View {
             SidebarView(
                 selection: $module,
                 isCompact: $sidebarCollapsed,
-                onOpenProfile: {
-                    if appState.profile.profile?.isComplete == true { module = .settings }
-                    else { showOnboarding = true }
-                },
+                // Klick auf den Initialen-Avatar öffnet IMMER die Einstellungen
+                // (dort steckt das Profil-/Identitäts-Panel). Der Onboarding-Wizard
+                // erzwingt sich beim Erststart weiterhin über isOnboardingUp.
+                onOpenProfile: { module = .settings },
                 timerCheckInRequested: $timerCheckInRequested
             )
             .fixedSize(horizontal: true, vertical: false)
@@ -323,7 +321,6 @@ struct ContentView: View {
         case .today:       TodayView()
         case .projects:    ProjectGalleryView()
         case .assistant:   AssistantPageView()
-        case .brands:      BrandsView(onNavigateToSettings: { module = .settings })
         case .kataloge:    KatalogeView()
         case .settings:    SettingsView()
         }
@@ -564,10 +561,15 @@ struct AppCommands: Commands {
     var body: some Commands {
         CommandGroup(replacing: .newItem) {}
         CommandGroup(replacing: .appInfo) {
-            Button("Über mykilOS 7.7") {
+            Button("Über mykilOS") {
                 openWindow(id: "about")
             }
-            .keyboardShortcut(",", modifiers: .command)
+        }
+        // Einstellungen im App-Menü mit dem macOS-Standard Cmd+, (spiegelt den
+        // Initialen-Avatar in der Sidebar — Integrationen sind Teil der Einstellungen).
+        CommandGroup(replacing: .appSettings) {
+            Button("Einstellungen …") { activeModule = .settings }
+                .keyboardShortcut(",", modifiers: .command)
         }
         CommandMenu("Navigation") {
             Button(sidebarCollapsed ? "Sidebar ausklappen" : "Sidebar einklappen") {
@@ -581,12 +583,10 @@ struct AppCommands: Commands {
                 .keyboardShortcut("2", modifiers: .command)
             Button("Assistent")       { activeModule = .assistant }
                 .keyboardShortcut("3", modifiers: .command)
-            Button("Integrationen")   { activeModule = .brands }
-                .keyboardShortcut("4", modifiers: .command)
             Button("Kataloge")        { activeModule = .kataloge }
-                .keyboardShortcut("5", modifiers: .command)
+                .keyboardShortcut("4", modifiers: .command)
             Button("Einstellungen")   { activeModule = .settings }
-                .keyboardShortcut("7", modifiers: .command)
+                .keyboardShortcut(",", modifiers: .command)
         }
     }
 }

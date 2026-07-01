@@ -16,11 +16,18 @@ Hauptbereiche. Tastenkürzel:
 | ⌘1 | Heute |
 | ⌘2 | Projekte |
 | ⌘3 | Assistent |
-| ⌘4 | Dateien |
-| ⌘5 | Angebote |
-| ⌘7 | Integrationen |
-| ⌘8 | Kataloge |
+| ⌘4 | Kataloge |
+| ⌘, | Einstellungen |
 | ⌘⇧S | Sidebar ein-/ausblenden |
+
+**Navigation/Settings-Umbau (2026-07-02, Johannes):**
+- **„Integrationen" ist kein eigener Sidebar-Punkt mehr** — der Inhalt (Verbindungs-Status,
+  Datenstrom-Schaltzentrale, Projektnummer-Bindung, Provisioning-Test) lebt vollständig in
+  den **Einstellungen**.
+- **Einstellungen öffnen sich über den Initialen-Avatar** unten links in der Sidebar
+  (kein Zahnrad-Icon mehr) — gespiegelt im macOS-App-Menü über **⌘,**.
+- **Avatar-Initialen** (Sidebar + Einstellungen) zeigen jetzt einheitlich **Vorname+Nachname**
+  (z. B. „Johannes Leo Berger" → „JB"), vorher uneinheitlich.
 
 ---
 

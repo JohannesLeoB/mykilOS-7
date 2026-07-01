@@ -119,7 +119,8 @@ struct SettingsView: View {
                         .fill(MykColor.positive.color.opacity(0.15))
                         .frame(width: 36, height: 36)
                         .overlay(
-                            Text(String(user.displayName.prefix(1)).uppercased())
+                            // Gleiche Initialen-Logik wie der Sidebar-Avatar (Vorname+Nachname).
+                            Text(mykNameInitials(user.displayName))
                                 .font(.mykHeadline)
                                 .foregroundStyle(MykColor.positive.color)
                         )

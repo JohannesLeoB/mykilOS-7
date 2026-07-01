@@ -1,6 +1,18 @@
 import SwiftUI
 import MykilosDesign
 
+// Einheitliche Initialen (Vorname + Nachname), damit Sidebar-Avatar UND Settings-Avatar
+// dasselbe zeigen (Härtung 2026-07-02, Johannes: Initialen waren ungleich). Beispiel:
+// „Johannes Leo Berger" → „JB" (nicht „JL" und nicht nur „J").
+func mykNameInitials(_ name: String) -> String {
+    let words = name.split(separator: " ").filter { !$0.isEmpty }
+    guard let first = words.first else { return "?" }
+    let firstInitial = first.first.map(String.init) ?? ""
+    let lastInitial = words.count > 1 ? (words.last?.first.map(String.init) ?? "") : ""
+    let joined = (firstInitial + lastInitial).uppercased()
+    return joined.isEmpty ? "?" : joined
+}
+
 // MARK: - SidebarView
 // Der schmale Rail links. Zwei Zustände: BREIT (Logo + Text-Menüpunkte + App-Dock mit
 // Namen) und KOMPAKT (nur Icons). Nie ganz ausgeblendet. Der orange Brand-Button oben
@@ -72,14 +84,14 @@ struct SidebarView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: Fußzeile — immer Avatar (Initialen) + Einstellungs-Icon
+    // MARK: Fußzeile — nur noch der Avatar (Initialen). Klick öffnet die Einstellungen
+    // (Härtung 2026-07-02, Johannes: kein Zahnrad mehr, alles auf den Initialen-Button).
     private var navFoot: some View {
         Group {
             if isCompact {
-                VStack(spacing: MykSpace.s3) { profileButton; settingsButton }
-                    .frame(maxWidth: .infinity)
+                profileButton.frame(maxWidth: .infinity)
             } else {
-                HStack(spacing: 0) { profileButton; Spacer(); settingsButton }
+                HStack(spacing: 0) { profileButton; Spacer() }
                     .padding(.horizontal, MykSpace.s4)
             }
         }
@@ -93,13 +105,7 @@ struct SidebarView: View {
         }
         .buttonStyle(.plain)
         .onHover { hover in withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) { profileHovered = hover } }
-        .help(footDisplayName)
-    }
-
-    private var settingsButton: some View {
-        SidebarIconButton(systemName: "gearshape", help: "Einstellungen") {
-            withAnimation(.easeInOut(duration: 0.18)) { selection = .settings }
-        }
+        .help("Einstellungen · \(footDisplayName)")
     }
 
     private var footIsOnline: Bool {
@@ -114,11 +120,7 @@ struct SidebarView: View {
         return manual.isEmpty ? "Profil einrichten" : manual
     }
 
-    private var initials: String {
-        let parts = footDisplayName.split(separator: " ").prefix(2)
-        let joined = parts.compactMap(\.first).map(String.init).joined().uppercased()
-        return joined.isEmpty ? "?" : joined
-    }
+    private var initials: String { mykNameInitials(footDisplayName) }
 }
 
 // MARK: - AvatarCircle
@@ -139,27 +141,6 @@ private struct AvatarCircle: View {
                     .overlay(Circle().stroke(MykColor.paper.color, lineWidth: 1.5))
             }
         }
-    }
-}
-
-// MARK: - SidebarIconButton
-private struct SidebarIconButton: View {
-    let systemName: String
-    let help: String
-    let action: () -> Void
-    @State private var isHovered = false
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.mykBody)
-                .foregroundStyle(isHovered ? MykColor.brand.color.opacity(0.7) : MykColor.brand.color)
-                .frame(width: 36, height: 36)
-                .background(RoundedRectangle(cornerRadius: 9).fill(isHovered ? MykColor.paper2.color : Color.clear))
-        }
-        .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
-        .help(help)
     }
 }
 
