@@ -67,4 +67,39 @@ Runtime-relevante Assets (Briefpapier, Logo, Schrift) wandern beim Einbauen nach
 - Für das **Abnahmeprotokoll** kommt zusätzlich: Unterschriftsfelder (Kunde/Monteur),
   Mängelliste, Datum/Ort — sobald die Feldstruktur steht (Block F).
 
-**Ablage-Status:** _leer — warte auf deine Assets._
+---
+
+## Gefundene Assets + abgeleiteter Marken-Spec (2026-07-02)
+
+Quelle: Drive → `MYKILOS Team/mykilOS/Briefpapier/`. Von Johannes freigegeben, gesichtet.
+
+**Logo:** `MYKILOS Logokoffer/` — als **SVG** (ideal), plus PNG/JPG/EPS/AI, je in
+**Web(RGB)/Print(CMYK) × White/Black**. Für die App: `Web/Black/…_RGB_Black.svg` +
+`Web/White/…_RGB_White.svg`.
+
+**Schrift:** **ABC Monument Grotesk** (kompletter Satz Regular/Medium/Bold/Italic/**Mono**/
+Semi-Mono) — liegt fertig als **woff/woff2/ttf/eot** MIT `stylesheet.css` (`@font-face`) +
+`demo.html`. → direkt einsetzbar in der HTML/CSS→PDF-Engine, kein Font-Basteln nötig.
+⚠️ **Lizenz-Check offen:** Einbetten ins App-Bundle nur, wenn die Monument-Grotesk-Lizenz
+das erlaubt — bitte kurz bestätigen (Web-Font-Lizenz ≠ App-Embedding-Lizenz).
+
+**Stil:** minimal, typografisch, viel Weißraum. Wortmarke in Monument Grotesk **Mono**,
+Akzent **Brand-Orange `#EA5B25`** auf Papier-Weiß. Claim: „Defining new classics".
+
+**Pflicht-Fußtext (wörtlich, aus der Firmensignatur):**
+```
+MYKILOS GmbH · Defining new classics
+Shanghaiallee 3a · 20457 Hamburg
++49 (0) 40 20 90 50 06 · www.mykilos.com
+VAT ID: DE296130120
+Registergericht: Amtsgericht Charlottenburg, HRB 160307
+Geschäftsführer: Dr. Daniel Klapsing
+```
+
+**Referenz-Dokumente vorhanden:** Visitenkarten (PDF), Moodboard (InDesign .indd/.idml +
+PDF), Entwurfspräsentation (PDF). → Design-Quelle ist **Adobe InDesign**; ich übersetze den
+visuellen Stil in HTML/CSS-Vorlagen (die InDesign-Dateien selbst sind nicht app-automatisierbar).
+
+**Ablage-Status:** ✅ Assets lokalisiert (Drive). Nächster Schritt beim Bauen: die nötige
+Teilmenge (Logo-SVG, Font-woff2 + stylesheet.css, Fußtext) nach
+`Sources/MykilosApp/Resources/Brand/` kopieren — **nach** Font-Lizenz-OK.
