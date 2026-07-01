@@ -23,6 +23,47 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Zukunfts-Konzepte 2026-07-02 (Vision-Runde mit Johannes)
+
+Kurzfassungen; die Details liegen in eigenen Konzept-Dokumenten. Alles mykilOS-8+,
+baut auf der laufenden 8.0 auf.
+
+### 📋 Airtable-Core-Konsolidierung — App von Daniels Base entkoppeln
+Neue Greenfield-Base `mykilOS_Core` als einziger Master, mit dem die App spricht;
+Daniels Artikel-Base wird gespiegelt (read-only Sync) + neu einsortiert, nie direkt
+gelesen/geschrieben. READ leicht (Copy-in), WRITE via Feeder-out an seine sevDesk-
+Pipeline. Kern-Entscheidung (frische Core) ✅ getroffen; Sequenz: **nach 8.0**.
+→ **docs/AIRTABLE_ARCHITEKTUR.md**
+
+### 💡 Formulare-Ebene — gebrandete Firmendokumente aus mykilOS-Daten
+Modul mit Vorlagen-Bibliothek (Moodboard, Brief, Abnahmeprotokoll, Geräteliste,
+Präsentation). Engine: **HTML/CSS-Vorlage → PDF (WKWebView)**, weil Design von Daten
+trennt. Vorlagen als Daten (CRUD pro Kategorie), Lager: geteilter Drive-Ordner +
+Defaults. Befüllung context-driven aus dem local-first Cache. Dokumente **am Projekt
+verankert** (Detailseite, vor-ausgefüllt, PDF in Projekt-Drive-Ordner).
+→ **docs/FORMULARE_EBENE.md**
+
+### 💡 Gebrandete PDFs — Marken-Assets
+MYKILOS-Briefpapier/Logo(SVG)/Monument-Grotesk(woff2 + fertige stylesheet.css)/
+Pflicht-Fußtext gesichtet & spezifiziert. Erweitert `MykPDFRenderer` bzw. speist die
+Formulare-Engine. Offen: Font-Embedding-Lizenz. → **docs/brand/README.md**
+
+### 💡 Herstellerbilder-/Bild-Assetkatalog (für Moodboards)
+Bild-Datenbank **wie die Kataloge** (Artikel-Base hat schon ein Produktbild-Feld),
+Zusammenstellung **wie der Warenkorb** („zusammenklicken" → Moodboard-Bildraster).
+Eigener kleiner Strang, überschneidet sich mit der Erkundung *Gerätelisten-Expand*.
+
+### 📋 Kunden-Adressmodell (Customer + Adresse, ans Projekt gebunden)
+`Customer` um Adressfelder erweitern + ans Projekt binden. **Sinnvoll erst MIT der
+Core-Migration** (sonst Wegwerf-Arbeit, weil Adresse in Core lebt). Vorarbeit schon
+da: `Customer.clockodoCustomerID`-Muster + `Kunden.Adresse` in der Artikel-Base.
+
+### 💡 3 geparkte Erkundungs-Sessions (im Gedächtnis, auf Johannes-Brief wartend)
+Gerätelisten-Expand · Schätzpreis-Konfiguration · ClickUp-Setup aus Slackanalyse.
+Nur Eruierung/Pläne, isolierte Branch-Sessions; nicht selbst starten.
+
+---
+
 ## Architektur-Vorschlag: WorkBasket/Checkout-Pipeline (generisches Schreib-Modell)
 
 ### 📋 Generische DataObject→WorkBasket→CheckoutRun→Preview→Review→Audit-Pipeline
