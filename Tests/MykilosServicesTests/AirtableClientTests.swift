@@ -89,7 +89,8 @@ struct AirtableClientTests {
 
     @Test func mapCustomersExtrahiertNummernUndNamen() {
         let records: [[String: AirtableFieldValue]] = [
-            ["Kundennummer": .string("K-1001"), "Name": .string("Meyer"), "_airtableRecordID": .string("rec1")],
+            ["Kundennummer": .string("K-1001"), "Name": .string("Meyer"), "_airtableRecordID": .string("rec1"),
+             "Clockodo-Kunden-ID": .number(9001)],
             ["Kundennummer": .string("K-1002"), "Name": .string("Loft"), "_airtableRecordID": .string("rec2")],
             ["Name": .string("Nur Name")],
         ]
@@ -98,6 +99,9 @@ struct AirtableClientTests {
         #expect(customers[0].customerNumber == "K-1001")
         #expect(customers[0].name == "Meyer")
         #expect(customers[0].airtableRecordID == "rec1")
+        // Block E: Clockodo-Kunden-ID (Zahlenfeld) wird als Int gelesen; fehlt sie → nil.
+        #expect(customers[0].clockodoCustomerID == 9001)
+        #expect(customers[1].clockodoCustomerID == nil)
     }
 
     @Test func mapProjectsExtrahiertAlleFelder() {

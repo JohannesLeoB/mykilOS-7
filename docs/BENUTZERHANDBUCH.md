@@ -569,6 +569,18 @@ Clockodo-ID, 2 (Bestellungen/Versand) sind in Clockodo vorhanden, aber ihre `ser
 noch nicht erfasst → nicht buchbar bis nachgetragen (kein Raten in echten Abrechnungsdaten). Die
 Airtable-Tabelle `Clockodo-Leistungen` (Mirror) enthält jetzt alle 10.
 
+**Clockodo-Buchungs-Resolver (Härtung, 2026-07-01).** `ClockodoBookingResolver` (rein, testbar)
+löst beide Clockodo-Achsen auf: Kostenstelle→`services_id` (aus `Kostenstelle.defaults`) und
+projektNummer→Projekt→Kunde→`customers_id` (`Customer.clockodoCustomerID`, gelesen aus Airtable
+`Kunden.Clockodo-Kunden-ID`). **Sicheres Überspringen statt Raten:** unbekannte Kostenstelle,
+Leistung ohne ID, unbekanntes Projekt, Projekt ohne Kunde, ungemappter Kunde → jeweils ein
+konkreter Skip-Grund, NIE eine geratene Ersatz-ID in echten Abrechnungsdaten. Die Fallback-Frage
+(„ungemappte Kunden auf 'Mykilos GmbH intern' buchen?") ist bewusst offen — aktuell wird
+übersprungen. **Noch nicht verdrahtet:** der eigentliche POST an echtes Clockodo (`createEntry`)
+wird noch NICHT vom Timer-Bestätigungsfluss ausgelöst — das bleibt der letzte, gated Schritt bis
+Johannes' Freigabe + Antworten (Fallback-Politik, IDs für Bestellungen/Versand, 20/30 ungemappte
+Kunden).
+
 **Assistent: destilliertes Gedächtnis Stufe 2 (Härtung, 2026-07-01, Johannes).**
 Ergänzt Stufe 1 (System-Prompt-/Tool-Cache-Breakpoints): bei langen Chat-Threads wurde bisher der
 komplette Rohverlauf (bis zu 120 Nachrichten, siehe `memoryWindowDays`) bei jedem Turn neu an die

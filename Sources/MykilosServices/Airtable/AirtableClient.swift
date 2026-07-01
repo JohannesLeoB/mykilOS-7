@@ -396,7 +396,11 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
             guard let number = fields["Kundennummer"]?.stringValue,
                   let name = fields["Name"]?.stringValue else { return nil }
             let recordID = fields["_airtableRecordID"]?.stringValue
-            return Customer(customerNumber: number, name: name, airtableRecordID: recordID)
+            // Clockodo-Kunden-ID (Zahlenfeld, Block E): nur ~1/3 der Kunden gemappt.
+            // Fehlt/leer → nil → der Buchungspfad überspringt diesen Kunden sicher.
+            let clockodoID = fields["Clockodo-Kunden-ID"]?.numberValue.map { Int($0) }
+            return Customer(customerNumber: number, name: name,
+                            airtableRecordID: recordID, clockodoCustomerID: clockodoID)
         }
     }
 
