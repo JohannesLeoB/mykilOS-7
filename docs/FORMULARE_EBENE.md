@@ -92,6 +92,43 @@ Entwickler wäre. Jede Vorlage = HTML/CSS-Datei + Metadaten (`name`, `kategorie`
 - **UI:** eigenes „Vorlagen"-Verwaltungs-Panel im Formulare-Modul: Liste je Kategorie,
   je Eintrag Bearbeiten · Duplizieren · Archivieren · Format · Vorschau · „Neu".
 
+## 3c. Wo lagern die Vorlagen + woher die Daten (Empfehlung)
+
+### Speicherort: geteilte Drive-Bibliothek + mitgelieferte Defaults
+**Empfehlung:** Vorlagen als HTML/CSS-Dateien in einem **geteilten Drive-Ordner**
+`mykilOS/Vorlagen/<Kategorie>/` mit einer **`manifest.json`** (Metadaten je Vorlage:
+Name, Kategorie, Seitenformat, Version, aktiv/archiviert). Plus **mitgelieferte
+Standard-Vorlagen im App-Bundle** als Offline-/Erststart-Baseline.
+- **Warum Drive:** mykilOS ist ohnehin Drive-zentriert (Projekte, Dateien). Team teilt
+  automatisch (einer pflegt, alle bekommen's), Versionierung + Backup gratis, local-first
+  gecacht (funktioniert offline).
+- **Nicht Airtable:** HTML-Dateien sind dort Fremdkörper; Drive ist der richtige Ort für
+  Datei-Assets. Airtable bleibt für strukturierte Daten.
+
+### Datenbefüllung: aus dem, was eh schon lokal liegt
+**Kernprinzip:** mykilOS ist local-first — die Daten liegen bereits im **lokalen Cache**
+(GRDB + Registries). Eine Vorlage wird aus einem **Kontext** erzeugt (ein Projekt, ein
+Warenkorb), den die App ohnehin schon geladen hat. **Kein Neu-Laden, keine Doppelung** —
+dieselbe Wahrheit wie der Rest der App.
+
+Vorhandene Datenquellen (schon da):
+| Quelle (existiert) | liefert |
+|---|---|
+| `CachedProjectRegistry` / `CachedBusinessRegistry` | Projektnr, Titel, Kunde, (bald) Adresse |
+| `CartStore` / `WarenkorbListeStore` | Warenkorb-Positionen, Preise |
+| `ArtikelKatalogStore` | Geräte-/Artikeldetails |
+| Kontakte-Registry | Adresse, Ansprechpartner |
+| `KalkulationsEngine` | Kostenschätzungen |
+
+**Mechanik:** ein `DocumentDataProvider` sammelt aus diesen Stores ein **Daten-Dictionary**
+(z. B. `{kunde: …, projekt: …, positionen: […]}`) → füllt die Platzhalter der HTML-Vorlage.
+Die Vorlage **deklariert ihren Bedarf** (braucht Kunde+Positionen), der Provider liefert genau
+das. Felder, die nirgends existieren (freier Brieftext, Moodboard-Bildauswahl), kommen als
+**manuelle Eingabe** in der Erzeugungs-Maske dazu und werden ins Dictionary gemischt.
+
+> Sobald die **Airtable-Core-Konsolidierung** (Adresse am Kunden/Projekt) steht, sind die
+> Vorlagen automatisch vollständig befüllbar — beide Stränge greifen ineinander.
+
 ## 4. Verbindungen zu bestehenden/geparkten Strängen
 
 - **Brand-Assets** (`docs/brand/README.md`): das Briefpapier/Logo/Schrift-Fundament dieser Ebene.
