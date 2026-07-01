@@ -21,9 +21,6 @@ struct SchaltzentrumView: View {
 
             ProjectNumberBindingSection()
 
-            // mykilOS 8, Block D: Projekt-Geburt in der TEST-Sandbox (Live-Verifikation).
-            ProvisioningTestView()
-
             VStack(spacing: 1) {
                 // Header
                 HStack(spacing: 0) {

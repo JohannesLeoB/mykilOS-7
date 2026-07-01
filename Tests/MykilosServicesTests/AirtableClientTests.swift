@@ -160,9 +160,15 @@ struct AirtableClientTests {
     }
 
     @Test func isWritableVerbietedNichtFreigegebeneTabellenInMastermind() {
-        // In der Mastermind-Base gibt es mehr Tabellen, die NICHT freigebeben sind
-        #expect(!AirtableClient.isWritable(baseID: "appuVMh3KDfKw4OoQ", table: "Projekte"))
+        // In der Mastermind-Base gibt es mehr Tabellen, die NICHT freigebeben sind.
+        // "Projekte" ist seit 2026-07-01 freigegeben (Fragebogen-Live-Provisionierung,
+        // Johannes bestätigt) — siehe isWritableErlaubtProjekteRoutingInMastermind unten.
         #expect(!AirtableClient.isWritable(baseID: "appuVMh3KDfKw4OoQ", table: "Kunden"))
+        #expect(!AirtableClient.isWritable(baseID: "appuVMh3KDfKw4OoQ", table: "Kalkulationen"))
+    }
+
+    @Test func isWritableErlaubtProjekteRoutingInMastermind() {
+        #expect(AirtableClient.isWritable(baseID: "appuVMh3KDfKw4OoQ", table: "Projekte"))
     }
 
     @Test func createRecordWirftBeiVerbotenerBase() async {

@@ -127,6 +127,9 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
             "Kontakte",            // S19: Kontakt anlegen/aktualisieren
             "TEST-Projekte",       // Block D (S4): ProjektProvisioningService-Live-Test-Sandbox
                                    // (tblj1OXFt0nOqgq0P, angelegt 2026-07-01, NUR TEST_-Records)
+            "Projekte",            // Fragebogen-Live-Provisionierung (2026-07-01, Johannes freigegeben):
+                                   // echter Routing-Eintrag für ein neu angelegtes Projekt (tblGJR13OliFt6Ewi,
+                                   // bisher NUR aus Drive-Scan befüllt). Quelle="Fragebogen" (neue Select-Option).
         ],
         // Artikel & Einkauf (Webshop-Phase 1, gated, von Johannes freigegeben 2026-06-30)
         // Intake-Fragebogen legt neue Kunden- + Projekt-Records an (append-only, gated, Record-Link gültig).
@@ -195,6 +198,13 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
     /// kein Schreiben in Projekt-/Kunden-/Kalkulationsdaten, kein Schreiben in
     /// fremde Basen. Gibt die neue Record-ID zurück.
     public func createRecord(baseID: String, table: String, fields: [String: AirtableFieldValue]) async throws -> String {
+        try await createRecord(baseID: baseID, table: table, fields: fields, typecast: false)
+    }
+
+    /// `typecast: true` lässt Airtable eine fehlende Single-Select-Option automatisch anlegen
+    /// (z. B. ein neuer, bewusst mit Johannes abgestimmter „Quelle"-Wert), statt mit 422
+    /// abzulehnen. NUR für vorab abgestimmte, bewusst neue Werte nutzen — sonst Default `false`.
+    public func createRecord(baseID: String, table: String, fields: [String: AirtableFieldValue], typecast: Bool) async throws -> String {
         guard Self.isWritable(baseID: baseID, table: table) else {
             throw AirtableError.invalidBaseID("Schreiben in \(table)@\(baseID) nicht erlaubt — Whitelist: \(Self.writableMap)")
         }
@@ -210,7 +220,8 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
         request.httpMethod = "POST"
         request.setValue("Bearer \(credentials.pat)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let payload: [String: Any] = ["records": [["fields": fields.mapValues(\.jsonValue)]]]
+        var payload: [String: Any] = ["records": [["fields": fields.mapValues(\.jsonValue)]]]
+        if typecast { payload["typecast"] = true }
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
 
         let (data, response) = try await session.data(for: request)

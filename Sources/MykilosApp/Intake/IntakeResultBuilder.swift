@@ -16,6 +16,15 @@ public struct IntakeErgebnis: Sendable, Equatable {
     public let zusammenfassung: String
 }
 
+// MARK: - IntakeAnlageErgebnis
+// Ergebnis von AppState.erzeugeKundeUndProjekt: die Bestätigungs-Zusammenfassung plus,
+// falls die echte Provisionierung (Drive-Ordner + Mastermind-Routing) erfolgreich war,
+// die neue Projekt-Ordner-ID (sonst nil — nicht-fatal, Kunde+Projekt sind trotzdem live).
+public struct IntakeAnlageErgebnis: Sendable, Equatable {
+    public let summary: String
+    public let driveProjektOrdnerID: String?
+}
+
 // MARK: - IntakeResultBuilder
 // Mappt den ausgefüllten FragebogenModel → IntakeErgebnis.
 // Reine, testbare Funktion — keine Seiteneffekte.

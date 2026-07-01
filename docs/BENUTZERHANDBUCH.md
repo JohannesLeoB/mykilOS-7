@@ -347,7 +347,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 
 ---
 
-### Alle Weichen (Stand 2026-06-30 · 37 Weichen)
+### Alle Weichen (Stand 2026-07-01 · 39 Weichen)
 
 #### Airtable
 
@@ -363,6 +363,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `WRITE_SHADOW_LOG` | Write-Shadow-Log (Backup-Base) | WRITE | onDemand (jeder Write) | append-only (Mastermind) | **Aktiv, live verifiziert** — mykilOS 8, Block A. Base `mykilOS 8 Backup Base` (`app56DTbSoqPvZhom`), Tabelle `Write-Shadow-Log` (11 Felder, per Meta-API angelegt, freigegeben durch Johannes). Echter Test-Write kam mit 200 OK an. `WriteShadowRecorder` schreibt zusätzlich IMMER vollständig lokal (GRDB `writeShadowLog`, Cold-Start-getestet). |
 | `WRITE_SHADOW_BACKUP_FEHLT` | Write-Shadow ohne Backup-Base (Warnung) | READ | onDemand (jeder Write, solange Spiegel scheitert) | keine | Lokale Sichtbarkeits-Warnung — feuert jetzt auch, wenn der Airtable-Spiegel trotz gesetzter `backupBaseID` fehlschlägt (z. B. falscher Tabellenname), nicht nur wenn die Base ganz fehlt. Macht jede Spiegel-Lücke sichtbar statt sie zu verstecken. |
 | `PROJECT_NUMBER_LOCAL_BINDING` | Projektnummer-Bindungs-Brücke (lokal) | WRITE | onDemand (manuelle Bestätigung) | keine | mykilOS 8, Block A-Erweiterung (Johannes-Entscheidung 2026-06-30): rein lokale GRDB-Tabelle (`projectNumberBindings`) — **kein Airtable-Write, rührt die Artikel-Projektliste nie an.** Bindet ein Geschäftsprojekt ohne Projektnummer-Feld an eine Mastermind-Projektnummer, NUR nach manueller Bestätigung eines automatisch erkannten (exakter Titel-Match) Kandidaten. |
+| `AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING` | Fragebogen: Mastermind-Routing-Eintrag | WRITE | onDemand (Fragebogen-Bestätigung) | append-only (Mastermind) | 2026-07-01, Johannes freigegeben: erster echter Write-Pfad in die Mastermind-Tabelle `Projekte` (`tblGJR13OliFt6Ewi`, bisher nur aus Drive-Scan befüllt) — macht ein per Fragebogen angelegtes Projekt in der App-Galerie sichtbar. Dublettenschutz auf Kunde/Projekt-Ebene davor (Fetch-vor-Create), nicht-fatal bei Fehler. |
 
 #### Google Drive
 
@@ -376,6 +377,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `DRIVE_OFFERS_FIND` | Angebote-Suche (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `find_offers` über `OffersCollector` (rekursiv, klassifiziert). Findet 04/05 auch verschachtelt in „01 INFOS"; global per Projektname auflösbar (S2). Ergebnisse erscheinen als **anklickbare** Karte mit In-App-Vorschau (S22, reine UI — keine eigene Weiche). |
 | `DRIVE_ALL_OFFERS` | Alle Angebote (global) | READ | onDemand (Button „Alle Angebote") | read-only | Aggregiert die 04/05-Belege ALLER Projekte mit Drive-Ordner in eine flache, sortier-/durchsuchbare Liste (`AllOffersCollector`, begrenzt nebenläufig). Gleiche `OffersCollector`-Lese-/Klassifikationslogik wie der Projekt-Tab. Klick → In-App-Vorschau. S23 (MYKILOS 7). |
 | `DRIVE_FILE_READ` | Dateiinhalt lesen (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `read_drive_file` über `DriveFileReader`: findet die Datei per (Teil-)Name rekursiv und liest den **Inhalt** als Klartext (PDF→PDFKit, Google Docs/Sheets/Slides→Export, Text→utf8, gekürzt auf 6000 Zeichen). Braucht `drive.readonly` Scope. Eigene Weiche (S5). |
+| `DRIVE_FRAGEBOGEN_PROJEKT_ORDNER` | Fragebogen: echter Projekt-Ordnerbaum | WRITE | onDemand (Fragebogen-Bestätigung) | keine | 2026-07-01, Johannes freigegeben: erste echte (nicht-Sandbox) Drive-Provisionierung — kompletter FolderSchema-v1-Unterbau im echten `PROJEKTE`-Root, kein `_TEST_PROVISIONING`. Nicht-fatal bei Fehler (Kunde/Projekt sind trotzdem schon angelegt). |
 
 #### Google Gmail
 
@@ -481,10 +483,26 @@ Status, Version, Summen) als Spiegelung der Airtable-Tabelle. Ein Warenkorb ist 
 
 **Neues Projekt (Fragebogen).** „+ Neues Projekt (Fragebogen)" in Kataloge öffnet den geführten
 Küchen-Projekt-Fragebogen (24 Sektionen + Kontakt/Budget/Raum). Aus dem ausgefüllten Bogen entstehen
-nach **Bestätigung**: ein **Kunde** + ein **Projekt** (Airtable Artikel-Base, nur CREATE, append-only)
-+ ein **Erst-Warenkorb**. Der Bogen lässt sich als **PDF** exportieren und ins Drive-Projektverzeichnis
-`01 INFOS / 07 Fragebogen` hochladen. *Voraussetzung Upload:* Google neu verbunden (Scope `drive.file`).
-*Einschränkung:* nur Anlegen, nie Ändern/Löschen bestehender Records.
+nach **Bestätigung**, in einem Rutsch:
+1. ein **Kunde** + ein **Projekt** in der Airtable Artikel-Base (nur CREATE, append-only),
+2. ein **Erst-Warenkorb** (falls Positionen ausgewählt wurden),
+3. eine **echte Projektnummer** (`JJJJ-NNN`, atomar reserviert) + der **echte Drive-Ordnerbaum**
+   im echten `PROJEKTE`-Root (kompletter FolderSchema-v1-Unterbau — kein Sandbox-Ordner mehr),
+4. ein **Mastermind-Routing-Eintrag** (Airtable `Projekte`-Tabelle, Quelle „Fragebogen") — dadurch
+   erscheint das neue Projekt sofort in der App-Galerie, wie jedes andere echte Projekt,
+5. das Fragebogen-PDF, automatisch hochgeladen ins neue `01 INFOS / 07 Fragebogen`.
+
+Schritte 3–5 sind **nicht-fatal**: Kunde+Projekt sind bereits angelegt, bevor sie starten — schlägt
+z. B. der Drive-Ordner oder der Routing-Eintrag fehl (sichtbar in der Schaltzentrale/Console-Log),
+bleibt der Intake trotzdem erfolgreich, aber die Bestätigungskarte zeigt dann explizit einen
+Hinweis statt eines blanken Erfolgs ("… Drive-Ordner/Galerie-Eintrag konnte nicht automatisch
+erstellt werden"), damit niemand fälschlich glaubt, das Projekt sei schon in der Galerie sichtbar.
+**Dublettenschutz:** vor Kunde- und Projekt-Anlage prüft ein Fetch-vor-Create (Nachname+E-Mail/
+Telefon bzw. Projektname+Kunden-Link), ob der Datensatz schon existiert — ein Retry nach
+transientem Netzwerkfehler legt Kunde/Projekt nie doppelt an.
+*Voraussetzung:* Google verbunden (Drive-Schreibrecht), Airtable verbunden.
+*Einschränkung:* nur Anlegen, nie Ändern/Löschen bestehender Records — auch der neue
+Routing-Eintrag ist ein reiner CREATE.
 
 ---
 
@@ -631,9 +649,13 @@ Sandbox-Writes scharf, Clockodo erst Block E, ClickUp nur als Gerüst).
 - **Jeder Schritt wirft**, die Geburt ist **ein** Audit-Eintrag + Write-Shadow je externem Write.
 - **Gated:** nur `ProvisioningMode = .test`; PROD bleibt gesperrt.
 
-**Live-Verifikation (Integrationen → Schaltzentrale → „Projekt-Geburt — TEST-Sandbox").** Eine
-nüchterne Test-Karte mit klarer TEST-Warnung: du gibst die Sandbox-Ziele (Drive-Parent-Ordner +
-Airtable-TEST-Tabelle) und ein Test-Projekt ein, ein Klick gebärt es reversibel in die Sandbox.
+**Update 2026-07-01:** Die Test-Karte „Projekt-Geburt — TEST-Sandbox" in der Schaltzentrale ist
+entfallen — die Ordnerbaum-Logik lebt jetzt direkt im Fragebogen-Dialog (echte Provisionierung,
+siehe „Webshop & Projektaufnahme" oben) statt in einem separaten Integrations-Testwerkzeug. Die
+Baum-Logik selbst ist geteilt (`DriveOrdnerbaumBuilder`) — `ProjektProvisioningService` (TEST-
+Sandbox, gated) und die echte Fragebogen-Provisionierung nutzen dieselbe Implementierung, nur mit
+unterschiedlichem Parent-Ordner. Die TEST-Sandbox-Fähigkeit selbst bleibt bestehen und getestet
+(`ProvisioningServiceTests`), nur ohne eigenen UI-Einstieg.
 
 **ClickUp-Routing-Gerüst.** Die Adapter-Tabelle (welcher User bekommt wann was, triggert wohin) als
 Datenmodell — **kein echter ClickUp-Write**; der konkrete Baum wird live in einer späteren Session
@@ -646,4 +668,4 @@ Klärung echter Ordner vs. Sandbox).
 ---
 
 *Dieses Dokument wird mit jedem Feature-Commit aktualisiert.*
-*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · mykilOS 8 Block D (Provisioning in der Sandbox, S4)*
+*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · Fragebogen: echte Provisionierung (Drive+Mastermind-Routing) statt TEST-Sandbox-Testkarte*

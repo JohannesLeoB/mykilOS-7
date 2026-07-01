@@ -264,5 +264,19 @@
     "system": "Lokal",
     "direction": "READ",
     "link": "mykilos://datastream/WRITE_SHADOW_BACKUP_FEHLT"
+  },
+  {
+    "integrationID": "DRIVE_FRAGEBOGEN_PROJEKT_ORDNER",
+    "name": "Fragebogen: echter Projekt-Ordnerbaum in Drive (PROJEKTE-Root)",
+    "system": "Google Drive",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/DRIVE_FRAGEBOGEN_PROJEKT_ORDNER"
+  },
+  {
+    "integrationID": "AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING",
+    "name": "Fragebogen: Mastermind-Routing-Eintrag für neues Projekt",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING"
   }
 ]

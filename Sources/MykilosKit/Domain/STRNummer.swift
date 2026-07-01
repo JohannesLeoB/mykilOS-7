@@ -73,6 +73,30 @@ public enum STRNummer {
         return String(s.filter(\.isNumber))
     }
 
+    /// Trennt ein kombiniertes "Straße + Nr."-Feld (z. B. aus dem Fragebogen, wo Straße
+    /// und Hausnummer EIN Textfeld sind) in Straße + Hausnummer, damit `bilde(...)`
+    /// wie gewohnt beide getrennt bekommt. Erkennt einen Hausnummer-Block am Ende
+    /// (Ziffern + optionalem Leerzeichen + optionalem Buchstaben-Suffix, optional gefolgt
+    /// von „-" oder „/" + einem zweiten Block: "8", "12a", "10 b", "3-5", "4/2").
+    /// Review-Fix: die ursprüngliche Regel erkannte "10 b" (Leerzeichen vor Suffix) und
+    /// "4/2" (Schrägstrich-Zusatz) NICHT und ließ dann `bilde(...)` still eine unvollständige
+    /// STR-Nr ohne Hausnummer bilden, statt zu warnen — jetzt korrekt erkannt.
+    /// Kein erkennbarer Block → alles bleibt Straße, Hausnummer nil.
+    public static func splitStrasseHausnummer(_ kombiniert: String?) -> (strasse: String?, hausnummer: String?) {
+        guard let kombiniert else { return (nil, nil) }
+        let getrimmt = kombiniert.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard getrimmt.isEmpty == false else { return (nil, nil) }
+        guard let treffer = getrimmt.range(
+            of: #"\s+\d+\s?[a-zA-Z]?([/-]\d+\s?[a-zA-Z]?)?$"#, options: .regularExpression
+        ) else {
+            return (getrimmt, nil)
+        }
+        let hausnummer = getrimmt[treffer].trimmingCharacters(in: .whitespaces)
+        let strasse = String(getrimmt[getrimmt.startIndex..<treffer.lowerBound])
+            .trimmingCharacters(in: .whitespaces)
+        return (strasse.isEmpty ? nil : strasse, hausnummer)
+    }
+
     static func normalisiereVariante(_ v: String) -> String {
         transliteriere(v).uppercased().trimmingCharacters(in: .whitespaces)
     }

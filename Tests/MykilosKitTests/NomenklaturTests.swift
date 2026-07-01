@@ -65,6 +65,51 @@ struct NomenklaturTests {
         }
     }
 
+    // MARK: STRNummer.splitStrasseHausnummer (Fragebogen: kombiniertes "Straße + Nr."-Feld)
+
+    @Test func splitStrasseHausnummerTrennteinfacheHausnummer() {
+        let r = STRNummer.splitStrasseHausnummer("Heimhuder 8")
+        #expect(r.strasse == "Heimhuder")
+        #expect(r.hausnummer == "8")
+    }
+
+    @Test func splitStrasseHausnummerTrenntBuchstabenSuffix() {
+        let r = STRNummer.splitStrasseHausnummer("Königstraße 12a")
+        #expect(r.strasse == "Königstraße")
+        #expect(r.hausnummer == "12a")
+    }
+
+    @Test func splitStrasseHausnummerTrenntBindestrichBereich() {
+        let r = STRNummer.splitStrasseHausnummer("Müllerweg 3-5")
+        #expect(r.strasse == "Müllerweg")
+        #expect(r.hausnummer == "3-5")
+    }
+
+    // Review-Fix: Leerzeichen-vor-Suffix und Schrägstrich-Zusatz wurden vorher NICHT erkannt.
+    @Test func splitStrasseHausnummerTrenntLeerzeichenVorBuchstabenSuffix() {
+        let r = STRNummer.splitStrasseHausnummer("An der Alster 10 b")
+        #expect(r.strasse == "An der Alster")
+        #expect(r.hausnummer?.contains("10") == true)
+    }
+
+    @Test func splitStrasseHausnummerTrenntSchraegstrichZusatz() {
+        let r = STRNummer.splitStrasseHausnummer("Wiesenweg 4/2")
+        #expect(r.strasse == "Wiesenweg")
+        #expect(r.hausnummer?.contains("4") == true)
+    }
+
+    @Test func splitStrasseHausnummerOhneErkennbareHausnummerBleibtGanzStrasse() {
+        let r = STRNummer.splitStrasseHausnummer("Nur ein Straßenname")
+        #expect(r.strasse == "Nur ein Straßenname")
+        #expect(r.hausnummer == nil)
+    }
+
+    @Test func splitStrasseHausnummerNilUndLeerBleibenNil() {
+        #expect(STRNummer.splitStrasseHausnummer(nil).strasse == nil)
+        #expect(STRNummer.splitStrasseHausnummer("").strasse == nil)
+        #expect(STRNummer.splitStrasseHausnummer("   ").strasse == nil)
+    }
+
     // MARK: FolderSchema
 
     @Test func folderSchemaV1HatDokumentiertenBaum() {

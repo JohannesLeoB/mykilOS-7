@@ -545,12 +545,19 @@ public final class AppState {
             notesStore: assistantNotes, tasksStore: assistantTasks, projectDirectory: dir))
     }
 
-    // MARK: - Projekt-Intake (Fragebogen → Kunde + Projekt + Warenkorb)
+    // MARK: - Projekt-Intake (Fragebogen → Kunde + Projekt + Warenkorb + echte Provisionierung)
     // Gated: NUR CREATE, NIE update/delete bestehender Records.
     // Reihenfolge: 1. Kunde anlegen → Record-ID → 2. Projekt mit Kunden-Link anlegen →
-    //              3. Warenkorb (falls Positionen vorhanden) via CartStore senden.
-    // Bases: Mastermind (appuVMh3KDfKw4OoQ) für Kunden, Artikel-DB (appdxTeT6bhSBmwx5) für Projekte.
-    public func erzeugeKundeUndProjekt(ergebnis: IntakeErgebnis) async throws -> String {
+    //              3. Warenkorb (falls Positionen vorhanden) via CartStore senden →
+    //              4. ECHTE Provisionierung (Johannes, 2026-07-01): Projektnummer reservieren,
+    //                 Drive-Ordnerbaum im echten PROJEKTE-Root anlegen, Mastermind-Routing-Eintrag
+    //                 schreiben (bisher NUR aus Drive-Scan befüllt), Fragebogen-PDF in
+    //                 "07 Fragebogen" ablegen. NICHT-FATAL: Kunde+Projekt sind zu diesem
+    //                 Zeitpunkt schon angelegt (append-only) — ein Fehler hier darf den
+    //                 Intake nicht rückgängig machen, nur sichtbar geloggt werden.
+    // Bases: Artikel-DB (appdxTeT6bhSBmwx5) für Kunde/Projekt/Warenkorb, Mastermind
+    // (appuVMh3KDfKw4OoQ) für den Routing-Eintrag.
+    public func erzeugeKundeUndProjekt(ergebnis: IntakeErgebnis, modell: FragebogenModel) async throws -> IntakeAnlageErgebnis {
         let client = AirtableClient()
 
         // SCHRITT 1: Kunde in Artikel-Base anlegen (gleiche Base wie Projekt → Record-Link gültig)
@@ -559,34 +566,42 @@ public final class AppState {
         let kundeFelder: [String: AirtableFieldValue] = ergebnis.kundeFelder
             .reduce(into: [:]) { dict, pair in dict[pair.key] = .string(pair.value) }
 
+        // Review-Fix (high): ohne Dublettenschutz legt ein Retry nach transientem
+        // Netzwerkfehler (der Button reaktiviert sich bei .fehler) denselben Kunden
+        // ein zweites Mal an — sichtbar für das ganze Team. Fetch-dann-erst-Create,
+        // exakt das Muster aus ProjektProvisioningService.findeBestehendenRecord.
         let kundeRecordID: String
-        do {
-            kundeRecordID = try await client.createRecord(
-                baseID: kundeBaseID, table: kundeTable, fields: kundeFelder)
-        } catch AirtableError.invalidBaseID(let msg) {
-            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: msg)
-            throw IntakeSchreibFehler.whitelist(msg)
-        } catch AirtableError.notConnected {
-            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "notConnected")
-            throw IntakeSchreibFehler.nichtVerbunden
-        } catch AirtableError.httpError(let code) {
-            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "httpError(\(code))")
-            throw IntakeSchreibFehler.http(code)
-        }
+        if let bestehend = try? await findeBestehendenKunden(ergebnis: ergebnis, client: client) {
+            kundeRecordID = bestehend
+        } else {
+            do {
+                kundeRecordID = try await client.createRecord(
+                    baseID: kundeBaseID, table: kundeTable, fields: kundeFelder)
+            } catch AirtableError.invalidBaseID(let msg) {
+                recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: msg)
+                throw IntakeSchreibFehler.whitelist(msg)
+            } catch AirtableError.notConnected {
+                recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "notConnected")
+                throw IntakeSchreibFehler.nichtVerbunden
+            } catch AirtableError.httpError(let code) {
+                recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "httpError(\(code))")
+                throw IntakeSchreibFehler.http(code)
+            }
 
-        // mykilOS 8, Block A: vollständige Sicherheitskopie des Writes (siehe
-        // WriteShadowRecorder.swift) — nicht-fatal, blockiert den Intake nie.
-        try? writeShadow.recordAirtableWrite(
-            action: .create, actorUserID: actorUserID, baseID: kundeBaseID, table: kundeTable,
-            recordID: kundeRecordID, fields: kundeFelder, mode: provisioningMode.mode, result: .ok)
+            // mykilOS 8, Block A: vollständige Sicherheitskopie des Writes (siehe
+            // WriteShadowRecorder.swift) — nicht-fatal, blockiert den Intake nie.
+            try? writeShadow.recordAirtableWrite(
+                action: .create, actorUserID: actorUserID, baseID: kundeBaseID, table: kundeTable,
+                recordID: kundeRecordID, fields: kundeFelder, mode: provisioningMode.mode, result: .ok)
 
-        do {
-            try audit.append(AuditEntry(
-                actorUserID: actorUserID, projectID: "-",
-                action: .contactCreated,
-                summary: "Intake: Kunde angelegt (\(ergebnis.kundeFelder["Nachname"] ?? "?"), ID: \(kundeRecordID))"))
-        } catch {
-            MykLog.lifecycle.error("Audit Kunde-Anlage fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            do {
+                try audit.append(AuditEntry(
+                    actorUserID: actorUserID, projectID: "-",
+                    action: .contactCreated,
+                    summary: "Intake: Kunde angelegt (\(ergebnis.kundeFelder["Nachname"] ?? "?"), ID: \(kundeRecordID))"))
+            } catch {
+                MykLog.lifecycle.error("Audit Kunde-Anlage fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            }
         }
 
         // SCHRITT 2: Projekt in Artikel-DB anlegen (+ Kunden-Link als Klartext-ID)
@@ -600,32 +615,37 @@ public final class AppState {
             projektFelder["Kunde"] = .array([kundeRecordID])
         }
 
+        // Gleicher Dublettenschutz wie beim Kunden (siehe oben).
         let projektRecordID: String
-        do {
-            projektRecordID = try await client.createRecord(
-                baseID: projektBaseID, table: projektTable, fields: projektFelder)
-        } catch AirtableError.invalidBaseID(let msg) {
-            recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: msg)
-            throw IntakeSchreibFehler.whitelist("Projekt: \(msg)")
-        } catch AirtableError.notConnected {
-            recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: "notConnected")
-            throw IntakeSchreibFehler.nichtVerbunden
-        } catch AirtableError.httpError(let code) {
-            recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: "httpError(\(code))")
-            throw IntakeSchreibFehler.http(code)
-        }
+        if let bestehend = try? await findeBestehendesProjekt(ergebnis: ergebnis, kundeRecordID: kundeRecordID, client: client) {
+            projektRecordID = bestehend
+        } else {
+            do {
+                projektRecordID = try await client.createRecord(
+                    baseID: projektBaseID, table: projektTable, fields: projektFelder)
+            } catch AirtableError.invalidBaseID(let msg) {
+                recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: msg)
+                throw IntakeSchreibFehler.whitelist("Projekt: \(msg)")
+            } catch AirtableError.notConnected {
+                recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: "notConnected")
+                throw IntakeSchreibFehler.nichtVerbunden
+            } catch AirtableError.httpError(let code) {
+                recordWriteShadowFailure(table: projektTable, baseID: projektBaseID, fields: projektFelder, errorMessage: "httpError(\(code))")
+                throw IntakeSchreibFehler.http(code)
+            }
 
-        try? writeShadow.recordAirtableWrite(
-            action: .create, actorUserID: actorUserID, baseID: projektBaseID, table: projektTable,
-            recordID: projektRecordID, fields: projektFelder, mode: provisioningMode.mode, result: .ok)
+            try? writeShadow.recordAirtableWrite(
+                action: .create, actorUserID: actorUserID, baseID: projektBaseID, table: projektTable,
+                recordID: projektRecordID, fields: projektFelder, mode: provisioningMode.mode, result: .ok)
 
-        do {
-            try audit.append(AuditEntry(
-                actorUserID: actorUserID, projectID: "-",
-                action: .contactCreated,    // kein separater Intake-AuditTyp nötig — nahe genug
-                summary: "Intake: Projekt angelegt (\(ergebnis.projektFelder["Projektname"] ?? "?"), ID: \(projektRecordID), KundeID: \(kundeRecordID))"))
-        } catch {
-            MykLog.lifecycle.error("Audit Projekt-Anlage fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            do {
+                try audit.append(AuditEntry(
+                    actorUserID: actorUserID, projectID: "-",
+                    action: .contactCreated,    // kein separater Intake-AuditTyp nötig — nahe genug
+                    summary: "Intake: Projekt angelegt (\(ergebnis.projektFelder["Projektname"] ?? "?"), ID: \(projektRecordID), KundeID: \(kundeRecordID))"))
+            } catch {
+                MykLog.lifecycle.error("Audit Projekt-Anlage fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            }
         }
 
         // SCHRITT 3: Warenkorb (falls Positionen vorhanden), append-only via CartStore
@@ -659,10 +679,188 @@ public final class AppState {
         await syncBusinessRegistry()
         refreshAssistantKundenWissen()
 
+        // SCHRITT 4: Echte Provisionierung (Drive-Ordnerbaum + Mastermind-Routing + PDF).
+        let driveOrdnerID = await provisioniereEchtesProjekt(ergebnis: ergebnis, modell: modell)
+
         let kundeName = ergebnis.kundeFelder["Nachname"] ?? "Kunde"
         let projektName = ergebnis.projektFelder["Projektname"] ?? "Projekt"
-        return "\(kundeName) + \(projektName) erfolgreich angelegt"
+        // Review-Fix (medium): der grüne Erfolgs-Status darf NICHT identisch aussehen,
+        // wenn die echte Provisionierung (Drive-Ordner + Galerie-Sichtbarkeit) im
+        // Hintergrund fehlgeschlagen ist — Kunde+Projekt sind trotzdem sicher angelegt,
+        // aber ohne Hinweis würde niemand merken, dass Drive/Galerie fehlen.
+        let summary: String
+        if driveOrdnerID != nil {
+            summary = "\(kundeName) + \(projektName) erfolgreich angelegt"
+        } else {
+            summary = "\(kundeName) + \(projektName) angelegt — Hinweis: Drive-Ordner/Galerie-Eintrag konnte nicht automatisch erstellt werden (Details in der Schaltzentrale), bitte Johannes informieren."
+        }
+        return IntakeAnlageErgebnis(summary: summary, driveProjektOrdnerID: driveOrdnerID)
     }
+
+    /// Dublettenschutz vor der Kunde-Anlage (Review-Fix): sucht einen bestehenden Kunden-Record
+    /// mit exakt gleichem Nachnamen UND (E-Mail ODER Telefon) — nur ein starkes, zweifaches
+    /// Signal zählt, ein bloßer Namensgleichklang reicht nicht (zu viele „Schmidt"s). Read-only;
+    /// ein Fetch-Fehler ist nicht fatal (dann wird wie bisher neu angelegt — kein Verhaltensverlust).
+    private func findeBestehendenKunden(ergebnis: IntakeErgebnis, client: AirtableClient) async throws -> String? {
+        guard let nachname = ergebnis.kundeFelder["Nachname"], nachname.isEmpty == false else { return nil }
+        let email = ergebnis.kundeFelder["Kontakt 1 Email"]
+        let telefon = ergebnis.kundeFelder["Kontakt 1 Telefon"]
+        guard (email?.isEmpty == false) || (telefon?.isEmpty == false) else { return nil }
+        let records = try await client.fetchRecords(baseID: CartStore.artikelBaseID, table: "Kunden")
+        let treffer = records.first { record in
+            guard record["Nachname"]?.stringValue == nachname else { return false }
+            if let email, email.isEmpty == false,
+               record["Kontakt 1 Email"]?.stringValue?.lowercased() == email.lowercased() { return true }
+            if let telefon, telefon.isEmpty == false,
+               record["Kontakt 1 Telefon"]?.stringValue == telefon { return true }
+            return false
+        }
+        return treffer?["_airtableRecordID"]?.stringValue
+    }
+
+    /// Dublettenschutz vor der Projekt-Anlage (Review-Fix): sucht einen bestehenden Projekt-Record
+    /// mit exakt gleichem Projektnamen UND Kunden-Link. Read-only, nicht-fataler Fetch-Fehler
+    /// (dann wird wie bisher neu angelegt).
+    private func findeBestehendesProjekt(ergebnis: IntakeErgebnis, kundeRecordID: String, client: AirtableClient) async throws -> String? {
+        guard let projektname = ergebnis.projektFelder["Projektname"], projektname.isEmpty == false,
+              kundeRecordID.isEmpty == false else { return nil }
+        let records = try await client.fetchRecords(baseID: CartStore.artikelBaseID, table: "Projekte")
+        let treffer = records.first { record in
+            record["Projektname"]?.stringValue == projektname
+                && record["Kunde"]?.firstArrayValue == kundeRecordID
+        }
+        return treffer?["_airtableRecordID"]?.stringValue
+    }
+
+    /// Reserviert eine echte Projektnummer, baut den Drive-Ordnerbaum im echten PROJEKTE-Root,
+    /// trägt einen Routing-Eintrag in die Mastermind-„Projekte"-Tabelle ein (macht das Projekt
+    /// in der App-Galerie sichtbar) und lädt das Fragebogen-PDF in den neuen
+    /// "07 Fragebogen"-Unterordner. NICHT-FATAL: gibt bei jedem Fehler `nil` zurück
+    /// (sichtbar geloggt via dataFlow/MykLog) — Kunde+Projekt sind zu diesem Zeitpunkt
+    /// schon live in der Artikel-DB, ein Fehler hier darf das nie rückgängig machen.
+    private func provisioniereEchtesProjekt(ergebnis: IntakeErgebnis, modell: FragebogenModel) async -> String? {
+        do {
+            let nummer = try await numberAuthorityLocal().nextAndReserve(jahr: Self.aktuellesJahr())
+
+            // STR-Nr: Projekt-Baustellenadresse bevorzugt, sonst Kunden-(Rechnungs-)Adresse —
+            // aber als GANZE Adresse (Straße+Hausnummer+Ort zusammen), nie Felder aus
+            // unterschiedlichen Adressen gemischt. Review-Fix (medium): ein Straße-ohne-
+            // Hausnummer-Fallback pro Feld hätte sonst z. B. die Projekt-Straße mit der
+            // Kunden-Hausnummer kombinieren können — eine real falsche Adresse.
+            let projektAdresse = STRNummer.splitStrasseHausnummer(ergebnis.projektFelder["Projektadresse Straße"])
+            let strasse: String?
+            let hausnummer: String?
+            let ort: String?
+            if let projektStrasse = projektAdresse.strasse {
+                strasse = projektStrasse
+                hausnummer = projektAdresse.hausnummer
+                ort = ergebnis.projektFelder["Projektadresse Ort"]
+            } else {
+                let kundeAdresse = STRNummer.splitStrasseHausnummer(ergebnis.kundeFelder["Angebotsadresse Straße"])
+                strasse = kundeAdresse.strasse
+                hausnummer = kundeAdresse.hausnummer
+                ort = ergebnis.kundeFelder["Angebotsadresse Ort"]
+            }
+
+            let strErgebnis = STRNummer.bilde(strasse: strasse, hausnummer: hausnummer, ort: ort)
+            let strBlock: String
+            switch strErgebnis {
+            case .gebildet(let block, _):
+                strBlock = block
+            case .nichtBildbar(let grund):
+                MykLog.lifecycle.error("Echte Provisionierung übersprungen (keine STR-Nr bildbar): \(grund, privacy: .public)")
+                return nil
+            }
+
+            // Review-Fix (low): voller Nachname statt nur erstem Wort — "von Boch"/"de Vries"
+            // wären sonst auf "von"/"de" verkürzt worden (zu generisch für Kalender-/Kontakte-/
+            // Mail-Suche, Verwechslungsgefahr). Leerzeichen entfernt, damit der Ordnername
+            // schema-konform bleibt (ein Wortblock wie bei den bestehenden Drive-Ordnern).
+            let kundeSlug = (ergebnis.kundeFelder["Nachname"] ?? "Projekt")
+                .replacingOccurrences(of: " ", with: "")
+            let ordnerName = "\(nummer.driveFormat)_\(kundeSlug)_\(strBlock)"
+
+            // Echter Drive-Ordnerbaum (kein Sandbox-Parent — Johannes hat den echten
+            // PROJEKTE-Root ausdrücklich freigegeben, 2026-07-01).
+            let gebaut = try await DriveOrdnerbaumBuilder.baue(
+                drive: GoogleDriveClient(), parentID: Self.projekteRootDriveID,
+                ordnerName: ordnerName, schema: nomenklatur.aktivesSchema())
+            dataFlow.log(
+                integrationID: "DRIVE_FRAGEBOGEN_PROJEKT_ORDNER", actorUserID: actorUserID,
+                action: .success, recordsWritten: gebaut.unterordnerIDs.count + 1,
+                summary: "Fragebogen: echter Projekt-Ordnerbaum angelegt (\(ordnerName), Ordner-ID \(gebaut.rootOrdnerID))")
+
+            // Mastermind-Routing-Eintrag — macht das Projekt in der App-Galerie sichtbar.
+            // "Fragebogen" ist eine NEUE Quelle-Option (bisher nur "Drive"/"Manuell") — mit
+            // Johannes abgestimmt (2026-07-01); `typecast` lässt Airtable sie sicher anlegen.
+            let routingFelder: [String: AirtableFieldValue] = [
+                "Projektnummer": .string(nummer.appFormat),
+                "Titel": .string(ergebnis.projektFelder["Projektname"] ?? ordnerName),
+                "Art": .string("kitchen"),
+                "Kundennummer": .string(kundeSlug),
+                "Kalender-Suche": .string(kundeSlug),
+                "Kontakte-Suche": .string(kundeSlug),
+                "Mail-Suche": .string(kundeSlug),
+                "Drive-Ordner-ID": .string(gebaut.rootOrdnerID),
+                "Drive-Ordnername": .string(ordnerName),
+                "Phase": .string("Aktiv"),
+                "Quelle": .string("Fragebogen"),
+                "ParseConfidence": .string("full"),
+            ]
+            let routingRecordID: String
+            do {
+                routingRecordID = try await AirtableClient().createRecord(
+                    baseID: AirtableClient.writableBaseID, table: "Projekte", fields: routingFelder, typecast: true)
+            } catch {
+                recordWriteShadowFailure(
+                    table: "Projekte", baseID: AirtableClient.writableBaseID,
+                    fields: routingFelder, errorMessage: String(describing: error))
+                dataFlow.log(
+                    integrationID: "AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING", actorUserID: actorUserID,
+                    action: .error, errorMessage: String(describing: error),
+                    summary: "Mastermind-Routing-Eintrag fehlgeschlagen für \(ordnerName)")
+                throw error
+            }
+            try? writeShadow.recordAirtableWrite(
+                action: .create, actorUserID: actorUserID, baseID: AirtableClient.writableBaseID, table: "Projekte",
+                recordID: routingRecordID, fields: routingFelder, mode: provisioningMode.mode, result: .ok)
+            dataFlow.log(
+                integrationID: "AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING", actorUserID: actorUserID,
+                action: .success, recordsWritten: 1,
+                summary: "Mastermind-Routing-Eintrag angelegt (\(nummer.appFormat))")
+
+            do {
+                try audit.append(AuditEntry(
+                    actorUserID: actorUserID, projectID: nummer.appFormat,
+                    action: .projectLinked,
+                    summary: "Fragebogen: echte Provisionierung — Drive \(gebaut.rootOrdnerID), Routing \(routingRecordID)"))
+            } catch {
+                MykLog.lifecycle.error("Audit für echte Provisionierung fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            }
+
+            // Registry sofort aktualisieren — das neue Projekt ist ab jetzt live in der Galerie.
+            await registry.syncFromAirtable(baseID: AirtableClient.writableBaseID, auth: airtableAuth)
+
+            // Fragebogen-PDF in den neuen "07 Fragebogen"-Ordner hochladen — rein kosmetisch,
+            // nicht-fatal (Projekt existiert bereits vollständig, auch ohne diesen Schritt).
+            do {
+                let pdf = try await MykFragebogenPDFRenderer().renderPDF(modell: modell)
+                _ = try await MykFragebogenDriveUploader().uploadFragebogenPDF(
+                    pdfData: pdf, projektFolderID: gebaut.rootOrdnerID,
+                    dateiname: "Fragebogen_\(nummer.driveFormat)_\(kundeSlug).pdf")
+            } catch {
+                MykLog.lifecycle.error("Fragebogen-PDF-Upload fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            }
+
+            return gebaut.rootOrdnerID
+        } catch {
+            MykLog.lifecycle.error("Echte Provisionierung fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            return nil
+        }
+    }
+
+    /// Echter Google-Drive-Ordner "PROJEKTE" (Team-Ablage) — Johannes bestätigt, 2026-07-01.
+    private static let projekteRootDriveID = "1Q-H_3JsZfiXosFmxtNgoy0hI3cvZLgST"
 
     // MARK: - Projekt-Geburt (mykilOS 8, Block D / S4) — TEST-Sandbox
     // Eine bestätigte Karte → ein neues Projekt in Drive + Airtable (TEST-Sandbox).

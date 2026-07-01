@@ -20,10 +20,6 @@ struct FragebogenView: View {
     @State private var ergebnis: IntakeErgebnis? = nil
     @State private var schreibPhase: SchreibPhase = .idle
 
-    // Export (echte Verdrahtung: MykPDFRenderer + Drive-Upload)
-    private let pdfRenderer: FragebogenPDFRendering = MykFragebogenPDFRenderer()
-    private let driveUploader: FragebogenDriveUploading = MykFragebogenDriveUploader()
-
     init(modell: FragebogenModel = FragebogenModel(), onDismiss: @escaping () -> Void) {
         self.modell = modell
         self.onDismiss = onDismiss
@@ -622,8 +618,8 @@ struct FragebogenView: View {
     private func anlegenBestaetigt(ergebnis: IntakeErgebnis) async {
         schreibPhase = .speichert
         do {
-            let outcome = try await appState.erzeugeKundeUndProjekt(ergebnis: ergebnis)
-            schreibPhase = .gespeichert(outcome)
+            let outcome = try await appState.erzeugeKundeUndProjekt(ergebnis: ergebnis, modell: modell)
+            schreibPhase = .gespeichert(outcome.summary)
         } catch {
             schreibPhase = .fehler(error.localizedDescription)
         }
