@@ -129,6 +129,36 @@ das. Felder, die nirgends existieren (freier Brieftext, Moodboard-Bildauswahl), 
 > Sobald die **Airtable-Core-Konsolidierung** (Adresse am Kunden/Projekt) steht, sind die
 > Vorlagen automatisch vollständig befüllbar — beide Stränge greifen ineinander.
 
+## 3d. Verankerung am Projekt + Spezialfälle (konkrete Anforderungen)
+
+### Dokumente gehören ans Projekt (Abnahmeprotokoll, Geräteliste)
+- **Ausgabe + Zuordnung auf der jeweiligen Projekt-Detailseite** — ein Dokument ist immer
+  an *ein* Projekt gebunden (Projektnummer), nicht global.
+- **Vor-Ausgefüllt aus dem Projektkontext:** öffnet man auf der Detailseite „neues
+  Abnahmeprotokoll" / „Geräteliste", ist es schon befüllt mit den vorhandenen Datenpunkten
+  (Projektname/-nummer, Kunde, Adresse, Ansprechpartner …) — der `DocumentDataProvider`
+  zieht sie aus dem geladenen Projekt (§3c), man ergänzt nur noch Dokument-Spezifisches
+  (Mängel, Unterschriften bzw. gefilterte Geräteauswahl).
+- **Ablage:** das erzeugte PDF landet im **Drive-Ordner des Projekts** (bestehendes Muster
+  wie beim Fragebogen-PDF) und erscheint in der Dateien-/Dokumentenliste der Detailseite.
+- Die **Geräteliste an den Tischler** = gefilterter Warenkorb → Verarbeiter-Dokument
+  (= die geparkte Erkundung *Gerätelisten-Expand*).
+
+### Moodboard — Spezialfall mit Bilder-Datenbank + Warenkorb-Mechanik
+- **Auto-Befüllung** von Kopf/Zuordnung über **Kundenprojekt-Name + Projekt** (wie die anderen
+  Dokumente), Stil-/Kontextdaten zusätzlich aus dem **Projekt-Fragebogen**.
+- **Neue Komponente: Bilder-/Herstellerbilder-Datenbank** — aufgebaut **wie die Kataloge**
+  (die Artikel-Base hat bereits ein Produktbild-Feld „Automatisches Produktbild (Web-Suche)";
+  darauf lässt sich eine Bild-Bibliothek aufsetzen).
+- **Zusammenstellung wie der Warenkorb:** Bilder aus der Datenbank zu einem **Moodboard-Entwurf
+  „zusammenklicken"** (gleiche Sammel-/Auswahl-Interaktion wie beim Warenkorb) → füllt das
+  Bildraster der Moodboard-Vorlage.
+- Ergebnis: Moodboard-PDF, ebenfalls am Projekt verankert.
+
+> **Neuer Baustein, den das mitzieht:** eine **Bild-/Assetkatalog-Komponente** (Herstellerbilder)
+> — eigener kleiner Strang, verwandt mit Kataloge + Warenkorb. Für die Planung als eigene
+> Erkundung vormerken (überschneidet sich mit *Gerätelisten-Expand*).
+
 ## 4. Verbindungen zu bestehenden/geparkten Strängen
 
 - **Brand-Assets** (`docs/brand/README.md`): das Briefpapier/Logo/Schrift-Fundament dieser Ebene.
