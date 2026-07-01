@@ -62,6 +62,26 @@ da: `Customer.clockodoCustomerID`-Muster + `Kunden.Adresse` in der Artikel-Base.
 Gerätelisten-Expand · Schätzpreis-Konfiguration · ClickUp-Setup aus Slackanalyse.
 Nur Eruierung/Pläne, isolierte Branch-Sessions; nicht selbst starten.
 
+### 💡 Warenkorb & Checkout — universeller Picker + Router (Wirbelsäule)
+Warenkorb = Picks aus jeder Matrix (Kunde/Produkte/Material/Angebote/Artikel/Zeiten/
+Dienstleistungen/Lager); Checkout = Router in beliebige Ziele (DBs/Moodboard/Listen/
+Dokumente/Templates). Vereint Formulare-Ebene + Geräteliste + Moodboard + Angebot.
+→ **docs/WARENKORB_CHECKOUT.md**
+
+### 💡 UI-Batch 2026-07-02 (aus Screenshot-Runde)
+- **Kontakte klickbar:** Klick auf Mail-Adresse → „Mail schreiben?" → Entwurf im Assistenten-
+  Mail-Fenster öffnen. (klein, jetzt baubar)
+- **Kontakte-Widget (Projekt-Übersicht):** klickbar/zuweisbar/editierbar machen (heute tot).
+- **Teamkalender-Widget** in der Projekt-Übersicht: Teamtermine farbcodiert (Button-Farbe),
+  Klick → Detail-Vorschau + editierbares Menü. Braucht Kalender-Schreibpfad.
+- **Mail: Senden** fehlt (nur Entwürfe) — Fähigkeit + Bestätigungs-Gate; braucht `gmail.send`-
+  Re-Consent (M2). Auch Nachrichten-Aktionen (gelesen/Stern/Archiv/Löschen) fehlen.
+- **Preisliste:** Klick-Detail-Vorschau pro Produkt.
+- **Artikel-Anreicherung** (Links/Doks/Bilder/Montage/CAD): extern erschlossen, NICHT in der
+  Airtable-Artikel-Tabelle — Fundort klären (vermutl. lokales DB-Prefill-Paket), dann integrieren.
+- **Projekt-Hero-Bild** editierbar (Upload/Import je Nutzer), **Volle Identität** (Avatar-Wähler/
+  Kontakt/Notifications), **volle Datei-Vorschau + Kachel/Liste** — siehe UI-Analyse-Workflow.
+
 ---
 
 ## Architektur-Vorschlag: WorkBasket/Checkout-Pipeline (generisches Schreib-Modell)
