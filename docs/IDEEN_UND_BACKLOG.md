@@ -320,6 +320,15 @@ unverändert in Kraft**, Sichtbarkeit ist keine Erlaubnis.
 domänenweise lesen, Verständnis-Report + konkreten Router-Tabellen-Vorschlag liefern, Johannes
 entscheidet, was von Mastermind/Artikel-Base abgelöst wird vs. koexistiert, erst dann bauen.
 
+**🚧 Erster konkreter Schritt getan (2026-07-01, M4-Vertagung):** `mykilOS_Adapter Sevdesk`
+(`appcSjFNs1knLeM3G`) hatte noch die unangetastete Airtable-Standardvorlage — jetzt eine Tabelle
+`IO-Register` (`tblE8uvRt8nI4utD4`) angelegt, Schema an das bestehende Datenstrom-Handbuch
+angelehnt, mit einem Platzhalter-Eintrag `SEVDESK_ADAPTER_IO` (Status „Ausgeklammert", NO-GO
+„NIE schreiben") — spiegelt den bestehenden `SEVDESK_INVOICES`-Eintrag im zentralen Datenstrom-
+Handbuch, ist aber noch nicht an echten App-Code angebunden. Reine Doku/Struktur-Vorbereitung,
+keine Code-Änderung. Bewusst nur DIESE eine Adapter-Base angefasst, nicht alle 17 — der große
+Umbau bleibt wie oben beschrieben ein eigener, größerer Strang.
+
 **Performance/Caching-Frage geklärt (2026-06-30):** mehr Bases machen die App NICHT langsamer,
 solange das bestehende Lokal-Cache-Muster beibehalten wird (UI liest nie live von Airtable,
 immer aus `CachedProjectRegistry`/`CachedBusinessRegistry`/künftigem Artikel-Spiegel — Kosten
