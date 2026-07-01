@@ -551,12 +551,11 @@ Airtable-Sync schlägt still fehl — kein Nutzer kann das selbst debuggen.
 klare Fehlermeldung. Sofortmaßnahme: manuell in App-Einstellungen → Airtable
 Base-ID-Feld → `appuVMh3KDfKw4OoQ` eintragen.
 
-### 📋 `AirtableSyncService.swift` löschen
-**Quelle:** Code-Audit S10/S12 2026-06-28.
-**Problem:** `Sources/MykilosServices/Airtable/AirtableSyncService.swift` enthält
-drei Regelverstöße: ENV-Secrets, falsche Base `appkPzoEiI5eSMkNK`, `DispatchSemaphore`.
-Datei ist als obsolet markiert, aber noch nicht entfernt.
-**Plan:** Datei löschen, sicherstellen dass nichts darauf referenziert, Build grün.
+### ✅ `AirtableSyncService.swift` löschen — bereits erledigt
+**Quelle:** Code-Audit S10/S12 2026-06-28. **Nachtrag 2026-07-01:** beim Aufräum-Durchgang
+geprüft — die Datei existiert nicht mehr im Repo, `git log --all` findet keinen einzigen
+Commit dazu (offenbar nie tatsächlich eingecheckt oder in einer früheren, nicht dokumentierten
+Session bereits entfernt). Kein Handlungsbedarf mehr, Backlog-Eintrag war veraltet.
 
 ### 💡 Onboarding-Flow für neue Nutzer
 **Quelle:** Team-Review 2026-06-28 (S10 Learning Session).

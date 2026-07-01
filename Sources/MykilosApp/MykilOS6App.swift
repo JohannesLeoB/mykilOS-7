@@ -413,17 +413,6 @@ struct AssistantPageView: View {
     }
 }
 
-struct ComingSoonView: View {
-    let module: AppModule
-    var body: some View {
-        ZStack {
-            MykColor.paper.color
-            Text("\(module.rawValue) — kommt in einem späteren Akt")
-                .font(.mykBody).foregroundStyle(MykColor.muted.color)
-        }
-    }
-}
-
 // Härtung 2026-07-01: kurzer Start-Hinweis, welcher Build gerade läuft — Antwort
 // auf wiederholte Verwechslungen zwischen mehreren parallel installierten
 // mykilOS-Versionen (siehe script/cleanup_old_app_versions.sh). Zeigt nur den

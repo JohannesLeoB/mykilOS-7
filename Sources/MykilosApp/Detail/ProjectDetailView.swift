@@ -184,8 +184,6 @@ struct ProjectDetailView: View {
                 calendarQuery: project.links.calendarQuery,
                 auditStore: appState.audit
             )
-        default:
-            ComingTabView(tab: activeTab)
         }
     }
 }
@@ -325,14 +323,5 @@ private struct TabButton: View {
                 }
         }
         .buttonStyle(.plain).onHover { isHovered = $0 }
-    }
-}
-
-private struct ComingTabView: View {
-    let tab: ProjectTab
-    var body: some View {
-        VStack { Spacer().frame(height: 80)
-            Text("\(tab.rawValue) — in Vorbereitung").font(.mykBody).foregroundStyle(MykColor.muted.color)
-        }.frame(maxWidth: .infinity).padding(MykSpace.s9)
     }
 }
