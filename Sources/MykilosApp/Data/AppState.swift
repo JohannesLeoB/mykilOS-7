@@ -94,6 +94,12 @@ public final class AppState {
     // S6: vom Assistenten verwaltete Aufgaben/Erinnerungen (lokal, persistent).
     public let assistantTasks: AssistantTasksStore
 
+    // Härtung (2026-07-01, API-Effizienz-Audit): TTL-Cache für search_gmail — war fertig
+    // gebaut (GmailCacheStore, eigene Tests) aber nie hier instanziiert/übergeben, sodass
+    // jede Gmail-Suche im Chat immer live gegen die API lief. Eine EINZIGE, langlebige
+    // Instanz (nicht pro updateRegistry-Aufruf neu), sonst verliert der Cache seinen Zweck.
+    private let gmailCache = GmailCacheStore()
+
     // S13: Snapshot der Airtable-Tabelle „Kontakte" (Adresse/Telefon/E-Mail) für lookup_kontakt.
     // public(set) damit KontakteKatalogTab den Snapshot direkt lesen kann (read-only).
     public private(set) var studioContacts: [StudioContact] = []
@@ -252,7 +258,7 @@ public final class AppState {
         self.conversation = ConversationEngine(
             chatStore: chatStore,
             provider: ClaudeChatClient(),
-            registry: .standard(kalkulationsEngine: kalkulationsEngine, notesStore: notes, tasksStore: tasks),
+            registry: .standard(gmailCache: gmailCache, kalkulationsEngine: kalkulationsEngine, notesStore: notes, tasksStore: tasks),
             dataFlowLogger: dataFlow
         )
     }
@@ -394,22 +400,6 @@ public final class AppState {
         // ersten Intake-Submit überhaupt Kandidaten.
         await syncBusinessRegistry()
         refreshAssistantKundenWissen()                   // frische Kunden + Kontakte → Assistent
-
-        // TEMPORÄRE SONDIERUNG (2026-07-01, Audit: CartStore-Feld-ID-vs-Name-Verdacht):
-        // fetchRecords() liefert Airtable-Felder standardmäßig NAME-keyed (returnFieldsByFieldId
-        // nie gesetzt), CartStore liest aber über Feld-IDs — würde das erklären, wieso
-        // Archivierung/Versionierung nie funktioniert hat? Rein lesend. Nach Auswertung entfernen.
-        do {
-            let wk = try await AirtableClient().fetchRecords(baseID: CartStore.artikelBaseID, table: CartStore.warenkorbTable)
-            let pa = try await AirtableClient().fetchRecords(baseID: CartStore.artikelBaseID, table: CartStore.projektartikelTable)
-            let wkFelder = Set(wk.flatMap(\.keys)).sorted()
-            let paFelder = Set(pa.flatMap(\.keys)).sorted()
-            let inhalt = "Warenkörbe (\(wk.count) Records): " + wkFelder.joined(separator: " | ")
-                + "\n\nProjektartikel (\(pa.count) Records): " + paFelder.joined(separator: " | ")
-            try? inhalt.write(toFile: NSHomeDirectory() + "/mykilos_cartstore_sondierung.txt", atomically: true, encoding: .utf8)
-        } catch {
-            try? "Fehlgeschlagen: \(String(describing: error))".write(toFile: NSHomeDirectory() + "/mykilos_cartstore_sondierung.txt", atomically: true, encoding: .utf8)
-        }
     }
 
     // S13: lädt die Airtable-Tabelle „Kontakte" einmalig (read-only) in den lokalen
@@ -592,6 +582,7 @@ public final class AppState {
             return ProjectClickUpRef(projectNumber: project.projectNumber, title: project.title, listID: listID)
         }
         conversation.updateRegistry(.standard(
+            gmailCache: gmailCache,
             kalkulationsEngine: kalkulationsEngine, kundenDirectory: brain,
             contactDirectory: contactDir, clickUpListings: clickUpListings,
             notesStore: assistantNotes, tasksStore: assistantTasks, projectDirectory: dir))

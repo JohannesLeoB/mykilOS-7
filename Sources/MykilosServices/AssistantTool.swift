@@ -61,8 +61,20 @@ public struct ClaudeToolDefinition: Encodable, Equatable {
     public let name: String
     public let description: String
     public let inputSchema: InputSchema
+    // Härtung (2026-07-01, API-Effizienz-Audit): Prompt-Caching-Breakpoint. Wird nur
+    // von `ClaudeChatClient.buildRequest` auf dem letzten Tool der Liste gesetzt —
+    // hier als optionales, mutierbares Feld mit `nil`-Default, damit alle bestehenden
+    // Konstruktor-Aufrufe (Tool-Registry, Tests) unverändert bleiben.
+    public var cacheControl: ClaudeCacheControl?
 
-    enum CodingKeys: String, CodingKey { case name, description, inputSchema = "input_schema" }
+    public init(name: String, description: String, inputSchema: InputSchema, cacheControl: ClaudeCacheControl? = nil) {
+        self.name = name
+        self.description = description
+        self.inputSchema = inputSchema
+        self.cacheControl = cacheControl
+    }
+
+    enum CodingKeys: String, CodingKey { case name, description, inputSchema = "input_schema", cacheControl = "cache_control" }
 
     public struct InputSchema: Encodable, Equatable {
         public let type = "object"

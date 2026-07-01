@@ -24,11 +24,17 @@ struct ClaudeChatClientTests {
         #expect(request.value(forHTTPHeaderField: "x-api-key") == "sk-ant-test")
         let json = try JSONSerialization.jsonObject(with: #require(request.httpBody)) as? [String: Any]
         #expect(json?["model"] as? String == "claude-sonnet-4-6")
-        #expect(json?["system"] as? String == "Du bist der Assistent.")
+        // Härtung (2026-07-01, Prompt-Caching): system ist jetzt ein Array von
+        // Content-Blöcken mit cache_control statt eines reinen Strings.
+        let systemBlocks = json?["system"] as? [[String: Any]]
+        #expect(systemBlocks?.first?["text"] as? String == "Du bist der Assistent.")
+        #expect((systemBlocks?.first?["cache_control"] as? [String: Any])?["type"] as? String == "ephemeral")
         #expect((json?["messages"] as? [[String: Any]])?.count == 3)
         let tools = json?["tools"] as? [[String: Any]]
         #expect(tools?.first?["name"] as? String == "search_gmail")
         #expect((tools?.first?["input_schema"] as? [String: Any])?["type"] as? String == "object")
+        // Cache-Breakpoint auf dem letzten (hier: einzigen) Tool der Liste.
+        #expect((tools?.last?["cache_control"] as? [String: Any])?["type"] as? String == "ephemeral")
     }
 
     @Test func buildRequestOhneToolsLaesstToolsWeg() throws {
