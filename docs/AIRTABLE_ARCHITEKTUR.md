@@ -120,6 +120,59 @@ Jeder Adapter ist eine IO-Grenze, die **auf einem Business-Key joint** (nie auf 
 
 ---
 
+## 8b. ENTSCHEIDUNG 2026-07-01 (Johannes): App komplett von Daniels Base entkoppeln
+
+**Richtung fix:** Die App hängt künftig **nur an unseren eigenen Bases**. Daniels
+Daten werden **gespiegelt/kopiert reingeholt und bei uns neu einsortiert/zugeordnet**
+— nie direkt aus seiner Base gelesen oder in sie geschrieben. Sein Base bleibt sein
+Hoheitsgebiet (mit seinen Make.com-Automationen), wir werden robust dagegen: strukturiert
+er um, bricht unsere App nicht.
+
+### Ist-Kopplung (was heute an `appdxTeT6bhSBmwx5` hängt)
+| Richtung | Code | Tabelle |
+|---|---|---|
+| **READ** | `ArtikelKatalogStore` | Artikel (~13k Preise) |
+| **READ** | `LagerlisteStore` | Lagerliste |
+| **READ** | `WarenkorbListeStore` | Warenkörbe |
+| **READ** | `CachedBusinessRegistry` | Geschäfts-Records (Kunde/Projekt) |
+| **WRITE** | Intake (`IntakeResultBuilder`/`AppState`) | **Kunden + Projekte** |
+| **WRITE** | `CartStore` | Warenkörbe + Projektartikel |
+
+### Das asymmetrische Muster (der Knackpunkt)
+Entkopplung hat zwei sehr verschiedene Hälften:
+
+- **READ-Seite = einfach.** Daniels Artikel/Lager/Warenkörbe/Geschäfts-Records werden
+  **einmal in unseren Core kopiert** (re-sortiert), die App liest ab da nur die Kopie.
+  Seine Base = Upstream-Quelle, Einbahn rein. Mechanik: Airtable-Sync (read-only Spiegel)
+  ODER ein App-/Make-getriebener Kopier-Job, der beim Kopieren in unser Schema mappt.
+
+- **WRITE-Seite = die eigentliche Arbeit.** Intake schreibt Kunde/Projekt heute **genau
+  deshalb** in Daniels Base, weil dort seine **sevDesk/Make-Pipeline** hängt (das „Angebot
+  an sevDesk"-Häkchen liest von dort). Schreiben wir künftig in *unseren* Core, muss eine
+  neue **Übergabe/Feeder** (unser Core → Daniels Base bzw. → eine geteilte „Übergabe"-
+  Tabelle) dafür sorgen, dass seine Pipeline weiter gefüttert wird. **Das ist die „Übergabe
+  an I/Os", die Johannes meint.**
+
+### Sauberes Zielbild
+Die App spricht **nur** mit dem Core. Daniels Base ist:
+- **Upstream** (Copy-in → re-sortiert in unseren Core) für alles, was wir lesen, UND
+- **Downstream** (Feeder-out aus unserem Core → seine Base/sevDesk) für alles, was seine
+  Pipeline braucht.
+
+Beide Übergaben laufen über den **stabilen Business-Key** (`Kundennummer`/`Projektnummer`),
+nie über basisübergreifende Record-Links (die es in Airtable nicht gibt).
+
+### Was das für den Code heißt (post-8.0)
+- `appdxTeT6bhSBmwx5` fällt aus `AirtableClient.writableMap` (kein Direkt-Schreiben mehr).
+- Intake schreibt in Core; ein Feeder überträgt an Daniels sevDesk-Pipeline.
+- `ArtikelKatalogStore`/`LagerlisteStore`/`WarenkorbListeStore`/`CachedBusinessRegistry`
+  lesen den Core-Spiegel statt Daniels Base.
+- **Sonderfall Artikel-Katalog (~13k Preise):** volle Dauerkopie wäre pflegeintensiv/veraltet-
+  anfällig. Hier ist ein read-only **Airtable-Sync-Spiegel** (statt App-Kopie) die sauberere
+  Wahl — zu klären in §8.
+
+---
+
 ## 8. Offene Entscheidungen (Johannes / Daniel)
 
 1. **Master für Kunde/Projekt:** neue Greenfield-Core-Base — ODER Daniels Artikel-Base offiziell zum Master erklären und Mastermind darauf reduzieren?
