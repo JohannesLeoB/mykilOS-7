@@ -19,6 +19,9 @@ struct FragebogenView: View {
     @State private var zeigeBestaetigung: Bool = false
     @State private var ergebnis: IntakeErgebnis? = nil
     @State private var schreibPhase: SchreibPhase = .idle
+    // Anlege-Stufe (Johannes, 2026-07-01): am letzten Dialog gewählt, NICHT vorbelegt
+    // mit der vollen Stufe — bewusste Entscheidung statt versehentlicher Volltreffer.
+    @State private var triggerStufe: FragebogenTriggerStufe = .kontakt
 
     init(modell: FragebogenModel = FragebogenModel(), onDismiss: @escaping () -> Void) {
         self.modell = modell
@@ -104,12 +107,18 @@ struct FragebogenView: View {
                         .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
                     }
                     .buttonStyle(.plain)
+                    // Review-Fix (low): während der Bestätigungsansicht zeigt der Body immer
+                    // bestaetigungsView, unabhängig von `schritt` — ohne diese Sperre konnte ein
+                    // Klick hier Kopfzeile/Tab-Highlight sichtbar umschalten, während der Inhalt
+                    // eingefroren auf der Bestätigung blieb (widersprüchlicher UI-Zustand).
+                    .disabled(zeigeBestaetigung)
                 }
             }
             .padding(.horizontal, MykSpace.s7)
         }
         .frame(height: 36)
         .background(MykColor.paper2.color)
+        .opacity(zeigeBestaetigung ? 0.4 : 1)
     }
 
     // MARK: Scroll-Inhalt (Schritt-Dispatch)
@@ -409,7 +418,30 @@ struct FragebogenView: View {
     private func bestaetigungsView(ergebnis: IntakeErgebnis) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: MykSpace.s5) {
-                // Bestätigungs-Karte
+                // Anlege-Stufe (Johannes, 2026-07-01): erst hier, am letzten Schritt, gewählt.
+                VStack(alignment: .leading, spacing: MykSpace.s3) {
+                    Text("ANLEGE-STUFE")
+                        .font(.mykMono(9))
+                        .foregroundStyle(MykColor.muted.color)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 180))], spacing: MykSpace.s2) {
+                        ForEach(FragebogenTriggerStufe.allCases) { stufe in
+                            pickButton(stufe.rawValue, active: triggerStufe == stufe) { triggerStufe = stufe }
+                        }
+                    }
+                    if let hinweis = stufeFehlenderHinweis(ergebnis: ergebnis) {
+                        HStack(spacing: MykSpace.s2) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.mykMono(9)).foregroundStyle(MykColor.critical.color)
+                            Text(hinweis).font(.mykMono(9)).foregroundStyle(MykColor.critical.color)
+                        }
+                    }
+                }
+                .padding(MykSpace.s5)
+                .background(MykColor.card.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.md))
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
+
+                // Bestätigungs-Karte — Inhalt passt sich der gewählten Stufe an.
                 VStack(alignment: .leading, spacing: MykSpace.s3) {
                     HStack(spacing: MykSpace.s3) {
                         Image(systemName: "checkmark.seal")
@@ -419,41 +451,55 @@ struct FragebogenView: View {
                             .font(.mykHeadline)
                             .foregroundStyle(MykColor.ink.color)
                     }
-                    Text("Folgende Datensätze werden NEU in Airtable angelegt:")
+                    Text("Folgende Datensätze werden NEU angelegt:")
                         .font(.mykSmall)
                         .foregroundStyle(MykColor.muted.color)
 
                     Divider().overlay(MykColor.line.color)
 
-                    // Kunde
+                    // Kunde — immer.
                     bestaetigunsZeile(icon: "person.fill", farbe: .people,
-                                      titel: "Neuer Kunde",
+                                      titel: triggerStufe == .kontakt ? "Neuer Kontakt" : "Neuer Kunde",
                                       inhalt: modell.vollstaendigerKundeName + (modell.kundeFirma.isEmpty ? "" : " · \(modell.kundeFirma)"))
-                    // Projekt
-                    bestaetigunsZeile(icon: "folder.fill", farbe: .brand,
-                                      titel: "Neues Projekt",
-                                      inhalt: modell.projektName + " · Status: \(modell.projektStatus)")
-                    // Warenkorb
-                    if !ergebnis.warenkorb.items.isEmpty {
-                        bestaetigunsZeile(icon: "cart.fill", farbe: .tasks,
-                                          titel: "Erst-Warenkorb",
-                                          inhalt: "\(ergebnis.warenkorb.items.count) Positionen")
-                        VStack(alignment: .leading, spacing: MykSpace.s2) {
-                            ForEach(ergebnis.warenkorb.items.prefix(5)) { item in
-                                HStack(spacing: MykSpace.s3) {
-                                    Text("·").foregroundStyle(MykColor.faint.color)
-                                    Text("\(item.menge)× \(item.bezeichnung)")
-                                        .font(.mykSmall)
-                                        .foregroundStyle(MykColor.inkSoft.color)
+                    if triggerStufe == .kontakt {
+                        bestaetigunsZeile(icon: "person.crop.circle.badge.plus", farbe: .people,
+                                          titel: "Google-Kontakt",
+                                          inhalt: "wird zusätzlich in Google Kontakte angelegt")
+                    }
+
+                    // Projekt + Ordner + Warenkorb — nur ab Stufe „Lead".
+                    if triggerStufe != .kontakt {
+                        bestaetigunsZeile(icon: "folder.fill", farbe: .brand,
+                                          titel: "Neues Projekt",
+                                          inhalt: modell.projektName + " · Status: \(modell.projektStatus)")
+                        bestaetigunsZeile(
+                            icon: triggerStufe == .lead ? "folder.badge.questionmark" : "folder.fill.badge.gearshape",
+                            farbe: .drive,
+                            titel: triggerStufe == .lead ? "Rumpf-Ordner (Drive)" : "Voller Projekt-Ordner (Drive)",
+                            inhalt: triggerStufe == .lead
+                                ? "nur Wurzelordner in PROJEKTE/_LEADS/"
+                                : "kompletter Ordnerbaum in PROJEKTE/")
+                        if !ergebnis.warenkorb.items.isEmpty {
+                            bestaetigunsZeile(icon: "cart.fill", farbe: .tasks,
+                                              titel: "Erst-Warenkorb",
+                                              inhalt: "\(ergebnis.warenkorb.items.count) Positionen")
+                            VStack(alignment: .leading, spacing: MykSpace.s2) {
+                                ForEach(ergebnis.warenkorb.items.prefix(5)) { item in
+                                    HStack(spacing: MykSpace.s3) {
+                                        Text("·").foregroundStyle(MykColor.faint.color)
+                                        Text("\(item.menge)× \(item.bezeichnung)")
+                                            .font(.mykSmall)
+                                            .foregroundStyle(MykColor.inkSoft.color)
+                                    }
+                                }
+                                if ergebnis.warenkorb.items.count > 5 {
+                                    Text("… und \(ergebnis.warenkorb.items.count - 5) weitere")
+                                        .font(.mykMono(9))
+                                        .foregroundStyle(MykColor.faint.color)
                                 }
                             }
-                            if ergebnis.warenkorb.items.count > 5 {
-                                Text("… und \(ergebnis.warenkorb.items.count - 5) weitere")
-                                    .font(.mykMono(9))
-                                    .foregroundStyle(MykColor.faint.color)
-                            }
+                            .padding(.leading, MykSpace.s7)
                         }
-                        .padding(.leading, MykSpace.s7)
                     }
 
                     Divider().overlay(MykColor.line.color)
@@ -542,11 +588,14 @@ struct FragebogenView: View {
 
             // Weiter / Jetzt anlegen
             if zeigeBestaetigung {
-                // Bestätigt → Anlegen
-                let kannAnlegen = schreibPhase == .idle || {
+                // Bestätigt → Anlegen. Review-Fix (Johannes, 2026-07-01): "es MUSS ein
+                // Minimum an Eingabedaten vorausgesetzt sein" — der Button bleibt gesperrt,
+                // solange die GEWÄHLTE Anlege-Stufe ihr eigenes Minimum nicht erfüllt.
+                let schreibPhaseBereit = schreibPhase == .idle || {
                     if case .fehler = schreibPhase { return true }
                     return false
                 }()
+                let kannAnlegen = schreibPhaseBereit && (ergebnis.map { stufeBereit(ergebnis: $0) } ?? false)
                 Button {
                     if let e = ergebnis { Task { await anlegenBestaetigt(ergebnis: e) } }
                 } label: {
@@ -618,10 +667,38 @@ struct FragebogenView: View {
     private func anlegenBestaetigt(ergebnis: IntakeErgebnis) async {
         schreibPhase = .speichert
         do {
-            let outcome = try await appState.erzeugeKundeUndProjekt(ergebnis: ergebnis, modell: modell)
+            let outcome = try await appState.erzeugeAusFragebogen(ergebnis: ergebnis, modell: modell, stufe: triggerStufe)
             schreibPhase = .gespeichert(outcome.summary)
         } catch {
             schreibPhase = .fehler(error.localizedDescription)
+        }
+    }
+
+    // MARK: - Anlege-Stufe-Readiness (Johannes, 2026-07-01: Minimum an Eingabedaten je Stufe)
+
+    private func stufeBereit(ergebnis: IntakeErgebnis) -> Bool {
+        switch triggerStufe {
+        case .kontakt:
+            let email = ergebnis.kundeFelder["Kontakt 1 Email"]?.isEmpty == false
+            let telefon = ergebnis.kundeFelder["Kontakt 1 Telefon"]?.isEmpty == false
+            return email || telefon
+        case .lead:
+            return ergebnis.projektFelder["Projektname"]?.isEmpty == false
+        case .projektMitOrdner:
+            return ergebnis.projektFelder["Projektname"]?.isEmpty == false
+                && IntakeAdresse.strNummerBildbar(ergebnis: ergebnis)
+        }
+    }
+
+    private func stufeFehlenderHinweis(ergebnis: IntakeErgebnis) -> String? {
+        guard stufeBereit(ergebnis: ergebnis) == false else { return nil }
+        switch triggerStufe {
+        case .kontakt:
+            return "Für „Nur Kontakt speichern“ wird E-Mail ODER Telefon benötigt."
+        case .lead:
+            return "Für „Als Lead anlegen“ wird ein Projektname benötigt."
+        case .projektMitOrdner:
+            return "Für „Projekt mit Ordner“ werden Projektname UND eine Straße oder ein Ort (Projekt- oder Kundenadresse) benötigt."
         }
     }
 

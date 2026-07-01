@@ -25,6 +25,37 @@ public struct IntakeAnlageErgebnis: Sendable, Equatable {
     public let driveProjektOrdnerID: String?
 }
 
+// MARK: - IntakeAdresse
+// Eine Wahrheit für die Adress-Auflösung: Projekt-Baustellenadresse bevorzugt,
+// sonst Kunden-(Rechnungs-)Adresse — aber IMMER als GANZE Adresse (Straße+Hausnummer+Ort
+// zusammen), nie Felder aus unterschiedlichen Adressen gemischt (Review-Fix, 2026-07-01).
+// Von der Bestätigungsansicht (Stufe-3-Readiness) UND von AppState.provisioniereEchtesProjekt
+// (der tatsächlichen STR-Nr-Bildung) genutzt — exakt dieselbe Logik, kein zweiter Ort.
+public enum IntakeAdresse {
+    public static func aufloesen(ergebnis: IntakeErgebnis) -> (strasse: String?, hausnummer: String?, ort: String?) {
+        let projektAdresse = STRNummer.splitStrasseHausnummer(ergebnis.projektFelder["Projektadresse Straße"])
+        let projektOrt = ergebnis.projektFelder["Projektadresse Ort"]
+        // "Projekt-Adresse vorhanden" heißt: IRGENDEIN Projekt-Adressfeld ist gesetzt
+        // (Straße ODER Ort) — sonst würde ein Projekt mit nur Ort (ohne Straße) fälschlich
+        // die Kunden-Adresse benutzen und dabei den eigenen, bereits bekannten Ort verwerfen.
+        if projektAdresse.strasse != nil || projektOrt != nil {
+            return (projektAdresse.strasse, projektAdresse.hausnummer, projektOrt)
+        }
+        let kundeAdresse = STRNummer.splitStrasseHausnummer(ergebnis.kundeFelder["Angebotsadresse Straße"])
+        return (kundeAdresse.strasse, kundeAdresse.hausnummer, ergebnis.kundeFelder["Angebotsadresse Ort"])
+    }
+
+    /// Ob aus der aufgelösten Adresse überhaupt eine STR-Nr gebildet werden kann
+    /// (Straße+Hausnummer ODER ORT-Fallback). Für die Stufe-3-Button-Gate-Prüfung.
+    public static func strNummerBildbar(ergebnis: IntakeErgebnis) -> Bool {
+        let (strasse, hausnummer, ort) = aufloesen(ergebnis: ergebnis)
+        switch STRNummer.bilde(strasse: strasse, hausnummer: hausnummer, ort: ort) {
+        case .gebildet: return true
+        case .nichtBildbar: return false
+        }
+    }
+}
+
 // MARK: - IntakeResultBuilder
 // Mappt den ausgefüllten FragebogenModel → IntakeErgebnis.
 // Reine, testbare Funktion — keine Seiteneffekte.

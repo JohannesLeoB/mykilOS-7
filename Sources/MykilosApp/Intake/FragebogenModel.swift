@@ -149,12 +149,21 @@ public final class FragebogenModel {
     public var naechsterSchritt: NaechsterSchritt = .angebot
     public var naechsterSchrittFreitext: String = ""
 
+    // MARK: - Anlege-Stufe (Johannes, 2026-07-01: "die Triggerstufe wird im letzten
+    // Dialog zur Auswahl angegeben" — je nach Stufe unterschiedliches Minimum an
+    // Eingabedaten UND unterschiedliche Schreibwirkung. Ausgewählt in der
+    // Bestätigungsansicht, NICHT vorbelegt mit der vollen Stufe — wer nur einen
+    // Kontakt speichern will, muss das nicht extra "herunterstufen".
+    public var triggerStufe: FragebogenTriggerStufe = .kontakt
+
     // MARK: - Validierung
 
-    /// Mindest-Pflichtfelder: Nachname + Projektname
+    /// Universelles Mindest-Pflichtfeld für ALLE Stufen: der Nachname. Die feineren,
+    /// stufenspezifischen Minima (Kontaktweg für „Kontakt", Projektname für „Lead",
+    /// STR-Nr-fähige Adresse für „Projekt mit Ordner") werden in der Bestätigungs-
+    /// ansicht anhand des `IntakeErgebnis` geprüft (siehe `IntakeAdresse`/`FragebogenView`).
     public var istAusgefuelltGenug: Bool {
-        !kundeNachname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !projektName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !kundeNachname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     public var vollstaendigerKundeName: String {
@@ -201,6 +210,24 @@ public struct FragebogenArtikelAuswahl: Identifiable, Sendable, Equatable {
         self.vkNetto = vkNetto
         self.freitextOverride = freitextOverride
     }
+}
+
+// MARK: - FragebogenTriggerStufe
+// mykilOS: welche Schreibwirkung ein Fragebogen-Submit auslöst. Ausgewählt am
+// letzten Dialog-Schritt (Bestätigungsansicht), NICHT auf der Projekt-Sektion —
+// getrennt vom rein deskriptiven `projektStatus`-Feld.
+public enum FragebogenTriggerStufe: String, CaseIterable, Sendable, Identifiable {
+    /// Minimal: nur ein Kontakt (Google-Kontakt + Artikel-DB-Kunde). Kein Projekt,
+    /// kein Drive-Ordner, kein Mastermind-Routing-Eintrag.
+    case kontakt = "Nur Kontakt speichern"
+    /// Kunde + Projekt (Artikel-DB, Projektstatus „Lead") + ein Rumpf-Ordner im
+    /// echten Drive unter `PROJEKTE/_LEADS/` (nur Wurzelordner, keine Schema-
+    /// Unterstruktur) + Mastermind-Routing-Eintrag (Phase „Lead", sichtbar in der Galerie).
+    case lead = "Als Lead anlegen"
+    /// Voller Umfang: Kunde + Projekt + kompletter Drive-Ordnerbaum im echten
+    /// PROJEKTE-Root + Mastermind-Routing-Eintrag (Phase „Aktiv") + Fragebogen-PDF.
+    case projektMitOrdner = "Projekt mit Ordner + allen Triggern"
+    public var id: String { rawValue }
 }
 
 // MARK: - Enums für Mehrfachauswahl

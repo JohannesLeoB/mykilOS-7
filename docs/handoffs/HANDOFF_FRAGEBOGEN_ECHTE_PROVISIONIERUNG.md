@@ -4,11 +4,48 @@
 Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
 Branch: feat/mykilos8-block-d-provisioning
 Build:  ✅ swift build grün
-Tests:  ✅ 712 Tests grün (12 neu)
+Tests:  ✅ 719 Tests grün (19 neu über beide Teile dieses Handoffs)
 Live:   ✅ App-Start clean (kein error/fault/crash im Log), sauber beendet
 DMG:    ✅ mykilOS-7.11.0.dmg
 Datum:  2026-07-01
 ```
+
+## Update 2026-07-01 (Teil 2): drei Anlege-Stufen statt einer festen Pipeline
+
+Johannes' Feedback nach Teil 1: „Es muss ein Minimum an Eingabedaten vorausgesetzt sein …
+entweder Projekt mit Ordner und allen Triggern anlegen, oder nur als Kontakt speichern, als Lead
+anlegen — die Triggerstufe wird im letzten Dialog zur Auswahl angegeben." Über AskUserQuestion
+abgestimmt (Kontakt = Google-Kontakt UND Artikel-DB-Kunde; Lead = Rumpf-Ordner unter
+`PROJEKTE/_LEADS/`, sofort in der Galerie sichtbar mit Phase „Lead"; Stufe 3 blockiert den Button
+hart ohne STR-Nr-fähige Adresse).
+
+**Neu:** `FragebogenTriggerStufe` (Kontakt/Lead/ProjektMitOrdner), gewählt in der
+Bestätigungsansicht (nicht vorbelegt). `AppState.erzeugeAusFragebogen(...)` dispatcht auf
+`erzeugeNurKontakt` oder `erzeugeKundeUndProjekt(...ordnerModus:)`. Gemeinsame Kunde-Anlage-Logik
+in `legeKundeAnFallsNichtVorhanden` extrahiert. `IntakeAdresse` (neuer Helfer) ist die eine
+Wahrheit für die atomare Adress-Auflösung — von der UI-Readiness-Prüfung UND der echten
+STR-Nr-Bildung gleichermaßen genutzt.
+
+**Adversarial Review (3 Dimensionen) fand 3 Findings, 2 bestätigt + gefixt:**
+- **MEDIUM:** Lead-Stufe verlangte keine Adresse, aber die Projektnummer wurde VOR der
+  STR-Nr-Prüfung reserviert — ein adresse-loser Lead hätte eine Nummer permanent verbrannt, ohne
+  je einen Ordner/Routing-Eintrag zu bekommen (auch nicht sichtbar in der Schaltzentrale, nur
+  Konsole). Gefixt: STR-Nr-Prüfung läuft jetzt VOR der Nummern-Reservierung; ein Skip wird jetzt
+  auch über `dataFlow.log` sichtbar gemacht.
+- **LOW:** Die Schritt-Tableiste blieb während der Bestätigungsansicht klickbar, ohne dass sich
+  der Inhalt änderte (widersprüchlicher UI-Zustand: Tab-Highlight wechselt, Karte bleibt gleich).
+  Gefixt: Tableiste während `zeigeBestaetigung` deaktiviert + abgedunkelt.
+- Verworfen (False Positive): das Handbuch sei nicht aktualisiert — zum Zeitpunkt der Prüfung war
+  noch nichts committed, daher kein tatsächlicher Doku/Code-Widerspruch (wurde trotzdem vor dem
+  Commit nachgezogen, siehe unten).
+
+Eigener neuer Test fand außerdem einen echten Bug in `IntakeAdresse.aufloesen` selbst: ein Projekt
+mit NUR einem Ort (keine Straße) hätte fälschlich die komplette Kunden-Adresse benutzt und den
+eigenen Ort verworfen. Gefixt: „Projekt-Adresse vorhanden" heißt jetzt „Straße ODER Ort gesetzt",
+nicht nur Straße.
+
+`docs/BENUTZERHANDBUCH.md` (Weichen-Tabelle + Prosa-Sektion) und die zwei live Datenstrom-Handbuch-
+Zeilen in Airtable wurden für das 3-Stufen-Modell aktualisiert.
 
 ## 0. Auftrag
 

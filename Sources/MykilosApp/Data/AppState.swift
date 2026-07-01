@@ -545,22 +545,67 @@ public final class AppState {
             notesStore: assistantNotes, tasksStore: assistantTasks, projectDirectory: dir))
     }
 
-    // MARK: - Projekt-Intake (Fragebogen → Kunde + Projekt + Warenkorb + echte Provisionierung)
+    /// Umfang des Drive-Ordners für die echte Provisionierung (Fragebogen). `.leadRumpf`
+    /// legt nur den Wurzelordner (kein Schema-Unterbau) in `PROJEKTE/_LEADS/` an;
+    /// `.vollstaendig` den kompletten Baum direkt im echten `PROJEKTE`-Root.
+    private enum ProjektOrdnerModus: String, CustomStringConvertible {
+        case leadRumpf, vollstaendig
+        var description: String { rawValue }
+    }
+
+    // MARK: - Projekt-Intake (Fragebogen → Kunde [+ Projekt [+ Ordner]] je Anlege-Stufe)
     // Gated: NUR CREATE, NIE update/delete bestehender Records.
-    // Reihenfolge: 1. Kunde anlegen → Record-ID → 2. Projekt mit Kunden-Link anlegen →
-    //              3. Warenkorb (falls Positionen vorhanden) via CartStore senden →
-    //              4. ECHTE Provisionierung (Johannes, 2026-07-01): Projektnummer reservieren,
-    //                 Drive-Ordnerbaum im echten PROJEKTE-Root anlegen, Mastermind-Routing-Eintrag
-    //                 schreiben (bisher NUR aus Drive-Scan befüllt), Fragebogen-PDF in
-    //                 "07 Fragebogen" ablegen. NICHT-FATAL: Kunde+Projekt sind zu diesem
-    //                 Zeitpunkt schon angelegt (append-only) — ein Fehler hier darf den
-    //                 Intake nicht rückgängig machen, nur sichtbar geloggt werden.
-    // Bases: Artikel-DB (appdxTeT6bhSBmwx5) für Kunde/Projekt/Warenkorb, Mastermind
-    // (appuVMh3KDfKw4OoQ) für den Routing-Eintrag.
-    public func erzeugeKundeUndProjekt(ergebnis: IntakeErgebnis, modell: FragebogenModel) async throws -> IntakeAnlageErgebnis {
+    // Dispatcht auf die von Johannes gewählte `FragebogenTriggerStufe` (2026-07-01,
+    // "die Triggerstufe wird im letzten Dialog zur Auswahl angegeben"):
+    //  · .kontakt         → NUR Kunde (Google-Kontakt + Artikel-DB), kein Projekt/Ordner.
+    //  · .lead            → Kunde+Projekt + Rumpf-Ordner unter PROJEKTE/_LEADS (Phase=Lead).
+    //  · .projektMitOrdner → Kunde+Projekt + voller Ordnerbaum im PROJEKTE-Root (Phase=Aktiv).
+    public func erzeugeAusFragebogen(
+        ergebnis: IntakeErgebnis, modell: FragebogenModel, stufe: FragebogenTriggerStufe
+    ) async throws -> IntakeAnlageErgebnis {
+        switch stufe {
+        case .kontakt:
+            return try await erzeugeNurKontakt(ergebnis: ergebnis)
+        case .lead:
+            return try await erzeugeKundeUndProjekt(ergebnis: ergebnis, modell: modell, ordnerModus: .leadRumpf)
+        case .projektMitOrdner:
+            return try await erzeugeKundeUndProjekt(ergebnis: ergebnis, modell: modell, ordnerModus: .vollstaendig)
+        }
+    }
+
+    /// Stufe „Nur Kontakt speichern": Google-Kontakt (People API, best-effort wie im
+    /// Assistenten üblich) UND Kunde in der Artikel-DB (dublettengeschützt) — explizit
+    /// KEIN Projekt, KEIN Drive-Ordner, KEIN Mastermind-Routing-Eintrag.
+    private func erzeugeNurKontakt(ergebnis: IntakeErgebnis) async throws -> IntakeAnlageErgebnis {
         let client = AirtableClient()
 
-        // SCHRITT 1: Kunde in Artikel-Base anlegen (gleiche Base wie Projekt → Record-Link gültig)
+        let draft = ContactDraft(
+            givenName: ergebnis.kundeFelder["Vorname"] ?? ergebnis.kundeFelder["Nachname"] ?? "",
+            familyName: ergebnis.kundeFelder["Nachname"],
+            email: ergebnis.kundeFelder["Kontakt 1 Email"],
+            phone: ergebnis.kundeFelder["Kontakt 1 Telefon"],
+            organization: ergebnis.kundeFelder["Firma"])
+        let kontaktOutcome = await createContact(draft)
+
+        let kundeRecordID = try await legeKundeAnFallsNichtVorhanden(ergebnis: ergebnis, client: client)
+
+        await syncBusinessRegistry()
+        refreshAssistantKundenWissen()
+
+        let kontaktSummary: String
+        switch kontaktOutcome {
+        case .created(let name): kontaktSummary = "Google-Kontakt \(name) angelegt"
+        case .failed(let msg): kontaktSummary = "Google-Kontakt nicht angelegt (\(msg))"
+        }
+        let kundeName = ergebnis.kundeFelder["Nachname"] ?? "Kunde"
+        return IntakeAnlageErgebnis(
+            summary: "Kontakt gespeichert: \(kundeName) (Artikel-DB-ID \(kundeRecordID)) · \(kontaktSummary)",
+            driveProjektOrdnerID: nil)
+    }
+
+    /// Kunde in der Artikel-Base anlegen (dublettengeschützt: Fetch-vor-Create). Gemeinsam
+    /// genutzt von `.kontakt`- und `.lead`/`.projektMitOrdner`-Stufen.
+    private func legeKundeAnFallsNichtVorhanden(ergebnis: IntakeErgebnis, client: AirtableClient) async throws -> String {
         let kundeBaseID = CartStore.artikelBaseID  // appdxTeT6bhSBmwx5
         let kundeTable  = "Kunden"
         let kundeFelder: [String: AirtableFieldValue] = ergebnis.kundeFelder
@@ -570,39 +615,58 @@ public final class AppState {
         // Netzwerkfehler (der Button reaktiviert sich bei .fehler) denselben Kunden
         // ein zweites Mal an — sichtbar für das ganze Team. Fetch-dann-erst-Create,
         // exakt das Muster aus ProjektProvisioningService.findeBestehendenRecord.
-        let kundeRecordID: String
         if let bestehend = try? await findeBestehendenKunden(ergebnis: ergebnis, client: client) {
-            kundeRecordID = bestehend
-        } else {
-            do {
-                kundeRecordID = try await client.createRecord(
-                    baseID: kundeBaseID, table: kundeTable, fields: kundeFelder)
-            } catch AirtableError.invalidBaseID(let msg) {
-                recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: msg)
-                throw IntakeSchreibFehler.whitelist(msg)
-            } catch AirtableError.notConnected {
-                recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "notConnected")
-                throw IntakeSchreibFehler.nichtVerbunden
-            } catch AirtableError.httpError(let code) {
-                recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "httpError(\(code))")
-                throw IntakeSchreibFehler.http(code)
-            }
-
-            // mykilOS 8, Block A: vollständige Sicherheitskopie des Writes (siehe
-            // WriteShadowRecorder.swift) — nicht-fatal, blockiert den Intake nie.
-            try? writeShadow.recordAirtableWrite(
-                action: .create, actorUserID: actorUserID, baseID: kundeBaseID, table: kundeTable,
-                recordID: kundeRecordID, fields: kundeFelder, mode: provisioningMode.mode, result: .ok)
-
-            do {
-                try audit.append(AuditEntry(
-                    actorUserID: actorUserID, projectID: "-",
-                    action: .contactCreated,
-                    summary: "Intake: Kunde angelegt (\(ergebnis.kundeFelder["Nachname"] ?? "?"), ID: \(kundeRecordID))"))
-            } catch {
-                MykLog.lifecycle.error("Audit Kunde-Anlage fehlgeschlagen: \(String(describing: error), privacy: .public)")
-            }
+            return bestehend
         }
+        let kundeRecordID: String
+        do {
+            kundeRecordID = try await client.createRecord(
+                baseID: kundeBaseID, table: kundeTable, fields: kundeFelder)
+        } catch AirtableError.invalidBaseID(let msg) {
+            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: msg)
+            throw IntakeSchreibFehler.whitelist(msg)
+        } catch AirtableError.notConnected {
+            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "notConnected")
+            throw IntakeSchreibFehler.nichtVerbunden
+        } catch AirtableError.httpError(let code) {
+            recordWriteShadowFailure(table: kundeTable, baseID: kundeBaseID, fields: kundeFelder, errorMessage: "httpError(\(code))")
+            throw IntakeSchreibFehler.http(code)
+        }
+
+        // mykilOS 8, Block A: vollständige Sicherheitskopie des Writes (siehe
+        // WriteShadowRecorder.swift) — nicht-fatal, blockiert den Intake nie.
+        try? writeShadow.recordAirtableWrite(
+            action: .create, actorUserID: actorUserID, baseID: kundeBaseID, table: kundeTable,
+            recordID: kundeRecordID, fields: kundeFelder, mode: provisioningMode.mode, result: .ok)
+
+        do {
+            try audit.append(AuditEntry(
+                actorUserID: actorUserID, projectID: "-",
+                action: .contactCreated,
+                summary: "Intake: Kunde angelegt (\(ergebnis.kundeFelder["Nachname"] ?? "?"), ID: \(kundeRecordID))"))
+        } catch {
+            MykLog.lifecycle.error("Audit Kunde-Anlage fehlgeschlagen: \(String(describing: error), privacy: .public)")
+        }
+        return kundeRecordID
+    }
+
+    // Reihenfolge: 1. Kunde anlegen → Record-ID → 2. Projekt mit Kunden-Link anlegen →
+    //              3. Warenkorb (falls Positionen vorhanden) via CartStore senden →
+    //              4. ECHTE Provisionierung (Johannes, 2026-07-01): Projektnummer reservieren,
+    //                 Drive-Ordner anlegen (Umfang je `ordnerModus`), Mastermind-Routing-Eintrag
+    //                 schreiben (bisher NUR aus Drive-Scan befüllt), bei `.vollstaendig`
+    //                 zusätzlich das Fragebogen-PDF in "07 Fragebogen" ablegen. NICHT-FATAL:
+    //                 Kunde+Projekt sind zu diesem Zeitpunkt schon angelegt (append-only) —
+    //                 ein Fehler hier darf den Intake nicht rückgängig machen.
+    // Bases: Artikel-DB (appdxTeT6bhSBmwx5) für Kunde/Projekt/Warenkorb, Mastermind
+    // (appuVMh3KDfKw4OoQ) für den Routing-Eintrag.
+    private func erzeugeKundeUndProjekt(
+        ergebnis: IntakeErgebnis, modell: FragebogenModel, ordnerModus: ProjektOrdnerModus
+    ) async throws -> IntakeAnlageErgebnis {
+        let client = AirtableClient()
+
+        // SCHRITT 1: Kunde in Artikel-Base anlegen (gleiche Base wie Projekt → Record-Link gültig)
+        let kundeRecordID = try await legeKundeAnFallsNichtVorhanden(ergebnis: ergebnis, client: client)
 
         // SCHRITT 2: Projekt in Artikel-DB anlegen (+ Kunden-Link als Klartext-ID)
         let projektBaseID = CartStore.artikelBaseID      // appdxTeT6bhSBmwx5
@@ -679,8 +743,8 @@ public final class AppState {
         await syncBusinessRegistry()
         refreshAssistantKundenWissen()
 
-        // SCHRITT 4: Echte Provisionierung (Drive-Ordnerbaum + Mastermind-Routing + PDF).
-        let driveOrdnerID = await provisioniereEchtesProjekt(ergebnis: ergebnis, modell: modell)
+        // SCHRITT 4: Echte Provisionierung (Drive-Ordner + Mastermind-Routing [+ PDF]).
+        let driveOrdnerID = await provisioniereEchtesProjekt(ergebnis: ergebnis, modell: modell, ordnerModus: ordnerModus)
 
         let kundeName = ergebnis.kundeFelder["Nachname"] ?? "Kunde"
         let projektName = ergebnis.projektFelder["Projektname"] ?? "Projekt"
@@ -732,36 +796,24 @@ public final class AppState {
         return treffer?["_airtableRecordID"]?.stringValue
     }
 
-    /// Reserviert eine echte Projektnummer, baut den Drive-Ordnerbaum im echten PROJEKTE-Root,
-    /// trägt einen Routing-Eintrag in die Mastermind-„Projekte"-Tabelle ein (macht das Projekt
-    /// in der App-Galerie sichtbar) und lädt das Fragebogen-PDF in den neuen
-    /// "07 Fragebogen"-Unterordner. NICHT-FATAL: gibt bei jedem Fehler `nil` zurück
-    /// (sichtbar geloggt via dataFlow/MykLog) — Kunde+Projekt sind zu diesem Zeitpunkt
-    /// schon live in der Artikel-DB, ein Fehler hier darf das nie rückgängig machen.
-    private func provisioniereEchtesProjekt(ergebnis: IntakeErgebnis, modell: FragebogenModel) async -> String? {
+    /// Reserviert eine echte Projektnummer, legt den Drive-Ordner an (Umfang je `ordnerModus`)
+    /// und trägt einen Routing-Eintrag in die Mastermind-„Projekte"-Tabelle ein (macht das
+    /// Projekt in der App-Galerie sichtbar). Bei `.vollstaendig` zusätzlich das Fragebogen-PDF
+    /// in "07 Fragebogen" hochladen (bei `.leadRumpf` gibt es diesen Unterordner nicht — der
+    /// Rumpf-Ordner hat bewusst KEINE Schema-Unterstruktur). NICHT-FATAL: gibt bei jedem
+    /// Fehler `nil` zurück (sichtbar geloggt via dataFlow/MykLog) — Kunde+Projekt sind zu
+    /// diesem Zeitpunkt schon live in der Artikel-DB, ein Fehler hier darf das nie rückgängig machen.
+    private func provisioniereEchtesProjekt(
+        ergebnis: IntakeErgebnis, modell: FragebogenModel, ordnerModus: ProjektOrdnerModus
+    ) async -> String? {
         do {
-            let nummer = try await numberAuthorityLocal().nextAndReserve(jahr: Self.aktuellesJahr())
-
-            // STR-Nr: Projekt-Baustellenadresse bevorzugt, sonst Kunden-(Rechnungs-)Adresse —
-            // aber als GANZE Adresse (Straße+Hausnummer+Ort zusammen), nie Felder aus
-            // unterschiedlichen Adressen gemischt. Review-Fix (medium): ein Straße-ohne-
-            // Hausnummer-Fallback pro Feld hätte sonst z. B. die Projekt-Straße mit der
-            // Kunden-Hausnummer kombinieren können — eine real falsche Adresse.
-            let projektAdresse = STRNummer.splitStrasseHausnummer(ergebnis.projektFelder["Projektadresse Straße"])
-            let strasse: String?
-            let hausnummer: String?
-            let ort: String?
-            if let projektStrasse = projektAdresse.strasse {
-                strasse = projektStrasse
-                hausnummer = projektAdresse.hausnummer
-                ort = ergebnis.projektFelder["Projektadresse Ort"]
-            } else {
-                let kundeAdresse = STRNummer.splitStrasseHausnummer(ergebnis.kundeFelder["Angebotsadresse Straße"])
-                strasse = kundeAdresse.strasse
-                hausnummer = kundeAdresse.hausnummer
-                ort = ergebnis.kundeFelder["Angebotsadresse Ort"]
-            }
-
+            // Review-Fix (medium): die STR-Nr MUSS bildbar sein, BEVOR eine Projektnummer
+            // reserviert wird — Projektnummern werden nie wiederverwendet (auch nicht bei
+            // Archiv), eine erst NACH der Reservierung fehlschlagende STR-Nr-Bildung hätte
+            // sonst bei der (adress-losen) Lead-Stufe still eine Nummer verbrannt, ohne dass
+            // je ein Ordner oder Routing-Eintrag entstand. Eine Wahrheit für die Adress-
+            // Auflösung — geteilt mit der Stufe-3-Readiness-Prüfung in FragebogenView.
+            let (strasse, hausnummer, ort) = IntakeAdresse.aufloesen(ergebnis: ergebnis)
             let strErgebnis = STRNummer.bilde(strasse: strasse, hausnummer: hausnummer, ort: ort)
             let strBlock: String
             switch strErgebnis {
@@ -769,8 +821,16 @@ public final class AppState {
                 strBlock = block
             case .nichtBildbar(let grund):
                 MykLog.lifecycle.error("Echte Provisionierung übersprungen (keine STR-Nr bildbar): \(grund, privacy: .public)")
+                // Sichtbar in der Schaltzentrale, nicht nur in der Konsole — sonst verschwindet
+                // eine übersprungene Provisionierung spurlos aus dem Team-Handbuch.
+                dataFlow.log(
+                    integrationID: "DRIVE_FRAGEBOGEN_PROJEKT_ORDNER", actorUserID: actorUserID,
+                    action: .error, errorMessage: grund,
+                    summary: "Fragebogen: Provisionierung übersprungen — keine STR-Nr bildbar (keine Adresse)")
                 return nil
             }
+
+            let nummer = try await numberAuthorityLocal().nextAndReserve(jahr: Self.aktuellesJahr())
 
             // Review-Fix (low): voller Nachname statt nur erstem Wort — "von Boch"/"de Vries"
             // wären sonst auf "von"/"de" verkürzt worden (zu generisch für Kalender-/Kontakte-/
@@ -780,19 +840,34 @@ public final class AppState {
                 .replacingOccurrences(of: " ", with: "")
             let ordnerName = "\(nummer.driveFormat)_\(kundeSlug)_\(strBlock)"
 
-            // Echter Drive-Ordnerbaum (kein Sandbox-Parent — Johannes hat den echten
-            // PROJEKTE-Root ausdrücklich freigegeben, 2026-07-01).
-            let gebaut = try await DriveOrdnerbaumBuilder.baue(
-                drive: GoogleDriveClient(), parentID: Self.projekteRootDriveID,
-                ordnerName: ordnerName, schema: nomenklatur.aktivesSchema())
+            // Drive-Ordner: bei `.vollstaendig` der komplette Schema-Baum im echten PROJEKTE-
+            // Root; bei `.leadRumpf` NUR der Wurzelordner (kein Unterbau) in einem eigenen
+            // "_LEADS"-Unterordner (Johannes, 2026-07-01) — bei späterer Aufwertung zu Stufe 3
+            // bekommt derselbe Ordnername den vollen Unterbau im echten Root nachgezogen.
+            let rootOrdnerID: String
+            let unterordnerAnzahl: Int
+            switch ordnerModus {
+            case .vollstaendig:
+                let gebaut = try await DriveOrdnerbaumBuilder.baue(
+                    drive: GoogleDriveClient(), parentID: Self.projekteRootDriveID,
+                    ordnerName: ordnerName, schema: nomenklatur.aktivesSchema())
+                rootOrdnerID = gebaut.rootOrdnerID
+                unterordnerAnzahl = gebaut.unterordnerIDs.count
+            case .leadRumpf:
+                let drive = GoogleDriveClient()
+                let leadsParentID = try await drive.findOrCreateSubfolder(parentID: Self.projekteRootDriveID, name: "_LEADS")
+                rootOrdnerID = try await drive.findOrCreateSubfolder(parentID: leadsParentID, name: ordnerName)
+                unterordnerAnzahl = 0
+            }
             dataFlow.log(
                 integrationID: "DRIVE_FRAGEBOGEN_PROJEKT_ORDNER", actorUserID: actorUserID,
-                action: .success, recordsWritten: gebaut.unterordnerIDs.count + 1,
-                summary: "Fragebogen: echter Projekt-Ordnerbaum angelegt (\(ordnerName), Ordner-ID \(gebaut.rootOrdnerID))")
+                action: .success, recordsWritten: unterordnerAnzahl + 1,
+                summary: "Fragebogen (\(ordnerModus)): Projekt-Ordner angelegt (\(ordnerName), Ordner-ID \(rootOrdnerID))")
 
             // Mastermind-Routing-Eintrag — macht das Projekt in der App-Galerie sichtbar.
-            // "Fragebogen" ist eine NEUE Quelle-Option (bisher nur "Drive"/"Manuell") — mit
-            // Johannes abgestimmt (2026-07-01); `typecast` lässt Airtable sie sicher anlegen.
+            // "Fragebogen" ist eine NEUE Quelle-Option (bisher nur "Drive"/"Manuell"), "Lead"
+            // eine NEUE Phase-Option (bisher nur "Aktiv"/"Archiviert") — beide mit Johannes
+            // abgestimmt (2026-07-01); `typecast` lässt Airtable sie sicher anlegen.
             let routingFelder: [String: AirtableFieldValue] = [
                 "Projektnummer": .string(nummer.appFormat),
                 "Titel": .string(ergebnis.projektFelder["Projektname"] ?? ordnerName),
@@ -801,9 +876,9 @@ public final class AppState {
                 "Kalender-Suche": .string(kundeSlug),
                 "Kontakte-Suche": .string(kundeSlug),
                 "Mail-Suche": .string(kundeSlug),
-                "Drive-Ordner-ID": .string(gebaut.rootOrdnerID),
+                "Drive-Ordner-ID": .string(rootOrdnerID),
                 "Drive-Ordnername": .string(ordnerName),
-                "Phase": .string("Aktiv"),
+                "Phase": .string(ordnerModus == .vollstaendig ? "Aktiv" : "Lead"),
                 "Quelle": .string("Fragebogen"),
                 "ParseConfidence": .string("full"),
             ]
@@ -833,7 +908,7 @@ public final class AppState {
                 try audit.append(AuditEntry(
                     actorUserID: actorUserID, projectID: nummer.appFormat,
                     action: .projectLinked,
-                    summary: "Fragebogen: echte Provisionierung — Drive \(gebaut.rootOrdnerID), Routing \(routingRecordID)"))
+                    summary: "Fragebogen: echte Provisionierung — Drive \(rootOrdnerID), Routing \(routingRecordID)"))
             } catch {
                 MykLog.lifecycle.error("Audit für echte Provisionierung fehlgeschlagen: \(String(describing: error), privacy: .public)")
             }
@@ -841,18 +916,21 @@ public final class AppState {
             // Registry sofort aktualisieren — das neue Projekt ist ab jetzt live in der Galerie.
             await registry.syncFromAirtable(baseID: AirtableClient.writableBaseID, auth: airtableAuth)
 
-            // Fragebogen-PDF in den neuen "07 Fragebogen"-Ordner hochladen — rein kosmetisch,
-            // nicht-fatal (Projekt existiert bereits vollständig, auch ohne diesen Schritt).
-            do {
-                let pdf = try await MykFragebogenPDFRenderer().renderPDF(modell: modell)
-                _ = try await MykFragebogenDriveUploader().uploadFragebogenPDF(
-                    pdfData: pdf, projektFolderID: gebaut.rootOrdnerID,
-                    dateiname: "Fragebogen_\(nummer.driveFormat)_\(kundeSlug).pdf")
-            } catch {
-                MykLog.lifecycle.error("Fragebogen-PDF-Upload fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            // Fragebogen-PDF in den neuen "07 Fragebogen"-Ordner hochladen — NUR bei
+            // `.vollstaendig` (der Rumpf-Ordner hat keinen solchen Unterordner). Rein
+            // kosmetisch, nicht-fatal (Projekt existiert bereits vollständig ohne diesen Schritt).
+            if ordnerModus == .vollstaendig {
+                do {
+                    let pdf = try await MykFragebogenPDFRenderer().renderPDF(modell: modell)
+                    _ = try await MykFragebogenDriveUploader().uploadFragebogenPDF(
+                        pdfData: pdf, projektFolderID: rootOrdnerID,
+                        dateiname: "Fragebogen_\(nummer.driveFormat)_\(kundeSlug).pdf")
+                } catch {
+                    MykLog.lifecycle.error("Fragebogen-PDF-Upload fehlgeschlagen: \(String(describing: error), privacy: .public)")
+                }
             }
 
-            return gebaut.rootOrdnerID
+            return rootOrdnerID
         } catch {
             MykLog.lifecycle.error("Echte Provisionierung fehlgeschlagen: \(String(describing: error), privacy: .public)")
             return nil
