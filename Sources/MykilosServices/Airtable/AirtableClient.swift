@@ -125,6 +125,8 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
         "appuVMh3KDfKw4OoQ": [
             "Datenstrom-Handbuch", "Datenstrom-Log",
             "Kontakte",            // S19: Kontakt anlegen/aktualisieren
+            "TEST-Projekte",       // Block D (S4): ProjektProvisioningService-Live-Test-Sandbox
+                                   // (tblj1OXFt0nOqgq0P, angelegt 2026-07-01, NUR TEST_-Records)
         ],
         // Artikel & Einkauf (Webshop-Phase 1, gated, von Johannes freigegeben 2026-06-30)
         // Intake-Fragebogen legt neue Kunden- + Projekt-Records an (append-only, gated, Record-Link gültig).
