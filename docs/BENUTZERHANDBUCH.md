@@ -524,6 +524,22 @@ Kopfbereich (mit Sicherheitsabfrage, außer das Formular ist noch leer). Die Per
 die laufende App-Sitzung (kein GRDB/Neustart-Schutz) — passend zu „temporäres Schließen", nicht
 zu einem vollständigen App-Neustart.
 
+**Kollisionsschutz + Ordnername-Vorschau (Härtung, 2026-07-01, echte Live-Kollision entdeckt).**
+Am 2026-07-01 vergab die Projektnummer-Vergabe zweimal eine bereits belegte Nummer (2026-027 und
+2026-028 kollidierten mit real existierenden, manuell in Drive angelegten Ordnern) — die interne
+Nummern-Registry kennt nur Airtable-Snapshots und eigene Reservierungen, nie Ordner, die manuell
+oder außerhalb der App entstehen. Zwei Härtungen:
+1. **Live-Kollisionsprüfung:** Vor jeder echten Nummernvergabe (Fragebogen „Lead"/„Projekt mit
+   Ordner" UND Block-D-Sandbox-Test) wird zusätzlich der ECHTE, aktuelle Drive-Ordnerinhalt
+   (`PROJEKTE`-Root + `_LEADS` bzw. `_TEST_PROVISIONING`) geprüft. Kollidiert eine frisch
+   reservierte Nummer mit einem real existierenden Ordnernamen, wird automatisch die nächste
+   versucht (bis zu 25 Läufe) — eine bereits real vergebene Nummer wird nie zurückgegeben.
+2. **Ordnername-Vorschau vor der Anlage:** Im letzten Fragebogen-Schritt (Bestätigung) zeigt ein
+   neuer Bereich „Vorgeschlagener Ordnername" den vollständigen, kollisionsgeprüften Namen, BEVOR
+   „Jetzt anlegen" geklickt wird. Über „Bearbeiten" lässt sich der beschreibende Teil (Kundenname
+   + Straßen-Code) manuell anpassen — die laufende Projektnummer selbst ist **nie** editierbar,
+   die kommt ausschließlich aus der kollisionsgeprüften Vergabe.
+
 **Bestandskunde auswählen (Härtung, 2026-07-01, Johannes).** Im ersten Fragebogen-Schritt
 („Kundenkontakt") steht jetzt oberhalb der manuellen Felder ein Suchfeld „Bestandskunde suchen
 (Airtable + Google Kontakte)". Ab 2 Zeichen erscheinen Treffer aus zwei bereits vorhandenen
@@ -735,4 +751,12 @@ Klärung echter Ordner vs. Sandbox).
 ---
 
 *Dieses Dokument wird mit jedem Feature-Commit aktualisiert.*
-*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · mykilOS-8.0-Konsolidierung: HYPERBUILD/CLAUDE.md-Doku-Wahrheit, toter Code raus (AssistantWidget, Fragebogen-Stubs, Bootstrap-Sondierung), Anthropic Prompt-Caching, GmailCacheStore verdrahtet, M3 ClickUp-Listen-IDs live verlinkt, Clockodo-Adapter-Base aufgebaut (Stundensätze/Kostenstellen-Stammdaten + ClockodoAdapterWriter: Timer-Buchungen → Zeitbuchungen-Tabelle), Bestandskunde-auswählen im Fragebogen (Airtable+Google), Artikel-Katalog-Cache, Gmail-Parallelfetch, Assistent-Chat-Scroll-Fix, Live-Schema-Diagnose, CartStore-Feld-ID-Fix, Mail-Entwürfe-Ordner*
+*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · Projektnummer-Kollisionsschutz
+(echte Live-Kollision entdeckt + gefixt: Live-Drive-Check vor jeder Nummernvergabe + Ordnername-
+Vorschau/Edit-Modus im Fragebogen), mykilOS-8.0-Konsolidierung: HYPERBUILD/CLAUDE.md-Doku-Wahrheit,
+toter Code raus (AssistantWidget, Fragebogen-Stubs, Bootstrap-Sondierung), Anthropic Prompt-Caching,
+GmailCacheStore verdrahtet, M3 ClickUp-Listen-IDs live verlinkt, Clockodo-Adapter-Base aufgebaut
+(Stundensätze/Kostenstellen-Stammdaten + ClockodoAdapterWriter: Timer-Buchungen → Zeitbuchungen-
+Tabelle), Bestandskunde-auswählen im Fragebogen (Airtable+Google), Artikel-Katalog-Cache,
+Gmail-Parallelfetch, Assistent-Chat-Scroll-Fix, Live-Schema-Diagnose, CartStore-Feld-ID-Fix,
+Mail-Entwürfe-Ordner*

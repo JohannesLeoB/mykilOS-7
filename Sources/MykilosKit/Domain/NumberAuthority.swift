@@ -33,4 +33,8 @@ public enum NumberAuthorityMode: String, Codable, Sendable, CaseIterable {
 public enum NumberAuthorityError: Error, Sendable, Equatable {
     case bereitsVergeben(Projektnummer)   // Kollision aktiv/archiviert
     case unsupported(NumberAuthorityMode) // Implementierung noch nicht verfügbar
+    // Härtung (2026-07-01): externer Kollisions-Check (z. B. echter Drive-Ordnerinhalt)
+    // fand nach `versuche` Läufen immer noch eine belegte Nummer — echtes Datenproblem,
+    // kein Retry-Loop-Bug (siehe LocalSequentialAuthority.nextAndReserveKollisionsfrei).
+    case keineKollisionsfreieNummerGefunden(jahr: Int, versuche: Int)
 }

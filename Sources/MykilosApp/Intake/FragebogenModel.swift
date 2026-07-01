@@ -36,6 +36,14 @@ public final class FragebogenModel {
     public var budget: Double? = nil
     public var budgetText: String = ""
 
+    // MARK: - Ordnername (Härtung 2026-07-01, Live-Kollision)
+
+    /// Manueller Edit-Modus für den beschreibenden Teil des Drive-Ordnernamens
+    /// (Kundenname_STR-Block) — leer = automatischer Vorschlag wird verwendet.
+    /// Die laufende Projektnummer selbst ist NIE über dieses Feld beeinflussbar
+    /// (nur die kollisionsgeprüfte Vergabe entscheidet über die Nummer).
+    public var ordnerNameSuffixOverride: String = ""
+
     // MARK: - Raumgröße
 
     /// Grundfläche in m² (Freitext-Eingabe, gespeichert als String)

@@ -51,6 +51,24 @@ public final class LocalSequentialAuthority: NumberAuthority, @unchecked Sendabl
         Projektnummer.next(jahr: jahr, vorhandene: try await alleBekannten())
     }
 
+    /// Härtung (2026-07-01): reine Vorschau (reserviert NICHT), aber zusätzlich gegen einen
+    /// externen Kollisions-Check geprüft — damit eine UI-Vorschau exakt die Nummer zeigt, die
+    /// `nextAndReserveKollisionsfrei` bei der echten Anlage auch vergeben würde. Übersprungene
+    /// Kandidaten werden nur INNERHALB dieses einen Aufrufs lokal ausgeschlossen, nichts wird
+    /// persistiert — für die tatsächliche, atomare Vergabe `nextAndReserveKollisionsfrei` nutzen.
+    public func nextProjektnummerKollisionsfrei(
+        jahr: Int, istExternKollidiert: (Projektnummer) -> Bool, maxVersuche: Int = 25
+    ) async throws -> Projektnummer {
+        let bekannte = try await alleBekannten()
+        var ausgeschlossen: [Projektnummer] = []
+        for _ in 0..<maxVersuche {
+            let kandidat = Projektnummer.next(jahr: jahr, vorhandene: bekannte + ausgeschlossen)
+            if istExternKollidiert(kandidat) == false { return kandidat }
+            ausgeschlossen.append(kandidat)
+        }
+        throw NumberAuthorityError.keineKollisionsfreieNummerGefunden(jahr: jahr, versuche: maxVersuche)
+    }
+
     /// ATOMARE Vergabe: berechnet die nächste freie Nummer UND reserviert sie in EINER
     /// GRDB-Transaktion. Race-frei — zwei gleichzeitige Aufrufe werden durch die serielle
     /// Write-Queue serialisiert; der zweite sieht die vom ersten reservierte Nummer und
@@ -66,6 +84,25 @@ public final class LocalSequentialAuthority: NumberAuthority, @unchecked Sendabl
                 status: "reserviert", quelle: nil, updatedAt: ts).insert(dbc)
             return next
         }
+    }
+
+    /// Härtung (2026-07-01, echte Live-Kollision entdeckt): `nextAndReserve` allein kennt nur
+    /// die Registry (Airtable-Snapshot, kann veraltet sein) + die eigenen GRDB-Reservierungen —
+    /// beides blind gegenüber Ordnern/Nummern, die manuell oder außerhalb der App entstehen.
+    /// Diese Variante nimmt zusätzlich einen externen Kollisions-Check entgegen (z. B. gegen den
+    /// echten Drive-Ordnerinhalt) und probiert bei einem Treffer die nächste Nummer — max.
+    /// `maxVersuche` Läufe, danach ein klarer Fehler statt einer Endlosschleife. Eine bereits
+    /// reservierte, extern kollidierende Nummer wird NIE zurückgegeben/wiederverwendet
+    /// (Projektnummern sind grundsätzlich einmalig) — das ist kein Nummern-„Verbrauch", sondern
+    /// korrektes Verhalten: diese Nummer war real schon vergeben, nur der Registry unbekannt.
+    public func nextAndReserveKollisionsfrei(
+        jahr: Int, istExternKollidiert: (Projektnummer) -> Bool, maxVersuche: Int = 25
+    ) async throws -> Projektnummer {
+        for _ in 0..<maxVersuche {
+            let kandidat = try await nextAndReserve(jahr: jahr)
+            if istExternKollidiert(kandidat) == false { return kandidat }
+        }
+        throw NumberAuthorityError.keineKollisionsfreieNummerGefunden(jahr: jahr, versuche: maxVersuche)
     }
 
     public func isVergeben(_ nummer: Projektnummer) async throws -> Bool {

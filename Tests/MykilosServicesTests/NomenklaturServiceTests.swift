@@ -71,6 +71,78 @@ struct NomenklaturServiceTests {
         #expect(Set([n1.appFormat, n2.appFormat]) == ["2026-001", "2026-002"])
     }
 
+    // MARK: nextAndReserveKollisionsfrei (Härtung 2026-07-01, echte Live-Kollision entdeckt:
+    // zwei Fragebogen-Läufe vergaben 2026-027/028, obwohl diese Nummern bereits als manuell
+    // angelegte Drive-Ordner existierten — die Registry kannte sie nie.)
+
+    @Test func kollisionsfreieVergabeUeberspringtExternBelegteNummer() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let authority = LocalSequentialAuthority(db: db, aktiveNummern: { [] })
+        // Registry weiß nichts von "2026-001" — aber ein externer Check (z. B. echter
+        // Drive-Ordner) sagt: die ist schon belegt. Die Schleife muss zu 002 weiterziehen.
+        let nummer = try await authority.nextAndReserveKollisionsfrei(jahr: 2026) { kandidat in
+            kandidat.appFormat == "2026-001"
+        }
+        #expect(nummer.appFormat == "2026-002")
+    }
+
+    @Test func kollisionsfreieVergabeGibtNieEineKollidierendeNummerZurueck() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let authority = LocalSequentialAuthority(db: db, aktiveNummern: { [] })
+        let belegt: Set<String> = ["2026-001", "2026-002", "2026-003"]
+        let nummer = try await authority.nextAndReserveKollisionsfrei(jahr: 2026) { kandidat in
+            belegt.contains(kandidat.appFormat)
+        }
+        #expect(belegt.contains(nummer.appFormat) == false)
+        #expect(nummer.appFormat == "2026-004")
+    }
+
+    @Test func kollisionsfreieVergabeReserviertUebersprungeneNummernDauerhaft() async throws {
+        // Eine als extern-kollidierend übersprungene Nummer bleibt trotzdem reserviert
+        // (Projektnummern sind einmalig) — ein zweiter Aufruf darf sie nie erneut liefern.
+        let db = try GRDBDatabase.inMemory()
+        let authority = LocalSequentialAuthority(db: db, aktiveNummern: { [] })
+        _ = try await authority.nextAndReserveKollisionsfrei(jahr: 2026) { $0.appFormat == "2026-001" }
+        #expect(try await authority.isVergeben(Projektnummer(jahr: 2026, laufendeNummer: 1)) == true)
+    }
+
+    @Test func kollisionsfreieVergabeWirftNachMaxVersuchen() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let authority = LocalSequentialAuthority(db: db, aktiveNummern: { [] })
+        await #expect(throws: NumberAuthorityError.self) {
+            _ = try await authority.nextAndReserveKollisionsfrei(jahr: 2026, istExternKollidiert: { _ in true }, maxVersuche: 5)
+        }
+    }
+
+    @Test func kollisionsfreieVergabeOhneKollisionVerhaeltSichWieNextAndReserve() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let authority = LocalSequentialAuthority(db: db, aktiveNummern: { [] })
+        let nummer = try await authority.nextAndReserveKollisionsfrei(jahr: 2026) { _ in false }
+        #expect(nummer.appFormat == "2026-001")
+    }
+
+    // MARK: nextProjektnummerKollisionsfrei (reine Vorschau, reserviert nicht)
+
+    @Test func vorschauUeberspringtKollisionOhneZuReservieren() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let authority = LocalSequentialAuthority(db: db, aktiveNummern: { [] })
+        let vorschau = try await authority.nextProjektnummerKollisionsfrei(jahr: 2026) { $0.appFormat == "2026-001" }
+        #expect(vorschau.appFormat == "2026-002")
+        // Reserviert wirklich NICHTS — die "übersprungene" 001 bleibt frei für die echte Vergabe.
+        #expect(try await authority.isVergeben(Projektnummer(jahr: 2026, laufendeNummer: 1)) == false)
+    }
+
+    @Test func vorschauZeigtDieselbeNummerWieDieEchteKollisionsfreieVergabe() async throws {
+        // Die UI-Vorschau muss exakt das zeigen, was die echte Anlage danach auch vergibt —
+        // sonst wäre die Vorschau irreführend.
+        let db = try GRDBDatabase.inMemory()
+        let authority = LocalSequentialAuthority(db: db, aktiveNummern: { [] })
+        let istKollidiert: (Projektnummer) -> Bool = { $0.appFormat == "2026-001" || $0.appFormat == "2026-002" }
+        let vorschau = try await authority.nextProjektnummerKollisionsfrei(jahr: 2026, istExternKollidiert: istKollidiert)
+        let echt = try await authority.nextAndReserveKollisionsfrei(jahr: 2026, istExternKollidiert: istKollidiert)
+        #expect(vorschau == echt)
+    }
+
     @Test func archiviereUeberschreibtExterneNummerNicht() async throws {
         let db = try GRDBDatabase.inMemory()
         let authority = LocalSequentialAuthority(db: db, aktiveNummern: { [] })

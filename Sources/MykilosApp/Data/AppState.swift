@@ -963,7 +963,14 @@ public final class AppState {
                 return nil
             }
 
-            let nummer = try await numberAuthorityLocal().nextAndReserve(jahr: Self.aktuellesJahr())
+            // Härtung (2026-07-01, echte Kollision live entdeckt: zwei Fragebogen-Läufe
+            // vergaben 2026-027/028, obwohl diese Nummern bereits als manuell angelegte
+            // Drive-Ordner (außerhalb der App, nie in die Registry gesynct) real existierten).
+            // numberAuthorityLocal() kennt nur die Registry (Airtable-Snapshot vom 2026-06-27,
+            // seither kein laufender Sync) + eigene GRDB-Reservierungen — beides blind
+            // gegenüber Ordnern, die manuell oder außerhalb der App entstehen. Zusätzlich
+            // gegen den ECHTEN Drive-Ordnerinhalt prüfen, bevor die Nummer verwendet wird.
+            let nummer = try await reserviereKollisionsfreieNummer(jahr: Self.aktuellesJahr(), parentID: Self.projekteRootDriveID)
 
             // Review-Fix (low): voller Nachname statt nur erstem Wort — "von Boch"/"de Vries"
             // wären sonst auf "von"/"de" verkürzt worden (zu generisch für Kalender-/Kontakte-/
@@ -971,7 +978,13 @@ public final class AppState {
             // schema-konform bleibt (ein Wortblock wie bei den bestehenden Drive-Ordnern).
             let kundeSlug = (ergebnis.kundeFelder["Nachname"] ?? "Projekt")
                 .replacingOccurrences(of: " ", with: "")
-            let ordnerName = "\(nummer.driveFormat)_\(kundeSlug)_\(strBlock)"
+            // Härtung (2026-07-01): der beschreibende Teil des ORDNERNAMENS ist im Fragebogen
+            // editierbar (Edit-Modus in der Bestätigungsansicht) — die Nummer selbst NIE, die
+            // kommt ausschließlich aus der kollisionsgeprüften Vergabe oben. `kundeSlug` bleibt
+            // unabhängig davon der Kanon für Kalender-/Kontakte-/Mail-Suche weiter unten.
+            let suffixOverride = modell.ordnerNameSuffixOverride.trimmingCharacters(in: .whitespaces)
+            let beschreibenderTeil = suffixOverride.isEmpty ? "\(kundeSlug)_\(strBlock)" : suffixOverride
+            let ordnerName = "\(nummer.driveFormat)_\(beschreibenderTeil)"
 
             // Drive-Ordner: bei `.vollstaendig` der komplette Schema-Baum im echten PROJEKTE-
             // Root; bei `.leadRumpf` NUR der Wurzelordner (kein Unterbau) in einem eigenen
@@ -1106,8 +1119,11 @@ public final class AppState {
         kundeName: String, kdnr: String, strasse: String?, hausnummer: String?, ort: String?,
         driveParentID: String, airtableBaseID: String, airtableTabelle: String
     ) async throws -> ProvisioningResult {
-        // 1. Nächste Projektnummer atomar reservieren.
-        let nummer = try await numberAuthorityLocal().nextAndReserve(jahr: Self.aktuellesJahr())
+        // 1. Nächste Projektnummer atomar reservieren — zusätzlich gegen den echten Inhalt
+        // von "_TEST_PROVISIONING" geprüft (Konsistenz mit der echten Provisionierung,
+        // schützt vor Kollisionen bei wiederholten Sandbox-Testläufen).
+        let nummer = try await reserviereKollisionsfreieNummer(
+            jahr: Self.aktuellesJahr(), parentID: driveParentID, nestedSubfolderName: "_TEST_PROVISIONING")
         // 2. STR-Nr bilden — Schema-Bruch wird hier zur Warnung, kein kaputter Ordner.
         let strErgebnis = STRNummer.bilde(strasse: strasse, hausnummer: hausnummer, ort: ort)
         let strBlock: String
@@ -1132,6 +1148,65 @@ public final class AppState {
     /// mitgespeichert, damit hier nie ein Fallback mit leerer aktiveNummern-Closure entstehen kann.
     private func numberAuthorityLocal() -> LocalSequentialAuthority {
         numberAuthorityConcrete
+    }
+
+    /// Härtung (2026-07-01, echte Live-Kollision entdeckt): der Drive-Ordnerinhalt eines Roots
+    /// (+ optional eines benannten Unterordners, z. B. "_LEADS"/"_TEST_PROVISIONING") — die
+    /// gemeinsame Grundlage für die reservierende UND die reine Vorschau-Variante darunter.
+    /// Registry-Cache + eigenes GRDB-Register kennen keine Ordner, die manuell oder außerhalb
+    /// der App entstehen; dieser Live-Check schließt genau diese Lücke.
+    private func bekanntesProjektOrdnernamen(
+        parentID: String, nestedSubfolderName: String?, drive: GoogleDriveFetching
+    ) async -> Set<String> {
+        var namen: Set<String> = []
+        if let wurzel = try? await drive.listFolder(folderID: parentID) {
+            namen.formUnion(wurzel.map(\.name))
+            if let nestedSubfolderName,
+               let unterordner = wurzel.first(where: { $0.name == nestedSubfolderName }),
+               let inhalt = try? await drive.listFolder(folderID: unterordner.id) {
+                namen.formUnion(inhalt.map(\.name))
+            }
+        }
+        return namen
+    }
+
+    private func istDriveKollision(_ kandidat: Projektnummer, bekannteNamen: Set<String>) -> Bool {
+        let praefix = kandidat.driveFormat + "_"
+        return bekannteNamen.contains { $0.hasPrefix(praefix) }
+    }
+
+    /// Reserviert eine Projektnummer UND verifiziert sie zusätzlich gegen den ECHTEN, aktuellen
+    /// Drive-Ordnerinhalt — nicht nur gegen den (nachweislich lückenhaften) Registry-Cache. Die
+    /// eigentliche Retry-Schleife lebt testbar in `LocalSequentialAuthority.nextAndReserveKollisionsfrei`.
+    private func reserviereKollisionsfreieNummer(
+        jahr: Int, parentID: String, nestedSubfolderName: String? = "_LEADS",
+        drive: GoogleDriveFetching = GoogleDriveClient()
+    ) async throws -> Projektnummer {
+        let bekannteNamen = await bekanntesProjektOrdnernamen(parentID: parentID, nestedSubfolderName: nestedSubfolderName, drive: drive)
+        return try await numberAuthorityLocal().nextAndReserveKollisionsfrei(jahr: jahr) {
+            istDriveKollision($0, bekannteNamen: bekannteNamen)
+        }
+    }
+
+    /// Öffentliche, reine Vorschau (reserviert NICHTS) für die Fragebogen-Bestätigungsansicht:
+    /// liefert den vollständigen vorgeschlagenen Projekt-Ordnernamen (Nummer + Kundenname +
+    /// STR-Block), damit der Nutzer ihn VOR der echten Anlage sieht. Die Nummer selbst ist NIE
+    /// editierbar — das war genau der Ursprung der Live-Kollision, die diese Härtung auslöste;
+    /// nur der beschreibende Teil (Kundenname_STR-Block) darf im Edit-Modus angepasst werden.
+    /// `nil`, wenn keine STR-Nr bildbar ist (keine Adresse) — dieselbe Prüfung wie bei der echten Anlage.
+    public func vorschauProjektOrdnerName(
+        kundeNachname: String, strasse: String?, hausnummer: String?, ort: String?
+    ) async -> (nummer: String, vorgeschlagenerName: String)? {
+        guard case .gebildet(let strBlock, _) = STRNummer.bilde(strasse: strasse, hausnummer: hausnummer, ort: ort) else {
+            return nil
+        }
+        let bekannteNamen = await bekanntesProjektOrdnernamen(
+            parentID: Self.projekteRootDriveID, nestedSubfolderName: "_LEADS", drive: GoogleDriveClient())
+        guard let nummer = try? await numberAuthorityLocal().nextProjektnummerKollisionsfrei(jahr: Self.aktuellesJahr(), istExternKollidiert: {
+            istDriveKollision($0, bekannteNamen: bekannteNamen)
+        }) else { return nil }
+        let kundeSlug = kundeNachname.replacingOccurrences(of: " ", with: "")
+        return (nummer.appFormat, "\(nummer.driveFormat)_\(kundeSlug)_\(strBlock)")
     }
 
     static func aktuellesJahr() -> Int {

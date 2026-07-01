@@ -34,6 +34,13 @@ struct FragebogenView: View {
     // feuerte, obwohl in dieser Sitzung bereits echt etwas angelegt wurde. Dieses Flag merkt
     // sich den Erfolg unabhängig von schreibPhase, für die gesamte Dialog-Lebensdauer.
     @State private var hatErfolgreichAngelegt: Bool = false
+    // Härtung (2026-07-01, Live-Kollision entdeckt): Vorschau des vorgeschlagenen Drive-
+    // Ordnernamens VOR der echten Anlage, mit Edit-Modus für den beschreibenden Teil. Die
+    // Projektnummer selbst wird NIE editierbar angezeigt — nur die kollisionsgeprüfte Vergabe
+    // (AppState.vorschauProjektOrdnerName/reserviereKollisionsfreieNummer) bestimmt sie.
+    @State private var ordnerVorschau: (nummer: String, vorgeschlagenerName: String)?
+    @State private var ordnerVorschauLaeuft: Bool = false
+    @State private var ordnerEditModus: Bool = false
 
     init(modell: FragebogenModel = FragebogenModel(), onDismiss: @escaping () -> Void) {
         self.modell = modell
@@ -587,6 +594,7 @@ struct FragebogenView: View {
                             inhalt: triggerStufe == .lead
                                 ? "nur Wurzelordner in PROJEKTE/_LEADS/"
                                 : "kompletter Ordnerbaum in PROJEKTE/")
+                        ordnerNamensVorschau(ergebnis: ergebnis)
                         if !ergebnis.warenkorb.items.isEmpty {
                             bestaetigunsZeile(icon: "cart.fill", farbe: .tasks,
                                               titel: "Erst-Warenkorb",
@@ -661,6 +669,59 @@ struct FragebogenView: View {
                 Text(titel).font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
                 Text(inhalt).font(.mykBody).foregroundStyle(MykColor.ink.color)
             }
+        }
+    }
+
+    // MARK: - Ordnernamens-Vorschau (Härtung 2026-07-01, Live-Kollision entdeckt)
+    // Zeigt VOR der echten Anlage den vorgeschlagenen Drive-Ordnernamen (kollisionsgeprüft
+    // gegen den echten Drive-Inhalt, nicht nur den Registry-Cache) + einen Edit-Modus für
+    // den beschreibenden Teil. Die Projektnummer selbst ist NIE editierbar — nur die
+    // kollisionsgeprüfte Vergabe in AppState bestimmt sie, das war genau der Ursprung des
+    // heutigen Fehlers (zwei Fragebogen-Läufe kollidierten mit real existierenden Ordnern).
+    private func ordnerNamensVorschau(ergebnis: IntakeErgebnis) -> some View {
+        let (strasse, hausnummer, ort) = IntakeAdresse.aufloesen(ergebnis: ergebnis)
+        return VStack(alignment: .leading, spacing: MykSpace.s2) {
+            HStack(alignment: .top, spacing: MykSpace.s4) {
+                Image(systemName: "text.badge.checkmark")
+                    .font(.mykCaption).foregroundStyle(MykColor.drive.color)
+                    .frame(width: MykSpace.s6, alignment: .center)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("VORGESCHLAGENER ORDNERNAME").font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                    if ordnerVorschauLaeuft {
+                        HStack(spacing: MykSpace.s2) {
+                            ProgressView().scaleEffect(0.6)
+                            Text("prüfe gegen echten Drive-Bestand …").font(.mykSmall).foregroundStyle(MykColor.muted.color)
+                        }
+                    } else if let vorschau = ordnerVorschau {
+                        if ordnerEditModus {
+                            HStack(spacing: MykSpace.s2) {
+                                Text(vorschau.nummer + "_").font(.mykBody).foregroundStyle(MykColor.muted.color)
+                                TextField("Beschreibender Teil", text: $modell.ordnerNameSuffixOverride)
+                                    .textFieldStyle(.roundedBorder).font(.mykBody)
+                            }
+                        } else {
+                            Text(modell.ordnerNameSuffixOverride.isEmpty
+                                 ? vorschau.vorgeschlagenerName
+                                 : "\(vorschau.nummer)_\(modell.ordnerNameSuffixOverride)")
+                                .font(.mykBody).foregroundStyle(MykColor.ink.color)
+                        }
+                    } else {
+                        Text("keine Adresse — Ordner kann nicht gebildet werden").font(.mykSmall).foregroundStyle(MykColor.critical.color)
+                    }
+                }
+                Spacer()
+                if ordnerVorschau != nil {
+                    Button(ordnerEditModus ? "Fertig" : "Bearbeiten") { ordnerEditModus.toggle() }
+                        .buttonStyle(.plain).font(.mykMono(9)).foregroundStyle(MykColor.people.color)
+                }
+            }
+        }
+        .task(id: "\(modell.kundeNachname)|\(strasse ?? "")|\(hausnummer ?? "")|\(ort ?? "")|\(triggerStufe.rawValue)") {
+            guard triggerStufe != .kontakt else { ordnerVorschau = nil; return }
+            ordnerVorschauLaeuft = true
+            defer { ordnerVorschauLaeuft = false }
+            ordnerVorschau = await appState.vorschauProjektOrdnerName(
+                kundeNachname: modell.kundeNachname, strasse: strasse, hausnummer: hausnummer, ort: ort)
         }
     }
 
