@@ -23,11 +23,52 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Architektur-Vorschlag: WorkBasket/Checkout-Pipeline (generisches Schreib-Modell)
+
+### 📋 Generische DataObject→WorkBasket→CheckoutRun→Preview→Review→Audit-Pipeline
+**Quelle:** Branch `handoff/workbasket-checkout-architecture-2026-07-01` (vermutlich
+Codex-Session, 2026-07-01), gelesen + eingeordnet während der mykilOS-8.0-Konsolidierung.
+**Status:** S0/S1 (reine Doku, 0 Code) laut eigener Stop-Regel abgeschlossen — kein
+Feature-Code, bevor Johannes den I/O-Stand akzeptiert hat.
+
+**Kernidee:** Statt jedes Schreib-Feature (Warenkorb, Angebote, CAD-Handoff, Mail,
+Moodboards …) einzeln zu bauen, alle über dieselbe Pipeline: `DataObject →
+WorkBasketItem → WorkBasket → CheckoutRun → Preview → Review/Safety → Output →
+Audit → Postflight`. 18 durchgeplante I/O-Einträge (IO-001–IO-018), alle ❌ noch
+nicht gebaut — u. a. Schätzung/Vergleich/Angebots-Template/Projektanlage-Staging
+(überschneidet sich mit Block-F-Umfang), CAD-Handoff, Bildindex, Moodboard-Generator,
+Firefly-Prompts, Dokument-/Mail-Vorlagen, Gmail-Drafts, Protokollpakete,
+Auftragsbestätigungen (alles NEU, nicht im Rolling Plan).
+
+**Bemerkenswert:** Zitiert unabhängig dieselbe HTTP-422-Lehre (Number-Feld als String,
+Linked-Record mit rohem String) wie unsere eigene Live-Untersuchung vom selben Tag,
+und nennt `ProjektProvisioningService` (mykilOS-8 Block D) explizit als Vorbild für
+die künftige `CheckoutRun`-Implementierung.
+
+**Wichtige Einschränkung:** Diese Branch ist von `main`/v7.7.2 abgeleitet, NICHT von
+den mykilOS-8-Feature-Branches (Block A–D) — kennt `ExternalMappingRegistry`,
+`WriteShadowRecorder`, `ProvisioningLedger` nicht im eigenen Code. Eigene Risiko-Notiz:
+"Vor S3+ (echter Code) mit Johannes klären, welcher Branch der Merge-Zielpunkt ist."
+
+**Offene Grundsatzentscheidung (nicht Teil der aktuellen Konsolidierung, für 8.1
+mitzunehmen):** Rolling-Plan-Blöcke E/F/G wie geplant als Einzelfeatures weiterbauen,
+oder auf dieses generische Pipeline-Modell umschwenken/verschmelzen? Branch bleibt bis
+dahin unangetastet liegen.
+
+---
+
 ## 🚨 P0-BLOCKER — Projektübersicht überlagert und blockiert die Sidebar
 
-### 🚨 OFFEN: Unsichtbare Overview-Hit-Test-Fläche liegt über der Sidebar
+### 🟡 FIX COMMITTED (9ddf75a) — Live-Abnahme durch Johannes weiterhin ausstehend
 **Quelle:** Live-Screenshots von Johannes, 2026-06-28 um 09:38/09:39;
-forensische Auswertung durch Codex.
+forensische Auswertung durch Codex. **Korrigiert 2026-07-01** (Doku-Konsolidierung):
+dieser Eintrag hieß bisher fälschlich "🚨 OFFEN", obwohl CLAUDE.md bereits seit
+2026-06-28 "FIX COMMITTED · Live-Abnahme ausstehend" dokumentiert — reine
+Doku-Inkonsistenz zwischen den beiden Dateien, kein neuer Code-Fund. Der Fix selbst
+(`ZStack(.bottom)` → `.bottomLeading`, `VStack.leading`, Tab-Bar `maxWidth: .infinity,
+alignment: .leading`) ist committed; **die Live-Abnahme am echten Gerät (Sidebar bei
+aktiver Übersicht vor/während/nach Widget-Ladevorgängen klickbar) steht weiterhin aus**
+— siehe Phase 4 der aktuellen Konsolidierungs-Session.
 **Priorität:** P0 — vor S18/S20-Feature-Arbeit beheben und live abnehmen.
 **Handoff:** [HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md](handoffs/HANDOFF_P0_OVERVIEW_SIDEBAR_HITTEST.md)
 

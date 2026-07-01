@@ -378,8 +378,13 @@ in geteilten Logs, nie in Airtable-Tabellen ohne expliziten User-Scope-Filter.
 
 ## Nächste Schritte
 
-**Version 6.4.0 ist die aktuelle stabile Version.** UI stabil, alle Integrationen
-live verifiziert (Phase A + B abgeschlossen). Nächste Code-Session: S18.
+**Korrektur 2026-07-01 (Doku-Konsolidierung):** Dieser Abschnitt war massiv veraltet
+(stand auf „Version 6.4.0 / Nächste Code-Session: S18", obwohl seither Akt 5,
+Post-Akt-5 1–21, S17/S18/S26, Kalkulations-Port, mykilOS 7 Safe State und der
+komplette mykilOS-8-Rolling-Plan Block A–D gelaufen sind). Aktueller Stand siehe
+[HYPERBUILD.md](HYPERBUILD.md) — das ist seit 2026-06-29 die verbindliche
+Status-Quelle, dieser Abschnitt bleibt als historisches Sprungbrett zu den
+Post-Akt-5-Handoffs stehen, wird aber nicht mehr als "aktueller Stand" gepflegt.
 
 **✅ Phase A + B abgeschlossen (2026-06-28):**
 - Phase A: IdentityView, Private Area, clearLocalCache, B2-Fix, GRDB-v5 → 192 Tests
