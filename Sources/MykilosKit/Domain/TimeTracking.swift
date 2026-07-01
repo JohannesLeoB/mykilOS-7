@@ -1,26 +1,45 @@
 import Foundation
 
 // MARK: - Kostenstelle
-// mykilOS 8, Block B (S1): eine projektabhängige Kostenstelle (Planung/Beratung/…).
-// Quelle ist perspektivisch das Airtable-Projektfeld (S2) — in S1 eine lokale
-// Default-Liste, injizierbar, damit S2 nur die Quelle austauscht.
+// mykilOS 8, Block B: eine Kostenstelle = eine Clockodo-LEISTUNG (services_id).
+//
+// Zwei-Achsen-Modell (2026-07-01, aus echten Clockodo-Screenshots abgeleitet):
+//   • Clockodo „Kunde/Projekt" (customers_id) = die PROJEKT-Achse — kommt in
+//     mykilOS aus der Projektnummer, NICHT hier abgebildet (Amoulong, Baron-Voght
+//     usw. sind KEINE Kostenstellen).
+//   • Clockodo „Leistung" (services_id) = die TÄTIGKEITS-Achse — GENAU DAS sind
+//     die Kostenstellen. `clockodoServiceID` trägt die echte services_id, sodass
+//     der Buchungspfad ohne Fuzzy-Mapping direkt `services_id` setzen kann.
 public struct Kostenstelle: Codable, Hashable, Sendable, Identifiable {
-    public let id: String     // stabiler Schlüssel (= name, solange lokal)
+    public let id: String     // stabiler Schlüssel (= name)
     public let name: String
+    /// Clockodo `services_id`. nil = Leistung existiert in Clockodo, aber ihre ID
+    /// wurde noch nicht erfasst → der Buchungspfad überspringt sie bewusst (kein
+    /// Raten einer falschen ID in echten Abrechnungsdaten).
+    public let clockodoServiceID: Int?
 
-    public init(id: String? = nil, name: String) {
+    public init(id: String? = nil, name: String, clockodoServiceID: Int? = nil) {
         self.id = id ?? name
         self.name = name
+        self.clockodoServiceID = clockodoServiceID
     }
 
-    /// Default-Kostenstellen für S1 (entspricht dem Mockup). Wird in S2 durch die
-    /// echten Airtable-Projektfeld-Werte ersetzt.
+    /// Die echten Clockodo-Leistungen der Mykilos GmbH (Stand 2026-07-01, aus den
+    /// Clockodo-Screenshots + der Airtable-Tabelle `Clockodo-Leistungen`
+    /// tblRtsegocdpM8CJd abgeleitet). Reihenfolge wie im Clockodo-Dropdown
+    /// (alphabetisch). Bestellungen/Versand: in Clockodo vorhanden, services_id
+    /// hier noch nicht erfasst → nicht buchbar bis ID nachgetragen.
     public static let defaults: [Kostenstelle] = [
-        Kostenstelle(name: "Planung"),
-        Kostenstelle(name: "Beratung"),
-        Kostenstelle(name: "Montage"),
-        Kostenstelle(name: "Fahrtzeit"),
-        Kostenstelle(name: "Sonstiges"),
+        Kostenstelle(name: "Angebotserstellung", clockodoServiceID: 1384970),
+        Kostenstelle(name: "Bestellungen"),
+        Kostenstelle(name: "Interne Arbeitszeit", clockodoServiceID: 1384967),
+        Kostenstelle(name: "Konzeption, Recherche, Planung CAD", clockodoServiceID: 1418402),
+        Kostenstelle(name: "Kundenberatung", clockodoServiceID: 1430450),
+        Kostenstelle(name: "Ortstermin Baustelle", clockodoServiceID: 1418401),
+        Kostenstelle(name: "Projektabrechnung", clockodoServiceID: 1384971),
+        Kostenstelle(name: "Projektbesprechung", clockodoServiceID: 1535780),
+        Kostenstelle(name: "Projektmanagement", clockodoServiceID: 1384969),
+        Kostenstelle(name: "Versand"),
     ]
 }
 

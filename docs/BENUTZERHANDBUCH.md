@@ -555,6 +555,20 @@ oder außerhalb der App entstehen. Zwei Härtungen:
    + Straßen-Code) manuell anpassen — die laufende Projektnummer selbst ist **nie** editierbar,
    die kommt ausschließlich aus der kollisionsgeprüften Vergabe.
 
+**Kostenstellen = echte Clockodo-Leistungen (Härtung, 2026-07-01, aus Live-Screenshots abgeleitet).**
+Die Timer-Kostenstellen waren bisher 5 Platzhalter (Planung/Beratung/Montage/Fahrtzeit/Sonstiges),
+die nicht der Realität entsprachen. Aus den echten Clockodo-Screenshots ist jetzt das korrekte
+**Zwei-Achsen-Modell** verankert:
+- Clockodo **„Kunde/Projekt"** (Mykilos GmbH, Amoulong, Baron-Voght-Straße …) = die **Projekt-
+  Achse** (`customers_id`). Kommt in mykilOS aus der Projektnummer — **keine Kostenstelle**.
+- Clockodo **„Leistung"** (Kundenberatung, CAD-Planung, Ortstermin …) = die **Kostenstelle**
+  (`services_id`). `Kostenstelle.clockodoServiceID` trägt die echte Clockodo-ID, sodass die
+  Buchung ohne Rate-Mapping direkt die richtige `services_id` setzt.
+Die 10 echten Leistungen sind im Code (`Kostenstelle.defaults`) verankert; 8 mit bekannter
+Clockodo-ID, 2 (Bestellungen/Versand) sind in Clockodo vorhanden, aber ihre `services_id` ist
+noch nicht erfasst → nicht buchbar bis nachgetragen (kein Raten in echten Abrechnungsdaten). Die
+Airtable-Tabelle `Clockodo-Leistungen` (Mirror) enthält jetzt alle 10.
+
 **Assistent: destilliertes Gedächtnis Stufe 2 (Härtung, 2026-07-01, Johannes).**
 Ergänzt Stufe 1 (System-Prompt-/Tool-Cache-Breakpoints): bei langen Chat-Threads wurde bisher der
 komplette Rohverlauf (bis zu 120 Nachrichten, siehe `memoryWindowDays`) bei jedem Turn neu an die
