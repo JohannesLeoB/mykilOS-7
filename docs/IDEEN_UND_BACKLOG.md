@@ -281,11 +281,16 @@ App sync't beim Start, Kalkulationsmodul liest lokal. Keine doppelte Pflege.
 **Bases:** 1 Base bleibt — Mastermind `appuVMh3KDfKw4OoQ`. Kein Split geplant.
 Alte Base `appkPzoEiI5eSMkNK` ist stillgelegt — nie anfassen.
 
-### 📋 Stundensätze manuell eintragen (Johannes-Aktion)
-**Quelle:** PARTNER_APP_SCHEMA.md offener Punkt, bestätigt 2026-06-28.
-**Problem:** `Clockodo-Leistungen.Stundensatz (€/h)` ist in Airtable noch leer (8 Leistungsarten).
-**Aktion:** Johannes trägt Büro-Stundensätze direkt in Airtable ein, bevor
-das Kalkulationsmodul live geht. Bürogeheimnis, nicht in Code/Docs.
+### 🚧 Stundensätze — Schätzwerte eingetragen, echte Werte stehen aus (Johannes-Aktion)
+**Quelle:** PARTNER_APP_SCHEMA.md offener Punkt, bestätigt 2026-06-28. **Update 2026-07-01
+(M5, Konsolidierung):** `Clockodo-Leistungen.Stundensatz (€/h)` war leer und blockierte damit
+JEDE Kalkulation (leerer Wert statt Platzhalter). Auf Johannes' Wunsch jetzt mit runden
+Schätzwerten befüllt (60–100 €/h, nach Leistungsart gestaffelt: Kundenberatung/Konzeption-CAD
+am höchsten, interne Arbeitszeit am niedrigsten) — bewusst nur direkt in Airtable, keine
+Schreib-UI in der App (Bürogeheimnis-Regel bleibt: Werte nie in Code/Docs).
+**Aktion (weiterhin offen):** Johannes ersetzt die Schätzwerte direkt in Airtable durch die
+echten Büro-Stundensätze, sobald er Zeit hat — kein Zeitdruck, das Kalkulationsmodul rechnet
+bis dahin mit plausiblen Platzhaltern statt gar nicht.
 
 ---
 
