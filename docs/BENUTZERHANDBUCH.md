@@ -777,7 +777,9 @@ Klärung echter Ordner vs. Sandbox).
 (echte Live-Kollision entdeckt + gefixt: Live-Drive-Check vor jeder Nummernvergabe + Ordnername-
 Vorschau/Edit-Modus im Fragebogen), mykilOS-8.0-Konsolidierung: HYPERBUILD/CLAUDE.md-Doku-Wahrheit,
 toter Code raus (AssistantWidget, Fragebogen-Stubs, Bootstrap-Sondierung), Anthropic Prompt-Caching,
-GmailCacheStore verdrahtet, M3 ClickUp-Listen-IDs live verlinkt, Clockodo-Adapter-Base aufgebaut
+GmailCacheStore verdrahtet, M3 ClickUp-Listen-IDs teilweise live verlinkt (10 von 33 Projekten,
+live gegen Airtable geprüft 2026-07-01 — noch nicht vollständig, siehe HYPERBUILD.md M3),
+Clockodo-Adapter-Base aufgebaut
 (Stundensätze/Kostenstellen-Stammdaten + ClockodoAdapterWriter: Timer-Buchungen → Zeitbuchungen-
 Tabelle), Bestandskunde-auswählen im Fragebogen (Airtable+Google), Artikel-Katalog-Cache,
 Gmail-Parallelfetch, Assistent-Chat-Scroll-Fix, Live-Schema-Diagnose, CartStore-Feld-ID-Fix,

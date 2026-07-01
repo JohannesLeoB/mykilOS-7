@@ -504,6 +504,30 @@ Personal-Access-Token + lokalem `curl`-Skript funktioniert, ist aber kein
 dauerhaft eingebauter App-Mechanismus. Falls der Connector das später
 nachrüstet: Workaround obsolet, aber unkritisch.
 
+### 📋 Airtable-Automation gegen doppelte Projektnummer (Rezept, nicht gebaut)
+**Quelle:** 2026-07-01, Nachgang zur Kollisionshärtung (`44270bb`). Die
+App-seitige Live-Drive-Kollisionsprüfung (`reserviereKollisionsfreieNummer`)
+schließt nur die Lücke "Drive-Ordner ohne Airtable-Zeile". Zwei doppelte
+Airtable-**Zeilen** mit derselben Projektnummer (z. B. durch einen manuellen
+Airtable-Edit) erkennt sie nicht — das bräuchte eine Airtable-native
+Automation. Mein Airtable-MCP-Toolset kann den Automation-Editor nicht
+ansteuern (nur Base/Tabelle/Feld/Record-CRUD), daher hier als manuelles
+Rezept für den Airtable-Automation-Editor (Web-UI, Base "mykilOS Mastermind"
+→ Automations → "+ Create automation"):
+1. **Trigger:** "When a record is updated" → Tabelle `Projekte`, beobachtetes
+   Feld `Projektnummer`.
+2. **Action 1 — Find records:** Tabelle `Projekte`, Filter
+   `Projektnummer = {Trigger record → Projektnummer}`, Sortierung egal.
+3. **Action 2 — Condition:** nur fortfahren, wenn "Find records" **mehr als
+   1** Treffer liefert (sonst ist es die triggernde Zeile selbst).
+4. **Action 3 — Send email/Slack-Nachricht** (oder ein Feld `Duplikat-
+   Warnung` per "Update record" setzen): Text z. B. "Doppelte Projektnummer
+   {Projektnummer} in {Anzahl Treffer} Zeilen — bitte manuell klären."
+Ergänzt das bereits gebaute `Format-Check`-Formelfeld (prüft nur die eigene
+Zeile gegen das `JJJJ_NNN_...`-Schema, siehe BENUTZERHANDBUCH.md) um den
+zeilenübergreifenden Fall. Aufwand ca. 10 Minuten im Airtable-UI, nicht
+terminiert — bei Bedarf einfach nachbauen.
+
 ---
 
 ## Security & Onboarding
