@@ -673,6 +673,13 @@ public final class AppState {
         let projektTable  = "Projekte"
         var projektFelder: [String: AirtableFieldValue] = ergebnis.projektFelder
             .reduce(into: [:]) { dict, pair in dict[pair.key] = .string(pair.value) }
+        // Fix (2026-07-01, Live-Untersuchung HTTP 422): "Budget" ist in Airtable ein
+        // Number-Feld — `IntakeResultBuilder` liefert es als String (`String(budget)`),
+        // was Airtable mit INVALID_VALUE_FOR_COLUMN ablehnt. Hier auf `.number` umwandeln,
+        // statt den Rohwert blind als `.string` zu senden.
+        if let budgetString = ergebnis.projektFelder["Budget"], let budget = Double(budgetString) {
+            projektFelder["Budget"] = .number(budget)
+        }
         // Kunden-Verknüpfung: multipleRecordLinks — als Array übergeben.
         // Airtable verlangt für Link-Felder ein JSON-Array. .array([]) ist der korrekte Typ.
         if kundeRecordID.isEmpty == false {

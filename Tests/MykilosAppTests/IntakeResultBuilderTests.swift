@@ -26,6 +26,24 @@ struct IntakeResultBuilderTests {
         #expect(ergebnis.kundeFelder["Kontakt 1 Telefon"] == "+49 40 123456")
     }
 
+    // Fix (Live-HTTP-422, 2026-07-01): "Quelle" wurde bisher IMMER gesetzt, auch als leerer
+    // String bei keiner Auswahl — anders als jedes andere Feld in mapKundeFelder. Ein
+    // Single-Select-Feld lehnt einen leeren String eher ab als ein fehlendes Feld.
+    @Test func quelleFehltWennNichtsAusgewaehlt() {
+        let m = FragebogenModel()
+        m.kundeNachname = "Berger"
+        let ergebnis = IntakeResultBuilder.build(from: m)
+        #expect(ergebnis.kundeFelder["Quelle"] == nil)
+    }
+
+    @Test func quelleIstGesetztWennAusgewaehlt() {
+        let m = FragebogenModel()
+        m.kundeNachname = "Berger"
+        m.quelle = [.empfehlung]
+        let ergebnis = IntakeResultBuilder.build(from: m)
+        #expect(ergebnis.kundeFelder["Quelle"] == "Empfehlung")
+    }
+
     @Test func mapptProjektNameUndStatus() {
         let m = FragebogenModel()
         m.projektName = "2026-099 Mustermann"

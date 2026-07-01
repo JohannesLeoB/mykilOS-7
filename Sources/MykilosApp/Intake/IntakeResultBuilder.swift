@@ -118,7 +118,11 @@ public enum IntakeResultBuilder {
             if adressteile.count > 1 { felder["Angebotsadresse PLZ"] = plz }
             if !ort.isEmpty { felder["Angebotsadresse Ort"] = ort }
         }
-        felder["Quelle"] = m.quelle.map(\.rawValue).sorted().joined(separator: ", ")
+        // Fix (2026-07-01, Live-HTTP-422): unconditional -- selbst bei LEERER Auswahl wurde
+        // hier bisher ein leerer String gesendet, statt das Feld wegzulassen wie bei jedem
+        // anderen Feld in dieser Funktion (siehe die if-!isEmpty-Guards oben).
+        let quelle = m.quelle.map(\.rawValue).sorted().joined(separator: ", ")
+        if !quelle.isEmpty { felder["Quelle"] = quelle }
         // Sonderwünsche / Notizen
         let notizen = buildKundeNotizen(m)
         if !notizen.isEmpty { felder["Notizen"] = notizen }

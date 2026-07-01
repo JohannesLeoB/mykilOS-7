@@ -225,6 +225,33 @@ struct CartStoreTests {
         #expect(version == 3)
     }
 
+    // Review-Fix (2026-07-01, Live-HTTP-422): `feldProjekt` ist ein Link-to-record-Feld —
+    // ohne `projektRecordID` darf NIE ein roher Projektname als `.string` gesendet werden
+    // (Airtable lehnt das mit 422 ab). Das Feld muss dann einfach fehlen.
+    @Test func ohneProjektRecordIDBleibtFeldProjektLeer() async throws {
+        let fake = FakeAirtableRW()
+        let item = WarenkorbItem(bezeichnung: "Spüle", artikelnummer: "SPL-003", menge: 1, quelle: "test")
+        let wk = Warenkorb(items: [item], projektRecordID: nil, projektName: "Küche ohne Record-ID")
+
+        let store = CartStore(fetcher: fake, creator: fake, updater: fake)
+        _ = try await store.sendWarenkorbToAirtable(wk)
+
+        let createdFields = fake.createdRecords.first(where: { $0.table == CartStore.warenkorbTable })?.fields
+        #expect(createdFields?[CartStore.feldProjekt] == nil)
+    }
+
+    @Test func mitProjektRecordIDWirdArrayGesendet() async throws {
+        let fake = FakeAirtableRW()
+        let item = WarenkorbItem(bezeichnung: "Spüle", artikelnummer: "SPL-004", menge: 1, quelle: "test")
+        let wk = Warenkorb(items: [item], projektRecordID: "recPROJEKT", projektName: "Küche Meyer")
+
+        let store = CartStore(fetcher: fake, creator: fake, updater: fake)
+        _ = try await store.sendWarenkorbToAirtable(wk)
+
+        let createdFields = fake.createdRecords.first(where: { $0.table == CartStore.warenkorbTable })?.fields
+        #expect(createdFields?[CartStore.feldProjekt] == .array(["recPROJEKT"]))
+    }
+
     @Test func positioenenJSONIstImCreatedRecord() async throws {
         let fake = FakeAirtableRW()
         let item = WarenkorbItem(bezeichnung: "Armatur", artikelnummer: "ARM-X", menge: 3, ekNetto: 60.0, vkNetto: 90.0, quelle: "test")

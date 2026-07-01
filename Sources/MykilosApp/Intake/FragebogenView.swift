@@ -425,7 +425,14 @@ struct FragebogenView: View {
                         .foregroundStyle(MykColor.muted.color)
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 180))], spacing: MykSpace.s2) {
                         ForEach(FragebogenTriggerStufe.allCases) { stufe in
-                            pickButton(stufe.rawValue, active: triggerStufe == stufe) { triggerStufe = stufe }
+                            pickButton(stufe.rawValue, active: triggerStufe == stufe) {
+                                triggerStufe = stufe
+                                // Fix (Live-Test, 2026-07-01): ein Fehler/Erfolg einer vorherigen
+                                // Stufe blieb sonst sichtbar stehen, obwohl noch gar kein Versuch
+                                // für die NEU gewählte Stufe unternommen wurde — wirkte wie ein
+                                // Fehlschlag aller Stufen, obwohl nur eine wirklich versucht wurde.
+                                schreibPhase = .idle
+                            }
                         }
                     }
                     if let hinweis = stufeFehlenderHinweis(ergebnis: ergebnis) {
