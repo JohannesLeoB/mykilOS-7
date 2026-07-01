@@ -2,12 +2,32 @@ import Foundation
 import MykilosKit
 
 // MARK: - AirtableError
-public enum AirtableError: Error, Sendable, Equatable {
+// Fix (2026-07-01, Live-Untersuchung Warenkorb-Versand): ohne LocalizedError-
+// Konformität bridged Swift jeden AirtableError generisch zu NSError mit
+// domain=Typname + code=0 — die UI zeigte deshalb "AirtableError error 0" statt
+// der echten Ursache (z. B. HTTP 422). Jetzt zeigt jeder Call-Site dieselbe
+// aussagekräftige Meldung wie der bereits korrekte Fragebogen-Pfad (IntakeSchreibFehler).
+public enum AirtableError: Error, LocalizedError, Sendable, Equatable {
     case notConnected
     case invalidResponse
     case httpError(Int)
     case decodingFailed
     case invalidBaseID(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .notConnected:
+            return "Airtable nicht verbunden — Personal Access Token in den Einstellungen eintragen."
+        case .invalidResponse:
+            return "Airtable-Antwort ungültig (keine HTTP-Antwort erhalten)."
+        case .httpError(let code):
+            return "Airtable-Fehler HTTP \(code)"
+        case .decodingFailed:
+            return "Airtable-Antwort konnte nicht gelesen werden (Decoding fehlgeschlagen)."
+        case .invalidBaseID(let msg):
+            return "Schreibschutz verletzt: \(msg)"
+        }
+    }
 }
 
 // MARK: - AirtableFetching

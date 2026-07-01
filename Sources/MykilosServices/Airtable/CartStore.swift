@@ -149,11 +149,12 @@ public struct CartStore: Sendable {
             Self.feldErstelltAm:       .string(iso8601),
         ]
 
-        // Projekt-Record-ID-Link (Array-Feld in Airtable)
+        // Projekt-Record-ID-Link: `feldProjekt` ist ein Link-to-record-Feld in Airtable
+        // und verlangt IMMER ein Array echter Record-IDs. Ein roher Projektname-String
+        // (ohne Record-ID) führte hier bisher zu HTTP 422 — Fix: Feld bleibt einfach leer,
+        // wenn keine Record-ID vorliegt, statt einen ungültigen Freitext-Fallback zu senden.
         if let projektRecordID = wk.projektRecordID {
             felder[Self.feldProjekt] = .array([projektRecordID])
-        } else if let projektName = wk.projektName, !projektName.isEmpty {
-            felder[Self.feldProjekt] = .string(projektName)
         }
 
         // 8. Neuen Warenkorb-Record anlegen
