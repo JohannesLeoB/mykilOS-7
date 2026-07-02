@@ -162,3 +162,25 @@ Feste, benannte Ausgänge der Checkout-Registry. Erweiterbar — das ist der leb
 **Reifegrad (fürs Bauen):** 14/15/3/9 nutzen weitgehend Vorhandenes (Mail-Entwurf, Drive-Upload,
 Angebots-Erkennung, KalkulationsEngine); 1/8/10 sind neue Renderer/Generatoren; alle laufen über
 Karte→Bestätigung→Audit. Liste bleibt offen — neue Ports werden hier ergänzt.
+
+### 5d. Harte Regel — sevDesk-Übergabe nur indirekt, gated, append-only (Johannes, 2026-07-02)
+
+**Grenze bleibt heilig:** mykilOS schreibt NIEMALS direkt an sevDesk (bestehendes NO-GO). Die
+Übergabe läuft ausschließlich über eine **Airtable-Übergabe-Tabelle**, aus der sevDesk „abholt"
+(Pull außerhalb von mykilOS). mykilOS berührt sevDesk nie.
+
+**Inhalts-Art-Gate:**
+- **„Kreativ"-Warenkörbe (Bilder / Moodboard / Zeichnungen / Präsentation / Firefly …) →
+  NIE in den sevDesk-Übergabepfad.** Kategorisch ausgeschlossen.
+- **Nur geschäftliche Inhalts-Arten** — Artikel / Kunden / Angebote / Cash — dürfen den
+  sevDesk-Übergabe-Port überhaupt anbieten.
+
+**Übergabe-Mechanik (Port „sevDesk-Übergabe"):**
+- **Doppelte Bestätigung** (zwei getrennte Bestätigungsschritte) vor dem Schreiben.
+- Ziel: dedizierte **Übergabe-Airtable-Tabelle** (auf der `writableMap`-Whitelist), eingerichtet
+  für sevDesk-Abholung.
+- Jeder Übergabe-Record trägt: **feste ID · Erzeuger (Nutzer) · Inhalts-Hash (SHA256 der Picks)**.
+- **APPEND-ONLY:** nie überschreiben, nie löschen — immer nur weiterschreiben (deckt sich mit der
+  Airtable-Kein-Delete-Regel). Der Inhalts-Hash dient der Dedup/Nachvollziehbarkeit, nicht dem
+  Überschreiben.
+- Alles zusätzlich lokal als AuditEntry (Karte→Bestätigung→Audit), plus Write-Shadow-Log.
