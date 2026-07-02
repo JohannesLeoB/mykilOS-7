@@ -25,6 +25,12 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ## Nachtrag 2026-07-02 spät — Drive/Mail-Alerts auf bestehenden Beobachtungspfaden (Johannes)
 
+- 📋 **„Alter Zeichnungsstand"-Warnung beim Mail-Versand:** wenn aus Assistent oder integrierter
+  Mailfunktion ein Zeichnungsanhang verschickt wird, der nicht die neueste namensähnliche Datei im
+  Drive-Projektordner ist → Warnhinweis vor dem Senden. **Buildbar auf Bestehendem:** Drive-
+  Ordnerlisting existiert schon (`GoogleDriveClient`), Mail-Anhänge sind gerade erst live geworden
+  (`MailAttachmentRow`/`MailAttachmentDriveSheet`, diese Session) — fehlt nur ein Namens-Ähnlichkeits-
+  Abgleich (Basisname ohne Versions-/Datumssuffix) + Datums-/Versionsvergleich vor dem Senden.
 - 📋 **Nachfass-Erinnerung bei Angebot ohne Reaktion:** „bei dem Angebot müsste ich mal wieder
   nachfassen" — zeitbasiertes Signal, wenn ein ausgehendes Angebot seit N Tagen ohne erkennbare
   Reaktion (keine neue Datei/Mail im Projekt) liegt. **Buildbar auf Bestehendem:** Datum steckt
