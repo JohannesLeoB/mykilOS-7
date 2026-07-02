@@ -856,5 +856,14 @@ Werkzeug-Einordnung in [[massendaten-katalog-miner]] (Memory):
   eigene, günstige Recherche-Session. Rückrichtung (Vectorworks→mykilOS) besonders vorsichtig
   angehen (Zeichnungsarbeit der Planer nicht überschreiben) — analog Read-only-first-Prinzip
   der sevDesk-Postbox.
+  **Architektur-Antwort (Johannes-Frage 2026-07-02, geklärt):** Rückrichtung läuft über eine
+  **`mykilOS_CAD Adapter`-Postbox** (spiegelbildlich zur sevDesk-Postbox, Richtung umgekehrt:
+  Vectorworks schreibt, mykilOS liest read-only) — das ist die Datenquellen-Schicht. **KEINE**
+  eigene CAD-spezifische Alerts-Tabelle daneben — der Adapter speist stattdessen das
+  **bestehende Signal-System** (`StudioContext.emit()` → Mediator → Widget-Hinweis, gleiches
+  Muster wie `DriveOfferWatcher` → `offerDetected` heute schon). Eine generische, zentrale
+  **„mykilOS Alerts"-Tabelle** (ClickUp-Deadlines + neue Angebote + Mail + CAD zusammen) ist das
+  bereits erkannte **Benachrichtigungs-Zentrum** aus `FINALE_APP_RUECKWAERTS.md` — ein eigener,
+  größerer Strang, nicht nebenbei für CAD mitzubauen.
 
 **Alle vier: nicht selbstständig starten.** Erst auf Johannes' ausdrücklichen Zuruf zünden.
