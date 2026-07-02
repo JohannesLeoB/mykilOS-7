@@ -7,8 +7,33 @@ spät als "geparkt" markiert — Brain hat unabhängig begonnen: 10 Custom Field
 verifiziert, Namen/Typen/Dropdown-Optionen stimmen exakt). Nächster Schritt laut Brain (wartet
 auf Johannes' Go): Felder auf ~101 Slack-Rekonstruktions-Tasks setzen. Koordination läuft über
 Johannes als manuelles Gate (`[BRAIN →]`/`[CODE →]`-Format, kein direkter Agent-zu-Agent-Kanal).
-Arbeitsteilung laut Brain-Vorschlag: Brain = ClickUp-Schreibzugriff, Code (Claude Code) =
-Airtable-Ghost-Adapter + Swift-Provisioning-Code — **noch nicht von Johannes final bestätigt.**
+Arbeitsteilung (Johannes bestätigt 2026-07-03): **Brain = ClickUp-Schreibzugriff + Prozess-/
+Schema-/Automatisierungs-Design** (mehr Prozess-Knowhow), **Code (Claude Code) = App-Architektur +
+Swift + Airtable-Ghost-Adapter** (mehr App-Tiefe). Brain darf inspirieren, Code hält die
+App-Architektur-Hoheit. Koordination über Johannes als manuelles Gate.
+
+---
+
+## 0b. Cross-Pollination — Brains ClickUp-Schema ↔ mykilOS-Konzepte (Inspiration, 2026-07-03)
+
+Brains 10 Custom Fields sind **echter Architektur-Input für mykilOS 8**, nicht nur ClickUp-
+Verwaltung — mehrere mappen direkt (teils als Verbesserung) auf bestehende/geplante mykilOS-Konzepte:
+
+| Brain-Feld | mykilOS-Konzept | Nutzen |
+|---|---|---|
+| `project_phase` (7 Phasen: Briefing/Planung/Angebot/Bestellung/Ausführung/Abschluss/Service) | Projekt-Lebenszyklus-Stepper im Hero (heute 5: Akquise/Planung/Angebot/Ausführung/Abschluss) | **Verfeinerung** — Brains 7-Phasen-Modell ist granularer (Briefing vorne, Bestellung + Service hinten). Erwägen, den mykilOS-Stepper darauf anzugleichen → EINE Phasen-Wahrheit innen+außen. |
+| `evidence_grade` (stark/mittel/schwach/konflikt) | Kalkulations-Engine Konfidenz-Badge + Verlässlichkeits-Parameter ([[angebots-brain-synthese]]) | **Gemeinsames Vokabular** für Datenverlässlichkeit über beide Systeme — sollte identisch benannt sein. |
+| `source_system` (Slack/Drive/Airtable/myKilOS/manual) | `DataFlowLogger`-integrationID + „Quelle immer sichtbar"-Regel (Quellenzeile) | **Direkte Entsprechung** — dasselbe Herkunfts-Tracking-Prinzip, nur in ClickUp. |
+| `blocker_type` (intern/Kunde/Lieferant/Daten/Geld/Datei) | Alerts-/Signal-Taxonomie (die 5 heutigen Alert-Ideen) | **Neue, gute Taxonomie** — was blockiert ein Projekt, kategorisiert. Direkt in die Alert-Kategorien übernehmbar. |
+| `finance_relevant` / `change_order_relevant` | sevDesk-Postbox-Gate (§5d: nur geschäftliche Inhalts-Arten) + Nachträge (§5j) | Flags, die das Postbox-Gating und den Nachtrag-Lebenszyklus steuern könnten. |
+| `review_required` | Karte→Bestätigung→Audit-Gate | Ob ein Objekt menschliche Freigabe braucht — dasselbe Prinzip. |
+| `mykilos_project_id` / `client_name` / `drive_folder_url` | Cross-System-Verknüpfungsschlüssel (Projektnummer/Kunde/Drive-Ordner) = `ExternalMappingRegistry` | **Kernstück** — die Felder, die ClickUp↔Airtable↔Drive↔mykilOS zusammenhalten. |
+
+**Kollaborations-Bereiche, wo Brain führen kann (Prozess), Code umsetzt (App):** ClickUp-
+Meilenstein-Strukturen, ClickUp-Automations-Design (Trigger/Statusübergänge), Custom-Field-
+Schema-Evolution. Brain designt die Prozess-Wahrheit, Code spiegelt sie in App/Airtable. **Regel
+bleibt:** „Gleiche Wahrheit innen und außen" (Brains Eiserne Regel #9) — Schema-Änderungen werden
+zwischen beiden Systemen synchron gehalten, nicht divergent.
 
 ---
 
