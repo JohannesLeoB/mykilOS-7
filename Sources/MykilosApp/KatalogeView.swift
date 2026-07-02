@@ -153,6 +153,7 @@ struct KatalogeView: View {
             }
             .buttonStyle(.plain)
             .help("Neues Projekt über Fragebogen anlegen")
+            .accessibilityLabel("Neues Projekt über Fragebogen anlegen")
 
             // Warenkorb-Badge-Button
             Button {
@@ -179,6 +180,7 @@ struct KatalogeView: View {
             }
             .buttonStyle(.plain)
             .help(warenkorb.istLeer ? "Warenkorb (leer)" : "Warenkorb (\(warenkorb.anzahl) Pos.)")
+            .accessibilityLabel(warenkorb.istLeer ? "Warenkorb (leer)" : "Warenkorb (\(warenkorb.anzahl) Pos.)")
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.top, MykSpace.s9)

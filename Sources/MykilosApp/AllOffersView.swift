@@ -149,6 +149,7 @@ struct AllOffersView: View {
             }
             .buttonStyle(.plain)
             .help("Alle Projektordner neu durchsuchen")
+            .accessibilityLabel("Alle Projektordner neu durchsuchen")
         }
     }
 

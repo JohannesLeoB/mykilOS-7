@@ -211,6 +211,7 @@ public struct AssistantChatView: View {
                     .padding(.top, MykSpace.s5)
                     .padding(.trailing, MykSpace.s9)
                     .help("Verlauf löschen")
+                    .accessibilityLabel("Verlauf löschen")
                 }
             }
             .onChange(of: messages.last?.id) { _, last in
@@ -315,6 +316,7 @@ public struct AssistantChatView: View {
             .buttonStyle(.plain)
             .disabled(engine.isResponding == false && canSend == false)
             .help(engine.isResponding ? "Antwort abbrechen" : "Senden")
+            .accessibilityLabel(engine.isResponding ? "Antwort abbrechen" : "Senden")
         }
         .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s5)
         .overlay(alignment: .top) { Divider().overlay(MykColor.line.color) }

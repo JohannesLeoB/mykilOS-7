@@ -83,6 +83,7 @@ struct ProjectHeroView: View {
         }
         .buttonStyle(.plain)
         .help(isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen")
+        .accessibilityLabel(isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen")
     }
 
     // MARK: Held-Inhalt

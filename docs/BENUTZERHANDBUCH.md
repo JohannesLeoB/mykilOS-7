@@ -245,6 +245,15 @@ damit **nicht mehr stur nach dem System**, sondern nach deiner Wahl.
   UserDefaults) — nicht teamweit geteilt, passt zum local-first Ein-Nutzer-pro-Gerät-
   Modell. Gilt sofort, auch fürs „Über"-Fenster.
 
+**Barrierefreiheits-Härtung (2026-07-02):** Die Sekundär-/Tertiärtext-Farben (`muted`,
+`faint`) wurden systemweit nachgedunkelt, bis sie den WCAG-AA-Kontrasttest bestehen
+(muted ≥4.5:1 für Normaltext, faint ≥3.0:1 — in Hell UND Dunkel, auf allen drei
+Hintergrundtönen). Zusätzlich tragen alle Icon-only-Buttons mit Tooltip jetzt ein
+VoiceOver-Label (26 Stellen), und es gibt einen zentralen `MykIconButton`-Baustein
+(MykilosDesign), bei dem das Label ein Pflicht-Parameter ist — künftige Icon-Buttons
+können nicht mehr ohne entstehen. Kleine, flächige Aufhellung der grauen Texte ist
+beabsichtigt und kein Fehler.
+
 ## Integrationen (Settings → Integrationen)
 
 Übersicht aller verbundenen Dienste mit Verbindungsstatus.

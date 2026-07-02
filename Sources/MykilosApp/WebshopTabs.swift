@@ -193,6 +193,7 @@ struct ArtikelShopTab: View {
                 }
                 .buttonStyle(.plain)
                 .help("Listenansicht")
+                .accessibilityLabel("Listenansicht")
 
                 Button {
                     zeigeKacheln = true
@@ -206,6 +207,7 @@ struct ArtikelShopTab: View {
                 }
                 .buttonStyle(.plain)
                 .help("Kachelansicht")
+                .accessibilityLabel("Kachelansicht")
             }
             .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
             .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
@@ -220,6 +222,7 @@ struct ArtikelShopTab: View {
             }
             .buttonStyle(.plain)
             .help("Katalog neu laden")
+            .accessibilityLabel("Katalog neu laden")
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s4)
@@ -780,6 +783,7 @@ struct LagerTab: View {
             }
             .buttonStyle(.plain)
             .help("Lagerliste neu laden")
+            .accessibilityLabel("Lagerliste neu laden")
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s4)
@@ -1103,6 +1107,7 @@ struct WarenkorbListeTab: View {
             }
             .buttonStyle(.plain)
             .help("Warenkörbe neu laden")
+            .accessibilityLabel("Warenkörbe neu laden")
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s4)
@@ -1257,19 +1262,11 @@ private struct WarenkorbZeile: View {
                 HStack(spacing: MykSpace.s2) {
                     // Neutrale Vorschau — öffnet dieselben Positionen read-only,
                     // ändert den aktiven Warenkorb NIE (Härtung 2026-07-02).
-                    Button {
+                    // Erster Nutzer des neuen MykIconButton (A11y: Pflicht-Label).
+                    MykIconButton("eye", label: "Vorschau — lädt nichts in den aktiven Warenkorb",
+                                  style: .bordered) {
                         onVorschau()
-                    } label: {
-                        Image(systemName: "eye")
-                            .font(.mykCaption)
-                            .foregroundStyle(MykColor.muted.color)
-                            .padding(MykSpace.s2)
-                            .background(MykColor.card.color)
-                            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
-                            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
                     }
-                    .buttonStyle(.plain)
-                    .help("Vorschau — lädt nichts in den aktiven Warenkorb")
 
                     Button {
                         onWiederherstellen()

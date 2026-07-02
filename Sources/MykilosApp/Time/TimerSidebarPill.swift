@@ -36,6 +36,7 @@ struct TimerSidebarPill: View {
             }
             .buttonStyle(.plain)
             .help("\(active.projektTitel) · \(TimerFormat.clock(store.currentRunSeconds()))")
+            .accessibilityLabel("\(active.projektTitel) · \(TimerFormat.clock(store.currentRunSeconds()))")
         } else {
             Button { checkInRequested = true } label: {
                 HStack(spacing: 9) {
@@ -60,6 +61,7 @@ struct TimerSidebarPill: View {
             }
             .buttonStyle(.plain)
             .help("Check-in: läuft der Timer noch?")
+            .accessibilityLabel("Check-in: läuft der Timer noch?")
         }
     }
 

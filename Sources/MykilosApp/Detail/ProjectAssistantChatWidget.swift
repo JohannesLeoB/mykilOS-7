@@ -53,6 +53,7 @@ struct ProjectAssistantChatWidget: View {
             }
             .buttonStyle(.plain)
             .help("Assistent maximieren")
+            .accessibilityLabel("Assistent maximieren")
         }
         .padding(.horizontal, MykSpace.s5)
         .padding(.vertical, MykSpace.s4)

@@ -77,6 +77,8 @@ struct KontakteKatalogTab: View {
                 Button { Task { await loader.load() } } label: {
                     Image(systemName: "arrow.clockwise").font(.mykCaption).foregroundStyle(MykColor.people.color)
                 }.buttonStyle(.plain)
+                    .help("Kontakte neu laden")
+                    .accessibilityLabel("Kontakte neu laden")
                 if case .content(let c) = loader.state {
                     Text("\(c.count) Kontakte · AIRTABLE")
                         .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
@@ -249,6 +251,7 @@ private struct KontakteRow: View {
             .buttonStyle(.plain)
             .onHover { emailHovered = $0 }
             .help("Mail an \(addr) schreiben")
+            .accessibilityLabel("Mail an \(addr) schreiben")
             .confirmationDialog(
                 "Mail an \(addr) schreiben?",
                 isPresented: Binding(

@@ -70,6 +70,7 @@ struct SidebarView: View {
         .buttonStyle(.plain)
         .onHover { brandHovered = $0 }
         .help(isCompact ? "Sidebar ausklappen" : "Sidebar einklappen")
+        .accessibilityLabel(isCompact ? "Sidebar ausklappen" : "Sidebar einklappen")
     }
 
     // MARK: Navigations-Items (ohne Settings — kommt als Icon in den Footer)
@@ -106,6 +107,7 @@ struct SidebarView: View {
         .buttonStyle(.plain)
         .onHover { hover in withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) { profileHovered = hover } }
         .help("Einstellungen · \(footDisplayName)")
+        .accessibilityLabel("Einstellungen · \(footDisplayName)")
     }
 
     private var footIsOnline: Bool {
@@ -165,6 +167,10 @@ private struct NavItem: View {
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
         .help(compact ? module.rawValue : "")
+        // A11y (2026-07-02): VoiceOver braucht das Modul-Label IMMER — auch im Breitmodus,
+        // wo der Tooltip bewusst leer bleibt (dort ist der Text zwar sichtbar, aber das
+        // Label macht den Button als Navigations-Ziel konsistent benannt).
+        .accessibilityLabel(module.rawValue)
     }
 
     @ViewBuilder private var content: some View {

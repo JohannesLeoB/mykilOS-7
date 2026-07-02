@@ -502,6 +502,7 @@ private struct MailDetailView: View {
         }
         .buttonStyle(.plain)
         .help(label)
+        .accessibilityLabel(label)
     }
 
     // MARK: Nachrichten-Header

@@ -72,6 +72,7 @@ struct AppDockStrip: View {
         Button { if let new = Self.pickApp() { store.add(new) } } label: { plusLabel }
             .buttonStyle(.plain)
             .help("App hinzufügen")
+            .accessibilityLabel("App hinzufügen")
     }
 
     @ViewBuilder private var plusLabel: some View {
@@ -124,6 +125,7 @@ private struct AppDockIcon: View {
             .buttonStyle(.plain)
             .onHover { hover in withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) { hovered = hover } }
             .help(FileManager.default.displayName(atPath: path))
+            .accessibilityLabel(FileManager.default.displayName(atPath: path))
             .contextMenu {
                 Button("Ersetzen …", action: onReplace)
                 Button("Entfernen", role: .destructive, action: onRemove)

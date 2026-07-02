@@ -33,8 +33,12 @@ public enum MykColor {
         case .line:     Self.adaptive(light: 0xE0DACE, dark: 0x3E3A32)
         case .ink:      Self.adaptive(light: 0x1A1814, dark: 0xF0EDE6)
         case .inkSoft:  Self.adaptive(light: 0x4A463E, dark: 0xC4BFB4)
-        case .muted:    Self.adaptive(light: 0x8C8678, dark: 0x8C8678)
-        case .faint:    Self.adaptive(light: 0xB4AEA0, dark: 0x5A5548)
+        // A11y-Härtung (2026-07-02, Design-Kritik): muted/faint fielen im WCAG-Kontrasttest
+        // durch (muted 3.4:1, faint 2.1:1 auf paper). Neu: muted ≥4.5 (AA Normaltext) und
+        // faint ≥3.0 (AA Großtext/UI) auf paper, card UND paper2 — in beiden Appearances.
+        // Die Stufung ink > inkSoft > muted > faint bleibt sichtbar erhalten.
+        case .muted:    Self.adaptive(light: 0x716B5D, dark: 0x9A9486)
+        case .faint:    Self.adaptive(light: 0x8E8879, dark: 0x7A7466)
         case .drive:    Self.adaptive(light: 0xC26B4A, dark: 0xD4815E)
         case .people:   Self.adaptive(light: 0x6E8B6A, dark: 0x82A37E)
         case .tasks:    Self.adaptive(light: 0xC99A3E, dark: 0xDAAE52)

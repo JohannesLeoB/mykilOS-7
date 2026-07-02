@@ -82,6 +82,7 @@ struct OffersTabView: View {
             }
             .buttonStyle(.plain)
             .help(sortByDate ? "Sortierung: Neueste zuerst — klicken für Name A–Z" : "Sortierung: Name A–Z — klicken für Datum")
+            .accessibilityLabel(sortByDate ? "Sortierung: Neueste zuerst — klicken für Name A–Z" : "Sortierung: Name A–Z — klicken für Datum")
         }
         .padding(.horizontal, MykSpace.s4)
         .padding(.vertical, MykSpace.s2)
@@ -106,6 +107,7 @@ struct OffersTabView: View {
         }
         .buttonStyle(.plain)
         .help("Aktualisieren")
+        .accessibilityLabel("Aktualisieren")
     }
 
     private var retryButton: some View {
