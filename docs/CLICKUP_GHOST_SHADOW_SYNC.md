@@ -1,8 +1,14 @@
-# ClickUp Ghost-Shadow-Sync + GO-LIVE — Plan (geparkt)
+# ClickUp Ghost-Shadow-Sync + GO-LIVE — Plan (angelaufen über ClickUp Brain)
 
-**Status: Konzept v1 · 2026-07-02 · geparkt, nicht gebaut.** Vision Johannes, Architektur Claude.
-Eigener späterer Strang — braucht ClickUp read-write + volle Session-Aufmerksamkeit, kollidiert
-sonst mit der Wirbelsäule. Vertagt analog [[mykilos8-clickup-orchestration]] (Memory).
+**Status: 🟡 IN ARBEIT über einen zweiten Agenten (ClickUp Brain, Claude Opus 4.6, lebt im
+ClickUp-Workspace) · 2026-07-03 · Handshake mit Claude Code aufgenommen.** War bis 2026-07-02
+spät als "geparkt" markiert — Brain hat unabhängig begonnen: 10 Custom Fields live im Testspace
+`90128024109` angelegt (von Claude Code am 2026-07-03 per `clickup_get_custom_fields` unabhängig
+verifiziert, Namen/Typen/Dropdown-Optionen stimmen exakt). Nächster Schritt laut Brain (wartet
+auf Johannes' Go): Felder auf ~101 Slack-Rekonstruktions-Tasks setzen. Koordination läuft über
+Johannes als manuelles Gate (`[BRAIN →]`/`[CODE →]`-Format, kein direkter Agent-zu-Agent-Kanal).
+Arbeitsteilung laut Brain-Vorschlag: Brain = ClickUp-Schreibzugriff, Code (Claude Code) =
+Airtable-Ghost-Adapter + Swift-Provisioning-Code — **noch nicht von Johannes final bestätigt.**
 
 ---
 
