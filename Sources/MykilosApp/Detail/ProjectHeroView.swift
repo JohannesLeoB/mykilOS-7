@@ -34,7 +34,10 @@ struct ProjectHeroView: View {
             }
             .padding(MykSpace.s8)
         }
-        .frame(height: 280)
+        // Höhe von 280 → 190 (2026-07-02, Johannes: Hero nahm zu viel Fenster ohne viel
+        // Funktion; ~33% weniger zugunsten des Inhalts). Inhalt bleibt unten verankert
+        // (Titel/Meta), Back/Aktionen oben — Muster unverändert, nur weniger Leerraum.
+        .frame(height: 190)
         .frame(maxWidth: .infinity)
         .task(id: project.projectNumber) {
             heroImage = ProjectHeroImageStore.image(for: project.projectNumber)
