@@ -110,6 +110,13 @@ heutigem Stand.
     Engine-Kern (statistische Schätzung, LLM nur beim PDF-Import). Der Schalter braucht eine
     klare Scope-Definition, bevor er gebaut wird — sonst schaltet er entweder zu wenig oder
     unnötig viel (nicht-KI-Heuristiken) ab.
+  - **„Meine persönlichen Daten exportieren"** — muss **zu jedem Zeitpunkt** verfügbar sein,
+    **mit Safety-Net** (passt zum bestehenden Karte→Bestätigung-Muster), Export geht **nur an
+    den anfragenden Nutzer selbst** (nie geteilt, nie an andere sichtbar). Scope: alle Daten der
+    App, die Persönlichkeitsrechte/Datenschutz betreffen (Assistent-Chat-Verlauf, persönliche
+    Notizen/Memos, persönliche Settings — NICHT geteilte Team-/Projektdaten, die nicht exklusiv
+    dem Nutzer gehören). Deckt sich mit **DSGVO Art. 15 (Auskunftsrecht) + Art. 20
+    (Datenportabilität)** — echte gesetzliche Pflicht, kein optionales Extra.
 - 📋 **PRIO MITTEL-HOCH — im Implementierungsplan (S10_WIRBELSAEULE.md §9, Parallel-Track)
   eingetragen (Johannes 2026-07-02 spät).** Stattdessen (viel sicherer): Assistent-Tagebuch/
   Erfahrungsbericht als Feedback-Kanal.
