@@ -13,12 +13,18 @@ Hauptbereiche. Tastenkürzel:
 
 | Kürzel | Bereich |
 |--------|---------|
+| ⌘K | **Suchen & Springen** (Command-Palette) |
 | ⌘1 | Heute |
 | ⌘2 | Projekte |
 | ⌘3 | Assistent |
 | ⌘4 | Kataloge |
 | ⌘, | Einstellungen |
 | ⌘⇧S | Sidebar ein-/ausblenden |
+
+**⌘K Command-Palette (2026-07-02):** Ein Overlay mit Suchfeld springt per Fuzzy-Treffer zu
+**App-Bereichen** (Heute/Projekte/Assistent/Kataloge/Einstellungen) und **Projekten** (Treffer
+auf Nummer, Titel oder Kundenname; Prefix-Treffer stehen oben). **Enter** oder **Klick** öffnet,
+**Esc** oder Klick auf den Hintergrund schließt. Rein lokal, read-only.
 
 **Navigation/Settings-Umbau (2026-07-02, Johannes):**
 - **„Integrationen" ist kein eigener Sidebar-Punkt mehr** — der Inhalt (Verbindungs-Status,
@@ -72,6 +78,9 @@ offene Aufgaben und Kalender-Ereignisse auf einen Blick.
 - **Filtern (S21):** Menü „Kategorie" — alle vorkommenden Kategorien (Küche/Licht/…).
 - **Frei sortieren per Drag&Drop (S21):** Karte auf eine andere ziehen → eigene Reihenfolge;
   aktiviert automatisch die „Eigene"-Sortierung, persistent.
+- **Gespeicherte Ansichten (2026-07-02):** Menü „Ansichten" — die aktuelle Kombination aus
+  Kategorie + Sortierung + Suche unter einem Namen sichern („Aktuellen Filter sichern …"),
+  später per Klick wieder anwenden oder löschen. Persistent (`@AppStorage`), rein lokal.
 - **Favoriten-Stern** auf jeder Karte (und im Projekt-Detail-Header): pinnt das Projekt
   ins Heute-Board. Persistent (GRDB), überlebt Neustart. Stern erneut tippen = entfernen.
 - Suche (Name/Nummer/Kundennr.). Klick öffnet Projektdetailseite.
