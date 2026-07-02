@@ -2,6 +2,7 @@ import SwiftUI
 import MykilosKit
 import MykilosDesign
 import MykilosServices
+import MykilosWidgets
 
 // MARK: - MailFolder
 // Ordner/Ansichten-Auswahl — dezente mykilOS-Segment-Reihe (kein Apple-Mail-Klon).
@@ -569,7 +570,7 @@ private struct MailDetailView: View {
                 .font(.mykMono(9))
                 .foregroundStyle(MykColor.muted.color)
             ForEach(message.attachments, id: \.attachmentID) { att in
-                AttachmentRow(attachment: att)
+                AttachmentRow(messageID: message.id, attachment: att)
             }
         }
     }
@@ -585,44 +586,7 @@ private struct MailDetailView: View {
     }
 }
 
-// MARK: - AttachmentRow
-private struct AttachmentRow: View {
-    let attachment: GmailAttachment
-
-    var body: some View {
-        HStack(spacing: MykSpace.s3) {
-            Image(systemName: iconName(for: attachment.mimeType))
-                .foregroundStyle(MykColor.personal.color)
-                .frame(width: 22)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(attachment.filename)
-                    .font(.mykSmall)
-                    .foregroundStyle(MykColor.ink.color)
-                Text(humanSize(attachment.sizeBytes))
-                    .font(.mykMono(9))
-                    .foregroundStyle(MykColor.muted.color)
-            }
-            Spacer()
-        }
-        .padding(MykSpace.s4)
-        .background(MykColor.card.color)
-        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
-        .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
-    }
-
-    private func iconName(for mimeType: String) -> String {
-        if mimeType.hasPrefix("image/") { return "photo" }
-        if mimeType == "application/pdf" { return "doc.richtext" }
-        if mimeType.hasPrefix("text/") { return "doc.text" }
-        return "paperclip"
-    }
-
-    private func humanSize(_ bytes: Int) -> String {
-        if bytes < 1024 { return "\(bytes) B" }
-        if bytes < 1_048_576 { return "\(bytes / 1024) KB" }
-        return String(format: "%.1f MB", Double(bytes) / 1_048_576)
-    }
-}
+// AttachmentRow lebt in MailAttachmentRow.swift (klickbare Vorschau + „In Drive ablegen").
 
 // MARK: - MailClientStore
 @MainActor
