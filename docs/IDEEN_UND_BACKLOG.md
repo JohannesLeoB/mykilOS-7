@@ -46,6 +46,22 @@ daraus wieder Warenkörbe füllen → Richtung sevDesk oder andere Checkout-Ziel
   Checkout → sevDesk-Postbox. Das ist der Beweis, dass die ganze Pipeline vom ersten bis zum
   letzten Schritt funktioniert — nicht nur Theorie.
 
+**🆕 Erweiterung (Johannes 2026-07-02 spät) — Kontakte-Picker aus eingehenden PDFs:** analog zur
+Positions-Extraktion auch **Kontaktdaten aus eingehenden PDFs picken** und ins Kontaktbuch
+übernehmen — mit **kleinem Edit-Fenster** vor dem Speichern, **Dubletten-Check** gegen die
+bestehende Datenbank. Gleiches Muster wie der bereits geloggte „Kontakt anlegen"-Alert
+(Mail-Signaturen/Dokumente) im Drive/Mail-Alerts-Block unten — hier PDF-Angebote als zusätzliche
+Quelle. Nutzt denselben bestehenden `ContactActionCard`-Flow (gated, Karte→Bestätigung→Audit).
+
+**🆕 Freigabe zum TESTEN (Johannes 2026-07-02 spät):** Extraktion/OCR/Parsing darf **jetzt schon
+ausprobiert** werden — an allen bereits bekannten Angeboten, „OCR oder was auch immer nötig ist".
+**Wichtige Grenze:** Testen/Prototyping = nur **lesend** auf bestehenden PDFs, lokal ausprobieren,
+Genauigkeit prüfen. **KEIN dauerhaftes Speichern von Positionen oder Kontakten ohne Johannes'
+Live-Bestätigung** — dafür ist niemand da, der die Bestätigungs-Karte klickt. Ergebnisse für die
+morgendliche Durchsicht vorbereiten/protokollieren, nicht scharf schalten. Bei echter Unsicherheit
+oder etwas potenziell Riskantem: **fragen, nicht raten** (Johannes' eigene Formulierung: „bevor du
+kacke baust").
+
 **⚠️ Wichtig — vermutlich KEIN Zero-to-One:** aus der Schätz-Engine-Arbeit (Kalkulations-Port)
 existiert bereits ein Korpus mit **~818 bereits extrahierten `position_candidates`** aus 164 PDFs
 (siehe Memory „Kalkulation-Datenbestand"). **Vor jedem Neubau prüfen, ob dieser Bestand
