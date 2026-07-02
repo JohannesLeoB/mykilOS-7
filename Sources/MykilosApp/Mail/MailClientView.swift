@@ -55,13 +55,9 @@ struct MailClientView: View {
     // Eingebettet im Assistenten-Toggle bringt die Seite ihren Titel schon mit —
     // dann KEINEN eigenen „Mail"-Kopf rendern (sonst steht „Mail" doppelt).
     var showsOwnHeader: Bool = true
-    // „Verfassen" wird vom Seiten-Header (neben dem Toggle) gesteuert — NICHT mehr
-    // über ein Fenster-Toolbar-Item, das beim Tab-Wechsel auftauchte/verschwand und
-    // dabei den ganzen Inhalt verschob.
-    @Binding var showCompose: Bool
     // Vorbefüllter Empfänger aus einer Kontakt-Mail-Anfrage. Non-nil → Entwurf mit diesem
     // „An" öffnen, danach die Weiche sofort auf nil zurücksetzen (kein stehenbleibender
-    // Prefill beim nächsten manuellen „Verfassen"). Getrennt von showCompose (= leerer Entwurf).
+    // Prefill beim nächsten manuellen „Verfassen").
     @Binding var composeToRequest: String?
     @State private var store = MailClientStore()
     @State private var airtableContacts: [StudioContact] = []
@@ -96,13 +92,6 @@ struct MailClientView: View {
                 prefilledBody: config.body,
                 onSend: { await appState.sendMail($0) }
             )
-        }
-        // Externer Trigger von außen (z. B. Header-Button "Verfassen").
-        .onChange(of: showCompose) { _, newValue in
-            if newValue {
-                composeConfig = ComposeConfig()
-                showCompose = false
-            }
         }
         // Kontakt-Mail-Weiche: vorbefüllten Empfänger übernehmen und Entwurf öffnen.
         // onAppear deckt den Fall ab, dass diese View erst durch den Tab-Wechsel montiert wird.
@@ -182,11 +171,15 @@ struct MailClientView: View {
     // MARK: Ordner-Leiste (dezent, mykilOS-Stil — kein Apple-Mail-Klon)
 
     private var folderBar: some View {
-        HStack(spacing: MykSpace.s2) {
+        HStack(spacing: MykSpace.s3) {
             ForEach(MailFolder.allCases) { folder in
                 folderButton(folder)
             }
             Spacer()
+            // „Verfassen" lebt jetzt in der Postfach-Leiste (2026-07-02, Johannes) — nicht
+            // mehr im Seiten-Header. Primär-Aktion → gefüllte Pflaume-Pille am rechten Rand,
+            // rechte Kante bündig mit dem Suchfeld darunter.
+            composeButton
         }
         .padding(.horizontal, MykSpace.s5)
         .padding(.vertical, MykSpace.s3)
@@ -200,12 +193,12 @@ struct MailClientView: View {
             store.switchFolder(folder)
             Task { await store.loadFolder() }
         } label: {
-            // Icon-only (2026-07-02, Johannes): Icon+Text brach in der schmalen
-            // Listenspalte um. Jetzt kompakte Icon-Segmente mit Tooltip/Label.
+            // Icon-only Segmente (2026-07-02, Johannes): etwas größere Icons, gleichmäßige
+            // Abstände, sauberes Raster — linke Kante bündig mit dem Suchfeld darunter.
             Image(systemName: folder.icon)
-                .font(.mykBody)
+                .font(.mykTitle)
                 .foregroundStyle(isActive ? MykColor.personal.color : MykColor.muted.color)
-                .frame(width: 36, height: 26)
+                .frame(width: 40, height: 34)
                 .background(isActive ? MykColor.personal.color.opacity(0.1) : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
                 .overlay(
@@ -216,6 +209,25 @@ struct MailClientView: View {
         .buttonStyle(.plain)
         .help(folder.label)
         .accessibilityLabel(folder.label)
+    }
+
+    /// Primär-Aktion der Postfach-Leiste: leeren Entwurf öffnen. Gleiche Kantenlänge
+    /// wie die Ordner-Icons (sauberes Raster), aber gefüllt (Pflaume) statt Outline,
+    /// damit sie als Aktion — nicht als weiterer Ordner — gelesen wird.
+    private var composeButton: some View {
+        Button {
+            composeConfig = ComposeConfig()
+        } label: {
+            Image(systemName: "square.and.pencil")
+                .font(.mykTitle)
+                .foregroundStyle(MykColor.paper.color)
+                .frame(width: 40, height: 34)
+                .background(MykColor.personal.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+        }
+        .buttonStyle(.plain)
+        .help("Verfassen")
+        .accessibilityLabel("Neue Mail verfassen")
     }
 
     private var searchBar: some View {

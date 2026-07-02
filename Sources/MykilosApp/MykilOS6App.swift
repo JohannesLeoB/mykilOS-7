@@ -384,7 +384,6 @@ struct AssistantPageView: View {
     @Environment(StudioContext.self) private var context
     @Environment(AppState.self) private var appState
     @State private var activeTab: AssistantTab = .assistant
-    @State private var mailCompose = false
     // Vorbefüllter Empfänger aus einer Kontakt-Mail-Anfrage (StudioContext.mailComposeRequest).
     // Wird an MailClientView durchgereicht und dort beim Öffnen des Entwurfs konsumiert (→ nil).
     @State private var mailComposeTo: String? = nil
@@ -401,28 +400,11 @@ struct AssistantPageView: View {
                     .font(.mykDisplay)
                     .foregroundStyle(MykColor.ink.color)
                 Spacer()
-                // Segmented-Picker: Assistent ⇄ Mail
-                Picker("Modus", selection: $activeTab) {
-                    ForEach(AssistantTab.allCases, id: \.self) { tab in
-                        Label(tab.rawValue, systemImage: tab.systemImage).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 200)
-                .labelsHidden()
-                // „Verfassen"-Slot: IMMER präsent (feste intrinsische Breite), damit der
-                // Toggle beim Wechsel Assistent⇄Mail nicht verspringt (2026-07-02, Johannes).
-                // Nur im Mail-Tab sichtbar/aktiv — sonst unsichtbar, hält aber seinen Platz.
-                Button { mailCompose = true } label: {
-                    Label("Verfassen", systemImage: "square.and.pencil")
-                        .font(.mykSmall)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(MykColor.personal.color)
-                .opacity(activeTab == .mail ? 1 : 0)
-                .disabled(activeTab != .mail)
-                .allowsHitTesting(activeTab == .mail)
-                .accessibilityHidden(activeTab != .mail)
+                // Eigener mykilOS-Segmented-Toggle ganz am rechten Rand (2026-07-02, Johannes).
+                // Ersetzt den System-.segmented-Picker (aktives Segment war system-blau, passt
+                // nicht zur CI). „Verfassen" ist in die Postfach-Leiste des Mail-Tabs gewandert.
+                // Feste Breite → der Toggle verspringt beim Wechsel Assistent⇄Mail nicht.
+                ModeToggle(selection: $activeTab)
             }
             .padding(.horizontal, MykSpace.s9)
             .padding(.top, MykSpace.s9)
@@ -449,7 +431,7 @@ struct AssistantPageView: View {
                     onAttachFilesToMailDraft: { await appState.createDraftWithAttachments($0) }
                 )
             case .mail:
-                MailClientView(showsOwnHeader: false, showCompose: $mailCompose, composeToRequest: $mailComposeTo)
+                MailClientView(showsOwnHeader: false, composeToRequest: $mailComposeTo)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -469,6 +451,58 @@ struct AssistantPageView: View {
         mailComposeTo = email
         activeTab = .mail
         context.clearMailComposeRequest()
+    }
+}
+
+// MARK: - ModeToggle
+// Eigener mykilOS-Segmented-Toggle (Assistent ⇄ Mail). Ersetzt den System-`.segmented`-
+// Picker, dessen aktives Segment system-blau rendert (2026-07-02, Johannes) — passt nicht
+// zur CI (monochrom + Terrakotta/Ink). Aufbau wie die übrigen Pill-Toggles der App
+// (KatalogeView.tabPill): recessed Track (bone + line), aktives Segment gefüllt
+// (Terrakotta) mit Papier-Text, inaktives Segment nur muted-Text.
+// Feste Gesamtbreite + gleich breite Segmente → der Toggle behält beim Wechsel exakt
+// Größe und Position (kein Verspringen; ersetzt den früheren „festen Verfassen-Slot").
+private struct ModeToggle: View {
+    @Binding var selection: AssistantPageView.AssistantTab
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(AssistantPageView.AssistantTab.allCases, id: \.self) { tab in
+                segment(tab)
+            }
+        }
+        .padding(3)
+        .frame(width: 208)
+        .background(MykColor.bone.color)
+        .clipShape(RoundedRectangle(cornerRadius: MykRadius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: MykRadius.md)
+                .stroke(MykColor.line.color, lineWidth: 1)
+        )
+    }
+
+    private func segment(_ tab: AssistantPageView.AssistantTab) -> some View {
+        let isActive = selection == tab
+        return Button {
+            guard selection != tab else { return }
+            withAnimation(.easeInOut(duration: 0.15)) { selection = tab }
+        } label: {
+            HStack(spacing: MykSpace.s2) {
+                Image(systemName: tab.systemImage)
+                    .font(.mykCaption)
+                Text(tab.rawValue)
+                    .font(.mykSmall)
+            }
+            .foregroundStyle(isActive ? MykColor.paper.color : MykColor.muted.color)
+            .frame(maxWidth: .infinity)
+            .frame(height: 28)
+            .background(isActive ? MykColor.drive.color : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(tab.rawValue)
+        .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 }
 
