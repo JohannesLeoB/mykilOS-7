@@ -80,6 +80,11 @@ Cash/Umsatz, Kalender, Notizen, **Warenkorb**, Mail, Assistent.
 
 Widgets sind drag-and-drop sortierbar. Jedes Widget zeigt Quelle und SaveState.
 
+**Widget-Selektor (2026-07-02):** Button **„Widgets"** oben rechts über dem Board öffnet ein
+Popover zum Selbst-Konfigurieren: pro Widget-Art ein **Ein/Aus-Schalter** (aus = ausgeblendet,
+Position/Größe bleiben erhalten) und — wenn sichtbar — eine **Größenwahl** (Klein/Mittel/Breit/
+Voll). Änderungen greifen sofort (SaveState). Reihenfolge weiterhin per Drag im Board.
+
 **Warenkorb-Widget (2026-07-02):** Zeigt den **aktuellsten gespeicherten
 Warenkorb dieses Projekts** (aus dem Kataloge-Modul → Warenkörbe): Positionen
 (Menge × Bezeichnung · Art.-Nr. · VK) und die EK/VK-Summen, plus Version/Datum.
@@ -162,9 +167,11 @@ Schätzchat-Modus** mehr. Frag einfach (z. B. „was kostet eine 4,5 m Eiche-Kü
 **Dateien in den Chat ziehen (Mehrfach, 2026-07-02):** Dateien auf den Chat droppen —
 **mehrere gleichzeitig**, auch **ganze Ordner** (werden aufgelöst; ZIPs bleiben als eine
 Datei). Eine Sammelkarte unter dem Eingabefeld listet alle Dateien (Gesamtgröße, Einzel-
-Entfernen). Zwei Sammelaktionen, beide mit Bestätigung — **kein Auto-Schreiben**:
-**„Alle in Drive"** (lädt jede Datei in den Projektordner; braucht `drive.file`) und
-**„Alle an Mail-Entwurf"** (hängt **alle** Dateien an **einen** Gmail-Entwurf — kein Versand).
+Entfernen). Im Projekt-Chat lässt sich der **Ziel-Ordner wählen** (Menü „Ziel": Projektordner
+oder ein Unterordner — die Unterordner werden read-only aus Drive geladen). Zwei Sammelaktionen,
+beide mit Bestätigung — **kein Auto-Schreiben**: **„Alle in Drive"** (lädt jede Datei in den
+gewählten Ordner; braucht `drive.file`) und **„Alle an Mail-Entwurf"** (hängt **alle** Dateien
+an **einen** Gmail-Entwurf — kein Versand).
 
 ### Dateien (global)
 Alle Drive-Dateien des Accounts, nach Änderungszeit sortiert.
