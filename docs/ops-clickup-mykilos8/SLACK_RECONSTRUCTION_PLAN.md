@@ -10,6 +10,20 @@ gewesen und die Projekte in ClickUp abgewickelt."
 `90128024109`, nie eine echte ClickUp-Assignee-ID, simulierte Zuweisung nur als Ghost-Kürzel
 (Jo/Da/Fra/Sen/Jil) im Klartext der Task-Beschreibung, keinerlei echte externe Notifikation.
 
+**⛔ Zusätzliche Eiserne Regel (Johannes, 2026-07-02, per Screenshot-Korrektur): NUR aktive
+Drive-Projektordner (`PROJEKTE`-Root, `1Q-H_3JsZfiXosFmxtNgoy0hI3cvZLgST`), NIEMALS
+`_PROJEKTE_ARCHIV`.** Das Archiv enthält Dutzende alte, abgeschlossene Projekte über 8 Jahre mit
+einem komplett anderen Namensschema — bewusst außerhalb dieses Vorhabens (siehe auch CLAUDE.md
+„Aus der Live-Wiring-Session … Drive als Projektquelle"). Verifiziert (2026-07-02, gegen
+Finder-Screenshot des Nutzers, `Google Drive → Geteilte Ablagen → MYKILOS Team → PROJEKTE`):
+**alle 15 in Abschnitt 2 gematchten Ordner sind aktiv**, keiner zeigt ins Archiv — die
+ursprüngliche Zuordnung war bereits korrekt auf den aktiven Root beschränkt, jetzt zusätzlich
+explizit als Regel festgehalten. Für die restlichen 81 nicht gematchten Slack-„Projektkanäle"
+gilt: kein Abgleich gegen das Archiv versuchen, auch nicht als Fallback — bleiben unbearbeitet.
+Die aktive Ordnerliste ist ein bewegliches Ziel (neue Projekte laufend, z. B. `2026_030`/`_031`
+laut Screenshot erst gestern angelegt) — vor jeder weiteren Runde frisch gegen den aktuellen
+Drive-Stand re-verifizieren, nicht gegen die Momentaufnahme von Abschnitt 1 vom 2026-07-02 03:13.
+
 ---
 
 ## 1. Quellen
