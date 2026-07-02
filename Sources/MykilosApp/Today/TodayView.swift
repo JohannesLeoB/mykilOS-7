@@ -26,6 +26,7 @@ struct TodayView: View {
                         if context.signals.isEmpty == false {
                             signalStrip
                         }
+                        HeuteAnstehendView()
                         HomeBoardView(
                             boardStore: appState.homeBoard,
                             noteStore:  appState.homeNotes
