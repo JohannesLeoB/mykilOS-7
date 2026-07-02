@@ -25,6 +25,13 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ## Nachtrag 2026-07-02 spät — Drive/Mail-Alerts auf bestehenden Beobachtungspfaden (Johannes)
 
+- 📋 **Eingehendes Angebot/Routine-Dokument → CTA „Ins Drive ablegen":** empfängt man per Mail ein
+  Angebot oder anderes Routine-Dokument, direkter Hinweis/Call-to-Action, es in den passenden
+  Projekt-Drive-Ordner zu schieben. **Umgekehrte Richtung des bereits gebauten** Anhang→Drive-Flows
+  (`MailAttachmentDriveSheet`, diese Session) — dort manuell ausgelöst, hier proaktiv bei Erkennung.
+  Erkennung kann auf `OfferDocumentClassifier`-Heuristik aufbauen (Angebot/Rechnung-Namensmuster
+  existiert schon); Projekt-Zuordnung (welcher Ordner passt) ist der offene Teil — vermutlich über
+  Kunde/Projektnummer im Betreff/Anhang-Namen, analog zur bestehenden Angebots-Ordner-Zuordnung.
 - 📋 **„Alter Zeichnungsstand"-Warnung beim Mail-Versand:** wenn aus Assistent oder integrierter
   Mailfunktion ein Zeichnungsanhang verschickt wird, der nicht die neueste namensähnliche Datei im
   Drive-Projektordner ist → Warnhinweis vor dem Senden. **Buildbar auf Bestehendem:** Drive-
