@@ -87,6 +87,9 @@ extension AllOffersSort {
 // sortier- und durchsuchbare Liste. Read-only; Klick = In-App-Vorschau.
 struct AllOffersView: View {
     let projects: [AllOffersCollector.ProjectRef]
+    /// Task A (Dev-Checkout-Exporter): erlaubt „In Warenkorb" direkt aus der Belegliste.
+    /// Optional, damit bestehende Aufrufer ohne Warenkorb-Kontext weiter kompilieren.
+    var warenkorb: WarenkorbState? = nil
 
     @Environment(AppState.self) private var appState
     @State private var loader = AllOffersLoader()
@@ -273,9 +276,9 @@ struct AllOffersView: View {
     // Projektzuordnung (Titel · Nummer).
     private var twoColumns: some View {
         HStack(alignment: .top, spacing: MykSpace.s7) {
-            GlobalOfferColumn(title: "Eingehend", offers: visibleIncoming)
+            GlobalOfferColumn(title: "Eingehend", offers: visibleIncoming, warenkorb: warenkorb)
             Divider().overlay(MykColor.line.color.opacity(0.6))
-            GlobalOfferColumn(title: "Ausgehend", offers: visibleOutgoing)
+            GlobalOfferColumn(title: "Ausgehend", offers: visibleOutgoing, warenkorb: warenkorb)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
