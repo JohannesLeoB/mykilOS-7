@@ -35,7 +35,34 @@ struct ProjectGalleryView: View {
     @AppStorage("projekte.sort") private var sortRaw = ProjectSort.nummer.rawValue
     @AppStorage("projekte.kategorie") private var kategorieFilter = ""   // "" = alle
     @AppStorage("projekte.customOrder") private var customOrderRaw = ""  // projectNumbers, komma-getrennt
+    // Gespeicherte Galerie-Ansichten (S5): benannte Filter-/Sortier-Kombinationen.
+    @AppStorage("projekte.savedViews") private var savedViewsRaw = ""
+    @State private var showSaveDialog = false
+    @State private var newViewName = ""
     private var sort: ProjectSort { ProjectSort(rawValue: sortRaw) ?? .nummer }
+
+    private var savedViews: [SavedGalleryView] {
+        (try? JSONDecoder().decode([SavedGalleryView].self, from: Data(savedViewsRaw.utf8))) ?? []
+    }
+    private func persistViews(_ views: [SavedGalleryView]) {
+        savedViewsRaw = (try? String(data: JSONEncoder().encode(views), encoding: .utf8) ?? "") ?? ""
+    }
+    private func applyView(_ v: SavedGalleryView) {
+        kategorieFilter = v.kategorie
+        sortRaw = v.sortRaw
+        searchText = v.search
+    }
+    private func saveCurrentView(named name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        var views = savedViews.filter { $0.name.caseInsensitiveCompare(trimmed) != .orderedSame }
+        views.append(SavedGalleryView(id: trimmed.lowercased(), name: trimmed,
+                                      kategorie: kategorieFilter, sortRaw: sortRaw, search: searchText))
+        persistViews(views)
+    }
+    private func deleteView(_ v: SavedGalleryView) {
+        persistViews(savedViews.filter { $0.id != v.id })
+    }
 
     private var registry: RegistryStore { appState.registry }
 
@@ -148,6 +175,7 @@ struct ProjectGalleryView: View {
                 .font(.mykDisplay)
                 .foregroundStyle(MykColor.ink.color)
             Spacer()
+            viewsMenu
             sortMenu
             kategorieMenu
             HStack(spacing: MykSpace.s3) {
@@ -172,6 +200,42 @@ struct ProjectGalleryView: View {
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s5)
+    }
+
+    private var viewsMenu: some View {
+        Menu {
+            if savedViews.isEmpty {
+                Text("Noch keine gespeicherten Ansichten")
+            } else {
+                ForEach(savedViews) { v in
+                    Button { applyView(v) } label: { Label(v.name, systemImage: "rectangle.stack") }
+                }
+                Divider()
+                Menu("Ansicht löschen") {
+                    ForEach(savedViews) { v in
+                        Button(role: .destructive) { deleteView(v) } label: { Text(v.name) }
+                    }
+                }
+                Divider()
+            }
+            Button { newViewName = ""; showSaveDialog = true } label: {
+                Label("Aktuellen Filter sichern …", systemImage: "plus")
+            }
+        } label: {
+            Label("Ansichten", systemImage: "rectangle.stack")
+                .font(.mykSmall).foregroundStyle(MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
+                .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color)
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1)))
+        }
+        .menuStyle(.borderlessButton).fixedSize()
+        .alert("Ansicht sichern", isPresented: $showSaveDialog) {
+            TextField("Name (z. B. Aktive Küchen)", text: $newViewName)
+            Button("Sichern") { saveCurrentView(named: newViewName) }
+            Button("Abbrechen", role: .cancel) { }
+        } message: {
+            Text("Speichert die aktuelle Kombination aus Kategorie, Sortierung und Suche.")
+        }
     }
 
     private var sortMenu: some View {
@@ -302,4 +366,15 @@ struct ProjectGalleryView: View {
         customOrderRaw = order.joined(separator: ",")
         sortRaw = ProjectSort.eigene.rawValue              // Drag aktiviert die Eigene-Sortierung
     }
+}
+
+// MARK: - SavedGalleryView
+// Eine benannte, gespeicherte Galerie-Ansicht (Filter-/Sortier-Kombination).
+// Rein lokal (@AppStorage-JSON), keine externen Daten.
+struct SavedGalleryView: Codable, Identifiable, Equatable {
+    var id: String        // stabil = kleingeschriebener Name
+    var name: String
+    var kategorie: String // "" = alle Kategorien
+    var sortRaw: String
+    var search: String
 }
