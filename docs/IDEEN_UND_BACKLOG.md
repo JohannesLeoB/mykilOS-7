@@ -40,6 +40,23 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
   diese Idee UND für die Handy-Push-Idee oben) brauchen diese bezahlte Stufe, als **Individual**
   (Privatperson reicht, kein Firmen-Setup). Erster konkreter Schritt, wenn eine der beiden Ideen
   drankommt.
+- **⚠️ Aufwandsskizze (Johannes-Frage 2026-07-02 spät — kleiner Nutzerkreis, kein Store, keine
+  Gewinnerzielung):** **Verteilung ist der leichte Teil** — TestFlight-interne Tests (bis 100
+  Personen, kein Apple-Review nötig), App-Store-Bürokratie entfällt komplett bei diesem Setting.
+  **Der echte Aufwand liegt im SwiftUI/AppKit-Portieren**, nicht in Bürokratie:
+  - **Transferiert sauber:** `MykilosKit` (Foundation-only per Regel), `MykilosDesign`-Tokens,
+    GRDB, Keychain, PDFKit; Sidebar-Navigation passt sich am iPad gut an.
+  - **Braucht echten Umbau (konkrete Fundstellen aus dieser Session):** Google-OAuth-Loopback-
+    Server (→ `ASWebAuthenticationSession` auf iOS), `NSOpenPanel`/`NSSavePanel` (→ `.fileImporter`/
+    `UIDocumentPicker`), `NSAppleScript`→Notizen.app-Trick (heute Nacht gebaut, **rein macOS**,
+    keine iOS-Entsprechung), `CommandMenu`/Menüleiste (iOS hat keine), der „Boss Button" (eigenes
+    Always-on-top-`NSWindow`, Konzept existiert auf iOS/iPadOS nicht).
+  - **Größenordnung:** kein „neu kompilieren" (Stunden), aber auch keine Monate — ein echtes,
+    begrenztes Portierungsprojekt, wenn der Erstumfang bewusst reduziert wird (nicht jedes Modul
+    Tag 1). **iPad zuerst, nicht iPhone** — größerer Screen verträgt das bestehende dichte Layout
+    eher; iPhone bräuchte zusätzlich echtes Redesign der Mehrspalten-Ansichten (Kataloge/Mail/
+    Warenkorb), nicht nur Skalierung. **Empfehlung: iPad-only, Lesezugriff + wenige Kern-Aktionen
+    zuerst, keine Feature-Parität von Anfang an.**
 
 ## Nachtrag 2026-07-02 spät — Futurefeature: „Boss Button" als App-Satellit (Johannes)
 
