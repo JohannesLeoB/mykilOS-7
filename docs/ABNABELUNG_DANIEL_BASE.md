@@ -92,3 +92,45 @@ Die Abnabelung ist deshalb eine echte **Migration**, kein Konstanten-Tausch.
 **Nächster Schritt:** Bau als delegierter Worker in Phasen (Schema-Anlage in Handelswaren/Projekte/
 checkouts → Read-Mirror Daniel→Handelswaren → Projekt-/Nummern-Transposition → App-Umverdrahtung →
 Verifikation). Datenkritisch, mit Zwischen-Checkpoints, nicht blind über Nacht.
+
+---
+
+## 5. Quell-Schema Daniels Base (gelesen 2026-07-03, read-only — nur Struktur, KEINE Kundendaten)
+
+- **Artikel** (`tbl3dAbQtbF51wb4a`, Preisliste): Artikelnummer · Hersteller · Kategorie ·
+  Artikelbeschreibung · **Netto-VK LISTE** · **Netto-EK** · **Netto-VK MYKILOS** (Formel: Gaggenau
+  = EK×1,51, sonst Liste) · Rabattstufe · Preisstand · Produktlink · Produktbild (Attachment) ·
+  **Marge** (Formel) · Lieferant · sevDesk-Artikel-ID.
+- **Projekte** (`tblOXF9Cv8Jze6595`): ⚠️ **NICHT nur Projektdaten — der ganze sevDesk/Make.com-
+  Accounting-Hub.** Checkbox „Angebot an sevDesk senden" → Make.com → sevDesk-Angebot-Entwurf;
+  sevDesk-Angebot-/Kostenstellen-IDs; Anzahlung/Abschlag/Schlussrechnung-Tracking (gestellt/erhalten
+  + Datumsfelder); Ist-Kosten Material/Montage (Make-Rollups aus Eingangsrechnungen);
+  Kostenabweichung-Formeln. + Projektname · Kunde-Link · Status · Budget · Adresse · ClickUp-Lead-ID.
+- **Kunden** (`tblImZ3fKYBXBT7Wb`): Nachname/Vorname/Firma · 2× Email/Telefon · Angebotsadresse ·
+  Quelle · sevDesk-Kontakt-ID. → **Personendaten (Datenschutz).**
+- **Projektartikel** (`tblirHIicPP3qdcDp`): Projekt↔Artikel-Link · Menge · Rabatt% · EK/VK-Lookups.
+- **Eingangsrechnungen** (`tbl5jo8Q4NPXsWbmh`), **Lagerliste** (`tblh8j1Rykv12T2Dx`, DEGELA),
+  **Warenkörbe** (`tblhZujm3Ig6hlafX`, Positionen-JSON, append-only).
+
+## 6. Ziel-Schema-Design (Vorschlag, NOCH NICHT angelegt)
+
+**🔑 KERN-ERKENNTNIS:** Die gesamte Buchhaltungs-/sevDesk-Logik steckt heute **eingebettet in
+Daniels Projekte-Tabelle** (Make.com-Formeln, sevDesk-Checkbox + IDs, Zahlungs-Tracking).
+**„Ablösen" heißt: NICHT 1:1 kopieren, sondern sauber neu bauen** — der sevDesk-Übergang läuft
+über die **sevDesk-Postbox (§5i)**, nicht über eingebettete Make-Formeln. `mykilOS_Projekte` trägt
+die **saubere Projekt-Wahrheit**, die Postbox trägt den Accounting-/sevDesk-Handoff. Das ist der
+eigentliche Wert der Abnabelung — die verwachsene Make/sevDesk-Kopplung entwirren.
+
+- **`mykilOS_Handelswaren` → Tabelle `Artikel`** (read-only Spiegel, Batch-Sync): Artikelnummer,
+  Hersteller, Kategorie, Beschreibung, VK-Liste, EK, VK-MYKILOS, Marge, Produktlink, Bild,
+  Lieferant, Preisstand. VK-MYKILOS/Marge als Airtable-Formel ODER im App-Layer berechnen.
+- **`mykilOS_Projekte` → `Projekte`** (clean): mykilOS-Projektnummer, Projektname, Kunde-Link,
+  Status, Budget, Adresse, **Daniel-Nummer-Referenz** (transponiert) — **KEINE Make/sevDesk-Formeln**.
+- **`mykilOS_Projekte` → `Kunden`** (Personendaten, Datenschutz), `Projektartikel`, `Warenkörbe`,
+  `Nachträge` = die **Buchhaltungs-Share** auf Projekt-Ebene.
+- **`mykilOS_checkouts`** = Kreativ-Checkout-Index (§5k): ID + Dateiname + Metadaten + Drive-Link.
+- **Lagerliste** → mykilOS-eigene (Handelswaren-Base).
+
+**Offen fürs Bauen:** welche Formeln als Airtable-Formel vs. App-berechnet; wie die sevDesk-Postbox
+konkret die alte Make-„Angebot senden"-Checkbox ablöst (= der C4/§5i-Bau, eigener Schritt);
+aiText-Auto-Felder in den Ziel-Bases löschen (Kosten, siehe Backlog).
