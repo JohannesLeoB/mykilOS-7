@@ -23,6 +23,34 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag Rückschau 2026-07-02 (bisher nicht erfasste verbale Wünsche)
+
+Aus der Multi-Agent-Rückschau (`docs/RUECKSCHAU_UND_SESSIONPLAN_2026-07-02.md`) — diese
+verbalen Wünsche waren noch nicht sauber verankert und werden hiermit festgehalten:
+
+- 💡 **Grundriss-/Skizzen-Zeichentool im Fragebogen (Canvas) → Drive-Export.** Schritt „Raum":
+  echtes Zeichenwerkzeug (Maus), Ergebnisbild automatisch in den Projekt-Drive-Ordner.
+- 💡 **Projekt-Hero-Bild editierbar** (Upload/Import je Nutzer) + volle Identität (Avatar-Wähler).
+- 💡 **Teamkalender-Widget in der Projekt-Übersicht** (Teamtermine farbcodiert, Klick → Detail +
+  editierbar). Braucht Kalender-Schreibpfad (→ Session S3).
+- 💡 **Upload-/Anhang-Icon im Chat-Composer** schöner/echter Anhang-Button (UI-Polish; die
+  Multi-Datei-Drop-Kernfunktion ist erledigt).
+- 📋 **Kontakte-Widget klickbar/editierbar mit Airtable als Quelle** — vorgelagert Daten-Job
+  Google-Kontakte → Airtable (Dubletten-Check, Vollständigkeit; Nur-Name-Einträge als
+  UNVOLLSTÄNDIG markieren). Danach Projekt-Widget: klick/zuweis/editier/Mail.
+- 📋 **ClickUp-Schreib-/Signal-Integration** — Tasks aus mykilOS anlegen/ändern, alarmieren,
+  terminieren (Toggle), Signal-Kanal in die App. Eiserne Regel beachten (Testspace/Ghost).
+  **Johannes 2026-07-02: als nächste große Session vorgemerkt** (Ghost Johannes → Real NUR für
+  Johannes, andere vier bleiben Ghosts). Siehe S3.5 im Session-Plan.
+- 📋 **Dubletten-Zusammenführung realer Projekte** (z. B. Vinahl + Uetersen = EIN reales Projekt)
+  mit Nummernkreis-/Vermatschungs-Warnung direkt in der App.
+- 💡 **Meilenstein-Statusbar mit Monatsangaben** im Projekt-Hero oder als Widget (der
+  Lebenszyklus-Stepper ist erledigt, die Datums-/Monats-Variante fehlt noch).
+- 📋 **Mail SENDEN (nicht nur Entwurf) + Nachrichten-Aktionen** (gelesen/Stern/Archiv). NO-GO in
+  MEMORY aufgehoben; als Session S3 (Assistent Schreib-Ausbau) verankert. Braucht `gmail.send`.
+
+---
+
 ## Zukunfts-Konzepte 2026-07-02 (Vision-Runde mit Johannes)
 
 Kurzfassungen; die Details liegen in eigenen Konzept-Dokumenten. Alles mykilOS-8+,
