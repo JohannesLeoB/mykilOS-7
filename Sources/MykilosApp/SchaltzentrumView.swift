@@ -22,7 +22,11 @@ struct SchaltzentrumView: View {
             ProjectNumberBindingSection()
 
             // mykilOS 8, Block D: Projekt-Geburt in der TEST-Sandbox (Live-Verifikation).
+            // Härtung (2026-07-02, Johannes/Screenshot-Review S17): reine Entwickler-Werkzeug-
+            // Fläche ("Test-Projekt gebären") — gehört nicht in einen Produktions-Build.
+            #if DEBUG
             ProvisioningTestView()
+            #endif
 
             VStack(spacing: 1) {
                 // Header

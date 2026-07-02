@@ -96,3 +96,61 @@ Nach allen Fixes: `swift build` grün, volle Suite 700/700 grün, Live-Crash-Che
 ## 6. Push/Merge
 
 Branch bereit für Review. Push/Merge nach main nur durch Johannes (eiserne Regel).
+
+---
+
+## 7. Addendum 2026-07-02 — Studio-OS-Rollout: ClickUp-Schritt live
+
+Auf Basis des Handoffs `CLICKUP_MYKILOS8_STUDIO_OS_SESSION_HANDOFF` (Slack-Kündigung, Studio
+Operating System: mykilOS=Cockpit, ClickUp=operative Aufgaben, Drive=Akte, Airtable=Staging).
+Johannes' Freigabe: „Testspace komplett nach eigenem Plan ausbauen/löschen/ändern — Testprojekte
+sind nicht wichtig" + „Projekt-Anlegen-Maske feuert in ClickUp, Drive, Airtable".
+
+**Zustand VORHER:** `ClickUpRoutingZeile.defaults` war reine Config (alle `aktiv: false`), kein
+echter ClickUp-Write existierte — nur `ClickUpFetching.tasks(listID:)` (read-only). Der reale
+Testspace ("MYKILOS API TESTSPACE", `90128024109`) war NICHT blank: 10 Ordner (00 Intake&Triage
+… 99 Admin&Datenpflege) + ein Seed-Projekt "KUE-2026-014 Küche Müller TEST" mit 8 Lifecycle-Tasks,
+angelegt von einer früheren Session.
+
+**Gebaut (dieser Schritt):**
+- `ClickUpProjectProvisioning`-Protokoll (`findOrCreateList`, `createTask`) + Implementierung in
+  `ClickUpClient` (reine URL-Builder/Parser wie beim Lese-Pfad, testbar ohne Netzwerk).
+- `ProvisioningStep.clickUpStruktur` + `ProvisioningResult.clickUpListID` (additiv, GRDB-Migration
+  `v19_provisioning_clickup`, nullable — bestehende Ledger-Einträge decodieren unverändert).
+- `ProjektProvisioningService`: optionaler `clickUp`-Adapter + optionaler `clickUpFolderID`-Parameter
+  in `provision(...)` — nil überspringt Schritt 3 komplett (bestehende Aufrufer unverändert lauffähig).
+  Idempotent: Liste per Name (TEST-Doppel-Strategie wie Airtable) find-or-create, Tasks über
+  bestehende `tasks(listID:)` gegen Duplikate geprüft.
+- `ClickUpProjectTemplate.standardKundenprojekt` (MykilosKit, Foundation-only): die 8 Lebenszyklus-
+  Tasks — bewusst IDENTISCH zu den im echten Testspace-Seed-Projekt schon von Hand angelegten
+  Namen (eine Wahrheit für die Reihenfolge, nicht zwei leicht abweichende Listen).
+- Echter ClickUp-Ordner `_TEST_PROVISIONING` (`901212093014`) im Testspace angelegt — spiegelt
+  exakt die Drive-Isolationsebene. Test-Läufe schreiben ausschließlich hierhin.
+- `ProvisioningTestView` (Debug-only, s. u.) um ein ClickUp-Ordner-Feld erweitert, vorbefüllt mit
+  `AppState.clickUpTestProvisioningFolderID`.
+- **Härtung (Screenshot-Review S17):** `ProvisioningTestView` (die "Test-Projekt gebären"-Fläche)
+  ist jetzt `#if DEBUG`-gated in `SchaltzentrumView` — reines Dev-Werkzeug, gehört nicht in einen
+  Produktions-Build. Die Datenstrom-Übersicht selbst (Weichen-Tabelle) bleibt sichtbar.
+- 5 neue Tests (Fake-ClickUp: Erfolg mit allen Template-Tasks, Überspringen ohne Folder-ID,
+  Idempotenz, Fehler → Teilfehler-Fest bei bereits erledigten Drive/Airtable-Schritten).
+  **793 Tests grün** (vorher 788).
+
+**Bewusst NICHT gemacht (Scope-Grenze dieser Session):**
+- **KEIN Custom-Field-Create** — der ClickUp-MCP-Connector kann Custom Fields nur LESEN, nicht
+  anlegen. Siehe `docs/ops-clickup-mykilos8/ADMIN_REQUIRED_CUSTOM_FIELDS.md` (Admin-Blocker,
+  wie vom Handoff §7.5 für nicht-automatisierbare Schritte vorgeschrieben).
+- **KEINE Verdrahtung in die echte Projekt-Anlage** (`AppState.erzeugeKundeUndProjekt` /
+  `provisioniereEchtesProjekt`) — das ist der produktive Kunden-Datenfluss und verdient eine
+  eigene, separat geprüfte Session, NACHDEM der Sandbox-Pfad bewiesen ist (Handoff-Prinzip
+  „erst Testspace, dann Produktion").
+- **KEIN echter Live-Roundtrip des Swift-Codes** gegen die reale ClickUp-API — die Fakes beweisen
+  die Logik (Idempotenz, Teilfehler, Template-Vollständigkeit), aber ein echter Lauf braucht einen
+  in der App verbundenen ClickUp-PAT (Einstellungen → ClickUp). **Offener manueller Schritt für
+  Johannes:** ClickUp verbinden (falls noch nicht geschehen) → im DEBUG-Build einmal
+  "Test-Projekt gebären" mit der vorbefüllten ClickUp-Ordner-ID auslösen → in ClickUp prüfen,
+  dass die Liste + 8 Tasks im `_TEST_PROVISIONING`-Ordner erscheinen.
+
+**Nächster Schritt (nicht in dieser Session):** sobald der Sandbox-Pfad live bestätigt ist, den
+gleichen `ClickUpProjectProvisioning`-Adapter in `provisioniereEchtesProjekt` verdrahten — jedes
+neu geborene ECHTE Projekt bekommt automatisch eine ClickUp-Liste im Ordner "01 Kundenprojekte"
+(`901211866053`, kein TEST-Präfix, kein `_TEST_PROVISIONING`-Käfig).

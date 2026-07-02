@@ -226,7 +226,8 @@ public final class AppState {
         self.provisioningLedger = ledger
         self.provisioningService = ProjektProvisioningService(
             drive: GoogleDriveClient(), airtableCreate: AirtableClient(), airtableFetch: AirtableClient(),
-            ledger: ledger, audit: self.audit, writeShadow: self.writeShadow)
+            ledger: ledger, audit: self.audit, writeShadow: self.writeShadow,
+            clickUp: ClickUpClient())
         self.clickUpRouting = ClickUpRoutingStore(db: database)
         let claudeCredentials = KeychainClaudeCredentialsStore()
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
@@ -1125,7 +1126,8 @@ public final class AppState {
     // provisioningMode (.test). Liefert das Ergebnis (Drive-Ordner-ID, Airtable-Record-ID).
     public func gebaereTestProjekt(
         kundeName: String, kdnr: String, strasse: String?, hausnummer: String?, ort: String?,
-        driveParentID: String, airtableBaseID: String, airtableTabelle: String
+        driveParentID: String, airtableBaseID: String, airtableTabelle: String,
+        clickUpFolderID: String? = nil
     ) async throws -> ProvisioningResult {
         // 1. Nächste Projektnummer atomar reservieren — zusätzlich gegen den echten Inhalt
         // von "_TEST_PROVISIONING" geprüft (Konsistenz mit der echten Provisionierung,
@@ -1148,8 +1150,15 @@ public final class AppState {
         // 3. Provisionieren (gated TEST-Sandbox, idempotent, teilfehler-fest).
         return try await provisioningService.provision(
             plan: plan, mode: provisioningMode.mode, driveParentID: driveParentID,
-            airtableBaseID: airtableBaseID, airtableTabelle: airtableTabelle, actorUserID: actorUserID)
+            airtableBaseID: airtableBaseID, airtableTabelle: airtableTabelle,
+            clickUpFolderID: clickUpFolderID, actorUserID: actorUserID)
     }
+
+    /// Studio-OS-Rollout (2026-07-02): die `_TEST_PROVISIONING`-Isolationsebene im echten
+    /// ClickUp-Testspace ("MYKILOS API TESTSPACE", Space 90128024109) — analog zum gleich-
+    /// namigen Drive-Unterordner. Test-Läufe schreiben AUSSCHLIESSLICH hierhin, nie in die
+    /// 10 echten Studio-OS-Ordner daneben.
+    public static let clickUpTestProvisioningFolderID = "901212093014"
 
     /// Die konkrete LocalSequentialAuthority (für nextAndReserve, das nicht im Protokoll ist).
     /// Review-Fix (high, Block D): kein `as?`-Cast mehr — der konkrete Typ wird im Init direkt

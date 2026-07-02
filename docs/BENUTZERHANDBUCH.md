@@ -457,6 +457,12 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 |---|---|---|---|---|---|
 | `CLICKUP_TASKS` | ClickUp Aufgaben | READ | onDemand (Widget/Tool) | read-only | Offene Tasks (`archived=false`). Tools: `list_clickup_tasks` (Fokus-Projekt) + `list_all_clickup_tasks` (projektübergreifend, gruppiert, S11). Daten erst vollständig, wenn ClickUp-Listen-IDs in Airtable gepflegt sind (M3). |
 
+**Studio-OS-Rollout (2026-07-02):** Ein neuer, bewusst NUR in der TEST-Sandbox aktiver
+Schreibpfad (`ProjektProvisioningService`, Schritt `.clickUpStruktur`) legt bei einer
+Test-Projekt-Geburt eine ClickUp-Liste + 8 Standard-Lebenszyklus-Tasks im ClickUp-Testspace-
+Ordner `_TEST_PROVISIONING` an (idempotent, TEST-Präfix). Nicht user-facing außerhalb des
+`#if DEBUG`-Sandbox-Bildschirms — siehe [HANDOFF_MYKILOS8_BLOCK_D.md](handoffs/HANDOFF_MYKILOS8_BLOCK_D.md) §7.
+
 #### Clockodo
 
 | Integrations-ID | Name | Richtung | Trigger | NO-GO | Notiz |

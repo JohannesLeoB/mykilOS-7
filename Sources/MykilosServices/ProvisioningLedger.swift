@@ -13,6 +13,7 @@ private struct ProvisioningLedgerRecord: Codable, FetchableRecord, PersistableRe
     var driveProjektOrdnerID: String?
     var driveUnterordnerJSON: String
     var airtableRecordID: String?
+    var clickUpListID: String?
     var letzterFehler: String?
     var updatedAt: Double
 
@@ -25,6 +26,7 @@ private struct ProvisioningLedgerRecord: Codable, FetchableRecord, PersistableRe
         driveProjektOrdnerID = r.driveProjektOrdnerID
         driveUnterordnerJSON = Self.encode(r.driveUnterordnerIDs)
         airtableRecordID = r.airtableRecordID
+        clickUpListID = r.clickUpListID
         letzterFehler = r.letzterFehler
         updatedAt = r.updatedAt.timeIntervalSince1970
     }
@@ -38,7 +40,7 @@ private struct ProvisioningLedgerRecord: Codable, FetchableRecord, PersistableRe
             erledigteSchritte: Set(schritte),
             driveProjektOrdnerID: driveProjektOrdnerID,
             driveUnterordnerIDs: Self.decode([String: String].self, driveUnterordnerJSON) ?? [:],
-            airtableRecordID: airtableRecordID, letzterFehler: letzterFehler,
+            airtableRecordID: airtableRecordID, clickUpListID: clickUpListID, letzterFehler: letzterFehler,
             updatedAt: Date(timeIntervalSince1970: updatedAt))
     }
 

@@ -36,6 +36,10 @@ public final class ProjektProvisioningService {
     // Review-Fix (critical): austauschbar für Tests (Fakes kennen keine echte Base/Tabelle),
     // im Live-Betrieb IMMER die echte, unveränderliche `AirtableClient.writableMap`.
     private let isWritable: (String, String) -> Bool
+    // Studio-OS-Rollout (2026-07-02): optional — nil lässt Schritt 3 einfach übersprungen
+    // (additiv, kein Zwang für bestehende Aufrufer/Tests). Read+Write in einem Dependency,
+    // weil die Task-Idempotenz denselben Client zum Lesen bestehender Tasks braucht.
+    private let clickUp: (any ClickUpFetching & ClickUpProjectProvisioning)?
 
     public init(
         drive: any DriveFolderProvisioning,
@@ -44,7 +48,8 @@ public final class ProjektProvisioningService {
         ledger: ProvisioningLedger,
         audit: AuditStore,
         writeShadow: WriteShadowRecorder,
-        isWritable: @escaping (String, String) -> Bool = AirtableClient.isWritable
+        isWritable: @escaping (String, String) -> Bool = AirtableClient.isWritable,
+        clickUp: (any ClickUpFetching & ClickUpProjectProvisioning)? = nil
     ) {
         self.drive = drive
         self.airtableCreate = airtableCreate
@@ -53,10 +58,13 @@ public final class ProjektProvisioningService {
         self.audit = audit
         self.writeShadow = writeShadow
         self.isWritable = isWritable
+        self.clickUp = clickUp
     }
 
     /// Provisioniert ein Projekt. `driveParentID` = Eltern-Ordner, unter dem `_TEST_PROVISIONING`
     /// liegt. `airtableBaseID`/`airtableTabelle` = die TEST-Sandbox-Tabelle (auf der Whitelist).
+    /// `clickUpFolderID` = optionaler ClickUp-Zielordner (z. B. der `_TEST_PROVISIONING`-Ordner
+    /// im Testspace) — nil überspringt Schritt 3 komplett (kein ClickUp-Adapter nötig).
     /// `actorUserID` = wer die Geburt auslöst (für Audit/Write-Shadow).
     /// Re-Runnable: liest den bestehenden Ledger-Stand und führt nur fehlende Schritte aus.
     @discardableResult
@@ -66,6 +74,7 @@ public final class ProjektProvisioningService {
         driveParentID: String,
         airtableBaseID: String,
         airtableTabelle: String,
+        clickUpFolderID: String? = nil,
         actorUserID: String
     ) async throws -> ProvisioningResult {
         // Gate: nur TEST-Sandbox. PROD bleibt gesperrt, bis Johannes je Schritt freigibt.
@@ -94,6 +103,14 @@ public final class ProjektProvisioningService {
                 try ledger.speichere(result)
             }
 
+            // SCHRITT 3: ClickUp-Liste + Standard-Tasks (nur wenn Adapter + Ziel-Ordner gegeben).
+            if let clickUp, let clickUpFolderID, result.hat(.clickUpStruktur) == false {
+                result = try await provisioniereClickUp(
+                    plan: plan, folderID: clickUpFolderID, client: clickUp, into: result)
+                result.erledigteSchritte.insert(.clickUpStruktur)
+                try ledger.speichere(result)
+            }
+
             result.status = .vollstaendig
             result.letzterFehler = nil
             try ledger.speichere(result)
@@ -107,10 +124,11 @@ public final class ProjektProvisioningService {
 
         // EIN Audit-Eintrag für die ganze Geburt (Brief: „eine bestätigte, auditierte Karte").
         do {
+            let clickUpTeil = result.clickUpListID.map { " · ClickUp \($0)" } ?? ""
             try audit.append(AuditEntry(
                 actorUserID: actorUserID, projectID: plan.projektnummer.appFormat,
                 action: .projectLinked,
-                summary: "Projekt-Geburt (TEST-Sandbox): \(plan.ordnerName) · Drive \(result.driveProjektOrdnerID ?? "?") · Airtable \(result.airtableRecordID ?? "?")"))
+                summary: "Projekt-Geburt (TEST-Sandbox): \(plan.ordnerName) · Drive \(result.driveProjektOrdnerID ?? "?") · Airtable \(result.airtableRecordID ?? "?")\(clickUpTeil)"))
         } catch {
             MykLog.lifecycle.error("Provisioning-Audit fehlgeschlagen: \(String(describing: error), privacy: .public)")
         }
@@ -186,6 +204,33 @@ public final class ProjektProvisioningService {
                 action: .create, actorUserID: actorUserID, baseID: baseID, table: tabelle,
                 recordID: nil, fields: felder, mode: mode, result: .error, errorMessage: String(describing: error))
             throw ProvisioningError.schrittFehlgeschlagen(.airtableRecord, String(describing: error))
+        }
+    }
+
+    // MARK: ClickUp
+
+    /// Legt eine Liste (Name = `TEST_` + Ordnername, gleiche Doppel-Strategie wie Airtable)
+    /// im gegebenen Ordner an — idempotent (find-or-create) — und seedet die Standard-
+    /// Lebenszyklus-Tasks aus `ClickUpProjectTemplate.standardKundenprojekt`. Bereits
+    /// vorhandene Tasks (gleicher Name) werden NICHT doppelt angelegt.
+    private func provisioniereClickUp(
+        plan: ProvisioningPlan, folderID: String,
+        client: any ClickUpFetching & ClickUpProjectProvisioning, into start: ProvisioningResult
+    ) async throws -> ProvisioningResult {
+        var result = start
+        let listenName = TestMarker.namePrefix + plan.ordnerName
+        do {
+            let listID = try await client.findOrCreateList(folderID: folderID, name: listenName)
+            result.clickUpListID = listID
+
+            // Idempotenz auf Task-Ebene: nur fehlende Template-Tasks anlegen.
+            let bestehende = Set((try? await client.tasks(listID: listID))?.map(\.name) ?? [])
+            for taskName in ClickUpProjectTemplate.standardKundenprojekt where bestehende.contains(taskName) == false {
+                _ = try await client.createTask(listID: listID, name: taskName)
+            }
+            return result
+        } catch {
+            throw ProvisioningError.schrittFehlgeschlagen(.clickUpStruktur, String(describing: error))
         }
     }
 

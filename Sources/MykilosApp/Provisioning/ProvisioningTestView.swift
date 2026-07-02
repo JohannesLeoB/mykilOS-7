@@ -14,6 +14,9 @@ struct ProvisioningTestView: View {
     @State private var driveParentID = ""
     @State private var airtableBaseID = ""
     @State private var airtableTabelle = ""
+    // Studio-OS-Rollout (2026-07-02): vorausgefüllt mit der `_TEST_PROVISIONING`-Isolations-
+    // ebene im echten ClickUp-Testspace. Leerfeld = Schritt 3 wird übersprungen (kein Zwang).
+    @State private var clickUpFolderID = AppState.clickUpTestProvisioningFolderID
     @State private var kundeName = "Test Schmidt"
     @State private var kdnr = "TEST-K-1"
     @State private var strasse = "Heimhuder"
@@ -41,6 +44,7 @@ struct ProvisioningTestView: View {
                 feld("Drive-Parent-Ordner-ID", text: $driveParentID)
                 feld("Airtable-Base-ID", text: $airtableBaseID)
                 feld("Airtable-TEST-Tabelle", text: $airtableTabelle)
+                feld("ClickUp-TEST-Ordner-ID (leer = überspringen)", text: $clickUpFolderID)
             }
             // Test-Projekt
             gruppe("Test-Projekt") {
@@ -92,8 +96,9 @@ struct ProvisioningTestView: View {
                 kundeName: kundeName, kdnr: kdnr,
                 strasse: strasse.isEmpty ? nil : strasse,
                 hausnummer: hausnummer.isEmpty ? nil : hausnummer, ort: nil,
-                driveParentID: driveParentID, airtableBaseID: airtableBaseID, airtableTabelle: airtableTabelle)
-            ergebnis = "✓ \(r.projektnummer) · Status \(r.status.rawValue)\nDrive-Ordner: \(r.driveProjektOrdnerID ?? "?")\nAirtable: \(r.airtableRecordID ?? "?") · \(r.driveUnterordnerIDs.count) Unterordner"
+                driveParentID: driveParentID, airtableBaseID: airtableBaseID, airtableTabelle: airtableTabelle,
+                clickUpFolderID: clickUpFolderID.isEmpty ? nil : clickUpFolderID)
+            ergebnis = "✓ \(r.projektnummer) · Status \(r.status.rawValue)\nDrive-Ordner: \(r.driveProjektOrdnerID ?? "?")\nAirtable: \(r.airtableRecordID ?? "?") · \(r.driveUnterordnerIDs.count) Unterordner\nClickUp-Liste: \(r.clickUpListID ?? "übersprungen")"
         } catch {
             fehler = "✗ \(String(describing: error))"
         }

@@ -377,6 +377,15 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v19_provisioning_clickup — Studio-OS-Rollout (2026-07-02): ClickUp-Liste als
+        // dritter Provisioning-Schritt (siehe ProvisioningStep.clickUpStruktur). Additiv,
+        // nullable — bestehende Ledger-Einträge decodieren unverändert (clickUpListID = nil).
+        migrator.registerMigration("v19_provisioning_clickup") { db in
+            try db.alter(table: "provisioningLedger") { t in
+                t.add(column: "clickUpListID", .text)
+            }
+        }
+
         try migrator.migrate(queue)
     }
 

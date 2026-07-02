@@ -36,10 +36,23 @@ public protocol ClickUpFetching: Sendable {
     func tasks(listID: String) async throws -> [ClickUpTask]
 }
 
+// MARK: - ClickUpProjectProvisioning
+// mykilOS 8, Studio-OS-Rollout (2026-07-02): der Schreibpfad für die Projekt-Geburt
+// (ProjektProvisioningService, Schritt `.clickUpStruktur`). Getrennt vom reinen
+// Lese-Widget-Pfad (`ClickUpFetching`) — Views/Widgets rufen das NIE direkt auf,
+// nur der Provisioning-Service (Karte→Bestätigung→Audit, wie Drive/Airtable).
+public protocol ClickUpProjectProvisioning: Sendable {
+    /// Findet eine Liste mit exaktem Namen im Ordner, oder legt sie neu an (idempotent).
+    func findOrCreateList(folderID: String, name: String) async throws -> String
+    /// Legt einen Task in der Liste an. Kein Duplikat-Check hier — der Aufrufer prüft
+    /// vorher über `tasks(listID:)`, ob der Name schon existiert.
+    func createTask(listID: String, name: String) async throws -> String
+}
+
 // MARK: - ClickUpClient
 // Liest die offenen Aufgaben einer ClickUp-Liste des verbundenen Accounts.
 // Auth: Personal-API-Token direkt im Authorization-Header (kein "Bearer").
-public struct ClickUpClient: ClickUpFetching {
+public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning {
     private let credentialsStore: ClickUpCredentialsStoring
     private let session: URLSession
     private let baseURL = "https://api.clickup.com/api/v2"
@@ -69,6 +82,56 @@ public struct ClickUpClient: ClickUpFetching {
         guard (200...299).contains(http.statusCode) else { throw ClickUpError.httpError(http.statusCode) }
 
         return try Self.parseTasks(from: data)
+    }
+
+    // MARK: - Schreiben (Provisioning, Schritt `.clickUpStruktur`)
+
+    public func findOrCreateList(folderID: String, name: String) async throws -> String {
+        guard let credentials = try? credentialsStore.load() else { throw ClickUpError.notConnected }
+        // Erst lesen (idempotent, kein Duplikat): existierende Listen im Ordner nach Namen prüfen.
+        guard let listsURL = Self.buildFolderListsURL(baseURL: baseURL, folderID: folderID) else {
+            throw ClickUpError.invalidResponse
+        }
+        var listRequest = URLRequest(url: listsURL)
+        listRequest.setValue(credentials.apiToken, forHTTPHeaderField: "Authorization")
+        let (listData, listResponse) = try await session.data(for: listRequest)
+        guard let listHTTP = listResponse as? HTTPURLResponse else { throw ClickUpError.invalidResponse }
+        guard (200...299).contains(listHTTP.statusCode) else { throw ClickUpError.httpError(listHTTP.statusCode) }
+        if let existingID = try Self.parseListID(from: listData, matchingName: name) {
+            return existingID
+        }
+
+        // Kein Treffer → neu anlegen.
+        guard let createURL = Self.buildCreateListURL(baseURL: baseURL, folderID: folderID) else {
+            throw ClickUpError.invalidResponse
+        }
+        var createRequest = URLRequest(url: createURL)
+        createRequest.httpMethod = "POST"
+        createRequest.setValue(credentials.apiToken, forHTTPHeaderField: "Authorization")
+        createRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        createRequest.httpBody = try JSONEncoder().encode(["name": name])
+        let (createData, createResponse) = try await session.data(for: createRequest)
+        guard let createHTTP = createResponse as? HTTPURLResponse else { throw ClickUpError.invalidResponse }
+        guard (200...299).contains(createHTTP.statusCode) else { throw ClickUpError.httpError(createHTTP.statusCode) }
+        guard let newID = try Self.parseCreatedID(from: createData) else { throw ClickUpError.decodingFailed }
+        return newID
+    }
+
+    public func createTask(listID: String, name: String) async throws -> String {
+        guard let credentials = try? credentialsStore.load() else { throw ClickUpError.notConnected }
+        guard let url = Self.buildCreateTaskURL(baseURL: baseURL, listID: listID) else {
+            throw ClickUpError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(credentials.apiToken, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(["name": name])
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw ClickUpError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw ClickUpError.httpError(http.statusCode) }
+        guard let newID = try Self.parseCreatedID(from: data) else { throw ClickUpError.decodingFailed }
+        return newID
     }
 
     // MARK: - Reine, testbare Bausteine (kein Netzwerk/Keychain)
@@ -107,7 +170,50 @@ public struct ClickUpClient: ClickUpFetching {
         guard let millis, let value = Double(millis) else { return nil }
         return Date(timeIntervalSince1970: value / 1000.0)
     }
+
+    // MARK: Schreib-Bausteine (rein, testbar)
+
+    static func buildFolderListsURL(baseURL: String, folderID: String) -> URL? {
+        let encoded = folderID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? folderID
+        return URL(string: "\(baseURL)/folder/\(encoded)/list")
+    }
+
+    static func buildCreateListURL(baseURL: String, folderID: String) -> URL? {
+        let encoded = folderID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? folderID
+        return URL(string: "\(baseURL)/folder/\(encoded)/list")
+    }
+
+    static func buildCreateTaskURL(baseURL: String, listID: String) -> URL? {
+        let encoded = listID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? listID
+        return URL(string: "\(baseURL)/list/\(encoded)/task")
+    }
+
+    /// Sucht in der Liste der Ordner-Listen exakt `matchingName`; nil = kein Treffer.
+    static func parseListID(from data: Data, matchingName: String) throws -> String? {
+        do {
+            let decoded = try JSONDecoder().decode(ClickUpListsResponse.self, from: data)
+            return decoded.lists.first { $0.name == matchingName }?.id
+        } catch {
+            throw ClickUpError.decodingFailed
+        }
+    }
+
+    /// Liest die `id` aus einer Create-Antwort (Liste oder Task — beide liefern `{ "id": "..." }`).
+    static func parseCreatedID(from data: Data) throws -> String? {
+        do {
+            return try JSONDecoder().decode(ClickUpCreatedEntity.self, from: data).id
+        } catch {
+            throw ClickUpError.decodingFailed
+        }
+    }
 }
+
+private struct ClickUpListsResponse: Decodable {
+    var lists: [ClickUpListEntity]
+    struct ClickUpListEntity: Decodable { var id: String; var name: String }
+}
+
+private struct ClickUpCreatedEntity: Decodable { var id: String }
 
 // MARK: - Decodable-Spiegel der ClickUp-Antwort
 private struct ClickUpTasksResponse: Decodable {

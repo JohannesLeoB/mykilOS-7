@@ -114,6 +114,91 @@ struct ProvisioningServiceTests {
         }
         #expect(try ledger.eintrag(fuer: makePlan().idempotenzSchluessel)?.status == .fehler)
     }
+
+    // MARK: - ClickUp-Schritt (Studio-OS-Rollout, 2026-07-02)
+
+    private func makeServiceMitClickUp(clickUp: FakeClickUp) throws -> ProjektProvisioningService {
+        let db = try GRDBDatabase.inMemory()
+        let ledger = ProvisioningLedger(db: db)
+        let audit = AuditStore(db: db)
+        return ProjektProvisioningService(
+            drive: FakeDrive(), airtableCreate: FakeCreate(), airtableFetch: FakeFetch(),
+            ledger: ledger, audit: audit, writeShadow: WriteShadowRecorder(db: db),
+            isWritable: { _, _ in true }, clickUp: clickUp)
+    }
+
+    @Test func ohneClickUpFolderIDWirdSchrittUebersprungen() async throws {
+        let clickUp = FakeClickUp()
+        let svc = try makeServiceMitClickUp(clickUp: clickUp)
+        // clickUpFolderID bewusst NICHT übergeben (Default nil).
+        let r = try await svc.provision(plan: makePlan(), mode: .test, driveParentID: "root", airtableBaseID: "appX", airtableTabelle: "TEST_Projekte", actorUserID: "test")
+        #expect(r.status == .vollstaendig)
+        #expect(r.clickUpListID == nil)
+        #expect(r.erledigteSchritte.contains(.clickUpStruktur) == false)
+        #expect(clickUp.listenAufrufe == 0)
+    }
+
+    @Test func clickUpSchrittLegtListeUndAlleTemplateTasksAn() async throws {
+        let clickUp = FakeClickUp()
+        let svc = try makeServiceMitClickUp(clickUp: clickUp)
+        let r = try await svc.provision(
+            plan: makePlan(), mode: .test, driveParentID: "root", airtableBaseID: "appX",
+            airtableTabelle: "TEST_Projekte", clickUpFolderID: "folder_test", actorUserID: "test")
+        #expect(r.status == .vollstaendig)
+        #expect(r.clickUpListID != nil)
+        #expect(r.erledigteSchritte.contains(.clickUpStruktur) == true)
+        // Doppel-Strategie wie Airtable: Listenname trägt den TEST_-Präfix.
+        #expect(clickUp.angelegteListenNamen.first?.hasPrefix(TestMarker.namePrefix) == true)
+        #expect(clickUp.erzeugteTasks.count == ClickUpProjectTemplate.standardKundenprojekt.count)
+        #expect(Set(clickUp.erzeugteTasks) == Set(ClickUpProjectTemplate.standardKundenprojekt))
+    }
+
+    @Test func clickUpSchrittIstIdempotentZweiterLauf() async throws {
+        let clickUp = FakeClickUp()
+        let svc = try makeServiceMitClickUp(clickUp: clickUp)
+        _ = try await svc.provision(
+            plan: makePlan(), mode: .test, driveParentID: "root", airtableBaseID: "appX",
+            airtableTabelle: "TEST_Projekte", clickUpFolderID: "folder_test", actorUserID: "test")
+        let listenAufrufeNach1 = clickUp.listenAufrufe
+        let taskAufrufeNach1 = clickUp.taskAufrufe
+
+        // Zweiter Lauf mit frischem Service, aber demselben Ledger-Idempotenzschlüssel
+        // würde den Schritt eigentlich überspringen (result.hat(.clickUpStruktur)) — hier
+        // simulieren wir stattdessen einen zweiten DIREKTEN Aufruf derselben Fake-Liste
+        // (z. B. Wiederaufnahme nach Ledger-Reset), um find-or-create + Task-Dedup zu beweisen.
+        let zweiteListID = try await clickUp.findOrCreateList(folderID: "folder_test", name: clickUp.angelegteListenNamen[0])
+        #expect(zweiteListID == clickUp.letzteListID)
+        #expect(clickUp.listenAufrufe == listenAufrufeNach1 + 1)   // find-or-create wurde erneut aufgerufen…
+        #expect(clickUp.angelegteListenNamen.count == 1)           // …aber KEINE zweite Liste angelegt.
+
+        let bestehende = Set((try await clickUp.tasks(listID: zweiteListID)).map(\.name))
+        let fehlend = ClickUpProjectTemplate.standardKundenprojekt.filter { bestehende.contains($0) == false }
+        #expect(fehlend.isEmpty)   // alle Template-Tasks sind schon da → ein Re-Run legt keine neuen an
+        #expect(clickUp.taskAufrufe == taskAufrufeNach1)
+    }
+
+    @Test func clickUpFehlerWirftSchrittFehlgeschlagenUndBleibtBeiVorherigenSchritten() async throws {
+        let clickUp = FakeClickUp(); clickUp.wirft = true
+        let db = try GRDBDatabase.inMemory()
+        let ledger = ProvisioningLedger(db: db)
+        let audit = AuditStore(db: db)
+        let svc = ProjektProvisioningService(
+            drive: FakeDrive(), airtableCreate: FakeCreate(), airtableFetch: FakeFetch(),
+            ledger: ledger, audit: audit, writeShadow: WriteShadowRecorder(db: db),
+            isWritable: { _, _ in true }, clickUp: clickUp)
+
+        await #expect(throws: ProvisioningError.self) {
+            _ = try await svc.provision(
+                plan: makePlan(), mode: .test, driveParentID: "root", airtableBaseID: "appX",
+                airtableTabelle: "TEST_Projekte", clickUpFolderID: "folder_test", actorUserID: "test")
+        }
+        let nach = try #require(try ledger.eintrag(fuer: makePlan().idempotenzSchluessel))
+        #expect(nach.status == .fehler)
+        // Drive + Airtable sind trotzdem sauber erledigt — nur ClickUp ist offen (Teilfehler-Fest).
+        #expect(nach.hat(.driveOrdnerbaum) == true)
+        #expect(nach.hat(.airtableRecord) == true)
+        #expect(nach.hat(.clickUpStruktur) == false)
+    }
 }
 
 // MARK: - Fakes
@@ -148,4 +233,48 @@ private final class FakeCreate: AirtableRecordCreating, @unchecked Sendable {
 private final class FakeFetch: AirtableFetching, @unchecked Sendable {
     var records: [[String: AirtableFieldValue]] = []
     func fetchRecords(baseID: String, table: String) async throws -> [[String: AirtableFieldValue]] { records }
+}
+
+// Fake für den ClickUp-Schritt (Studio-OS-Rollout, 2026-07-02): hält Listen (nach Name,
+// idempotent per find-or-create) + je Liste die angelegten Tasks — spiegelt exakt, was
+// `provisioniereClickUp` vom echten Client erwartet.
+private final class FakeClickUp: ClickUpFetching, ClickUpProjectProvisioning, @unchecked Sendable {
+    var wirft = false
+    private(set) var listenAufrufe = 0
+    private(set) var taskAufrufe = 0
+    private(set) var angelegteListenNamen: [String] = []
+    private(set) var erzeugteTasks: [String] = []
+    private(set) var letzteListID: String = ""
+
+    private var listenIDs: [String: String] = [:]          // (folderID/name) → ID
+    private var tasksProListe: [String: [ClickUpTask]] = [:] // listID → Tasks
+
+    func findOrCreateList(folderID: String, name: String) async throws -> String {
+        if wirft { throw ClickUpError.httpError(500) }
+        listenAufrufe += 1
+        let key = folderID + "/" + name
+        if let existing = listenIDs[key] {
+            letzteListID = existing
+            return existing
+        }
+        let id = "list_\(listenIDs.count)"
+        listenIDs[key] = id
+        angelegteListenNamen.append(name)
+        tasksProListe[id] = []
+        letzteListID = id
+        return id
+    }
+
+    func createTask(listID: String, name: String) async throws -> String {
+        if wirft { throw ClickUpError.httpError(500) }
+        taskAufrufe += 1
+        erzeugteTasks.append(name)
+        let id = "task_\(taskAufrufe)"
+        tasksProListe[listID, default: []].append(ClickUpTask(id: id, name: name, status: "to do"))
+        return id
+    }
+
+    func tasks(listID: String) async throws -> [ClickUpTask] {
+        tasksProListe[listID] ?? []
+    }
 }

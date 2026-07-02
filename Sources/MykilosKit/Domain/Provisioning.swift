@@ -37,6 +37,10 @@ public struct ProvisioningPlan: Sendable, Equatable {
 public enum ProvisioningStep: String, Codable, Sendable, CaseIterable {
     case driveOrdnerbaum
     case airtableRecord
+    /// ClickUp-Liste + Standard-Lebenszyklus-Tasks (Studio-OS-Rollout, 2026-07-02).
+    /// Nur ausgeführt, wenn der Service mit einem ClickUp-Adapter + Ziel-Ordner-ID
+    /// konstruiert/aufgerufen wird — sonst übersprungen (additiv, kein Zwang).
+    case clickUpStruktur
 }
 
 public enum ProvisioningStatus: String, Codable, Sendable, Equatable {
@@ -58,6 +62,9 @@ public struct ProvisioningResult: Codable, Sendable, Equatable {
     public var driveProjektOrdnerID: String?
     public var driveUnterordnerIDs: [String: String]   // relativerPfad → Folder-ID
     public var airtableRecordID: String?
+    /// ID der angelegten/wiederverwendeten ClickUp-Liste (nil, solange der Schritt
+    /// nicht ausgeführt wurde/wird — additiv, Cold-Start-sicher).
+    public var clickUpListID: String?
     public var letzterFehler: String?
     public var updatedAt: Date
 
@@ -65,7 +72,8 @@ public struct ProvisioningResult: Codable, Sendable, Equatable {
         idempotenzSchluessel: String, projektnummer: String, kdnr: String,
         status: ProvisioningStatus = .offen, erledigteSchritte: Set<ProvisioningStep> = [],
         driveProjektOrdnerID: String? = nil, driveUnterordnerIDs: [String: String] = [:],
-        airtableRecordID: String? = nil, letzterFehler: String? = nil, updatedAt: Date = Date()
+        airtableRecordID: String? = nil, clickUpListID: String? = nil,
+        letzterFehler: String? = nil, updatedAt: Date = Date()
     ) {
         self.idempotenzSchluessel = idempotenzSchluessel
         self.projektnummer = projektnummer
@@ -75,6 +83,7 @@ public struct ProvisioningResult: Codable, Sendable, Equatable {
         self.driveProjektOrdnerID = driveProjektOrdnerID
         self.driveUnterordnerIDs = driveUnterordnerIDs
         self.airtableRecordID = airtableRecordID
+        self.clickUpListID = clickUpListID
         self.letzterFehler = letzterFehler
         self.updatedAt = updatedAt
     }
