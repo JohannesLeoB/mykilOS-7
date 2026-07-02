@@ -155,7 +155,10 @@ zusätzlich Google Drive für Desktop mit materialisiertem (heruntergeladenem) O
 
 ### Angebote
 Zwei Spalten — eingehende (`05 …`) und ausgehende (`04 …`) Belege —, rekursiv
-gesammelt und nach Dokumenttyp gruppiert. **Vorschau** (Icon-Klick) rendert ein
+gesammelt und nach Dokumenttyp gruppiert. Es werden nur echte Beleg-Dateitypen
+angezeigt (**PDF/Bild/Mail**); ZIP, `.numbers` u.ä. werden per Typ-Whitelist
+(`DriveOfferWatcher.isAcceptedOfferFileType`) ausgefiltert — dieselbe Regel wie
+in „Alle Angebote". **Vorschau** (Icon-Klick) rendert ein
 echtes PDF: lokal materialisiert per PDFKit, sonst per read-only Drive-Download
 (`downloadContent`) — **nicht** im Browser. **Öffnen** (Klick auf den Namen) startet
 lokal-zuerst die macOS-Vorschau, nur ohne lokale Datei den Browser-Fallback.
@@ -201,15 +204,31 @@ Alle Drive-Dateien des Accounts, nach Änderungszeit sortiert.
 Projektliste links, Angebots-PDFs des gewählten Projekts rechts.
 
 **Alle Angebote (S23):** Oben in der Projektliste der Button **„Alle Angebote"**.
-Er aggregiert die Belege **aller** 04/05-Ordner **aller** Projekte mit Drive-Ordner
-in eine flache Liste. Sortierbar nach **Datum, Projekt, Richtung (eingehend/ausgehend),
-Typ, Name**; durchsuchbar über Dateiname, Projekt und Belegnummer. Jede Zeile ist
-anklickbar → In-App-Vorschau (lokale Datei zuerst, sonst read-only Drive-Bytes; Vollvorschau
-über das Popover). Read-only, nutzt dieselbe `OffersCollector`-Logik wie der Projekt-Tab
-(eine Quelle der Wahrheit). Das Durchsuchen aller Projektordner läuft begrenzt nebenläufig
-(schont das Drive-Rate-Limit) mit Lade-Fortschrittsanzeige; einzelne nicht erreichbare
-Projektordner werden übersprungen und gezählt. **Voraussetzung:** Google-Konto verbunden
-(volle Drive-Vorschau via M2).
+Er aggregiert die Belege **aller** 04/05-Ordner **aller** Projekte mit Drive-Ordner.
+
+- **Zweispaltiges Layout:** links **Eingehend**, rechts **Ausgehend** (die Richtung
+  steckt bereits im Beleg-Modell). Jede Spalte scrollt eigenständig und ist innerhalb
+  nach **Dokumenttyp** gruppiert (Angebote / Aufträge / Rechnungen / Eingehende Angebote /
+  Bestellungen / Sonstige).
+- **Projektzuordnung pro Beleg:** jede Zeile zeigt ihr **echtes** Projekt (Titel · Nummer) —
+  nie das Projekt der ersten Zeile. Bei nur einem gefüllten Projekt erscheinen naturgemäß
+  nur dessen Belege (kein Fehler); über die Suche nach einem anderen Projektnamen werden
+  dessen Belege sichtbar.
+- **Kategorie-Filter:** Dropdown „Alle Kategorien" → auf einen Dokumenttyp einschränken.
+- **Suche:** über Dateiname, Projekt(-Titel/-Nummer) und Belegnummer.
+- **Sortierung** (innerhalb der Spalten): Datum, Projekt, Typ, Name.
+- **Typ-Whitelist (Filter-Regel):** Angebote sind **nie ZIP/.numbers** — angezeigt werden
+  nur **PDF** (primär), **Bilder** (sekundär) und **Mail** (selten). ZIP, `.numbers`,
+  Office-Tabellen u.ä. werden ausgefiltert. Die Regel liegt an **einer** Stelle
+  (`DriveOfferWatcher.isAcceptedOfferFileType`) und gilt für Projekt-Tab, „Alle Angebote"
+  und das `offerDetected`-Signal gleichermaßen — kein zweiter Filter in der UI.
+
+Jede Zeile ist anklickbar → In-App-Vorschau (lokale Datei zuerst, sonst read-only
+Drive-Bytes; Vollvorschau über das Popover). Read-only, nutzt dieselbe `OffersCollector`-Logik
+wie der Projekt-Tab (eine Quelle der Wahrheit). Das Durchsuchen aller Projektordner läuft
+begrenzt nebenläufig (schont das Drive-Rate-Limit) mit Lade-Fortschrittsanzeige; einzelne
+nicht erreichbare Projektordner werden übersprungen und gezählt. **Voraussetzung:**
+Google-Konto verbunden (volle Drive-Vorschau via M2).
 
 ### Integrationen (⌘7)
 Datenstrom-Schaltzentrale: zeigt alle 47 Weichen aus `DatastromManifest.json`
@@ -480,13 +499,13 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 
 | Integrations-ID | Name | Richtung | Trigger | NO-GO | Notiz |
 |---|---|---|---|---|---|
-| `DRIVE_POLL_OFFERS` | Angebots-PDF-Watcher | READ | Intervall (60s) + manuell | read-only | Baseline-Semantik: erster Poll meldet nichts. Handshake nur bei echtem Treffer (neues PDF). |
+| `DRIVE_POLL_OFFERS` | Angebots-PDF-Watcher | READ | Intervall (60s) + manuell | read-only | Baseline-Semantik: erster Poll meldet nichts. Handshake nur bei echtem Treffer. `isOffer` = Typ-Whitelist (PDF/Bild/Mail, kein ZIP/.numbers) **plus** Angebots-/Rechnungs-Schlüsselwort. |
 | `DRIVE_FILES_TAB` | Dateien-Tab (Finder-Baum) | READ | onDemand (Tab öffnen) | read-only | Nur Metadaten (Name/Typ/Datum/Größe). `drive.metadata.readonly` Scope. |
-| `DRIVE_OFFERS_TAB` | Angebote-Tab | READ | onDemand (Tab öffnen) | read-only | Gleiche Erkennungslogik wie `DriveOfferWatcher.detectOffers`. |
+| `DRIVE_OFFERS_TAB` | Angebote-Tab | READ | onDemand (Tab öffnen) | read-only | Gleiche Erkennungslogik wie `DriveOfferWatcher.detectOffers`. Typ-Whitelist (`isAcceptedOfferFileType`, EINE Quelle der Wahrheit): nur PDF/Bild/Mail, ZIP/.numbers werden ausgefiltert. |
 | `DRIVE_MATERIAL_TAB` | Material-Tab | READ | onDemand (Tab öffnen) | read-only | Tolerant per Ordnername gematcht (`05 Material` o.ä.). |
 | `DRIVE_ASSISTANT_LIST` | Drive-Ordner-Listing (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `list_drive_folder`. Nur Metadaten, nie Dateiinhalte. Eigene Weiche (Mandate E). |
 | `DRIVE_OFFERS_FIND` | Angebote-Suche (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `find_offers` über `OffersCollector` (rekursiv, klassifiziert). Findet 04/05 auch verschachtelt in „01 INFOS"; global per Projektname auflösbar (S2). Ergebnisse erscheinen als **anklickbare** Karte mit In-App-Vorschau (S22, reine UI — keine eigene Weiche). |
-| `DRIVE_ALL_OFFERS` | Alle Angebote (global) | READ | onDemand (Button „Alle Angebote") | read-only | Aggregiert die 04/05-Belege ALLER Projekte mit Drive-Ordner in eine flache, sortier-/durchsuchbare Liste (`AllOffersCollector`, begrenzt nebenläufig). Gleiche `OffersCollector`-Lese-/Klassifikationslogik wie der Projekt-Tab. Klick → In-App-Vorschau. S23 (MYKILOS 7). |
+| `DRIVE_ALL_OFFERS` | Alle Angebote (global) | READ | onDemand (Button „Alle Angebote") | read-only | Aggregiert die 04/05-Belege ALLER Projekte mit Drive-Ordner (`AllOffersCollector`, begrenzt nebenläufig). **Zweispaltig** nach Richtung (Eingehend/Ausgehend), pro Typ gruppiert, **Kategorie-Filter** + Suche (Name/Projekt/Belegnummer). Jede Zeile trägt ihre echte Projektzuordnung. Gleiche `OffersCollector`-Logik + Typ-Whitelist (PDF/Bild/Mail; ZIP/.numbers raus) wie der Projekt-Tab. Klick → In-App-Vorschau. S23 (MYKILOS 7), Ausbau 2026-07-02. |
 | `DRIVE_FILE_READ` | Dateiinhalt lesen (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `read_drive_file` über `DriveFileReader`: findet die Datei per (Teil-)Name rekursiv und liest den **Inhalt** als Klartext (PDF→PDFKit, Google Docs/Sheets/Slides→Export, Text→utf8, gekürzt auf 6000 Zeichen). Braucht `drive.readonly` Scope. Eigene Weiche (S5). |
 | `DRIVE_FRAGEBOGEN_PROJEKT_ORDNER` | Fragebogen: echter Projekt-Ordner | WRITE | onDemand (Fragebogen-Bestätigung, Stufe „Lead"/„Projekt mit Ordner") | keine | 2026-07-01, Johannes freigegeben: erste echte (nicht-Sandbox) Drive-Provisionierung, kein `_TEST_PROVISIONING`. Stufe „Projekt mit Ordner": kompletter FolderSchema-v1-Unterbau im echten `PROJEKTE`-Root. Stufe „Als Lead anlegen": NUR der Wurzelordner (kein Unterbau) unter `PROJEKTE/_LEADS/`. Nicht-fatal bei Fehler (Kunde/Projekt sind trotzdem schon angelegt); übersprungen (mit sichtbarem Handshake) statt einer Nummernverschwendung, wenn keine STR-Nr bildbar ist. |
 
