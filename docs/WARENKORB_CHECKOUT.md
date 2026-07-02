@@ -312,3 +312,30 @@ zusätzlich lokal als AuditEntry + Write-Shadow-Log.
 
 **Bau-Ort:** Welle C / C4 — **nach** der S10-Grundsatzentscheidung, nicht vorher. Feld-Schema
 (v1) + ID-Schema werden mit Johannes bestätigt, bevor gebaut wird.
+
+### 5j. Warenkorb-Lebenszyklus im Projekt + Cash-Widget als Kalkulationsgröße (Johannes, 2026-07-02)
+
+**Cash-Widget liest NUR aus der sevDesk-Postbox** (nie direkt aus sevDesk — löst den To-Fix
+aus §5i). Es zeigt je Projekt entweder **(a)** den **aktuellsten Warenkorb** des Projekts
+(Kalkulationsphase, live) oder **(b)** den von **sevDesk als „bestätigt" markierten** Warenkorb
+(eingefroren).
+
+**Zweck:** In jeder Projekt-Übersicht sofort sehen, *was angeboten wird* und *was die aktuellen
+Kalkulations-Warenkörbe / Gerätelisten sind* — als **Kalkulationsgröße**, die noch nicht final
+ist und sich mit dem geänderten Kalkulationswarenkorb mitändert.
+
+**Zustandsmodell (State Machine) des Projekt-Warenkorbs:**
+1. **Kalkulation (live, nicht final):** der jeweils aktuellste Kalkulationswarenkorb. Ändert sich
+   frei, spiegelt den laufenden Angebots-/Kalkulationsstand. Genau das zeigt die Übersicht.
+2. **sevDesk-bestätigt (eingefroren):** markiert sevDesk einen Warenkorb/ein Angebot als
+   bestätigt, **friert er ein** — fest mit dem Projekt verknüpft, unveränderlich.
+3. **Fortführung NUR durch:** dem Projekt zugewiesene, kalkulierte **Nachtragswarenkörbe**
+   ODER **Gutschrift** (eigenes späteres Kapitel). Der eingefrorene Korb selbst bleibt unberührt.
+
+**Eiserne Sicherheit:** Nie gelöscht, nie editiert. Bestätigter Korb + Nachträge (− Gutschriften)
+bilden eine **append-only Kette** — der gültige Projektwert ergibt sich aus der Kette, nie aus
+Überschreiben.
+
+**Offen (für C4-Bau):** wie „bestätigt" konkret aus sevDesk zurückkommt (Status-Feld auf dem
+Postbox-Record vs. eigener Bestätigungs-Record); Verkettungs-/Rechenlogik Nachträge/Gutschrift;
+Auswahlregel „aktuellster vs. bestätigter" im Widget.
