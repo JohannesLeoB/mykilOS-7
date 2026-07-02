@@ -23,6 +23,47 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-02 spät — 🏆 MEGA-Funktion: Angebots-Positionen-Extraktion (Johannes) — FLAGGSCHIFF-USE-CASE der Wirbelsäule
+
+**Kein Nebenfeature — das ist der End-to-End-Beweis, dass die ganze S10-Wirbelsäule trägt.**
+
+**Idee (Johannes, 2026-07-02):** Alle eingehenden UND ausgehenden PDF-Angebote (Katalog-Ansicht
+Angebote) einmalig komplett maschinell analysieren. Pro Angebots-**Position** genau auslesen:
+Positionstext, Anzahl, Stückpreis, Beschreibung, Artikelnummer, alle Details. Ergebnis: eine
+einzelne **Unterposition** eines Angebots lässt sich „ausschneiden" und als eigenständiger
+**Single-Pick** in einen Warenkorb droppen. **Davor eine Editierebene** — Auslesefehler korrigieren,
+Menge/Text/andere Felder anpassbar, bevor gespeichert wird. Die extrahierten Einzelpositionen
+landen automatisiert in einer eigenen Tabelle, mit **Tags, Markern, Ident (stabile ID)**. Ziel:
+daraus wieder Warenkörbe füllen → Richtung sevDesk oder andere Checkout-Ziele.
+
+**Warum das die Wirbelsäule validiert (nicht nur eine Idee ist):**
+- **`CatalogMatrix.eingangsangebot`** existiert bereits im C1-Fundament
+  (`WirbelsaeuleFoundation.swift`) — genau der Matrix-Typ, den diese Funktion befüllt. Eine
+  Angebots-Position wird zu einem `Pick { matrix: .eingangsangebot, objektID, snapshot }`.
+- **`WARENKORB_CHECKOUT.md`** nennt „Eingehende Angebote (oder einzelne Positionen daraus)" schon
+  seit dem allerersten Konzept-Entwurf (§1) als Inhalts-Art — hier wird das konkret.
+- **Schließt den Kreis zum sevDesk-Port (§5i/§5j):** extrahierte Position → Pick → WorkBasket →
+  Checkout → sevDesk-Postbox. Das ist der Beweis, dass die ganze Pipeline vom ersten bis zum
+  letzten Schritt funktioniert — nicht nur Theorie.
+
+**⚠️ Wichtig — vermutlich KEIN Zero-to-One:** aus der Schätz-Engine-Arbeit (Kalkulations-Port)
+existiert bereits ein Korpus mit **~818 bereits extrahierten `position_candidates`** aus 164 PDFs
+(siehe Memory „Kalkulation-Datenbestand"). **Vor jedem Neubau prüfen, ob dieser Bestand
+wiederverwendet/als Startpunkt genutzt werden kann**, statt Extraktion komplett neu zu bauen.
+
+**⚠️ Sicherheitsrelevant — entschärft einen bekannten „Gefahren-Stub":** der I/O-Audit dieser
+Session flaggte `KalkulationsEngine.importPDF` als voll implementiert, aber **ohne Aufrufer und
+ohne Bestätigungsschicht** („geladene Waffe"). Johannes' **Editierebene vor dem Speichern** ist
+genau die fehlende Absicherung — dieses Feature könnte der sichere, offizielle Aufrufer für
+`importPDF` werden, WENN die Karte→Bestätigung→Audit-Kette (inkl. der Editierebene) sauber davor
+sitzt. Kein automatisches Speichern ohne menschlichen Blick auf die extrahierten Daten.
+
+**Bau-Einordnung:** gehört in Welle C (C1 ist die Pick-Grundlage, die es schon gibt; die
+PDF-Extraktion selbst ist ein eigener, substanzieller Teilstrang — vermutlich Claude-Vision auf
+PDF-Text, analog zum bereits bestehenden `OfferDocumentClassifier`-Muster, aber viel tiefer:
+Positions-Ebene statt nur Dokument-Klassifikation). **Nicht jetzt bauen** — großer, eigener Strang,
+verdient volle Aufmerksamkeit + Johannes' Live-Abnahme auf echten PDFs, nicht nebenbei.
+
 ## Nachtrag 2026-07-02 spät — Drive/Mail-Alerts auf bestehenden Beobachtungspfaden (Johannes)
 
 - 📋 **„Bitte reagieren"-Alert bei liegengebliebenem Eingang:** eingehendes Freigabe-Dokument, Mail
