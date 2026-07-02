@@ -104,6 +104,9 @@ struct SidebarView: View {
         .padding(.bottom, MykSpace.s3)
     }
 
+    // Erscheinungsbild — dieselbe AppStorage-Quelle wie SettingsView/Scene.
+    @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
+
     private var profileButton: some View {
         Button(action: onOpenProfile) {
             AvatarCircle(initials: initials, online: footIsOnline)
@@ -113,6 +116,22 @@ struct SidebarView: View {
         .onHover { hover in withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) { profileHovered = hover } }
         .help("Einstellungen · \(footDisplayName)")
         .accessibilityLabel("Einstellungen · \(footDisplayName)")
+        // Benutzer-Menü (2026-07-02): Rechtsklick → Schnellaktionen, ohne den
+        // Primär-Klick (Einstellungen öffnen) zu verändern.
+        .contextMenu {
+            Section(footDisplayName) {
+                Button("Einstellungen öffnen", systemImage: "gearshape") { onOpenProfile() }
+            }
+            Menu("Erscheinungsbild") {
+                ForEach(AppAppearance.allCases, id: \.rawValue) { mode in
+                    Button {
+                        appearanceRaw = mode.rawValue
+                    } label: {
+                        Label(mode.label, systemImage: appearanceRaw == mode.rawValue ? "checkmark" : mode.symbol)
+                    }
+                }
+            }
+        }
     }
 
     private var footIsOnline: Bool {

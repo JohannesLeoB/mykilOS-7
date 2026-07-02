@@ -4,6 +4,30 @@ import MykilosKit
 import MykilosDesign
 import MykilosServices
 
+// MARK: - SettingsCategory
+enum SettingsCategory: String, CaseIterable, Identifiable {
+    case profil, darstellung, verbindungen, privat, system
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .profil:       "Profil"
+        case .darstellung:  "Darstellung"
+        case .verbindungen: "Verbindungen"
+        case .privat:       "Privat"
+        case .system:       "System"
+        }
+    }
+    var icon: String {
+        switch self {
+        case .profil:       "person.crop.circle"
+        case .darstellung:  "paintbrush"
+        case .verbindungen: "app.connected.to.app.below.fill"
+        case .privat:       "lock.shield"
+        case .system:       "gearshape.2"
+        }
+    }
+}
+
 // MARK: - SettingsView
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
@@ -29,28 +53,27 @@ struct SettingsView: View {
     @State private var claudeModel: String = ClaudeAuthService.defaultModel
     @State private var claudeError: String?
 
+    // Zweispaltige Einstellungsebene (2026-07-02, Johannes: „Benutzer-Menü + Einstellungs-
+    // ebene ausbauen"). Kategorie-Rail links (wie macOS-Systemeinstellungen) statt eines
+    // endlosen Scrolls; die Sektionen selbst bleiben unverändert.
+    @State private var category: SettingsCategory = .profil
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MykSpace.s7) {
-                Text("Einstellungen")
-                    .font(.mykDisplay)
-                    .foregroundStyle(MykColor.ink.color)
-                identitySection
-                darstellungSection
-                mailSignaturSection
-                integrationStatusSection
-                googleSection
-                airtableSection
-                clickUpSection
-                sevdeskSection
-                claudeSection
-                privateAreaSection
-                diagnoseSection
-                SchaltzentrumView()
-                Spacer()
+        HStack(spacing: 0) {
+            categoryRail
+            Divider().overlay(MykColor.line.color)
+            ScrollView {
+                VStack(alignment: .leading, spacing: MykSpace.s7) {
+                    HStack(spacing: MykSpace.s4) {
+                        Image(systemName: category.icon).font(.mykTitle).foregroundStyle(MykColor.brand.color)
+                        Text(category.title).font(.mykDisplay).foregroundStyle(MykColor.ink.color)
+                    }
+                    categoryContent
+                    Spacer()
+                }
+                .padding(MykSpace.s9)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(MykSpace.s9)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(MykColor.paper.color)
         .task {
@@ -79,6 +102,60 @@ struct SettingsView: View {
                 claudeApiKey = creds.apiKey
                 claudeModel = creds.model
             }
+        }
+    }
+
+    // MARK: - Kategorie-Rail + Content
+    private var categoryRail: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Einstellungen")
+                .font(.mykMono(10)).tracking(1.2).textCase(.uppercase)
+                .foregroundStyle(MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s4).padding(.bottom, MykSpace.s4).padding(.top, MykSpace.s2)
+            ForEach(SettingsCategory.allCases) { cat in
+                Button { withAnimation(.easeInOut(duration: 0.15)) { category = cat } } label: {
+                    HStack(spacing: MykSpace.s4) {
+                        Image(systemName: cat.icon).font(.mykBody).frame(width: 20)
+                        Text(cat.title).font(.mykBody)
+                        Spacer()
+                    }
+                    .padding(.vertical, 9).padding(.horizontal, MykSpace.s4)
+                    .background(
+                        RoundedRectangle(cornerRadius: MykRadius.sm)
+                            .fill(category == cat ? MykColor.ink.color : Color.clear)
+                    )
+                    .foregroundStyle(category == cat ? MykColor.paper.color : MykColor.inkSoft.color)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Einstellungen: \(cat.title)")
+            }
+            Spacer()
+        }
+        .padding(MykSpace.s5)
+        .frame(width: 208)
+        .background(MykColor.paper2.color)
+    }
+
+    @ViewBuilder private var categoryContent: some View {
+        switch category {
+        case .profil:
+            identitySection
+            mailSignaturSection
+        case .darstellung:
+            darstellungSection
+        case .verbindungen:
+            integrationStatusSection
+            googleSection
+            airtableSection
+            clickUpSection
+            sevdeskSection
+            claudeSection
+        case .privat:
+            privateAreaSection
+        case .system:
+            diagnoseSection
+            SchaltzentrumView()
         }
     }
 
