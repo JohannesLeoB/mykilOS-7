@@ -23,6 +23,20 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-02 spät — Großes Vormerken: In-App-Assistent als Dev-Agent (Johannes)
+
+- 💡 **In-App-Assistent selbst an der App-Codebase arbeiten lassen — via Dev-Mode?** Frage nach
+  einem Toggle, der dem Assistenten erlaubt, an seiner eigenen App-Umgebung zu arbeiten.
+  **Antwort: kein Toggle, eigene Risikoklasse.** Heutiger Assistent hat nur gated, schmale Tools
+  (lesen/vorschlagen), **kein Dateisystem-Write, kein Shell-Exec, kein Git** — das bräuchte es
+  aber für Selbst-Editierung. Wäre faktisch ein Mini-Claude-Code-Agent im ausgelieferten,
+  signierten Binary — höchste Risikoklasse (selbstmodifizierender Code kann sich beim Reparieren
+  selbst zerstören). **Sichererer Mittelweg:** In-App-Assistent formuliert einen Dev-Auftrag, der
+  an eine **externe Claude-Code-Session** übergeben wird (isolierter Worktree, gleiche Verify-
+  Disziplin wie im Orchestrator-Workflow) — sauberer Bruch zwischen „App die läuft" und „App die
+  sich selbst baut". Eigener, großer architektonischer Strang — nicht jetzt, braucht eigene
+  Grundsatzentscheidung zur Sicherheitsgrenze.
+
 ## Nachtrag 2026-07-02 spät — Großes Vormerken: iPad-Version von mykilOS (Johannes)
 
 - 💡 **mykilOS fürs iPad — eventuelle Idee für die nächsten Monate.** Kein Detail-Scope heute,
