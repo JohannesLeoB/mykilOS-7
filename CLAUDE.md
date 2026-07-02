@@ -278,6 +278,18 @@ ist bitgenau roundtrip-sicher).
 - **User-Secrets sind pro Nutzer isoliert:** Keychain-Service mit nutzer-spezifischem Suffix (z. B. `com.mykilos6.clockodo.<userID>`). Nie teamweit geteilt.
 - **Clockodo ist datensensitiv.** Zeitdaten, Stundensätze, Entwürfe gehören ausschließlich in die **Private Area** der Settings. Kein Log, kein Audit-Eintrag darf Clockodo-Rohdaten anderer User enthalten. Jeder User sieht und bucht nur seine eigenen Einträge.
 - **Private Area in Settings** (eigener Abschnitt, visuell getrennt von geteilten Integrationen): enthält alle nutzer-persönlichen Credentials — Clockodo zuerst, perspektivisch auch andere personenbezogene Tokens.
+- **Mail, Memos/Notizen und Assistent-Chat-Verlauf sind PRIVAT, nie teamweit kreuzlesbar**
+  (Johannes, 2026-07-02 — eiserne Regel). Strukturell größtenteils gesichert durch per-User
+  Google-OAuth (jeder User hat sein eigenes Token, keine geteilte Mail-API-Session). Der reale
+  Risikopunkt liegt in **geteilten/aggregierten Wissensschichten** (Studio-Wissen/Slack-Brain,
+  ein künftiges Assistent-Tagebuch): dort dürfen NIEMALS Rohinhalte aus Mail/Memo/Chat eines
+  Users landen, nur aggregierte/anonyme Signale ohne Zitate. Bei jedem neuen geteilten Log/
+  Wissens-Store diese Prüfung als Design-Voraussetzung mitdenken, nicht nachträglich anflicken.
+- **Kein Identitäts-Vortäuschen bei Kolleg:innen-Ansprache:** der Assistent eines Users darf
+  andere Team-Mitglieder nie so ansprechen, als wäre er der Nutzer selbst — bei jeder Assistent-
+  vermittelten Kommunikation (Mail-Entwurf, Nachricht) muss klar bleiben, dass der Assistent im
+  Auftrag handelt, nicht der Mensch persönlich spricht. Gleiche Grenze wie die Ghost-Persona-
+  Regel bei ClickUp (Identität bleibt immer erkennbar, nie verwischt).
 
 ### Widgets
 - Widgets reden NIE direkt miteinander → nur über `StudioContext.emit()`.

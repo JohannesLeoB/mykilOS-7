@@ -408,6 +408,32 @@ Spart Kosten ohne Qualitätsverlust im Alltag. Logik: `AssistantModelRouter`.
 
 ---
 
+## Datenschutz-Grenzen zwischen Team-Mitgliedern
+
+**Was es tut:** mykilOS ist ein **persönliches Cockpit** — dein Assistent, deine Mail, deine
+Notizen gehören dir. Kolleg:innen können deine E-Mails, Memos/Notizen oder deinen Assistent-
+Chat-Verlauf **niemals einsehen**, und umgekehrt. Geteilt sind ausschließlich gemeinsame
+Projektdaten (Drive-Ordner, Kalender, ClickUp-Aufgaben, Airtable-Projekte) — alles Persönliche
+bleibt strikt bei dir.
+
+**Wo:** gilt automatisch, überall in der App — jeder verbindet sein eigenes Google-Konto, kein
+gemeinsamer Zugriff auf persönliche Postfächer.
+
+**Voraussetzungen:** keine — strukturell durch die Architektur gesichert (eigenes OAuth-Konto
+pro Nutzer).
+
+**Einschränkungen:** Funktionen, die Team-weites Wissen sammeln (z. B. ein künftiges Assistent-
+Tagebuch für Produktverbesserung), zeigen ausschließlich **aggregierte, anonyme Muster** — nie
+den Wortlaut deiner persönlichen Nachrichten. Jede solche Funktion ist **einzeln ein-/
+ausschaltbar** in den Einstellungen unter Datenschutz und standardmäßig transparent erklärt,
+bevor du sie aktivierst — nie stillschweigend im Hintergrund an.
+
+**Rechtlicher Rahmen:** orientiert sich an DSGVO/§ 26 BDSG (Beschäftigtendatenschutz) und dem
+Grundsatz freiwilliger, informierter Einwilligung bei KI-gestützten Funktionen, die
+Nutzungsmuster erfassen könnten.
+
+---
+
 ## Diagnose
 
 **Name:** App-Diagnose · **Was es tut:** zeigt die App-Identität für Support &
