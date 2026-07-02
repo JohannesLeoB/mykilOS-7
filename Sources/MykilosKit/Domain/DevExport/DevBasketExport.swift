@@ -35,7 +35,11 @@ public struct DevBasketExport: Codable, Sendable, Equatable {
         anzahlPositionen: Int? = nil
     ) {
         self.exportID = exportID
-        self.erzeugtAm = erzeugtAm
+        // Auf Millisekunden gerundet: ISO8601-mit-Sekundenbruchteilen kodiert nur bis
+        // Millisekunden, `Date` selbst hat Sub-Millisekunden-Präzision. Ohne diese Rundung
+        // im Init würde encode→decode nicht bitgenau zum Original zurückkommen (verletzt
+        // die Cold-Start-Rundtrip-Regel aus CLAUDE.md).
+        self.erzeugtAm = Date(timeIntervalSince1970: (erzeugtAm.timeIntervalSince1970 * 1000).rounded() / 1000)
         self.quelle = quelle
         self.bezeichnung = bezeichnung
         self.projekt = projekt
@@ -81,16 +85,38 @@ public enum DevBasketExportError: Error, Sendable, Equatable {
 
 // MARK: - Pretty-JSON-Encoding (rein, testbar)
 extension DevBasketExport {
+    /// ISO8601 mit Sekundenbruchteilen — Standard-`.iso8601`-Strategie rundet auf ganze
+    /// Sekunden, was den Encode→Decode-Rundtrip verlustbehaftet macht (Cold-Start-Prinzip:
+    /// nur bitgenaue Rundtrips sind zulässig, siehe CLAUDE.md Persistenz-Regel).
+    private static let iso8601Formatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
     private static let encoder: JSONEncoder = {
         let enc = JSONEncoder()
         enc.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        enc.dateEncodingStrategy = .iso8601
+        enc.dateEncodingStrategy = .custom { date, encoder in
+            var container = encoder.singleValueContainer()
+            try container.encode(iso8601Formatter.string(from: date))
+        }
         return enc
     }()
 
     private static let decoder: JSONDecoder = {
         let dec = JSONDecoder()
-        dec.dateDecodingStrategy = .iso8601
+        dec.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let string = try container.decode(String.self)
+            guard let date = iso8601Formatter.date(from: string) else {
+                throw DecodingError.dataCorruptedError(
+                    in: container,
+                    debugDescription: "Ungültiges ISO8601-Datum: \(string)"
+                )
+            }
+            return date
+        }
         return dec
     }()
 
