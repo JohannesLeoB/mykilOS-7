@@ -23,6 +23,26 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-02 spät — Montags-Projektbesprechung-Briefing (Johannes)
+
+- 📋 **Assistent-Modus „Montags-Briefing":** Jeden Montag ~60–120 Min. Team-Runde nach
+  Projektliste/Reihenfolge — Austausch über Stand, Umstände, Termine, offene Punkte je Projekt.
+  **Idee:** ein eigener Assistenten-Befehl/-Modus, der genau dieses Meeting **je Projekt einzeln
+  UND gesammelt** vorbereitet.
+  - **Je Projekt:** was hat sich seit letzter Woche geändert (Status/Phase), anstehende Termine
+    (Kalender), offene ClickUp-Tasks, neue Angebote/Belege (AllOffersView), Cash-Stand, evtl.
+    offene Mail-Threads.
+  - **Gesammelt:** eine Übersicht in der **Reihenfolge der Projektliste** (wie das Team im
+    Meeting selbst vorgeht), mit Ampel/Highlights — „was brennt", „was läuft rund".
+  - **Datenquellen bereits live vorhanden:** Airtable-Projektliste (Reihenfolge!), ClickUp-Tasks
+    je Projekt, Kalender-Widget, Angebote-Erkennung, Cash/Sevdesk-Widget, Mail-Suche.
+  - **Ausgabe-Andockpunkt:** könnte dieselben Ausgabewege nutzen, die der Dev-Checkout-Exporter
+    gerade baut (Copy-Paste-Vorschau / Notiz / ZIP) — ein „Montags-Briefing" ist im Kern auch nur
+    ein strukturierter Export über mehrere Projekte hinweg, kein neues Ausgabe-Konzept nötig.
+  - Reiner Lese-Zusammenzug, kein Schreibvorgang — sollte ohne neue Rechte/NO-GO-Fragen baubar
+    sein, sobald die einzelnen Quellen (Kalender/ClickUp/Angebote/Cash) je Projekt sauber
+    abrufbar sind (größtenteils schon der Fall).
+
 ## Nachtrag 2026-07-02 (Assistenten-Tweaks, Johannes im Auto-Modus)
 
 - 📋 **Bestätigung per natürlichem Befehl:** Action-Cards im Assistenten sollen sich auch per
