@@ -13,6 +13,8 @@ import MykilosWidgets
 struct GlobalOfferColumn: View {
     let title: String
     let offers: [AllOffersCollector.AggregatedOffer]
+    /// Task A (Dev-Checkout-Exporter): optionaler Warenkorb-Kontext für „In Warenkorb".
+    var warenkorb: WarenkorbState? = nil
 
     private var groups: [(type: OfferDocumentType, offers: [AllOffersCollector.AggregatedOffer])] {
         Dictionary(grouping: offers, by: \.offer.type)
@@ -62,7 +64,7 @@ struct GlobalOfferColumn: View {
                 .padding(.top, MykSpace.s2)
             VStack(spacing: 0) {
                 ForEach(offers) { offer in
-                    AllOfferRow(item: offer)
+                    AllOfferRow(item: offer, warenkorb: warenkorb)
                     if offer.id != offers.last?.id {
                         Divider().overlay(MykColor.line.color.opacity(0.5))
                     }
@@ -77,9 +79,12 @@ struct GlobalOfferColumn: View {
 // Klick → FilePreviewView-Popover (mit Vollvorschau-Button), Kontextmenü.
 struct AllOfferRow: View {
     let item: AllOffersCollector.AggregatedOffer
+    /// Task A (Dev-Checkout-Exporter): optionaler Warenkorb-Kontext für „In Warenkorb".
+    var warenkorb: WarenkorbState? = nil
 
     @State private var showPreview = false
     @State private var resolvedLocalURL: URL?
+    @State private var isHovered = false
 
     private var file: GoogleDriveFile { item.offer.file }
 
@@ -136,6 +141,22 @@ struct AllOfferRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .overlay(alignment: .trailing) {
+            if let warenkorb {
+                MykIconButton("cart.badge.plus", label: "In Warenkorb", style: .bordered) {
+                    warenkorb.addAngebot(
+                        fileID: file.id,
+                        bezeichnung: file.name,
+                        belegNummer: item.offer.belegNummer,
+                        eingehend: item.direction == .incoming
+                    )
+                    warenkorb.showPanel = true
+                }
+                .opacity(isHovered ? 1.0 : 0.55)
+                .padding(.trailing, 24)
+            }
+        }
         .popover(isPresented: $showPreview, arrowEdge: .trailing) {
             FilePreviewView(file: file, localURL: resolvedLocalURL, remoteContent: remoteContent())
                 .frame(width: 320)

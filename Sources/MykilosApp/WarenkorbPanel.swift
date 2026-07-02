@@ -196,14 +196,33 @@ private struct PositionZeile: View {
 
     @State private var mengeText: String = ""
 
+    private var sourceBadgeLabel: String {
+        switch position.source {
+        case "katalog": "K"
+        case "lager": "L"
+        case "angebot-eingehend": "AE"
+        case "angebot-ausgehend": "AA"
+        default: "?"
+        }
+    }
+
+    private var sourceBadgeColor: Color {
+        switch position.source {
+        case "katalog": MykColor.tasks.color
+        case "lager": MykColor.drive.color
+        case "angebot-eingehend", "angebot-ausgehend": MykColor.cash.color
+        default: MykColor.muted.color
+        }
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: MykSpace.s4) {
-            // Source-Badge
-            Text(position.source == "katalog" ? "K" : "L")
+            // Source-Badge (Task A: generalisiert über alle vier Quell-Strings)
+            Text(sourceBadgeLabel)
                 .font(.mykMono(8))
                 .foregroundStyle(MykColor.paper.color)
                 .frame(width: 16, height: 16)
-                .background(position.source == "katalog" ? MykColor.tasks.color : MykColor.drive.color)
+                .background(sourceBadgeColor)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
 
             VStack(alignment: .leading, spacing: MykSpace.s2) {

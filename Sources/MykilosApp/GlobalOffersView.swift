@@ -12,6 +12,10 @@ struct GlobalOffersView: View {
 
     @State private var selectedProjectNumber: String?
     @State private var showAll = false
+    // Eigener, lokaler Warenkorb (Task A, Dev-Checkout-Exporter): Angebote sind ein
+    // eigenständiges Sidebar-Modul ohne Zugriff auf KatalogeViews Warenkorb-Instanz.
+    // Gleiches Muster wie dort — session-lokal, @Observable, kein geteilter Singleton.
+    @State private var warenkorb = WarenkorbState()
 
     private var offerProjects: [Project] {
         appState.registry.projects.filter { $0.links.driveFolderID != nil }
@@ -26,17 +30,33 @@ struct GlobalOffersView: View {
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            sidebar
-            Divider().overlay(MykColor.line.color)
-            content
-        }
-        .background(MykColor.paper.color)
-        .onAppear {
-            if selectedProjectNumber == nil {
-                selectedProjectNumber = offerProjects.first?.projectNumber
+        ZStack(alignment: .topTrailing) {
+            HStack(spacing: 0) {
+                sidebar
+                Divider().overlay(MykColor.line.color)
+                content
+            }
+            .background(MykColor.paper.color)
+            .onAppear {
+                if selectedProjectNumber == nil {
+                    selectedProjectNumber = offerProjects.first?.projectNumber
+                }
+            }
+
+            // Warenkorb-Floating-Panel (rechts oben eingeblendet) — gleiches Muster wie
+            // KatalogeView, eigener lokaler Warenkorb für dieses Modul (Task A).
+            if warenkorb.showPanel {
+                WarenkorbPanel(warenkorb: warenkorb)
+                    .padding(.top, MykSpace.s9)
+                    .padding(.trailing, MykSpace.s7)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    ))
+                    .zIndex(10)
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: warenkorb.showPanel)
     }
 
     // MARK: Linke Projektliste
@@ -128,7 +148,7 @@ struct GlobalOffersView: View {
     @ViewBuilder
     private var content: some View {
         if showAll {
-            AllOffersView(projects: allProjectRefs)
+            AllOffersView(projects: allProjectRefs, warenkorb: warenkorb)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let nr = selectedProjectNumber,
            let project = offerProjects.first(where: { $0.projectNumber == nr }) {
