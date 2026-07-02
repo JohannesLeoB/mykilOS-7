@@ -246,7 +246,16 @@ struct SettingsView: View {
                 .font(.mykMono(12))
             HStack(spacing: MykSpace.s4) {
                 Button("Speichern") { saveProfile() }
-                if profileSaved {
+                    .disabled(!profileDirty)
+                if profileDirty {
+                    Button("Abbrechen") {
+                        profileName = storedProfileName
+                        profileRole = storedProfileRole
+                    }
+                    .buttonStyle(.plain)
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.muted.color)
+                } else if profileSaved {
                     Text("Gespeichert")
                         .font(.mykMono(10))
                         .foregroundStyle(MykColor.positive.color)
@@ -301,6 +310,14 @@ struct SettingsView: View {
         .padding(MykSpace.s6)
         .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
         .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
+    }
+
+    // Dirty-State fürs Profil: Speichern nur aktiv bei echter Änderung, „Abbrechen"
+    // stellt den gespeicherten Stand wieder her (kein stiller Verlust bei Kategoriewechsel).
+    private var storedProfileName: String { appState.profile.profile?.displayName ?? "" }
+    private var storedProfileRole: String { appState.profile.profile?.role ?? "" }
+    private var profileDirty: Bool {
+        profileName != storedProfileName || profileRole != storedProfileRole
     }
 
     private func saveProfile() {
