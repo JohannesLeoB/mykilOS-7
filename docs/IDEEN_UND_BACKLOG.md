@@ -23,7 +23,20 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
-## Nachtrag Rückschau 2026-07-02 (bisher nicht erfasste verbale Wünsche)
+## Nachtrag 2026-07-02 (Assistenten-Tweaks, Johannes im Auto-Modus)
+
+- 📋 **Bestätigung per natürlichem Befehl:** Action-Cards im Assistenten sollen sich auch per
+  Wort im Chat bestätigen lassen — „ist bestätigt", „mach", „go", „los", „ja" — statt nur per
+  Klick auf den Karten-Button. Sicher: nur auslösen, wenn es GENAU EINE offene, unbestätigte
+  Action-Card im letzten Assistenten-Zug gibt (sonst normal an den LLM). Läuft weiter über die
+  bestehenden gated Handler (Karte→Bestätigung→Audit) — der Confirm-Word ersetzt nur den Klick.
+- 📋 **Datei-/Screenshot-Upload → Bild-Analyse + Kontext + Action-Vorschläge:** Screenshot droppen
+  + „schau mal / kennst du das / analysiere" → Assistent erkennt den Inhalt und schlägt passende
+  Aktionen als Action-Cards vor: Kontakt-Screenshot → „Kontakt anlegen?"; Google-Maps → „Adresse
+  finden / dort suchen / Route?"; Moodboard → „ablegen / verschieben / verschicken?". Kurzer,
+  effizienter, ökonomischer Inhalt/Kontext/Action-Abgleich. Braucht Bild→LLM-Vision-Pfad
+  (ChatContentBlock.image existiert) + Klassifikations-Prompt → bestehende gated Action-Cards.
+  Aktion feuert NIE automatisch — nur Vorschlag, Ausführung über die Karte.
 
 Aus der Multi-Agent-Rückschau (`docs/RUECKSCHAU_UND_SESSIONPLAN_2026-07-02.md`) — diese
 verbalen Wünsche waren noch nicht sauber verankert und werden hiermit festgehalten:

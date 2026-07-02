@@ -378,9 +378,44 @@ public struct AssistantChatView: View {
         engine.isResponding == false && draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
+    // Bestätigung per Wort: der GANZE getrimmte Text muss ein Bestätigungswort sein.
+    private static let confirmWords: Set<String> = [
+        "ist bestätigt", "bestätigt", "bestätige", "bestätige das", "bestätigen",
+        "mach", "mach das", "machs", "mach's", "mach es", "go", "go go", "los",
+        "los geht's", "los gehts", "ja", "ja bitte", "jap", "jup", "ok", "okay", "passt"
+    ]
+
+    private enum PendingChatAction {
+        case contact(ContactDraft)
+        case draft(EmailDraft)
+        case airtableContact(AirtableContactDraft)
+    }
+
+    // Genau EINE offene Action-Card im letzten Assistenten-Zug (sonst nil → normal an den LLM).
+    private var pendingSingleAction: PendingChatAction? {
+        guard let last = messages.last(where: { $0.role == .assistant }) else { return nil }
+        var found: [PendingChatAction] = []
+        for block in last.blocks {
+            switch block {
+            case .contactAction(let d):         found.append(.contact(d))
+            case .draftAction(let d):           found.append(.draft(d))
+            case .airtableContactAction(let d): found.append(.airtableContact(d))
+            default: break
+            }
+        }
+        return found.count == 1 ? found.first : nil
+    }
+
     private func send(_ text: String) {
         let toSend = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard toSend.isEmpty == false, engine.isResponding == false else { return }
+        // Bestätigung per Befehlswort: „mach/go/los/ist bestätigt …" führt die EINE offene
+        // Action-Card aus (statt Klick) — läuft über dieselben gated Handler + Audit.
+        if let action = pendingSingleAction, Self.confirmWords.contains(toSend.lowercased()) {
+            draft = ""
+            confirmPending(action, userText: toSend)
+            return
+        }
         draft = ""
         let signals = focusedProjectID.map { context.signals(for: $0) } ?? []
         Task {
@@ -392,6 +427,39 @@ public struct AssistantChatView: View {
                 schaetzModusEnabled: false,
                 profile: profile
             )
+        }
+    }
+
+    // Führt die per Wort bestätigte Action-Card aus und protokolliert das Ergebnis im Chat.
+    private func confirmPending(_ action: PendingChatAction, userText: String) {
+        try? chatStore.append(.text(userText, role: .user), to: scope)
+        Task {
+            let resultText: String
+            switch action {
+            case .contact(let d):
+                if let handler = onCreateContact {
+                    switch await handler(d) {
+                    case .created(let name): resultText = "✓ Kontakt angelegt: \(name)"
+                    case .failed(let m):     resultText = "⚠️ Kontakt konnte nicht angelegt werden: \(m)"
+                    }
+                } else { resultText = "Kontakt-Anlage hier nicht verfügbar." }
+            case .draft(let d):
+                if let handler = onCreateDraft {
+                    switch await handler(d) {
+                    case .created(let info): resultText = "✓ \(info)"
+                    case .failed(let m):     resultText = "⚠️ Entwurf fehlgeschlagen: \(m)"
+                    }
+                } else { resultText = "Entwurf hier nicht verfügbar." }
+            case .airtableContact(let d):
+                if let handler = onWriteAirtableContact {
+                    switch await handler(d) {
+                    case .created(let name): resultText = "✓ Airtable-Kontakt angelegt: \(name)"
+                    case .updated(let name): resultText = "✓ Airtable-Kontakt aktualisiert: \(name)"
+                    case .failed(let m):     resultText = "⚠️ \(m)"
+                    }
+                } else { resultText = "Airtable-Kontakt hier nicht verfügbar." }
+            }
+            try? chatStore.append(.text(resultText, role: .assistant), to: scope)
         }
     }
 
