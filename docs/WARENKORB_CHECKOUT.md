@@ -242,3 +242,22 @@ Doku-Ports die *echten Dokumente*; Mail-/Übergabe-Ports die *echte Kontaktkarte
   (Warenkörbe bleiben leicht, keine doppelte Binär-Persistenz).
 - Große Binärdaten nie unnötig kopieren — Referenz halten, bei Bedarf materialisieren.
 - Übergabe folgt weiter Karte→Bestätigung→Audit; Content-Quelle (Drive/Airtable) read-first.
+
+### 5h. Machbarkeit Moodboard · Dokumente · Firefly-I/O (Johannes-Frage, 2026-07-02)
+
+Gemeinsames I/O: **IN** = Picks mit echtem Inhalt (lazy→Bytes, §5g) · **OUT** = Datei (PDF/PNG)
+in den Drive-Projektordner + In-App-Vorschau (bzw. Copy beim Firefly-Prompt), über
+Karte→Bestätigung→Audit. Für jeden Port: ein **self-contained (nativer) Weg** zuerst, ein
+**optionaler Adobe-Pro-Weg** später.
+
+| Port | Nativ (local-first, empfohlen zuerst) | Adobe-Pro (optional, später) |
+|---|---|---|
+| **Moodboard** | SwiftUI-Board-Layout (Bilder anordnen) → `ImageRenderer` (macOS 13+) → PDF/PNG | HTML → Adobe Express (`export_html_to_express` MCP) |
+| **Dokumente** (Briefpapier/Geräteliste/Angebot/Spec) | HTML-Template (vorhandene Briefpapier-Assets) + Pick-Daten → WKWebView/PDFKit → PDF (Muster wie bestehendes build_pdf.sh) | InDesign Data-Merge (`document_merge_data_layout` MCP) |
+| **Firefly-Prompt** | Claude (Vision auf Bild-/Material-Picks + Kontext) → **Firefly-Prompt-Text** (Copy) | direkt Bild erzeugen via Adobe-Firefly-MCP (Auth + Kosten) |
+
+**Empfehlung:** nativ zuerst — keine Adobe-Abhängigkeit/Kosten, passt zu local-first; Adobe-Wege
+als optionale Ausbaustufe. Template-Wahl = die „Versandadresse" (§5e).
+
+**Vorgemerkt (später):** **Textbausteine-Katalog** als weitere Katalog-Quelle (wiederverwendbare
+Textblöcke als Picks, z. B. für Dokument-/Mail-Ports).
