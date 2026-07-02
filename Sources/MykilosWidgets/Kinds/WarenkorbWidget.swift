@@ -54,11 +54,19 @@ public struct WarenkorbWidget: View {
         store.eintraege.first { passtZuProjekt($0) }
     }
 
+    // Match-Strategie: der Checkout-Flow lässt das Airtable-„Projekt"-Link-Feld bewusst
+    // LEER (Link zeigte sonst in die falsche Base — Härtung 2026-07-01) und legt den
+    // Projektbezug NUR in die Bezeichnung („Warenkorb <Titel>"). Wir matchen daher gegen
+    // BEIDES: das optionale „Projekt"-Feld UND die Bezeichnung — sonst fände das Widget nie
+    // einen realen Warenkorb.
     private func passtZuProjekt(_ e: WarenkorbEintrag) -> Bool {
-        guard let projekt = e.projekt?.lowercased(), !projekt.isEmpty else { return false }
-        if projekt.contains(projectID.lowercased()) { return true }
-        if let name = projektName?.lowercased(), !name.isEmpty,
-           projekt.contains(name) || name.contains(projekt) { return true }
+        let nr = projectID.lowercased()
+        let name = (projektName ?? "").lowercased()
+        for feld in [e.projekt, e.bezeichnung] {
+            guard let s = feld?.lowercased(), !s.isEmpty else { continue }
+            if s.contains(nr) { return true }
+            if !name.isEmpty, s.contains(name) || name.contains(s) { return true }
+        }
         return false
     }
 
