@@ -92,6 +92,13 @@ heutigem Stand.
   sich selbst baut". Eigener, großer architektonischer Strang — nicht jetzt, braucht eigene
   Grundsatzentscheidung zur Sicherheitsgrenze. **Johannes: „zu dünnes Eis" — Selbst-Editierung
   bleibt verworfen, nicht weiterverfolgen.**
+- 📋 **PRIO MITTEL-HOCH — Bau-Auftrag: Datenschutz sichtbar machen (Settings/Onboarding), noch
+  NICHT gebaut (Johannes 2026-07-02 spät).** Die Per-User-Isolation-Regel (Mail/Memos/Assistent-
+  Chat nie kreuzlesbar) + Anti-Impersonation ist jetzt in `CLAUDE.md`/`docs/BENUTZERHANDBUCH.md`
+  dokumentiert — braucht noch **echte UI-Umsetzung**: ein Datenschutz-Abschnitt in Settings
+  (analog Private Area) UND ein Onboarding-Screen, der das beim ersten Start klar erklärt. Braucht
+  Johannes' Wording/Freigabe vor dem Bauen (Rechtstexte nicht einfach selbst formulieren) — kein
+  Kandidat für den unbeaufsichtigten Nacht-Automode.
 - 📋 **PRIO MITTEL-HOCH — im Implementierungsplan (S10_WIRBELSAEULE.md §9, Parallel-Track)
   eingetragen (Johannes 2026-07-02 spät).** Stattdessen (viel sicherer): Assistent-Tagebuch/
   Erfahrungsbericht als Feedback-Kanal.
