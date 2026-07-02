@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import MykilosKit
 import MykilosDesign
 
@@ -11,6 +12,9 @@ struct ProjectHeroView: View {
     let onBack:   () -> Void
     var isFavorite: Bool = false
     var onToggleFavorite: () -> Void = {}
+
+    // Nutzer-eigenes Hero-Bild (lokal, je Projekt). Nil = Gradient.
+    @State private var heroImage: NSImage?
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -32,18 +36,57 @@ struct ProjectHeroView: View {
         }
         .frame(height: 280)
         .frame(maxWidth: .infinity)
+        .task(id: project.projectNumber) {
+            heroImage = ProjectHeroImageStore.image(for: project.projectNumber)
+        }
     }
 
     private var budget: Double? { project.links.budget }
 
-    // MARK: Hintergrund
+    // MARK: Hintergrund — eigenes Bild wenn vorhanden, sonst Kind-Gradient.
+    @ViewBuilder
     private var heroBackground: some View {
-        LinearGradient(
-            colors: heroGradient,
-            startPoint: .topLeading, endPoint: .bottomTrailing
-        )
-        .overlay(GridTexture().opacity(0.4))
-        .frame(maxWidth: .infinity)
+        if let heroImage {
+            Image(nsImage: heroImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(maxWidth: .infinity)
+                .clipped()
+        } else {
+            LinearGradient(
+                colors: heroGradient,
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+            .overlay(GridTexture().opacity(0.4))
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    // Bild ändern/entfernen (lokal, je Projekt).
+    private var heroImageButton: some View {
+        Menu {
+            Button("Bild wählen …", systemImage: "photo") {
+                if ProjectHeroImageStore.pickAndSave(for: project.projectNumber) {
+                    heroImage = ProjectHeroImageStore.image(for: project.projectNumber)
+                }
+            }
+            if heroImage != nil {
+                Button("Bild entfernen", systemImage: "trash", role: .destructive) {
+                    ProjectHeroImageStore.clear(for: project.projectNumber)
+                    heroImage = nil
+                }
+            }
+        } label: {
+            Image(systemName: "photo")
+                .font(.mykSmall)
+                .foregroundStyle(.white.opacity(0.85))
+                .padding(.horizontal, MykSpace.s4).padding(.vertical, 7)
+                .background(Capsule().fill(.black.opacity(0.22)))
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("Projekt-Titelbild ändern")
+        .accessibilityLabel("Projekt-Titelbild ändern")
     }
 
     // MARK: Back + Breadcrumb
@@ -63,6 +106,7 @@ struct ProjectHeroView: View {
             }
             .buttonStyle(.plain)
             Spacer()
+            heroImageButton
             favoriteButton
             // Budget-Anzeige nur, wenn ein echtes Budget hinterlegt ist (Airtable
             // "Budget"-Feld) — kein Fake-Prozentwert ohne Datengrundlage.
