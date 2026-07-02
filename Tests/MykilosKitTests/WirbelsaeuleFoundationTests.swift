@@ -3,19 +3,19 @@ import Foundation
 @testable import MykilosKit
 
 // MARK: - WirbelsaeuleFoundationTests
-// C1-Fundament: Pick / WorkBasket / Port / PortRegistry (S10-Blueprint §1–§4, §7).
+// C1-Fundament: Pick / WorkBasket / CheckoutPort / PortRegistry (S10-Blueprint §1–§4, §7).
 // Rein in-memory — kein Netzwerk, kein Keychain, kein GRDB.
 
 struct WirbelsaeuleFoundationTests {
 
     // MARK: - Test-Doubles
 
-    /// Minimaler Port für die Registry-Tests: deklariert seine erlaubten
+    /// Minimaler CheckoutPort für die Registry-Tests: deklariert seine erlaubten
     /// Inhalts-Arten und antwortet trivial auf preview/execute.
     ///
-    /// `MykilosKit.Port` ausgeschrieben, weil `Foundation` ein `NSPort` als
-    /// `Port` einblendet — sonst ist der Typname im Test mehrdeutig.
-    private struct TestPort: MykilosKit.Port {
+    /// `MykilosKit.CheckoutPort` ausgeschrieben, weil `Foundation` ein `NSPort` als
+    /// `CheckoutPort` einblendet — sonst ist der Typname im Test mehrdeutig.
+    private struct TestPort: MykilosKit.CheckoutPort {
         let id: PortID
         let name: String
         let arten: Set<InhaltsArt>
@@ -50,7 +50,7 @@ struct WirbelsaeuleFoundationTests {
 
         let rechte = AllowAllPortRights(alleBekanntenPorts: registry.alleBekanntenPortIDs)
 
-        // Für .artikel darf der bilder-only Port NICHT erscheinen.
+        // Für .artikel darf der bilder-only CheckoutPort NICHT erscheinen.
         let fuerArtikel = registry.ports(fuer: .artikel, userID: "u1", rechte: rechte)
         #expect(fuerArtikel.isEmpty)
 
@@ -69,7 +69,7 @@ struct WirbelsaeuleFoundationTests {
         registry.registriere(angebot)
         registry.registriere(sevdesk)
 
-        // Rechte-Provider verbietet ausgerechnet den sevDesk-Port.
+        // Rechte-Provider verbietet ausgerechnet den sevDesk-CheckoutPort.
         let rechte = VerbietetEinen(
             alle: registry.alleBekanntenPortIDs,
             verboten: PortID("sevdesk")
