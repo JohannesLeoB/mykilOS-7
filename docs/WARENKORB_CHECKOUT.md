@@ -71,3 +71,39 @@ CheckoutRun   — ein Checkout: Picks + Target → Preview → Bestätigung → 
 ## 5. Sequenz
 mykilOS 8+. Baut auf 8.0 + der Airtable-Core-Konsolidierung + Formulare-Ebene auf.
 Erst diese Fundamente, dann WorkBasket verallgemeinern, dann Target-Registry + Checkout-UI.
+
+---
+
+## 5. Bestätigung + Erweiterung (Johannes, 2026-07-02)
+
+**„Bereite dich auf einen bedeutenden Zuwachs in den Katalogen vor."** — die Warenkorb-
+Wirbelsäule ist keine Nische, sondern das zentrale Zusammenstell-Prinzip über ALLE Kataloge.
+
+**Jedes Katalog-Element ist ein Pick** — zu Warenkörben zusammenstellbar:
+`Kontakt · Notiz · Artikel · Lager · eingehende Angebote · ausgehende Angebote` (bestehende
+Kataloge) — und alle künftigen. Nicht nur Artikel/Lager (der heutige Keim), sondern die volle
+Matrix. Ein Warenkorb kann also z. B. Kontakt + mehrere Artikel + ein eingehendes Angebot +
+eine Notiz gemischt enthalten.
+
+**Perspektivische neue Kataloge** (jeweils eigene Pick-Matrix):
+- **Bilderdatenbank-Katalog** (Produkt-/Materialbilder, Herstellerbilder)
+- **Dokumenten-Template-Katalog** (Briefpapier/Angebot/Protokoll/Geräteliste …)
+- **Textbaustein-Katalog** (wiederverwendbare Textblöcke)
+- **Zeichnungs-Katalog** (CAD/Grundrisse/Skizzen)
+- … u. v. m.
+
+**Checkout-Ziel-Beispiel (Router):** Produkt-/Materialbilder + Kundenname → **Moodboard-
+Generator** mit Auswahl aus den Template-Katalogen. Weitere Ziele analog (Geräteliste-Dokument,
+Angebot, Kalkulation, Cross-DB, …).
+
+**Architektur-Konsequenz (für die Vorbereitung):**
+- **Pick-Abstraktion generalisieren** über alle Katalog-Matrizen (nicht nur ArtikelItem/LagerItem):
+  ein typisierter Verweis `{ matrix, id, snapshot }` je Katalog-Element.
+- **Checkout-Target-Registry** (Protokoll `CheckoutTarget`): Moodboard-Generator, Dokument-Render,
+  Angebot, Kalkulation … — jedes Ziel nimmt Picks, erzeugt Output über Karte→Bestätigung→Audit.
+- Das ist genau die **S10-Grundsatzentscheidung** (Einzelfeatures vs. generische
+  DataObject→WorkBasket→CheckoutRun-Pipeline) — sie wird mit Johannes getroffen, BEVOR die
+  breite Katalog-Erweiterung + der Moodboard-Generator (S8) gebaut werden.
+- Der aktuelle Warenkorb-Feinschliff (Projekt-Zuordnung/Versionierung, Sortieren/Filtern) ist
+  ein Baustein davon und sollte die Generalisierung nicht verbauen (keine Artikel-only-Annahmen
+  fest verdrahten).
