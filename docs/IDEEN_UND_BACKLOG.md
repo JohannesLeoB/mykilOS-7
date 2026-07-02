@@ -1009,6 +1009,14 @@ stört den professionellen Betrieb; erst der Opt-in weckt die Spielereien. Dezen
   Kategorie + Sound + Ein/Aus-Toggle greifen direkt hier. Baut den Datenschutz-Toggle
   ([[alerts-dezent-datenschutz-toggle-regel]]) technisch um: pro Kategorie eigene
   `UNNotificationCategory`, System-Berechtigung einmal beim ersten Alert anfragen.
+  **⚠️ Gilt nur für den Mac.** Aufs **Handy** braucht es echte zusätzliche Infrastruktur, die
+  mykilOS heute nicht hat (kein Server, keine iOS-Companion-App) — drei realistische Wege,
+  Aufwand steigend: **(a) Drittanbieter-Push-Relay** (Pushover/ntfy.sh — mykilOS macht einen
+  HTTP-Call, Johannes nutzt deren bestehende Handy-App, kein eigener Server nötig, pragmatischster
+  Einstieg); **(b) CloudKit + eigene schlanke iOS-App** (Apple übernimmt den Push-Mechanismus,
+  aber eine iOS-App muss trotzdem gebaut werden); **(c) eigene APNs-Infrastruktur** (volle
+  iOS-App + eigener Server mit Push-Zertifikaten — eigenständiges Entwicklungsprojekt, keine
+  Erweiterung nebenbei). Für „einfach eine Nachricht aufs Handy" ist (a) der Einstieg.
 
 Umsetzung: reine Overlay-/Animations-Schicht (SwiftUI transitions/particles), rein lokal, kein
 Datenbezug, kein Audit-Rauschen. Neue Ideen hier ergänzen.
