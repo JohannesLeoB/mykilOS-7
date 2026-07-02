@@ -23,6 +23,29 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-03 — Dokumenten-Katalog: alles was sevDesk NICHT macht (Johannes)
+
+- 💡 **Dokumenten-Template-Katalog — der operative/handwerkliche Dokument-Layer** (WARENKORB_
+  CHECKOUT §5 nennt „Dokumenten-Template-Katalog" schon vorgemerkt; der **DokumentPort** ist mit
+  8.8.0 als Render-Maschine da: PDF auf Briefpapier via `MykPDFRenderer`). **Strategischer Schnitt:
+  sevDesk = Finanz-Dokumente** (Angebot/Rechnung/AB/Mahnung); **dieser Katalog = alles Operative,
+  das sevDesk nicht anfasst.**
+  - **Projektende/Übergabe:** Abnahmeprotokoll · Aufmaß-/Montageprotokoll · Einweisungs-/
+    Übergabedokument · Garantie-/Gewährleistungsschein.
+  - **Material/Pflege:** Pflegeanleitung je Material/Oberfläche · Materialauswahl-Blatt ·
+    Datenblatt-Sammlung.
+  - **Technik/Ausführung:** Geräteliste an Tischler (Link/Montagebild/Maße) · Ausstattungs-/
+    Spec-Liste (Finish Schedule) · Montageanweisung · CAD-/Zeichnungs-Handoff.
+  - **Prozess/Kunde:** Projektfragebogen A3/A4 zum Druck · Kundenanschreiben auf Briefpapier ·
+    Baustellen-/Besprechungsprotokoll · Projekt-Checklisten (Vor-Montage/QS) · Wartungs-/Serviceplan.
+  - **Zwei technische Sorten:** (a) **Leer-Templates** (Abnahmeprotokoll/Pflegeanleitung/Checklisten)
+    — ausfüllbar auf Briefpapier, drucken/senden; (b) **Daten-befüllt** (Geräteliste aus Warenkorb,
+    Fragebogen aus Intake, Spec-Liste aus Projekt) — automatisch aus mykilOS-Daten via DokumentPort.
+  - **Andockpunkte (vieles da):** `DokumentPort` (8.8.0, Renderer), Briefpapier-Assets, Fragebogen-
+    PDF-Export (existiert), Port-Katalog §5c (Abnahmeprotokoll/Geräteliste/Spec-Liste stehen schon
+    drin). Der Katalog = eine neue Inhalts-Art/Pick-Matrix (`dokumente`), Checkout-Ziel = DokumentPort
+    → PDF in Drive/Checkout-Index (§5k). **Textbausteine-Katalog** speist die Leer-Templates.
+
 ## Nachtrag 2026-07-02 spät — Studio-Notizen-Thread (Johannes + Daniel, loser Sammel-Thread)
 
 Roh-Fundgrube aus einem gemeinsamen Notizen-Thread. Einordnung nach Überschneidung mit
