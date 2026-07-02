@@ -817,3 +817,11 @@ stört den professionellen Betrieb; erst der Opt-in weckt die Spielereien. Dezen
 
 Umsetzung: reine Overlay-/Animations-Schicht (SwiftUI transitions/particles), rein lokal, kein
 Datenbezug, kein Audit-Rauschen. Neue Ideen hier ergänzen.
+
+**Nachtrag Party/Team (Johannes 2026-07-02):**
+- 🎊 **Party-Mode freitags:** dezent-wildes Blinken / Party-Overlay am Freitag (bei aktivem
+  Spaß-Mode). Optional automatisch ab Freitagnachmittag oder manuell zuschaltbar.
+- 🎂 **Geburtstags-Konfetti:** hat ein Teammitglied/Kontakt Geburtstag → Konfetti + kurzer
+  Glückwunsch beim App-Start. Braucht ein **Geburtstagsdatum** an Profil/Kontakt (kleiner
+  Daten-Job: Feld an UserProfile bzw. Airtable-Kontakt) — Datenschutz beachten (nur Team-Namen,
+  keine sensiblen Daten). Auch ohne Datum baubar: manuell „heute hat X Geburtstag" markieren.
