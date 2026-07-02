@@ -99,6 +99,17 @@ heutigem Stand.
   (analog Private Area) UND ein Onboarding-Screen, der das beim ersten Start klar erklärt. Braucht
   Johannes' Wording/Freigabe vor dem Bauen (Rechtstexte nicht einfach selbst formulieren) — kein
   Kandidat für den unbeaufsichtigten Nacht-Automode.
+  **Erweiterte Anforderungen (Johannes, Nachtrag):**
+  - Muss von **jedem User klar lesbar** sein, **einzeln getoggelt/opt-in/opt-out** — kein
+    Kleingedrucktes, kein globaler Blanko-Konsens.
+  - **Globaler „KI komplett aus"-Schalter** — nicht nur einzelne Feature-Toggles, sondern ein
+    Master-Switch, der KI in der App vollständig deaktiviert.
+  - **⚠️ Offene Design-Frage vor dem Bauen (nicht von mir entschieden):** was zählt als „KI"?
+    Eindeutig: Assistent-Chat (Claude API), Firefly-Prompt-Generierung, PDF-Vision-Extraktion.
+    Nicht eindeutig: `DriveOfferWatcher` (reines Keyword-Matching, kein LLM), Kalkulations-
+    Engine-Kern (statistische Schätzung, LLM nur beim PDF-Import). Der Schalter braucht eine
+    klare Scope-Definition, bevor er gebaut wird — sonst schaltet er entweder zu wenig oder
+    unnötig viel (nicht-KI-Heuristiken) ab.
 - 📋 **PRIO MITTEL-HOCH — im Implementierungsplan (S10_WIRBELSAEULE.md §9, Parallel-Track)
   eingetragen (Johannes 2026-07-02 spät).** Stattdessen (viel sicherer): Assistent-Tagebuch/
   Erfahrungsbericht als Feedback-Kanal.
