@@ -184,3 +184,23 @@ Karte→Bestätigung→Audit. Liste bleibt offen — neue Ports werden hier erg�
   Airtable-Kein-Delete-Regel). Der Inhalts-Hash dient der Dedup/Nachvollziehbarkeit, nicht dem
   Überschreiben.
 - Alles zusätzlich lokal als AuditEntry (Karte→Bestätigung→Audit), plus Write-Shadow-Log.
+
+### 5e. Checkout-UX = E-Commerce-Metapher (Johannes, 2026-07-02)
+
+**KEIN Port als eigener Button / großes UI-Element.** Stattdessen genau EIN einheitlicher
+**Checkout-Flow** — wie an einer Kasse:
+
+| Shop-Begriff | mykilOS-Bedeutung |
+|---|---|
+| **„Zahlungsart" wählen** | **Port** wählen (was rauskommt): Angebot · Moodboard · Firefly-Prompt · Kalkulation · Geräteliste · sevDesk-Übergabe … — als Liste, **gefiltert nach Inhalts-Art** des Korbs |
+| **„Versandadresse"** | **Ziel/Renderer-Instanz**: z. B. *Firefly Prompter*, *Moodboard Mixer*, *CAD-Zeichnungs-Plandaten*, Drive-Projektordner, sevDesk-Übergabe-Tabelle … (port-spezifische Zielkonfiguration) |
+| **„Bestellung bestätigen"** | **Bestätigen** → Ausführung (Karte→Bestätigung→Audit; bei sevDesk **doppelt**) |
+
+**Konsequenzen:**
+- Ein Warenkorb → ein Checkout-Sheet: `Port (Zahlungsart) → Ziel (Versandadresse) → Bestätigen`.
+- **Neue Ports erscheinen automatisch** in der Port-Liste — kein neues UI je Port. Das UI skaliert
+  von selbst mit dem wachsenden Port-Katalog (§5c).
+- Verfügbare Ports = `PortRegistry.ports(fuer: inhaltsArt)` — die Inhalts-Art blendet unpassende
+  aus (z. B. Kreativ-Korb zeigt keine sevDesk-Übergabe, §5d).
+- „Versandadresse" ist port-spezifisch konfigurierbar (Prompt-Parameter, Template-Wahl,
+  Ziel-Ordner, Format …) — die einzige Stelle, wo ein Port eigene Felder mitbringt.
