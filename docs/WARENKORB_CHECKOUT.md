@@ -223,3 +223,22 @@ Karte→Bestätigung→Audit. Liste bleibt offen — neue Ports werden hier erg�
   (Produkte/Varianten/Bestände aus Shopify als Picks). Read-first; Schreibrichtung offen.
 - Eigener späterer Strang — jetzt nur als Katalog-Erweiterung vorgemerkt (analog Artikel/Lager,
   aber Quelle = Shopify statt Airtable-Artikel-DB).
+
+### 5g. Picks tragen echten Inhalt — Bilder, Dokumente, Kontaktkarten (Johannes, 2026-07-02)
+
+Ein Pick ist **nicht nur ein Verweis/Metadaten**, sondern muss **übergabefähigen Inhalt** tragen
+bzw. auflösen können — damit die Ports echten Content bekommen:
+- **Bildmaterial** (Produkt-/Materialbilder, Moodboard-Bilder) — Bytes bzw. auflösbare Drive-/
+  Airtable-Attachment-Referenz.
+- **Dokumente** (PDF, Datenblätter, Angebote, Zeichnungen) — Datei-Inhalt bzw. Referenz.
+- **Kontaktkarten** (Kontaktdaten/vCard) — als Empfänger/Adressat oder Anhang.
+- **Textbausteine**, weitere Inhalts-Arten analog.
+
+**Warum:** Moodboard-/Firefly-Ports brauchen die *echten Bilder*; Datenblatt-/Geräteliste-/
+Doku-Ports die *echten Dokumente*; Mail-/Übergabe-Ports die *echte Kontaktkarte*.
+
+**Handhabung (Leitplanke):**
+- Pick-Snapshot = leichte Referenz + Auflöser; **lazy resolve** zu Bytes erst beim Checkout
+  (Warenkörbe bleiben leicht, keine doppelte Binär-Persistenz).
+- Große Binärdaten nie unnötig kopieren — Referenz halten, bei Bedarf materialisieren.
+- Übergabe folgt weiter Karte→Bestätigung→Audit; Content-Quelle (Drive/Airtable) read-first.
