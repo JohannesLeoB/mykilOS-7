@@ -769,3 +769,14 @@ Sektion ergänzen, Status bei Fortschritt ändern, nichts löschen (außer bei
 ❌ Verworfen kurz die Begründung ergänzen und stehen lassen, das ist auch
 eine Information). Wenn ein Punkt in einem Handoff im Detail beschrieben
 ist, hier nur kurz zusammenfassen + verlinken, nicht duplizieren.
+
+### 💡 Kataloge selbst-konfigurierbar wie Widgets (Johannes, 2026-07-02)
+Die Kataloge-Tabs sollen sich pro User **individuell aufziehen** — analog zum Widget-Selektor:
+- Jeder User **aktiviert/deaktiviert**, welche Kataloge in *seiner* Ansicht erscheinen (nicht
+  jeder muss alle sehen).
+- **Reihenfolge** selbst bestimmen (Drag ist teils da via `kataloge.taborder`, aber das
+  Ein-/Ausblenden pro Katalog fehlt).
+- Umsetzung: ein „Kataloge"-Selektor wie `WidgetSelectorView` (Ein/Aus + Reihenfolge),
+  persistent (@AppStorage/lokal, per User). Skaliert mit den wachsenden Katalog-Quellen
+  (Artikel/Lager/Warenkörbe/Angebote/Kontakte/Notizen/Aufgaben + Bilderdatenbank/Doku-Template/
+  Textbausteine/Zeichnungen/Shopify …).
