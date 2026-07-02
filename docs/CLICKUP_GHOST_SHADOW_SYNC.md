@@ -1,23 +1,28 @@
-# ClickUp Ghost-Shadow-Sync + GO-LIVE — Plan (angelaufen über ClickUp Brain)
+# ClickUp Ghost-Shadow-Sync + GO-LIVE — Plan (geparkt · Brain-Schema als Referenz)
 
-**Status: 🟡 IN ARBEIT über einen zweiten Agenten (ClickUp Brain, Claude Opus 4.6, lebt im
-ClickUp-Workspace) · 2026-07-03 · Handshake mit Claude Code aufgenommen.** War bis 2026-07-02
-spät als "geparkt" markiert — Brain hat unabhängig begonnen: 10 Custom Fields live im Testspace
-`90128024109` angelegt (von Claude Code am 2026-07-03 per `clickup_get_custom_fields` unabhängig
-verifiziert, Namen/Typen/Dropdown-Optionen stimmen exakt). Nächster Schritt laut Brain (wartet
-auf Johannes' Go): Felder auf ~101 Slack-Rekonstruktions-Tasks setzen. Koordination läuft über
-Johannes als manuelles Gate (`[BRAIN →]`/`[CODE →]`-Format, kein direkter Agent-zu-Agent-Kanal).
-Arbeitsteilung (Johannes bestätigt 2026-07-03): **Brain = ClickUp-Schreibzugriff + Prozess-/
-Schema-/Automatisierungs-Design** (mehr Prozess-Knowhow), **Code (Claude Code) = App-Architektur +
-Swift + Airtable-Ghost-Adapter** (mehr App-Tiefe). Brain darf inspirieren, Code hält die
-App-Architektur-Hoheit. Koordination über Johannes als manuelles Gate.
+**Status: 🅿️ GEPARKT · 2026-07-03 (zurückgedreht, Klarstellung Johannes).** Kein laufendes
+Zwei-Agenten-Modell. Die frühere Fassung („in Arbeit über Brain / Arbeitsteilung bestätigt /
+Modell B Shared-State") war eine **Überinterpretation** eines Copy-Paste-Briefings — hiermit
+korrigiert.
+
+**Rolle von „ClickUp Brain" (Claude Opus 4.6 im ClickUp-Workspace) — klargestellt (Johannes):**
+- Brain ist ein **von Claude Code gesteuerter Dev-Phasen-Helfer**, KEIN gleichrangiger Live-Agent
+  und KEIN dauerhaft mitlaufender System-Teilnehmer. Claude Code gibt Brain **Arbeitsanweisungen**
+  (über Johannes als manuelles Gate), Brain hilft in dessen Auftrag.
+- **Beim Go-Live ist Brain OFF.** Er wirkt nur in der Aufbau-/Entwicklungsphase mit, hat im
+  laufenden Produktivsystem keine Rolle.
+- Sein bisheriger Output ist **einmaliger Input/Referenz**: 10 Custom Fields im Testspace
+  `90128024109` (von Claude Code am 2026-07-03 per `clickup_get_custom_fields` unabhängig
+  verifiziert — Namen/Typen/Optionen stimmen). Das **Schema-Mapping unten bleibt als Referenz**
+  für mykilOS 8 wertvoll, ist aber kein Auftrag für ein laufendes Koordinationsmodell.
 
 ---
 
-## 0b. Cross-Pollination — Brains ClickUp-Schema ↔ mykilOS-Konzepte (Inspiration, 2026-07-03)
+## 0b. Brain-Schema als Referenz-Input für mykilOS 8 (kein laufendes Modell, 2026-07-03)
 
-Brains 10 Custom Fields sind **echter Architektur-Input für mykilOS 8**, nicht nur ClickUp-
-Verwaltung — mehrere mappen direkt (teils als Verbesserung) auf bestehende/geplante mykilOS-Konzepte:
+Brains 10 Custom Fields sind **inhaltlich brauchbarer Referenz-Input für mykilOS 8** — mehrere
+mappen direkt (teils als Verbesserung) auf bestehende/geplante mykilOS-Konzepte. Reine Referenz,
+keine Verpflichtung zu Zwei-System-Synchronität:
 
 | Brain-Feld | mykilOS-Konzept | Nutzen |
 |---|---|---|
@@ -29,11 +34,10 @@ Verwaltung — mehrere mappen direkt (teils als Verbesserung) auf bestehende/gep
 | `review_required` | Karte→Bestätigung→Audit-Gate | Ob ein Objekt menschliche Freigabe braucht — dasselbe Prinzip. |
 | `mykilos_project_id` / `client_name` / `drive_folder_url` | Cross-System-Verknüpfungsschlüssel (Projektnummer/Kunde/Drive-Ordner) = `ExternalMappingRegistry` | **Kernstück** — die Felder, die ClickUp↔Airtable↔Drive↔mykilOS zusammenhalten. |
 
-**Kollaborations-Bereiche, wo Brain führen kann (Prozess), Code umsetzt (App):** ClickUp-
-Meilenstein-Strukturen, ClickUp-Automations-Design (Trigger/Statusübergänge), Custom-Field-
-Schema-Evolution. Brain designt die Prozess-Wahrheit, Code spiegelt sie in App/Airtable. **Regel
-bleibt:** „Gleiche Wahrheit innen und außen" (Brains Eiserne Regel #9) — Schema-Änderungen werden
-zwischen beiden Systemen synchron gehalten, nicht divergent.
+**Wenn Brain in der Dev-Phase helfen soll:** Claude Code kann ihm gezielte Arbeitsanweisungen
+geben (z. B. „entwirf eine ClickUp-Meilenstein-Struktur / ein Automations-Schema als Vorschlag")
+— das Ergebnis ist dann Referenz/Vorschlag, den Claude Code bewertet und ggf. in App/Airtable
+umsetzt. Kein automatischer Zwei-System-Sync, keine stehende Koordination. Bei Go-Live: Brain OFF.
 
 ---
 
