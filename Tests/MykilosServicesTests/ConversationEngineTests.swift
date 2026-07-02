@@ -220,6 +220,42 @@ struct ConversationEngineTests {
         #expect(last?.text.contains("keine neuen Daten") == true)
     }
 
+    // Härtung 2026-07-02 — Regression: bei Erreichen von maxToolRounds durfte ein in
+    // genau dieser letzten Runde geplanter tool_use (z. B. create_draft) nie mehr
+    // stillschweigend verworfen werden — das brach die sichtbare Antwort mitten im
+    // Satz ab (z. B. "...Entwurf:" ohne Fortsetzung, echt beobachtet bei einer
+    // Gmail-Suche mit mehrdeutigem Absendernamen). Jetzt: sichtbarer Hinweis statt
+    // stillem Abschneiden.
+    @Test func toolSchleifeMachtRundenlimitMitOffenemToolUseSichtbar() async throws {
+        let store = ChatStore(db: try GRDBDatabase.inMemory())
+        let fakeGmail = FakeGmailForEngine(messages: [])
+        let registry = AssistantToolRegistry.standard(gmail: fakeGmail)
+        // 9 unterschiedliche Suchrunden (keine Wiederholungs-Erkennung), die 10. Runde
+        // (== maxToolRounds) liefert schon Text ("...Entwurf:") UND einen weiteren
+        // tool_use (create_draft) — genau das reale Szenario aus dem Bug-Report.
+        var responses: [ClaudeChatResponse] = (1...9).map { i in
+            let toolUse = ClaudeToolUse(
+                id: "tu_\(i)", name: "search_gmail",
+                inputJSON: Data(#"{"query":"häfele besteck \#(i)"}"#.utf8)
+            )
+            return ClaudeChatResponse(text: "", toolUses: [toolUse], stopReason: "tool_use")
+        }
+        let finalRoundToolUse = ClaudeToolUse(id: "tu_draft", name: "create_draft", inputJSON: Data("{}".utf8))
+        responses.append(ClaudeChatResponse(text: "Alles klar. Entwurf:", toolUses: [finalRoundToolUse], stopReason: "tool_use"))
+        let provider = ScriptedProvider(responses: responses)
+        let engine = ConversationEngine(chatStore: store, provider: provider, registry: registry)
+
+        await engine.send("Antworte auf die Häfele-Mail", scope: .home, focusedProjectID: nil, signals: [], projects: [], toolsEnabled: true)
+
+        #expect(provider.callCount == 10)
+        let last = store.messages(for: .home).last
+        #expect(last?.status == .complete)
+        // Der angefangene Text bleibt sichtbar (nicht durch eine generische Fehlermeldung
+        // ersetzt) UND es gibt einen klaren Hinweis, dass mehr Schritte nötig gewesen wären.
+        #expect(last?.text.contains("Alles klar. Entwurf:") == true)
+        #expect(last?.text.contains("abgebrochen") == true)
+    }
+
     // Ein hängendes Tool darf die Runde nicht blockieren — winzig injiziertes Timeout
     // (statt der Produktions-15s) hält den Test schnell, prüft aber denselben Pfad.
     @Test func toolSchleifeBrichtHaengendenToolCallPerTimeoutAb() async throws {

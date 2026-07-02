@@ -83,7 +83,12 @@ public final class ConversationEngine {
     public func updateRegistry(_ newRegistry: AssistantToolRegistry) {
         self.registry = newRegistry
     }
-    private static let maxToolRounds = 6
+    // Härtung (2026-07-02): 6 war zu knapp — bei mehrdeutigen Absendernamen/Betreffs
+    // (z. B. "häfele" vs. "haefele") brauchte die Gmail-Suche allein schon 6-7 Runden,
+    // sodass Claude nie mehr zum eigentlichen create_draft-Aufruf kam (siehe Fix unten,
+    // der das bei Erreichen des Limits jetzt wenigstens sichtbar macht statt still
+    // abzuschneiden).
+    private static let maxToolRounds = 10
     // Härtung (2026-07-01, Loop-Effizienz): verhindert endloses/teures Weitersuchen.
     // toolTimeoutSeconds bricht einen einzelnen hängenden Tool-Call ab (z. B. Google/
     // Airtable/ClickUp ohne Antwort); turnDeadlineSeconds begrenzt die gesamte Runde
@@ -116,7 +121,7 @@ public final class ConversationEngine {
         dataFlowLogger: DataFlowLogger? = nil,
         memoryStore: ChatMemoryStore? = nil,
         toolTimeoutSeconds: Double = 15,
-        turnDeadlineSeconds: Double = 45
+        turnDeadlineSeconds: Double = 75
     ) {
         self.chatStore = chatStore
         self.provider = provider
@@ -389,9 +394,21 @@ public final class ConversationEngine {
             }
             let response = try await provider.respond(messages: convo, system: system, tools: tools, maxTokens: 1024, model: model)
 
-            if response.toolUses.isEmpty || rounds >= Self.maxToolRounds {
+            if response.toolUses.isEmpty {
                 let text = response.text.trimmingCharacters(in: .whitespacesAndNewlines)
                 return text.isEmpty ? "Ich konnte gerade keine Antwort bilden." : response.text
+            }
+            if rounds >= Self.maxToolRounds {
+                // Härtung (2026-07-02): vorher wurde hier response.text stillschweigend
+                // zurückgegeben, obwohl Claude in dieser Runde noch einen tool_use geplant
+                // hatte (z. B. create_draft) — der ging verloren, die Antwort brach mitten
+                // im Satz ab (z. B. "...Entwurf:" ohne Fortsetzung). Jetzt sichtbar markiert
+                // statt still verworfen.
+                let text = response.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                let notice = "\n\n_(Antwort nach \(Self.maxToolRounds) Suchschritten abgebrochen — bitte mit \"weiter\" oder einer präziseren Anfrage nachfassen.)_"
+                return text.isEmpty
+                    ? "Das dauert gerade zu viele Schritte — bitte formuliere die Frage präziser."
+                    : text + notice
             }
 
             // Assistenten-Turn mit tool_use anhängen (API-Kontinuität).
