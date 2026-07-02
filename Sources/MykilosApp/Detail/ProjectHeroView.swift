@@ -17,6 +17,8 @@ struct ProjectHeroView: View {
     @State private var heroImage: NSImage?
     // Fokus-Punkt (0…1) für den Fill-Zuschnitt. Default Mitte.
     @State private var focalPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)
+    // Fadenkreuz-Modus: Nutzer zieht/tippt auf dem Hero, um den Fokus-Punkt zu setzen.
+    @State private var focusEditing: Bool = false
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -26,13 +28,18 @@ struct ProjectHeroView: View {
                 colors: [.clear, .black.opacity(0.65)],
                 startPoint: .center, endPoint: .bottom
             )
+            if focusEditing {
+                focusPickerOverlay
+            }
             // Inhalt
             VStack(alignment: .leading, spacing: 0) {
                 // Back-Button + Breadcrumb oben
                 header
                 Spacer()
                 // Titel + Meta unten
-                heroContent
+                if focusEditing == false {
+                    heroContent
+                }
             }
             .padding(MykSpace.s8)
         }
@@ -102,6 +109,9 @@ struct ProjectHeroView: View {
                 }
             }
             if heroImage != nil {
+                Button("Fokus-Punkt setzen …", systemImage: "scope") {
+                    focusEditing = true
+                }
                 Button("Bild entfernen", systemImage: "trash", role: .destructive) {
                     ProjectHeroImageStore.clear(for: project.projectNumber)
                     heroImage = nil
@@ -121,6 +131,8 @@ struct ProjectHeroView: View {
     }
 
     // MARK: Back + Breadcrumb
+    // Während des Fokus-Punkt-Modus ausgeblendet, damit Klicks/Drags eindeutig dem
+    // Fadenkreuz gehören und nicht mit Back/Favorit/Bildmenü kollidieren.
     private var header: some View {
         HStack(spacing: MykSpace.s4) {
             Button(action: onBack) {
@@ -145,6 +157,95 @@ struct ProjectHeroView: View {
                 budgetPill
             }
         }
+        .opacity(focusEditing ? 0 : 1)
+        .allowsHitTesting(focusEditing == false)
+    }
+
+    // MARK: Fokus-Punkt-Picker (Fadenkreuz-Modus)
+    // Scrim + Fadenkreuz + Hinweistext + „Fertig"-Button. Tap/Drag irgendwo auf dem Hero
+    // setzt live den Fokus-Punkt (0…1); focalImage crop reagiert sofort. Persistiert wird
+    // laufend während des Ziehens sowie beim Beenden — beides über setFocalPoint (Sidecar).
+    private var focusPickerOverlay: some View {
+        GeometryReader { geo in
+            let size = geo.size
+            ZStack {
+                Color.black.opacity(0.28)
+                    .contentShape(Rectangle())
+                    .gesture(focusDragGesture(in: size))
+
+                crosshair
+                    .position(x: focalPoint.x * size.width, y: focalPoint.y * size.height)
+                    .allowsHitTesting(false)
+
+                VStack {
+                    Spacer()
+                    HStack {
+                        Text("Tippen oder ziehen, um den Bildfokus zu setzen")
+                            .font(.mykSmall)
+                            .foregroundStyle(.white.opacity(0.9))
+                            .padding(.horizontal, MykSpace.s4)
+                            .padding(.vertical, 7)
+                            .background(Capsule().fill(.black.opacity(0.35)))
+                        Spacer()
+                        Button("Fertig") {
+                            finishFocusEditing()
+                        }
+                        .buttonStyle(.plain)
+                        .font(.mykSmall)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, MykSpace.s4)
+                        .padding(.vertical, 7)
+                        .background(Capsule().fill(MykColor.brand.color))
+                    }
+                }
+                .padding(MykSpace.s8)
+            }
+            .frame(width: size.width, height: size.height)
+        }
+    }
+
+    private var crosshair: some View {
+        ZStack {
+            Circle()
+                .stroke(.white, lineWidth: 2)
+                .frame(width: 28, height: 28)
+            Circle()
+                .fill(MykColor.brand.color)
+                .frame(width: 8, height: 8)
+            Rectangle().fill(.white.opacity(0.9)).frame(width: 1, height: 14).offset(y: -21)
+            Rectangle().fill(.white.opacity(0.9)).frame(width: 1, height: 14).offset(y: 21)
+            Rectangle().fill(.white.opacity(0.9)).frame(width: 14, height: 1).offset(x: -21)
+            Rectangle().fill(.white.opacity(0.9)).frame(width: 14, height: 1).offset(x: 21)
+        }
+        .shadow(color: .black.opacity(0.4), radius: 3)
+    }
+
+    private func focusDragGesture(in size: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                updateFocalPoint(from: value.location, in: size)
+            }
+            .onEnded { value in
+                updateFocalPoint(from: value.location, in: size)
+                persistFocalPoint()
+            }
+    }
+
+    private func updateFocalPoint(from location: CGPoint, in size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        let x = min(max(location.x / size.width, 0), 1)
+        let y = min(max(location.y / size.height, 0), 1)
+        focalPoint = CGPoint(x: x, y: y)
+    }
+
+    private func persistFocalPoint() {
+        try? ProjectHeroImageStore.setFocalPoint(focalPoint, for: project.projectNumber)
+    }
+
+    private func finishFocusEditing() {
+        persistFocalPoint()
+        focusEditing = false
     }
 
     // Stern-Toggle im Detail-Header (L25).
