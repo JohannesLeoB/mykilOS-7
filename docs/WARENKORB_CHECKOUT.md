@@ -107,3 +107,28 @@ Angebot, Kalkulation, Cross-DB, …).
 - Der aktuelle Warenkorb-Feinschliff (Projekt-Zuordnung/Versionierung, Sortieren/Filtern) ist
   ein Baustein davon und sollte die Generalisierung nicht verbauen (keine Artikel-only-Annahmen
   fest verdrahten).
+
+### 5b. Kategorie = Inhalts-Art · Ausgänge = feste Ports (Johannes, 2026-07-02)
+
+**Warenkorb-Kategorie = INHALTS-ART** (was im Korb steckt), nicht der Zweck:
+`Artikel · Bilder · Material · Zeichnungen · Textbausteine · Dokumente · gemischt …`
+
+**Checkout = feste, definierte „Ports"** (benannte Verwendungen nach draußen) — eine
+**Port-Registry** statt Ad-hoc-Ziele. Die verfügbaren Ports sind teils **inhalts-abhängig**
+(eine Inhalts-Art bietet passende Ports an):
+
+| Inhalts-Art (Kategorie) | Passende Ports (Beispiele) |
+|---|---|
+| Bilder / Material / Zeichnungen | **Firefly-Bild-Prompt-Generator** · Moodboard-Generator |
+| Artikel / Positionen | Geräteliste-an-Tischler · Angebot (sevDesk) · Kalkulation |
+| Dokumente / Textbausteine | Dokument-Render (Briefpapier-Templates) · Mail-Entwurf |
+| gemischt | mehrere Ports gleichzeitig anwählbar |
+
+**Neuer Port — Firefly-Bild-Prompt-Generator:** aus Material- + Moodboard- + Zeichnungs-Picks
+(+ Kundenname/Kontext) einen **Adobe-Firefly-Bildgenerierungs-Prompt** erzeugen. Reiner
+Prompt-Output (Karte→Bestätigung), keine automatische Bilderzeugung. (Hinweis: eine Adobe-
+Firefly/Express-Integration ist perspektivisch als MCP verfügbar — eigener späterer Strang.)
+
+**Konsequenz fürs Datenmodell:** Warenkorb bekommt `inhaltsArt` (Kategorie) + der Checkout
+kennt eine `PortRegistry`, die je `inhaltsArt` die zulässigen Ports liefert. Beides gehört in
+die S10-Grundsatzentscheidung, bevor breit gebaut wird.
