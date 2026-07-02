@@ -230,6 +230,34 @@ begrenzt nebenläufig (schont das Drive-Rate-Limit) mit Lade-Fortschrittsanzeige
 nicht erreichbare Projektordner werden übersprungen und gezählt. **Voraussetzung:**
 Google-Konto verbunden (volle Drive-Vorschau via M2).
 
+### Mail — Anhänge klickbar + in Drive ablegen (2026-07-02)
+Der Mail-Reader (Sidebar → Mail bzw. Assistent → Mail-Umschalter) zeigt zu jeder
+Nachricht ihre Anhänge. Diese sind jetzt **interaktiv**:
+
+**Anhang anklicken → In-App-Vorschau.** Ein Klick auf die Anhang-Zeile (Auge-Symbol)
+öffnet **denselben Voll-Viewer** wie unter „Dateien"/„Angebote" (mehrseitiges
+**PDF**, **Bild** oder macOS **QuickLook** für Office/Text/viele Formate). Die
+Anhang-Bytes werden **read-only** über die Gmail-API geladen (`downloadAttachment`,
+Gmail-Scope reicht — **kein** `drive.readonly` nötig). „Im Browser" gibt es hier
+nicht (Anhänge haben keinen Drive-Web-Link).
+
+**Anhang → Drive-Projektordner ablegen (Bestätigungs-Gate).** Der Ordner-Knopf
+(`folder.badge.plus`, terrakotta) neben dem Anhang öffnet ein Ablage-Fenster:
+1. **Projekt wählen** (nur Projekte mit verknüpftem Drive-Ordner).
+2. **Zielordner wählen** — Projektordner oder ein Unterordner (Unterordner werden
+   read-only aus Drive geladen), über **dieselbe Ablage-Karte** wie beim Datei-Drop
+   im Chat.
+3. **„In Drive ablegen" bestätigen** → der Anhang wird hochgeladen und als
+   `AuditEntry(.driveFileUploaded)` protokolliert.
+
+**Wo zu finden:** Nachrichten-Detailansicht → Abschnitt „ANHÄNGE".
+**Voraussetzungen:** Google verbunden (Gmail-Scope für Vorschau; **`drive.file`/M1**
+für den Upload). Fehlt der Schreib-Scope, meldet die Karte klar „Drive-Schreibzugriff
+nötig" — es wird **nichts** geschrieben.
+**Einschränkungen:** **Kein Auto-Write** — Ablage nur nach ausdrücklicher Projekt-/
+Ordnerwahl und Klick. Kein Versand, kein Löschen. Read-only Download; der Upload
+nutzt exakt den bestehenden `uploadFileToDrive`-Pfad (NO-GO-Ordner-Guard + Audit).
+
 ### Integrationen (⌘7)
 Datenstrom-Schaltzentrale: zeigt alle 47 Weichen aus `DatastromManifest.json`
 mit letztem Handshake-Zeitstempel und Verbindungsstatus (grün/rot/grau).

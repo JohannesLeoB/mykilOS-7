@@ -96,7 +96,12 @@ public struct FileDropCardView: View {
                     targetFolderID: target?.id ?? rootFolder?.id,
                     onUpload: onUploadToDrive
                 )
-                MailAttachAllButton(files: files, onAttach: onAttachToMailDraft)
+                // Mail-Entwurf-Aktion nur zeigen, wenn ein Callback existiert. So kann die
+                // Karte auch dort wiederverwendet werden, wo NUR die Drive-Ablage sinnvoll
+                // ist (z. B. Mail-Anhang → Drive-Projektordner) — ohne toten Button.
+                if onAttachToMailDraft != nil {
+                    MailAttachAllButton(files: files, onAttach: onAttachToMailDraft)
+                }
             }
         }
         .padding(.horizontal, MykSpace.s5)
