@@ -367,6 +367,16 @@ Wiederherstellungs-Ansicht mit Fehlertext und DB-Pfad. „Datenbank zurücksetze
 verschiebt die beschädigte Datei zerstörungsfrei in Quarantäne (`*.corrupt-…`) und
 legt eine neue an. Geteilte Daten (Drive/Kalender/Airtable) sind nie betroffen.
 
+**Backup & Restore (2026-07-02):** mykilOS legt **automatisch beim Start höchstens
+1×/Tag** einen konsistenten, geprüften Snapshot der lokalen Datenbank an (WAL-Checkpoint
++ SHA-256-Manifest), lokal im Unterordner `backups/`. **„Backup jetzt"** erzwingt sofort
+einen Snapshot. Es werden **max. 30 Snapshots** behalten (ältere werden gelöscht).
+Darunter listet Settings die vorhandenen Backups (Datum · Tag · Größe); **„Wiederherstellen"**
+merkt ein Backup vor — es wird beim **nächsten App-Start** angewandt (sicher, bevor die DB
+geöffnet ist; der aktuelle Stand wird vorher automatisch als Rettungsbackup gesichert). Nach
+dem Vormerken erscheint der Hinweis, die App neu zu starten. **„Im Finder"** öffnet den
+`backups/`-Ordner. Alles rein lokal — kein externer Schreibzugriff.
+
 ---
 
 ## Assistent — Tool-Use
