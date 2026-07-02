@@ -71,6 +71,13 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
   Rechnungs-Status, Werkzeichnung, plus die früher erkannte Lücke „Benachrichtigungs-Zentrum" aus
   `FINALE_APP_RUECKWAERTS.md`) — verstärkt den Fall für einen eigenen, zentralen Alerts-Strang statt
   vieler Einzel-Watcher. Nicht jetzt bauen, aber als wiederkehrendes Muster im Blick behalten.
+- ⚠️ **QUERSCHNITTS-REGEL für ALLE Alerts oben + jeden künftigen Alert (Johannes 2026-07-02):**
+  **dezent** (kein aufdringliches Popup/Badge-Spam) und **je Alert-Art ein-/ausschaltbar** in den
+  User-Einstellungen unter **Datenschutz** — pro Nutzer individuell (deckt sich mit dem
+  bestehenden Muster „Private Area/Profil-Sektion in Settings"). Gilt rückwirkend für JEDE der
+  Alert-Ideen in diesem Nachtrag UND für den später gebauten zentralen Alerts-Strang — kein Alert
+  ohne eigenen Toggle, kein Toggle ohne Datenschutz-Sektion. Beim Bauen des Alerts-Zentrums als
+  Grundvoraussetzung mitdenken, nicht nachträglich anflicken.
 
 ## Nachtrag 2026-07-02 spät — Montags-Projektbesprechung-Briefing (Johannes)
 
