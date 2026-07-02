@@ -339,3 +339,50 @@ bilden eine **append-only Kette** — der gültige Projektwert ergibt sich aus d
 **Offen (für C4-Bau):** wie „bestätigt" konkret aus sevDesk zurückkommt (Status-Feld auf dem
 Postbox-Record vs. eigener Bestätigungs-Record); Verkettungs-/Rechenlogik Nachträge/Gutschrift;
 Auswahlregel „aktuellster vs. bestätigter" im Widget.
+
+### 5k. Checkout-Ausgabe-Architektur — Index + Dateien getrennt (Johannes, 2026-07-03)
+
+**Kernproblem:** Airtable kann keine Bilder/Binärdaten sinnvoll tragen (gleiche Grenze wie §5i
+Postbox). Ein Checkout kann aber Bilder, PDFs, gebündelte Dateien produzieren. → **Split nach
+Datenart in drei Ausgabe-Wege:**
+
+**1. Strukturierte Metadaten → Airtable `mykilOS_checkouts`** (`appytOWS4wrxqtpkp`, Table
+`tblQvY6PCw113mjCT`, aktuell leere Hülle, Schema zu bauen). Der **queryable Index aller Checkouts**:
+je Checkout ein Record mit einmaliger ID, Typ/Inhalts-Art, Projekt, Kunde, Zeitstempel, Positionen
+(als strukturierter Text/JSON), EK/VK-Summen, Inhalts-Hash, Status, **Drive-Links** zu den
+Binär-Bündeln. **NIE Binärdaten selbst** — nur Text/Zahlen/Refs (wie §5i).
+
+**2. Binär-Payload (Bilder/PDFs/PNGs/Dateien) → Drive.** Zwei Modi, **beide** (unterschiedlicher
+Zweck, kein Entweder-oder):
+- **(a) Ad-hoc ZIP/Bündel in einen user-gewählten Ordner** (NSOpenPanel) — der „ich brauch das
+  jetzt zum Verschicken/Nutzen"-Fall. Existiert schon im Dev-Checkout-Exporter (8.7.0, ZIP-Export).
+- **(b) Zentraler Drive-Ordner `checkouts`** — systematisches Archiv: jeder Checkout landet
+  zusätzlich als Bündel dort, **sortiert nach Typ / ID / Inhalt / Datum** (Unterordner-Struktur).
+  Der durable Wiederfind-/Audit-Pfad. „Bestes Bündel an Dateien" je nach Inhalt (einzelne Datei
+  bei einem Format, ZIP bei gemischt).
+
+**3. Ephemere lokale Ausgabe (Copy-Paste-Vorschau, Notiz)** — für schnelles Kopieren ohne Ablage
+(schon im Dev-Checkout-Exporter).
+
+**Verknüpfung:** Der `mykilOS_checkouts`-Record trägt die Drive-Links zu seinen Bündeln → Airtable
+= Index (finden/filtern nach Typ/ID/Projekt), Drive = Inhalt (Dateien), verbunden über die
+Warenkorb-/Checkout-ID. Löst „keine Bilder in Airtable" sauber.
+
+**Datei-Format-Matrix je Port:**
+| Port | Format | Ausgabe-Weg |
+|---|---|---|
+| Dokument / Geräteliste / Angebot / Spec | PDF | Drive-Bündel + Airtable-Index-Ref |
+| Moodboard | PNG/PDF | Drive-Bündel + Airtable-Index-Ref |
+| Firefly-Prompt | Text | Airtable-Feld + Copy |
+| Kalkulation | strukturiert (JSON/Zahlen) | Airtable-Record |
+| gemischter Korb | mehrere Formate | ZIP-Bündel in Drive + Index-Ref |
+| sevDesk-Übergabe | Text/Zahlen, keine Bilder (§5i) | sevDesk-Postbox (spezialisiert, separat) |
+
+**Beziehung zur sevDesk-Postbox (§5i):** `mykilOS_checkouts` ist der **allgemeine** Index für ALLE
+Checkouts/Ports. Die sevDesk-Postbox ist ein **spezialisierter** Ausgang nur für den geschäftlichen
+sevDesk-Port (Doppel-Bestätigung, sevDesk holt ab). Ein sevDesk-Checkout kann sowohl einen
+`mykilOS_checkouts`-Index-Record ALS AUCH einen Postbox-Record erzeugen. **Offen:** ist die Postbox
+eine eigene Base/Tabelle oder eine gefilterte Sicht auf `mykilOS_checkouts`? → mit Johannes klären.
+
+**Offene Entscheidung:** Ad-hoc-ZIP (a) und zentraler `checkouts`-Drive-Ordner (b) — **Empfehlung:
+beide bauen** (a = sofort-verschicken, b = Archiv). Johannes bestätigen.
