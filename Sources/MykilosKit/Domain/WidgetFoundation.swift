@@ -74,4 +74,11 @@ public enum WidgetBoardDefault {
     public static func layout(for kind: ProjectKind) -> [WidgetInstance] {
         canonicalLayout
     }
+
+    // Widget-Arten, die auf einem PROJEKT-Board sinnvoll sind (haben eine echte
+    // View im Dispatch). Home-spezifische Arten (focus/projectFaves/clockodo/
+    // recentActivity) sind bewusst NICHT dabei. Basis für den Widget-Selektor.
+    public static let projectSelectableKinds: [WidgetKind] = [
+        .drive, .contacts, .tasks, .cash, .calendar, .notes, .warenkorb, .mail, .assistant,
+    ]
 }

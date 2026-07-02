@@ -215,9 +215,11 @@ private struct ProjectWidgetBoardView: View {
     // Jetzt: harte Drittelspalten aus der gemessenen Board-Breite, kurze Zeilen lassen den
     // Rest LEER (Spacer) statt zu dehnen. Kein Grid mehr → kein "unlimited"-Regressionsrisiko.
     @State private var boardWidth: CGFloat = 0
+    @State private var showWidgetSelector = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
+            widgetToolbar
             ForEach(rows, id: \.id) { row in
                 HStack(alignment: .top, spacing: MykSpace.s5) {
                     ForEach(row.items) { instance in
@@ -237,6 +239,33 @@ private struct ProjectWidgetBoardView: View {
             }
         )
         .opacity(boardWidth > 0 ? 1 : 0)   // ein Frame unsichtbar, bis die Breite gemessen ist
+    }
+
+    // Schlanke Leiste über dem Board: Widget-Selektor öffnen (selbst-konfigurierbar).
+    private var widgetToolbar: some View {
+        HStack(spacing: MykSpace.s2) {
+            Spacer()
+            Button { showWidgetSelector.toggle() } label: {
+                HStack(spacing: MykSpace.s2) {
+                    Image(systemName: "square.grid.2x2")
+                        .font(.mykMono(10))
+                    Text("Widgets")
+                        .font(.mykMono(10))
+                }
+                .foregroundStyle(MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s3)
+                .padding(.vertical, MykSpace.s2)
+                .background(MykColor.card.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .help("Widgets der Übersicht ein-/ausblenden und Größe wählen")
+            .accessibilityLabel("Widgets konfigurieren")
+            .popover(isPresented: $showWidgetSelector, arrowEdge: .top) {
+                WidgetSelectorView(boardStore: boardStore)
+            }
+        }
     }
 
     // Drittelbreite (mit Spacing) für eine Zelle mit `span` Spalten.

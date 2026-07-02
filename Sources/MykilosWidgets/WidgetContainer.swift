@@ -169,7 +169,7 @@ public struct WidgetContainer<Content: View>: View {
 
 // MARK: - WidgetKind Extensions (Quellen-Mapping)
 extension WidgetKind {
-    var source: WidgetSource {
+    public var source: WidgetSource {
         switch self {
         case .drive:     .drive
         case .tasks:     .tasks
@@ -190,7 +190,7 @@ extension WidgetKind {
 }
 
 extension WidgetSource {
-    var accentColor: Color {
+    public var accentColor: Color {
         switch self {
         case .drive:             MykColor.drive.color
         case .people, .calendar: MykColor.people.color
