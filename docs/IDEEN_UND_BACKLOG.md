@@ -1000,6 +1000,15 @@ stört den professionellen Betrieb; erst der Opt-in weckt die Spielereien. Dezen
   Datenschutz-/Settings-Sektion wie die Alert-Toggles
   ([[alerts-dezent-datenschutz-toggle-regel]]) — konsequent zu Ende gedacht: nicht nur OB ein
   Alert klingt, sondern WIE (welcher Sound aus der Bibliothek), pro Kategorie und pro Person.
+- 📋 **Verbindende Infrastruktur — native macOS-Push-Benachrichtigungen (Johannes 2026-07-02
+  spät):** echte System-Notifications wie gewohnt (Banner/Notification-Center), über Apples
+  **`UserNotifications`-Framework** (`UNUserNotificationCenter`) — Standard-API, keine
+  Unsicherheit, braucht nur einmalige `requestAuthorization`-Berechtigung. **Das ist der fehlende
+  Zustellweg für ALLE heute geloggten Alert-Ideen** (Werkzeichnung/Nachfass/Kontakt-Erkennung/
+  Bezahlt-Status-ungewiss/„Bitte reagieren") **und der Träger für die Sound-Bibliothek oben** —
+  Kategorie + Sound + Ein/Aus-Toggle greifen direkt hier. Baut den Datenschutz-Toggle
+  ([[alerts-dezent-datenschutz-toggle-regel]]) technisch um: pro Kategorie eigene
+  `UNNotificationCategory`, System-Berechtigung einmal beim ersten Alert anfragen.
 
 Umsetzung: reine Overlay-/Animations-Schicht (SwiftUI transitions/particles), rein lokal, kein
 Datenbezug, kein Audit-Rauschen. Neue Ideen hier ergänzen.
