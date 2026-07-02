@@ -25,6 +25,14 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ## Nachtrag 2026-07-02 spät — Drive/Mail-Alerts auf bestehenden Beobachtungspfaden (Johannes)
 
+- 📋 **„Kontakt anlegen"-Alert bei neu erkannten Kontaktdaten:** tauchen in Mail-Signaturen,
+  Mail-Body oder Dokumenten Kontaktdaten auf, die noch **nicht** in der bestehenden Datenbank
+  stehen → Vorschlag „Kontakt anlegen?". **Immer** Abgleich gegen die bestehende Datenbank vorher,
+  **nie ohne Bestätigung + visuellem Dubletten-Vergleich schreiben** (Johannes' eigene Vorgabe).
+  **Buildbar auf Bestehendem:** `ContactActionCard`/`AirtableContactActionCard` (bereits gated,
+  Karte→Bestätigung→Audit, im I/O-Audit dieser Session bestätigt) — hier nur die Erkennungsquelle
+  erweitern (Mail-Signatur-/Dokument-Scan statt nur explizitem User-Befehl), Sicherheitsmodell
+  bleibt identisch zum bestehenden Flow, keine neue Schreiblogik nötig.
 - 📋 **Eingehendes Angebot/Routine-Dokument → CTA „Ins Drive ablegen":** empfängt man per Mail ein
   Angebot oder anderes Routine-Dokument, direkter Hinweis/Call-to-Action, es in den passenden
   Projekt-Drive-Ordner zu schieben. **Umgekehrte Richtung des bereits gebauten** Anhang→Drive-Flows
