@@ -377,6 +377,10 @@ public final class AppState {
         // Laden, damit lookup_kunde echte Daten sieht statt einer leeren Cold-Start-Liste.
         refreshAssistantKundenWissen()
 
+        // Resilienz: höchstens 1×/Tag automatisch einen konsistenten DB-Snapshot anlegen.
+        // Fire-and-forget, blockiert den Start nicht; ohne dies existierte oft gar kein Backup.
+        Task { await autoBackupIfDue() }
+
         // B2-Fix: wenn Google verbunden aber kein UserInfo gecacht (z. B. Login vor S17),
         // einmal im Hintergrund nachladen — non-fatal, Sidebar zeigt Name ohne Flackern.
         if googleAuth.status == .connected, googleAuth.currentUser == nil {
@@ -1415,7 +1419,7 @@ public final class AppState {
     // MARK: - Backup (Mandate G)
     // Erzwungener WAL-Checkpoint + konsistentes Backup, off-main ausgeführt.
     // Lokal, read-only auf die DB — kein externer Schreibzugriff.
-    public func createBackup() async {
+    public func createBackup(tag: String = "manual") async {
         backupState = .saving
         let db = database
         let appSupportDir = AppDatabase.productionURL.deletingLastPathComponent()
@@ -1425,15 +1429,40 @@ public final class AppState {
             let url = try await Task.detached(priority: .utility) {
                 let service = BackupService(appSupportDir: appSupportDir)
                 let folder = try service.createConsistentBackup(
-                    db: db, tag: "manual", appVersion: version, gitCommit: commit)
-                try? service.pruneOldBackups(olderThanDays: 30)
+                    db: db, tag: tag, appVersion: version, gitCommit: commit)
+                try? service.pruneOldBackups(olderThanDays: 30)   // Zeit-Retention
+                try? service.pruneToCount(keepNewest: 30)         // Anzahl-Retention (max. 30)
                 return folder
             }.value
             backupState = .saved(Date())
-            MykLog.backup.notice("Backup erstellt: \(url.lastPathComponent, privacy: .public)")
+            MykLog.backup.notice("Backup erstellt (\(tag, privacy: .public)): \(url.lastPathComponent, privacy: .public)")
         } catch {
             backupState = .failed(String(describing: error))
             MykLog.backup.error("Backup fehlgeschlagen: \(String(describing: error), privacy: .public)")
         }
+    }
+
+    /// Auto-Backup beim App-Start: legt höchstens 1×/Tag automatisch einen Snapshot an,
+    /// damit ein Sicherungsstand existiert, ohne dass der Nutzer „Backup jetzt" klicken muss.
+    /// Best-effort, off-main, blockiert den Start nicht.
+    public func autoBackupIfDue() async {
+        let appSupportDir = AppDatabase.productionURL.deletingLastPathComponent()
+        let due: Bool = await Task.detached(priority: .utility) {
+            let service = BackupService(appSupportDir: appSupportDir)
+            guard let last = service.latestBackupDate() else { return true }
+            return Date().timeIntervalSince(last) > 20 * 3600
+        }.value
+        if due { await createBackup(tag: "auto") }
+    }
+
+    /// Vorhandene Backups (neueste zuerst) für die Restore-Liste in den Einstellungen.
+    public func listBackups() -> [BackupService.BackupInfo] {
+        BackupService(appSupportDir: AppDatabase.productionURL.deletingLastPathComponent()).listBackups()
+    }
+
+    /// Merkt ein ausgewähltes Backup zur Wiederherstellung vor. Angewandt wird es beim
+    /// NÄCHSTEN Start (bevor die DB geöffnet ist) — sicher, weil kein offenes Handle.
+    public func stageRestore(_ info: BackupService.BackupInfo) {
+        AppDatabase.stageRestore(from: info.folderURL)
     }
 }

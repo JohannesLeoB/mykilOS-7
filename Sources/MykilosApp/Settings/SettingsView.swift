@@ -52,6 +52,10 @@ struct SettingsView: View {
     @State private var claudeApiKey: String = ""
     @State private var claudeModel: String = ClaudeAuthService.defaultModel
     @State private var claudeError: String?
+    // Backup/Restore-Liste (S2 Stabilitäts-Fundament)
+    @State private var backups: [BackupService.BackupInfo] = []
+    @State private var restoreConfirm: BackupService.BackupInfo? = nil
+    @State private var restoreStagedName: String? = nil
 
     // Zweispaltige Einstellungsebene (2026-07-02, Johannes: „Benutzer-Menü + Einstellungs-
     // ebene ausbauen"). Kategorie-Rail links (wie macOS-Systemeinstellungen) statt eines
@@ -750,16 +754,85 @@ struct SettingsView: View {
             }
             Divider()
             HStack(spacing: MykSpace.s4) {
-                Button("Backup jetzt") { Task { await appState.createBackup() } }
+                Button("Backup jetzt") { Task { await appState.createBackup(); backups = appState.listBackups() } }
                     .disabled(appState.backupState == .saving)
                 backupStatusLabel
+                Spacer()
+                Button("Im Finder") { openBackupsFolder() }
+                    .font(.mykMono(10))
             }
-            Text("Erzwingt einen WAL-Checkpoint und legt einen konsistenten, geprüften "
-                 + "Snapshot (db.sqlite + projects/customers.json) lokal im Unterordner backups/ an.")
+            Text("Automatisch höchstens 1×/Tag beim Start; „Backup jetzt“ erzwingt sofort einen "
+                 + "WAL-Checkpoint + geprüften Snapshot (db.sqlite + projects/customers.json). Max. 30 Snapshots.")
                 .font(.mykMono(9.5))
                 .foregroundStyle(MykColor.faint.color)
+
+            backupListView
         }
         .settingsCard()
+        .onAppear { backups = appState.listBackups() }
+        .confirmationDialog(
+            "Dieses Backup beim nächsten Start wiederherstellen?",
+            isPresented: Binding(get: { restoreConfirm != nil }, set: { if !$0 { restoreConfirm = nil } }),
+            titleVisibility: .visible
+        ) {
+            if let info = restoreConfirm {
+                Button("Wiederherstellen", role: .destructive) {
+                    appState.stageRestore(info)
+                    restoreStagedName = info.folderURL.lastPathComponent
+                    restoreConfirm = nil
+                }
+                Button("Abbrechen", role: .cancel) { restoreConfirm = nil }
+            }
+        } message: {
+            Text("Der aktuelle Stand wird vorher automatisch gesichert (Rettungsbackup). "
+                 + "Die Wiederherstellung greift beim nächsten App-Start.")
+        }
+    }
+
+    // Liste vorhandener Backups mit Wiederherstellen-Aktion (staged auf nächsten Start).
+    @ViewBuilder
+    private var backupListView: some View {
+        if let staged = restoreStagedName {
+            HStack(spacing: MykSpace.s2) {
+                Image(systemName: "clock.arrow.circlepath").foregroundStyle(MykColor.tasks.color)
+                Text("Beim nächsten Start wird „\(staged)“ wiederhergestellt — bitte App neu starten.")
+                    .font(.mykMono(9.5)).foregroundStyle(MykColor.tasks.color)
+            }
+            .padding(.top, MykSpace.s2)
+        }
+        if backups.isEmpty {
+            Text("Noch keine Backups vorhanden.")
+                .font(.mykMono(9.5)).foregroundStyle(MykColor.faint.color)
+                .padding(.top, MykSpace.s2)
+        } else {
+            VStack(spacing: 0) {
+                ForEach(backups.prefix(8)) { info in
+                    HStack(spacing: MykSpace.s3) {
+                        Text(info.createdAt.formatted(.dateTime.day().month().hour().minute()))
+                            .font(.mykMono(10)).foregroundStyle(MykColor.ink.color)
+                        Text(info.tag).font(.mykMono(9)).foregroundStyle(MykColor.muted.color)
+                        Text(ByteCountFormatter.string(fromByteCount: Int64(info.sizeBytes), countStyle: .file))
+                            .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                        Spacer()
+                        Button("Wiederherstellen") { restoreConfirm = info }
+                            .font(.mykMono(9.5))
+                            .buttonStyle(.plain)
+                            .foregroundStyle(MykColor.drive.color)
+                    }
+                    .padding(.vertical, MykSpace.s2)
+                    if info.id != backups.prefix(8).last?.id {
+                        Divider().overlay(MykColor.line.color.opacity(0.5))
+                    }
+                }
+            }
+            .padding(.top, MykSpace.s2)
+        }
+    }
+
+    private func openBackupsFolder() {
+        let dir = AppDatabase.productionURL.deletingLastPathComponent().appendingPathComponent("backups", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(dir)
     }
 
     @ViewBuilder
