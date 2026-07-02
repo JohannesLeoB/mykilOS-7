@@ -468,6 +468,31 @@ public final class AppState {
         return .created("Entwurf in Gmail abgelegt (erscheint auch in Apple Mail).")
     }
 
+    // S3: sendet eine vom Nutzer AUSDRÜCKLICH BESTÄTIGTE Mail (messages.send). Kein
+    // Auto-Versand — der Aufrufer (ComposeMailView) hat eine Bestätigung davor. Braucht
+    // gmail.compose (Re-Consent M2); ohne Scope → permissionRequired (inert bis Johannes
+    // freigibt). Jeder Versand wird als AuditEntry(.draftSent) protokolliert.
+    public func sendMail(_ draft: EmailDraft) async -> MailSendOutcome {
+        do {
+            try await GoogleGmailClient().sendMessage(draft)
+        } catch GoogleGmailError.notConnected {
+            return .permissionRequired
+        } catch GoogleGmailError.httpError(403) {
+            return .permissionRequired
+        } catch {
+            return .failed("Versand fehlgeschlagen: \(error.localizedDescription)")
+        }
+        let empfaenger = draft.to ?? "?"
+        do {
+            try audit.append(AuditEntry(actorUserID: actorUserID, projectID: "-",
+                                        action: .draftSent,
+                                        summary: "Mail gesendet an \(empfaenger): \(draft.subject)"))
+        } catch {
+            MykLog.contacts.error("Audit für Versand fehlgeschlagen: \(String(describing: error), privacy: .public)")
+        }
+        return .sent("Mail gesendet an \(empfaenger).")
+    }
+
     // feat/assistant-file-drop: lädt eine vom Nutzer BESTÄTIGTE Datei via GoogleDriveClient
     // in den vorgeschlagenen Drive-Ordner hoch. Erfordert drive.file-Scope (Re-Consent M1).
     // Wird der AssistantChatView als `onUploadFileToDrive` injiziert.

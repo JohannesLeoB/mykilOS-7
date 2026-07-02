@@ -72,3 +72,12 @@ public enum DraftCreateOutcome: Sendable, Equatable {
     case created(String)
     case failed(String)
 }
+
+// MARK: - MailSendOutcome (S3)
+// Ergebnis eines BESTÄTIGTEN echten Mail-Versands (gmail.compose deckt messages.send).
+// permissionRequired = gmail.compose-Scope noch nicht erteilt (Re-Consent M2 offen).
+public enum MailSendOutcome: Sendable, Equatable {
+    case sent(String)            // menschenlesbarer Hinweis
+    case failed(String)
+    case permissionRequired
+}

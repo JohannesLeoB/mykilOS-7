@@ -93,7 +93,8 @@ struct MailClientView: View {
                 prefilledTo: config.to,
                 prefilledCc: config.cc,
                 prefilledSubject: config.subject,
-                prefilledBody: config.body
+                prefilledBody: config.body,
+                onSend: { await appState.sendMail($0) }
             )
         }
         // Externer Trigger von außen (z. B. Header-Button "Verfassen").

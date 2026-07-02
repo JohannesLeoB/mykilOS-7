@@ -139,6 +139,9 @@ public extension GoogleGmailFetching {
 // Braucht den gmail.compose-Scope → Google Re-Consent (M2).
 public protocol GoogleGmailWriting: Sendable {
     func createDraft(_ draft: EmailDraft) async throws -> String   // gibt Draft-ID zurück
+    // S3: echter Versand (messages.send). Braucht gmail.compose (Re-Consent M2).
+    // Wird NIE automatisch aufgerufen — nur nach ausdrücklicher Bestätigung im App-Layer.
+    func sendMessage(_ draft: EmailDraft) async throws
 }
 
 // MARK: - GoogleGmailClient
@@ -275,6 +278,27 @@ public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting {
         guard (200...299).contains(http.statusCode) else { throw GoogleGmailError.httpError(http.statusCode) }
         let decoded = try? JSONDecoder().decode(GmailDraftResponse.self, from: data)
         return decoded?.id ?? ""
+    }
+
+    // S3: sendet die Nachricht direkt (messages.send). Gleicher MIME-Aufbau wie der
+    // Entwurf; nur nach ausdrücklicher Bestätigung im App-Layer aufgerufen.
+    public func sendMessage(_ draft: EmailDraft) async throws {
+        guard let accessToken = try? await tokenProvider.validAccessToken() else {
+            throw GoogleGmailError.notConnected
+        }
+        guard let url = URL(string: baseURL + "/send") else { throw GoogleGmailError.invalidResponse }
+        let raw = Self.base64URL(Data(Self.buildMIMEMultipart(draft).utf8))
+        let payload = try JSONSerialization.data(withJSONObject: ["raw": raw])
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = payload
+
+        let (_, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw GoogleGmailError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw GoogleGmailError.httpError(http.statusCode) }
     }
 
     // MARK: - Reine, testbare Bausteine
