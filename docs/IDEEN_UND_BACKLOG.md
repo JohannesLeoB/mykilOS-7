@@ -51,12 +51,16 @@ existiert bereits ein Korpus mit **~818 bereits extrahierten `position_candidate
 (siehe Memory „Kalkulation-Datenbestand"). **Vor jedem Neubau prüfen, ob dieser Bestand
 wiederverwendet/als Startpunkt genutzt werden kann**, statt Extraktion komplett neu zu bauen.
 
-**⚠️ Sicherheitsrelevant — entschärft einen bekannten „Gefahren-Stub":** der I/O-Audit dieser
-Session flaggte `KalkulationsEngine.importPDF` als voll implementiert, aber **ohne Aufrufer und
-ohne Bestätigungsschicht** („geladene Waffe"). Johannes' **Editierebene vor dem Speichern** ist
-genau die fehlende Absicherung — dieses Feature könnte der sichere, offizielle Aufrufer für
-`importPDF` werden, WENN die Karte→Bestätigung→Audit-Kette (inkl. der Editierebene) sauber davor
-sitzt. Kein automatisches Speichern ohne menschlichen Blick auf die extrahierten Daten.
+**⚠️ Korrektur (Johannes 2026-07-02) — BEWUSST ENTKOPPELT von der Kalkulations-Engine:**
+der I/O-Audit flaggte `KalkulationsEngine.importPDF` als voll implementiert, aber ohne Aufrufer/
+Bestätigungsschicht („geladene Waffe") — das bleibt unverändert offen, **dieses Feature löst es
+NICHT** und soll es auch nicht automatisch tun. Johannes: die Kalkulations-Engine bewusst
+**außen vor lassen**, die extrahierten Positionsdaten NICHT automatisch „verNaschen" lassen. Der
+Positions-Picker ist eine **eigenständige Datengrundlage** (für Warenkorb/Checkout) — was davon
+später Richtung **Kalkulations-Engine-Review/-Tuning** fließt, ist ein **separater, bewusst
+manuell getriggerter Schritt**, keine automatische Kopplung/kein impliziter `importPDF`-Aufruf.
+`importPDF` bleibt ein eigenes, separates offenes Thema (weiterhin „geladene Waffe", braucht
+seinen eigenen Aufrufer/seine eigene Bestätigungsschicht, wenn/falls das mal angegangen wird).
 
 **UX-Workflow (Johannes, Konkretisierung):** Klick auf ein Angebot in der Angebots-Katalogansicht
 → öffnet als **große Vorschau** (PDF-Ansicht, heutiges Verhalten). **Toggle** wechselt in eine
