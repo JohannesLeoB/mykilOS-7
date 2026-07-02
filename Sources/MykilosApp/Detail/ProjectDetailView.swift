@@ -207,29 +207,45 @@ private struct ProjectWidgetBoardView: View {
 
     @Environment(AppState.self) private var appState
     @State private var dropTargetID: UUID?
+    // Fix Kontakte-Abschneidung (2026-07-02): das Grid hatte keine festen Spaltenbreiten
+    // und seit dem P0-Fix keine Füllzelle — eine kurze Zeile (nur 2 von 3 Spalten belegt)
+    // ließ die verbleibende Zelle über den Fensterrand dehnen (reproduzierbar contacts).
+    // Jetzt: harte Drittelspalten aus der gemessenen Board-Breite, kurze Zeilen lassen den
+    // Rest LEER (Spacer) statt zu dehnen. Kein Grid mehr → kein "unlimited"-Regressionsrisiko.
+    @State private var boardWidth: CGFloat = 0
 
     var body: some View {
-        // frame(maxWidth: .infinity) bindet den Grid explizit an die vom ScrollView
-        // vorgeschlagene Breite. Color.clear als Füllzelle ist entfernt: eine
-        // flexible Zelle trieb die ideale Grid-Breite auf "unlimited", was via
-        // ZStack-Zentrierung den Inhalt in den Sidebar-Bereich schob.
-        Grid(alignment: .topLeading,
-             horizontalSpacing: MykSpace.s5,
-             verticalSpacing: MykSpace.s5) {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
             ForEach(rows, id: \.id) { row in
-                GridRow {
+                HStack(alignment: .top, spacing: MykSpace.s5) {
                     ForEach(row.items) { instance in
                         draggableCell(for: instance)
+                            .frame(width: cellWidth(span: instance.size.columnSpan), alignment: .leading)
                     }
+                    if row.usedSpan < 3 { Spacer(minLength: 0) }   // kurze Zeile: Rest leer lassen
                 }
             }
         }
-        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            GeometryReader { geo in
+                Color.clear
+                    .onAppear { boardWidth = geo.size.width }
+                    .onChange(of: geo.size.width) { _, w in boardWidth = w }
+            }
+        )
+        .opacity(boardWidth > 0 ? 1 : 0)   // ein Frame unsichtbar, bis die Breite gemessen ist
+    }
+
+    // Drittelbreite (mit Spacing) für eine Zelle mit `span` Spalten.
+    private func cellWidth(span: Int) -> CGFloat {
+        let spacing = MykSpace.s5
+        let col = max(0, (boardWidth - spacing * 2) / 3)
+        return col * CGFloat(span) + spacing * CGFloat(max(0, span - 1))
     }
 
     private func draggableCell(for instance: WidgetInstance) -> some View {
         projectWidgetView(for: instance)
-            .gridCellColumns(instance.size.columnSpan)
             .overlay(dropHighlight(for: instance.id))
             .draggable(instance.id.uuidString)
             .dropDestination(for: String.self) { items, _ in
@@ -296,8 +312,8 @@ private struct RowLayout: Identifiable {
     var id: UUID { items.first?.id ?? Self.emptyRowID }
     private static let emptyRowID = UUID()
     var usedSpan: Int { items.reduce(0) { $0 + $1.size.columnSpan } }
-    var fillerSpan: Int { totalColumns - usedSpan }
-    var needsFiller: Bool { fillerSpan > 0 }
+    // fillerSpan/needsFiller entfernt (2026-07-02): toter Code seit dem P0-Füllzellen-
+    // Ausbau; die kurze Zeile lässt jetzt via Spacer den Rest leer (siehe body).
 }
 
 // MARK: - Tab-Helfer
