@@ -58,6 +58,16 @@ heutigem Stand.
 ### 🆕 Echt neu — heute Nacht nicht besprochen
 - 💡 **Token-/API-Kosten-Governance:** wer/was ruft wie oft welche API (Google/Airtable/Claude/
   ClickUp), Limits/Beschränkungen einbauen. Kompletter Governance-Gap bisher.
+  **Konkrete Airtable-Zahlen (recherchiert 2026-07-03, Team-Plan):** kein Charge pro Call/Write
+  (Flat-Plan), ABER: **100.000 API-Calls/Monat/Workspace** (drüber → gedrosselt auf 2/sec),
+  **5 Calls/sec/Base** (hart, nicht erhöhbar — killte den 24-Parallel-Scan), **50.000 Records/Base**.
+  ⚠️ **AI-Credit-Falle:** Airtables Default-Base-Template setzt ein `aiText`-Feld „Attachment
+  Summary", das bei jedem Datei-Upload automatisch eine KI-Zusammenfassung generiert und
+  **AI-Credits verbrennt** (Team: 15.000/Monat, großes Dok = 500–1.500 Credits, Nachkauf ~40 $/20k).
+  **Cheap Wins: (1)** aiText-Auto-Felder in unseren Bases (Handelswaren/Projekte/checkouts) löschen;
+  **(2)** Polling drosseln + cachen (DriveOfferWatcher 60s, Auto-Sync, Force-Poll fressen den
+  100k-Monatstopf). Quellen: [Airtable API limits](https://support.airtable.com/docs/managing-api-call-limits-in-airtable),
+  [Airtable AI billing](https://support.airtable.com/docs/airtable-ai-billing).
 - 💡 **Systemkosten-Transparenz:** was kostet wann warum wie viel (App + Sub-Systeme + Pings).
   Hängt mit obigem Punkt zusammen.
 - 💡 **DSGVO/Arbeitsrecht/Datenschutz-Compliance:** nirgends heute behandelt, real und wichtig
