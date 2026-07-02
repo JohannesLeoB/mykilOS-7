@@ -204,6 +204,15 @@ Standard **verbindlich**:
 **Rechte-Schicht (D1)** — Admin-Port-Rechte + per-User Clockodo/ClickUp — läuft parallel/danach und
 schaltet den User-Recht-Teil des PortRegistry-Filters scharf.
 
+**🟠 Parallel-Track, Priorität MITTEL-HOCH (Johannes 2026-07-02 spät, explizit priorisiert):
+Assistent-Tagebuch als Friktions-Feedback-Kanal.** Unabhängig von der Wirbelsäule selbst baubar,
+kein `MykilosKit`/Pick-Bezug nötig. Der In-App-Assistent schreibt bei Friktionspunkten (kann
+etwas nicht lesen, Daten widersprüchlich, fehlende Info) einen kurzen strukturierten Eintrag in
+ein **append-only Tagebuch** — gleiche Risikoklasse wie `AuditEntry` (reines Log-Schreiben, kein
+Datei-/Code-Zugriff). Reifer, bald baubarer Kandidat (verworfen wurde nur die viel riskantere
+Dev-Agent-Selbstbearbeitungs-Idee daneben — siehe `docs/IDEEN_UND_BACKLOG.md`). Kann parallel zu
+C1–C4 laufen, keine Abhängigkeit.
+
 ---
 
 ## 10. Rails (eiserne Regeln der ganzen Wirbelsäule)

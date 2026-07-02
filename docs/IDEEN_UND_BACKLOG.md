@@ -37,7 +37,9 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
   sich selbst baut". Eigener, großer architektonischer Strang — nicht jetzt, braucht eigene
   Grundsatzentscheidung zur Sicherheitsgrenze. **Johannes: „zu dünnes Eis" — Selbst-Editierung
   bleibt verworfen, nicht weiterverfolgen.**
-- 💡 **Stattdessen (viel sicherer): Assistent-Tagebuch/Erfahrungsbericht als Feedback-Kanal.**
+- 📋 **PRIO MITTEL-HOCH — im Implementierungsplan (S10_WIRBELSAEULE.md §9, Parallel-Track)
+  eingetragen (Johannes 2026-07-02 spät).** Stattdessen (viel sicherer): Assistent-Tagebuch/
+  Erfahrungsbericht als Feedback-Kanal.
   Statt Code selbst zu editieren, schreibt der Assistent bei **Friktionspunkten** (kann etwas
   nicht lesen, Daten widersprechen sich, fehlende Info) einen kurzen **strukturierten Eintrag**
   in ein **append-only Tagebuch** — gleiche Risikoklasse wie das bestehende `AuditEntry`-Muster
