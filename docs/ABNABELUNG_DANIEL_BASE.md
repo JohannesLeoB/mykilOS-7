@@ -61,21 +61,34 @@ Die Abnabelung ist deshalb eine echte **Migration**, kein Konstanten-Tausch.
 
 ---
 
-## 4. Offene Entscheidungen (Johannes — vor dem Bau)
+## 4. Entscheidungen GETROFFEN (Johannes, 2026-07-03)
 
-1. **Live-Sync oder harte Abnabelung?** Soll die **Preisliste** weiter periodisch von Daniel
-   gespiegelt werden (read-only Sync, Preisänderungen kommen an) — ODER **harter Schnappschuss**
-   (einmal kopieren, danach pflegt mykilOS die Preise selbst, keine Daniel-Abhängigkeit mehr)?
-   „Komplett abnabeln" klingt nach hart — aber Preis-Aktualität klären.
-2. **Ziel-Base-Zuordnung:** Vorschlag — Artikel/Preisliste → `mykilOS_Handelswaren`; Kunden+Projekte
-   → `mykilOS_Projekte`; Warenkörbe+Projektartikel → `mykilOS_Onlineshop & Verkauf`; Intake-Neuanlagen
-   → `mykilOS_Fragebogen & Projekt IN`. Passt die Aufteilung?
-3. **Bestehende Test-Warenkörbe in Daniels Base** (Screenshot): migrieren, oder einfach dort lassen?
-   (Löschen wäre ein Write in Daniels Base — machen wir nur mit seiner ausdrücklichen Erlaubnis,
-   und Löschen ist ohnehin generell tabu.)
-4. **Business-Wahrheit vs. Mastermind-Routing:** bleibt die `ExternalMappingRegistry`-Reconciliation
-   bestehen, oder wird nach der Abnabelung EINE gemeinsame mykilOS-Projekt-Wahrheit daraus (dann
-   entfällt das Titel-Matching)? Größere Architektur-Frage, evtl. eigener Schritt.
+1. **Preisliste = periodischer Read-only-Mirror** (Johannes delegiert an Claudes Empfehlung).
+   Nicht harter Schnappschuss (Preise würden veralten), nicht Live-pro-Request (API-Kosten). Ein
+   **geplanter/on-demand Batch-Sync** liest Daniels Artikel `tbl3dAbQtbF51wb4a` **read-only** und
+   spiegelt sie in `mykilOS_Handelswaren`. **Die App liest künftig NUR aus `mykilOS_Handelswaren`**
+   — voll entkoppelt; der einzige Daniel-Kontakt ist der kontrollierte Sync-Job (read-only, batch,
+   schont das 100k-Call-Monatslimit). Preise bleiben aktuell, App ist abgenabelt.
 
-**Bau erst nach Bestätigung dieser 4 Punkte** — dann als delegierter Worker (Schema-Anlage +
-Migration + Umverdrahtung + Verifikation), nicht blind über Nacht. Migration ist datenkritisch.
+2. **Ziel-Zuordnung:**
+   - **Artikel/Preisliste → `mykilOS_Handelswaren`** ✅ (bestätigt).
+   - **Warenkörbe routen nach Checkout-Typ in VERSCHIEDENE Listen** (nicht eine Base):
+     - **Kreativ-Checkouts** (Moodboard/Firefly/Bilder): in `mykilOS_checkouts` nur **ID +
+       Dateinamen + Metadaten + Ordner-Link** des Exports — **keine Binärdaten**. Dem Nutzer
+       zusätzlich einen **lokalen Export in einen selbst gewählten Ordner** (ZIP/Bündel) anbieten.
+     - **Business / sevDesk / Nachträge / Projektartikel:** in die **Projekt-Ebene des jeweiligen
+       Projekts** in **`mykilOS_Projekte` (`appWI2qj9cc6Muu3b`)** = die **Buchhaltungs-Share**.
+       Diese muss **sauber dokumentiert** und die bestehende (Make.com/Checkbox-)Lösung **abgelöst**
+       werden. Verknüpft mit dem sevDesk-Postbox-Port (WARENKORB_CHECKOUT §5i).
+
+3. **Daniels Projektnummern + Projektstummel-Daten** → nach **`mykilOS_Projekte` transponieren**
+   (in unser sauberes System übernehmen). Damit wird `mykilOS_Projekte` die **eine
+   Projekt-Wahrheit** — das Titel-Matching der `ExternalMappingRegistry` (Daniel↔Mastermind)
+   konvergiert dorthin, statt zwei getrennte Wahrheiten zu pflegen. Kunden-Business-Daten analog.
+
+4. **Test-Warenkörbe in Daniels Base:** bleiben dort (wir schreiben/löschen nicht in Daniels Base);
+   Daniel räumt selbst auf, wenn er mag. Kein mykilOS-Eingriff.
+
+**Nächster Schritt:** Bau als delegierter Worker in Phasen (Schema-Anlage in Handelswaren/Projekte/
+checkouts → Read-Mirror Daniel→Handelswaren → Projekt-/Nummern-Transposition → App-Umverdrahtung →
+Verifikation). Datenkritisch, mit Zwischen-Checkpoints, nicht blind über Nacht.
