@@ -87,6 +87,21 @@ Dokumente/Templates). Vereint Formulare-Ebene + Geräteliste + Moodboard + Angeb
 - **Projekt-Hero-Bild** editierbar (Upload/Import je Nutzer), **Volle Identität** (Avatar-Wähler/
   Kontakt/Notifications), **volle Datei-Vorschau + Kachel/Liste** — siehe UI-Analyse-Workflow.
 
+### 💡 UI-Batch 2026-07-02 Runde 2 (03:36-Uhr-Screenshots)
+- **Fragebogen, Schritt „Raum", Zeichenfläche:** Wunsch nach einem echten Grundriss-/Skizzen-
+  Zeichentool (mit Maus zeichnen). Bestehendes Feld ist laut Johannes „klein, unpraktisch,
+  unvollständig". Ergebnisbild soll automatisch im Projekt-Drive-Ordner abgelegt werden.
+  Braucht ein Canvas-Zeichenwerkzeug (SwiftUI `Canvas`/`PencilKit`-artig) + Export→Drive-Upload.
+- **Kataloge → Warenkörbe:** „UNGENÜGENDE BEARBEITUNGS- UND ANSICHTS-/VORSCHAU-/
+  Editierfunktionen" — die Liste zeigt nur Metadaten, kein Öffnen/Editieren/Vorschauen der
+  Positionen. **Der „Wiederherstellen"-Button ist tot** (Button ohne Funktion, klar markiert).
+- **Warenkorb-Checkout-Widget auf der Projekt-Detailseite:** ein Warenkorb-Icon (Mini-Widget
+  oder großer Button) direkt im Übersicht-Tab, hält den **aktuellsten Warenkorb des Projekts**
+  als Liste mit Vorschau griffbereit. Direkter Bezug zum bereits dokumentierten
+  **[WARENKORB_CHECKOUT.md](WARENKORB_CHECKOUT.md)**-Konzept (Warenkorb = universeller Picker) —
+  dieses Widget wäre ein konkreter, kleiner erster Baustein davon (Projekt-Picks sichtbar machen,
+  bevor der volle Checkout-Router existiert).
+
 ---
 
 ## Architektur-Vorschlag: WorkBasket/Checkout-Pipeline (generisches Schreib-Modell)
