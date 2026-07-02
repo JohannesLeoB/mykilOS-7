@@ -35,7 +35,19 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
   an eine **externe Claude-Code-Session** übergeben wird (isolierter Worktree, gleiche Verify-
   Disziplin wie im Orchestrator-Workflow) — sauberer Bruch zwischen „App die läuft" und „App die
   sich selbst baut". Eigener, großer architektonischer Strang — nicht jetzt, braucht eigene
-  Grundsatzentscheidung zur Sicherheitsgrenze.
+  Grundsatzentscheidung zur Sicherheitsgrenze. **Johannes: „zu dünnes Eis" — Selbst-Editierung
+  bleibt verworfen, nicht weiterverfolgen.**
+- 💡 **Stattdessen (viel sicherer): Assistent-Tagebuch/Erfahrungsbericht als Feedback-Kanal.**
+  Statt Code selbst zu editieren, schreibt der Assistent bei **Friktionspunkten** (kann etwas
+  nicht lesen, Daten widersprechen sich, fehlende Info) einen kurzen **strukturierten Eintrag**
+  in ein **append-only Tagebuch** — gleiche Risikoklasse wie das bestehende `AuditEntry`-Muster
+  (nur Log-Schreiben, kein Datei-/Code-Zugriff, kein neuer Sicherheitsgrenzfall). Konkretes
+  Beispiel aus heute Abend selbst: „PDF liegt nur im Mail-Anhang, kann ich nicht lesen" beim
+  Deckenkoffer-Fall — genau so ein Friktionspunkt, deckt sich sogar mit der bereits geloggten
+  „PDF automatisch ins Drive ablegen"-Idee. **Wert:** echte, aus dem Alltag gesammelte Reibungs-
+  punkte statt erratener Ideen — direkt als Input für künftige Claude-Code-Sessions/Backlog
+  lesbar. Deutlich reifer/sicherer als der Dev-Agent-Ansatz oben, guter Kandidat für einen
+  konkreten, bald baubaren Strang.
 
 ## Nachtrag 2026-07-02 spät — Großes Vormerken: iPad-Version von mykilOS (Johannes)
 
