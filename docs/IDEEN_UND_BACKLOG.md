@@ -825,6 +825,17 @@ Datenbezug, kein Audit-Rauschen. Neue Ideen hier ergänzen.
   Glückwunsch beim App-Start. Braucht ein **Geburtstagsdatum** an Profil/Kontakt (kleiner
   Daten-Job: Feld an UserProfile bzw. Airtable-Kontakt) — Datenschutz beachten (nur Team-Namen,
   keine sensiblen Daten). Auch ohne Datum baubar: manuell „heute hat X Geburtstag" markieren.
+- 💡 **Futurefeature — Team-Meme-Ordner + Easter-Egg-Assistent (Johannes 2026-07-02):**
+  Ein **gesyncter Drive-Ordner** ("Privat"-Bereich), den jeder Mitarbeiter per **Drag&Drop im
+  Assistenten** mit GIFs, lustigen Bildern, Mini-Videos befüllen kann — gemeinsamer
+  Team-Spaß-Fundus. Im **Easter-Egg-Modus** kann der Assistent auf Befehl ein zufälliges GIF/Bild
+  zeigen, einen Witz erzählen oder einen „Projekt-Fail zum Lachen" ausspielen. Zusätzlich eine
+  kleine **GIF-/Sticker-Sammlung**, die bei bestimmten **Projekt-Meilensteinen, ClickUp-Triggern,
+  Geburtstagen oder Events** automatisch abgegriffen/ausgespielt wird — Anknüpfungspunkt an die
+  Party-Mode/Konfetti-Ideen oben. Braucht: Drive-Ordner-Sync + Assistent-Datei-Drop (Muster schon
+  vorhanden, siehe `AssistantChatView.onUploadFileToDrive`), Easter-Egg-Trigger-Logik, Verknüpfung
+  an Signal-/ClickUp-Ereignisse. Rein spaßig, kein Datenbezug zu Geschäftsdaten — sollte NIE echte
+  Projekt-/Kundendaten in ausgespielten „Fails" bloßstellen (Anonymisierung/Opt-in beachten).
 
 ---
 
