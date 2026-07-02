@@ -324,13 +324,28 @@ public struct CheckoutResult: Sendable, Equatable {
     public let erfolg: Bool
     /// Optionale Referenz auf den erzeugten Output (Postbox-Record-ID, URL, …).
     public let referenz: String?
-    /// Optionale Meldung (Fehlergrund oder Erfolgshinweis).
+    /// Optionale Meldung (Fehlergrund oder Erfolgshinweis). Text-Ports (z. B. der
+    /// Firefly-Prompt-Port) liefern hier ihr reines Text-Ergebnis.
     public let meldung: String?
+    /// Optionaler Binär-Payload des erzeugten Outputs (PDF-, PNG-Bytes …).
+    ///
+    /// Additiv in C2 ergänzt (S10-Blueprint §4, „Erste native Ports"): render-basierte
+    /// Ports (DokumentPort → PDF, MoodboardPort → PNG) geben ihre Bytes hier zurück,
+    /// **ohne** sie selbst wegzuschreiben — die Ablage (Drive/Postbox) ist ein separater
+    /// Schritt (§3 der C2-Grenze). Default `nil` hält den bestehenden Aufruf
+    /// (nur `erfolg`/`referenz`/`meldung`) unverändert lauffähig — nicht-brechend.
+    public let nutzlast: Data?
 
-    public init(erfolg: Bool, referenz: String? = nil, meldung: String? = nil) {
+    public init(
+        erfolg: Bool,
+        referenz: String? = nil,
+        meldung: String? = nil,
+        nutzlast: Data? = nil
+    ) {
         self.erfolg = erfolg
         self.referenz = referenz
         self.meldung = meldung
+        self.nutzlast = nutzlast
     }
 }
 
