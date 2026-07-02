@@ -181,7 +181,7 @@ Signal-Leck, Loader-Races u. a.). **118 Tests grün.** Details in
 
 **⚠️ Externe Daten — harte NO-GOs (User, 2026-06-27/28):**
 - Sevdesk nie lesen/schreiben.
-- Die geteilte Airtable-Base (`appkPzoEiI5eSMkNK`) nie anfassen; Artikel-DB (`appdxTeT6bhSBmwx5`) read-only.
+- **KORRIGIERT (Johannes, 2026-07-03):** `appkPzoEiI5eSMkNK` (mykilOS Zuliefererpreise Schätzung) ist **NICHT mehr tabu** — freigegeben, eigene Base. Die EINZIGE geschützte Base ist **`appdxTeT6bhSBmwx5`** (Daniels „Artikel- & Einkaufsdatenbank"): **Lesen/rauskopieren frei**, aber **Daniels heutiger Stand (bestehende Records) darf NIE verändert, überschrieben oder gelöscht werden** — er will ungestört mit seiner Tabelle arbeiten. (Offener Punkt: die app-eigenen Warenkorb-/Projektartikel-Appends dorthin — Reroute in eine mykilOS-eigene Base empfohlen, damit Daniels Workspace sauber bleibt; Johannes-Entscheidung ausstehend.)
 - Google-Drive-Ordner (`0AOeReQBQKkKBUk9PVA`) **read-only** — Kopie nur zu ausdrücklich genanntem Ziel.
 - **Airtable-Einträge dürfen NIEMALS gelöscht oder direkt überschrieben werden** (auch nicht in `appuVMh3KDfKw4OoQ`). Inaktivierung erfolgt ausschließlich per Status-/Archiv-Feld (z. B. `Status = "Archived"`). Kein DELETE-Endpoint, niemals.
 - Externe Daten sind heilig; bei Datenverlust-Gefahr sofort warnen.
