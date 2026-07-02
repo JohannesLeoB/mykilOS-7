@@ -139,18 +139,44 @@ angelegt von einer früheren Session.
 - **KEIN Custom-Field-Create** — der ClickUp-MCP-Connector kann Custom Fields nur LESEN, nicht
   anlegen. Siehe `docs/ops-clickup-mykilos8/ADMIN_REQUIRED_CUSTOM_FIELDS.md` (Admin-Blocker,
   wie vom Handoff §7.5 für nicht-automatisierbare Schritte vorgeschrieben).
-- **KEINE Verdrahtung in die echte Projekt-Anlage** (`AppState.erzeugeKundeUndProjekt` /
-  `provisioniereEchtesProjekt`) — das ist der produktive Kunden-Datenfluss und verdient eine
-  eigene, separat geprüfte Session, NACHDEM der Sandbox-Pfad bewiesen ist (Handoff-Prinzip
-  „erst Testspace, dann Produktion").
 - **KEIN echter Live-Roundtrip des Swift-Codes** gegen die reale ClickUp-API — die Fakes beweisen
   die Logik (Idempotenz, Teilfehler, Template-Vollständigkeit), aber ein echter Lauf braucht einen
   in der App verbundenen ClickUp-PAT (Einstellungen → ClickUp). **Offener manueller Schritt für
-  Johannes:** ClickUp verbinden (falls noch nicht geschehen) → im DEBUG-Build einmal
-  "Test-Projekt gebären" mit der vorbefüllten ClickUp-Ordner-ID auslösen → in ClickUp prüfen,
-  dass die Liste + 8 Tasks im `_TEST_PROVISIONING`-Ordner erscheinen.
+  Johannes:** ClickUp verbinden (falls noch nicht geschehen) → EINEN echten Fragebogen anlegen
+  (oder im DEBUG-Build "Test-Projekt gebären" für die Sandbox-Variante) → in ClickUp prüfen,
+  dass Liste + 8 Tasks erscheinen (echt: Ordner "01 Kundenprojekte"; Sandbox: `_TEST_PROVISIONING`).
 
-**Nächster Schritt (nicht in dieser Session):** sobald der Sandbox-Pfad live bestätigt ist, den
-gleichen `ClickUpProjectProvisioning`-Adapter in `provisioniereEchtesProjekt` verdrahten — jedes
-neu geborene ECHTE Projekt bekommt automatisch eine ClickUp-Liste im Ordner "01 Kundenprojekte"
-(`901211866053`, kein TEST-Präfix, kein `_TEST_PROVISIONING`-Käfig).
+## 8. Addendum 2026-07-02 (Teil 2) — ClickUp-Schritt in der ECHTEN Projekt-Anlage
+
+Johannes' Auftrag: „Daten-/Projektnummern kommen aus mykilOS — die Projekt-Anlegen-Maske feuert
+in ClickUp, schickt Kunde/Daten, legt Drive-Ordner an. Checke deine ClickUp-Rechte und vollende
+deine Arbeit." Rechte erneut geprüft: Ordner „01 Kundenprojekte" (`901211866053`) ist über den
+ClickUp-Connector lesbar/erreichbar — dieser Ordner liegt (noch) im selben Space wie der
+Testspace („MYKILOS API TESTSPACE", `90128024109`); es existiert aktuell **kein separater
+ClickUp-Produktiv-Space**, nur diese eine, vom Studio-OS-Handoff vorgeschlagene 10-Ordner-Struktur.
+
+**Gebaut:** `AppState.provisioniereEchtesProjekt` (der reale Drive+Airtable-Pfad hinter dem
+Fragebogen) bekommt einen dritten, **nicht-fatalen** Schritt — exakt nach demselben Muster wie
+der bestehende Fragebogen-PDF-Upload (do/catch, kein throw, `dataFlow.log` bei Erfolg/Fehler,
+Kunde+Projekt+Drive sind zu diesem Zeitpunkt bereits sicher angelegt):
+- ClickUp-Liste im Ordner „01 Kundenprojekte" (`901211866053`), Name = derselbe `ordnerName` wie
+  der Drive-Ordner — **kein TEST-Präfix** (echtes Projekt).
+- **Beschreibung** (ClickUp-`content`) trägt Kunde (Vor-/Nachname), Projektnummer, echten
+  Drive-Link — das ist das „schickt Kunde/Daten" aus dem Auftrag.
+- Die 8 Standard-Lebenszyklus-Tasks (`ClickUpProjectTemplate.standardKundenprojekt`), dedupliziert
+  über `tasks(listID:)` wie im Sandbox-Pfad.
+- Neue Manifest-ID `CLICKUP_FRAGEBOGEN_PROJEKT_ANLEGEN` (WRITE) in `DatastromManifest.json`.
+
+**Protokoll-Änderung:** `ClickUpProjectProvisioning.findOrCreateList` bekommt einen dritten
+Parameter `content: String?` (nur beim Neu-Anlegen gesetzt, eine gefundene Bestandsliste wird
+nicht überschrieben) — Sandbox-Aufrufer übergeben weiterhin `nil`.
+
+**Bekannte Grenze (dokumentiert, nicht gelöst):** der bestehende Kurzschluss-Pfad oben in
+`provisioniereEchtesProjekt` („Provisionierung übersprungen — bestehender Routing-Eintrag
+gefunden") kehrt für ALTE, bereits vor dieser Änderung vollständig provisionierte Projekte
+sofort zurück und erreicht den neuen ClickUp-Block nie — kein Backfill für Alt-Projekte. Betrifft
+nur bereits bestehende Fragebogen-Projekte, nicht neue Anlagen ab jetzt.
+
+Build grün, **793 Tests grün** (unverändert — dieser Pfad nutzt direkt instanziierte Live-Clients
+wie der Rest der Funktion, keine Dependency-Injection, daher wie beim Drive/Airtable-Teil dieser
+Funktion nicht fake-testbar; abgesichert durch das non-fatal-Muster + Live-Test).

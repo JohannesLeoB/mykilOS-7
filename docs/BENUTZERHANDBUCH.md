@@ -457,11 +457,18 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 |---|---|---|---|---|---|
 | `CLICKUP_TASKS` | ClickUp Aufgaben | READ | onDemand (Widget/Tool) | read-only | Offene Tasks (`archived=false`). Tools: `list_clickup_tasks` (Fokus-Projekt) + `list_all_clickup_tasks` (projektübergreifend, gruppiert, S11). Daten erst vollständig, wenn ClickUp-Listen-IDs in Airtable gepflegt sind (M3). |
 
-**Studio-OS-Rollout (2026-07-02):** Ein neuer, bewusst NUR in der TEST-Sandbox aktiver
-Schreibpfad (`ProjektProvisioningService`, Schritt `.clickUpStruktur`) legt bei einer
-Test-Projekt-Geburt eine ClickUp-Liste + 8 Standard-Lebenszyklus-Tasks im ClickUp-Testspace-
-Ordner `_TEST_PROVISIONING` an (idempotent, TEST-Präfix). Nicht user-facing außerhalb des
-`#if DEBUG`-Sandbox-Bildschirms — siehe [HANDOFF_MYKILOS8_BLOCK_D.md](handoffs/HANDOFF_MYKILOS8_BLOCK_D.md) §7.
+**Studio-OS-Rollout (2026-07-02):** Zwei ClickUp-Schreibpfade, beide additiv/nicht-fatal:
+1. **TEST-Sandbox** (`ProjektProvisioningService`, Schritt `.clickUpStruktur`, nur im
+   `#if DEBUG`-Sandbox-Bildschirm) — legt bei einer Test-Projekt-Geburt eine ClickUp-Liste +
+   8 Standard-Tasks im Ordner `_TEST_PROVISIONING` an (TEST-Präfix, kein echtes Projekt).
+2. **ECHTE Fragebogen-Projekt-Anlage** (`AppState.provisioniereEchtesProjekt`) — sobald ein
+   echtes Projekt im Fragebogen angelegt wird, entsteht automatisch (kein TEST-Präfix) eine
+   ClickUp-Liste im Ordner „01 Kundenprojekte" mit Kunde/Projektnummer/Drive-Link als
+   Beschreibung + den 8 Standard-Lebenszyklus-Tasks. **Nicht-fatal:** ein ClickUp-Fehler
+   (z. B. nicht verbunden) verhindert nie die Kunde/Projekt/Drive-Anlage — Fehler landen in
+   der Schaltzentrale (`CLICKUP_FRAGEBOGEN_PROJEKT_ANLEGEN`). Voraussetzung: ClickUp in den
+   Einstellungen verbunden (Personal-API-Token). Details:
+   [HANDOFF_MYKILOS8_BLOCK_D.md](handoffs/HANDOFF_MYKILOS8_BLOCK_D.md) §7.
 
 #### Clockodo
 

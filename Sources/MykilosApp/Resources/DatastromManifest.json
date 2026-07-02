@@ -294,6 +294,13 @@
     "link": "mykilos://datastream/AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING"
   },
   {
+    "integrationID": "CLICKUP_FRAGEBOGEN_PROJEKT_ANLEGEN",
+    "name": "Fragebogen: ClickUp-Liste + Standard-Tasks für neues Projekt",
+    "system": "ClickUp",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/CLICKUP_FRAGEBOGEN_PROJEKT_ANLEGEN"
+  },
+  {
     "integrationID": "AIRTABLE_INTAKE_KUNDE_ANLEGEN",
     "name": "Intake: Kunde in Artikel-DB anlegen (alle Anlege-Stufen)",
     "system": "Airtable",

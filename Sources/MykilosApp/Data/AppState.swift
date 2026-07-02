@@ -1076,6 +1076,41 @@ public final class AppState {
                 action: .success, recordsWritten: 1,
                 summary: "Mastermind-Routing-Eintrag angelegt (\(nummer.appFormat))")
 
+            // Studio-OS-Rollout (2026-07-02, Johannes): „Projekt-Anlegen-Maske feuert in
+            // ClickUp, schickt Kunde/Daten, legt Drive-Ordner an" — ECHTE ClickUp-Liste im
+            // Ordner "01 Kundenprojekte" (kein TEST-Präfix). NICHT-FATAL wie der PDF-Upload
+            // unten: Kunde+Projekt+Drive sind zu diesem Zeitpunkt bereits sicher angelegt,
+            // ein ClickUp-Fehler (z. B. nicht verbunden) darf das nie rückgängig machen.
+            let vorname = ergebnis.kundeFelder["Vorname"] ?? ""
+            let nachname = ergebnis.kundeFelder["Nachname"] ?? "Kunde"
+            let kundeAnzeigename = vorname.isEmpty ? nachname : "\(vorname) \(nachname)"
+            do {
+                let clickUp = ClickUpClient()
+                let listenContent = """
+                Kunde: \(kundeAnzeigename)
+                Projektnummer: \(nummer.appFormat)
+                Drive: https://drive.google.com/drive/folders/\(rootOrdnerID)
+                Quelle: mykilOS Fragebogen
+                """
+                let listID = try await clickUp.findOrCreateList(
+                    folderID: Self.clickUpKundenprojekteFolderID, name: ordnerName, content: listenContent)
+                let bestehendeTasks = Set((try? await clickUp.tasks(listID: listID))?.map(\.name) ?? [])
+                for taskName in ClickUpProjectTemplate.standardKundenprojekt
+                where bestehendeTasks.contains(taskName) == false {
+                    _ = try await clickUp.createTask(listID: listID, name: taskName)
+                }
+                dataFlow.log(
+                    integrationID: "CLICKUP_FRAGEBOGEN_PROJEKT_ANLEGEN", actorUserID: actorUserID,
+                    action: .success, recordsWritten: 1,
+                    summary: "ClickUp-Liste angelegt (\(listID)) für \(ordnerName)")
+            } catch {
+                MykLog.lifecycle.error("ClickUp-Provisionierung fehlgeschlagen: \(String(describing: error), privacy: .public)")
+                dataFlow.log(
+                    integrationID: "CLICKUP_FRAGEBOGEN_PROJEKT_ANLEGEN", actorUserID: actorUserID,
+                    action: .error, errorMessage: String(describing: error),
+                    summary: "ClickUp-Provisionierung fehlgeschlagen für \(ordnerName)")
+            }
+
             do {
                 try audit.append(AuditEntry(
                     actorUserID: actorUserID, projectID: nummer.appFormat,
@@ -1118,6 +1153,12 @@ public final class AppState {
 
     /// Echter Google-Drive-Ordner "PROJEKTE" (Team-Ablage) — Johannes bestätigt, 2026-07-01.
     private static let projekteRootDriveID = "1Q-H_3JsZfiXosFmxtNgoy0hI3cvZLgST"
+
+    /// Echter ClickUp-Ordner "01 Kundenprojekte" im Studio-OS-Workspace (Space
+    /// "MYKILOS API TESTSPACE", `90128024109`) — Johannes bestätigt, 2026-07-02: die
+    /// Projekt-Anlage-Maske feuert in ClickUp, ohne TEST-Präfix (echte Projekte). Getrennt
+    /// von `AppState.clickUpTestProvisioningFolderID` (Sandbox-Isolationsordner).
+    private static let clickUpKundenprojekteFolderID = "901211866053"
 
     // MARK: - Projekt-Geburt (mykilOS 8, Block D / S4) — TEST-Sandbox
     // Eine bestätigte Karte → ein neues Projekt in Drive + Airtable (TEST-Sandbox).

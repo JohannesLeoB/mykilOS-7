@@ -220,7 +220,7 @@ public final class ProjektProvisioningService {
         var result = start
         let listenName = TestMarker.namePrefix + plan.ordnerName
         do {
-            let listID = try await client.findOrCreateList(folderID: folderID, name: listenName)
+            let listID = try await client.findOrCreateList(folderID: folderID, name: listenName, content: nil)
             result.clickUpListID = listID
 
             // Idempotenz auf Task-Ebene: nur fehlende Template-Tasks anlegen.

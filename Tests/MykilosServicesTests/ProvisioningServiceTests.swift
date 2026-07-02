@@ -166,7 +166,7 @@ struct ProvisioningServiceTests {
         // würde den Schritt eigentlich überspringen (result.hat(.clickUpStruktur)) — hier
         // simulieren wir stattdessen einen zweiten DIREKTEN Aufruf derselben Fake-Liste
         // (z. B. Wiederaufnahme nach Ledger-Reset), um find-or-create + Task-Dedup zu beweisen.
-        let zweiteListID = try await clickUp.findOrCreateList(folderID: "folder_test", name: clickUp.angelegteListenNamen[0])
+        let zweiteListID = try await clickUp.findOrCreateList(folderID: "folder_test", name: clickUp.angelegteListenNamen[0], content: nil)
         #expect(zweiteListID == clickUp.letzteListID)
         #expect(clickUp.listenAufrufe == listenAufrufeNach1 + 1)   // find-or-create wurde erneut aufgerufen…
         #expect(clickUp.angelegteListenNamen.count == 1)           // …aber KEINE zweite Liste angelegt.
@@ -247,9 +247,10 @@ private final class FakeClickUp: ClickUpFetching, ClickUpProjectProvisioning, @u
     private(set) var letzteListID: String = ""
 
     private var listenIDs: [String: String] = [:]          // (folderID/name) → ID
+    private(set) var letzterContent: String?
     private var tasksProListe: [String: [ClickUpTask]] = [:] // listID → Tasks
 
-    func findOrCreateList(folderID: String, name: String) async throws -> String {
+    func findOrCreateList(folderID: String, name: String, content: String?) async throws -> String {
         if wirft { throw ClickUpError.httpError(500) }
         listenAufrufe += 1
         let key = folderID + "/" + name
@@ -260,6 +261,7 @@ private final class FakeClickUp: ClickUpFetching, ClickUpProjectProvisioning, @u
         let id = "list_\(listenIDs.count)"
         listenIDs[key] = id
         angelegteListenNamen.append(name)
+        letzterContent = content
         tasksProListe[id] = []
         letzteListID = id
         return id

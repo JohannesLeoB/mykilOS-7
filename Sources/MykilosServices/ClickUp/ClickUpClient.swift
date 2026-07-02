@@ -43,7 +43,9 @@ public protocol ClickUpFetching: Sendable {
 // nur der Provisioning-Service (Karte→Bestätigung→Audit, wie Drive/Airtable).
 public protocol ClickUpProjectProvisioning: Sendable {
     /// Findet eine Liste mit exaktem Namen im Ordner, oder legt sie neu an (idempotent).
-    func findOrCreateList(folderID: String, name: String) async throws -> String
+    /// `content` (Beschreibung: Kunde/Drive-Link/Projektnummer) wird NUR beim Neu-Anlegen
+    /// gesetzt — eine bereits gefundene Liste wird nicht überschrieben.
+    func findOrCreateList(folderID: String, name: String, content: String?) async throws -> String
     /// Legt einen Task in der Liste an. Kein Duplikat-Check hier — der Aufrufer prüft
     /// vorher über `tasks(listID:)`, ob der Name schon existiert.
     func createTask(listID: String, name: String) async throws -> String
@@ -86,7 +88,7 @@ public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning {
 
     // MARK: - Schreiben (Provisioning, Schritt `.clickUpStruktur`)
 
-    public func findOrCreateList(folderID: String, name: String) async throws -> String {
+    public func findOrCreateList(folderID: String, name: String, content: String? = nil) async throws -> String {
         guard let credentials = try? credentialsStore.load() else { throw ClickUpError.notConnected }
         // Erst lesen (idempotent, kein Duplikat): existierende Listen im Ordner nach Namen prüfen.
         guard let listsURL = Self.buildFolderListsURL(baseURL: baseURL, folderID: folderID) else {
@@ -101,7 +103,7 @@ public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning {
             return existingID
         }
 
-        // Kein Treffer → neu anlegen.
+        // Kein Treffer → neu anlegen. `content` (Kunde/Drive-Link/Projektnummer) nur hier gesetzt.
         guard let createURL = Self.buildCreateListURL(baseURL: baseURL, folderID: folderID) else {
             throw ClickUpError.invalidResponse
         }
@@ -109,7 +111,9 @@ public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning {
         createRequest.httpMethod = "POST"
         createRequest.setValue(credentials.apiToken, forHTTPHeaderField: "Authorization")
         createRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        createRequest.httpBody = try JSONEncoder().encode(["name": name])
+        var body: [String: String] = ["name": name]
+        if let content, content.isEmpty == false { body["content"] = content }
+        createRequest.httpBody = try JSONEncoder().encode(body)
         let (createData, createResponse) = try await session.data(for: createRequest)
         guard let createHTTP = createResponse as? HTTPURLResponse else { throw ClickUpError.invalidResponse }
         guard (200...299).contains(createHTTP.statusCode) else { throw ClickUpError.httpError(createHTTP.statusCode) }
