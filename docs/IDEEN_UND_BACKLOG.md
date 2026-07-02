@@ -993,6 +993,13 @@ stört den professionellen Betrieb; erst der Opt-in weckt die Spielereien. Dezen
 
 **Ton (optional, extra Unter-Schalter):**
 - 🔔 Feiner Chime bei Speichern/Bestätigen (nur wenn zusätzlich aktiviert).
+- 💡 **Erweiterung — Sound-Bibliothek pro User + Notification-Kategorie (Johannes 2026-07-02
+  spät):** kleine Auswahl an angenehmen, dezenten Chimes/Mini-Sounds, **je Kategorie separat
+  wählbar** (Alerts, Wecker, Kalender, Timer, etc.) und **je User individuell** — volle
+  Einstellungsmöglichkeit in Settings, nicht nur ein globaler An/Aus-Schalter. Gehört in dieselbe
+  Datenschutz-/Settings-Sektion wie die Alert-Toggles
+  ([[alerts-dezent-datenschutz-toggle-regel]]) — konsequent zu Ende gedacht: nicht nur OB ein
+  Alert klingt, sondern WIE (welcher Sound aus der Bibliothek), pro Kategorie und pro Person.
 
 Umsetzung: reine Overlay-/Animations-Schicht (SwiftUI transitions/particles), rein lokal, kein
 Datenbezug, kein Audit-Rauschen. Neue Ideen hier ergänzen.
