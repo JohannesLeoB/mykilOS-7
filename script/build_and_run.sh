@@ -4,10 +4,15 @@ set -euo pipefail
 PRODUCT_NAME="mykilOS6"
 EXECUTABLE_NAME="mykilOS6"
 BUNDLE_ID="de.mykilos.mykilos6"
-APP_VERSION="8.6.1"
+APP_VERSION="8.7.0"
 # App-Bundle trägt die Versionsnummer im Namen, damit im Dock/Finder immer
 # eindeutig ist, welche Version läuft. BUNDLE_ID bleibt KONSTANT (sonst neuer
 # DB-/Keychain-Pfad → Datenverlust).
+# 8.7.0 (2026-07-02, Schlusssprint): Dev-Checkout-Exporter — kreuz-und-quer Katalog-
+# Picking (Artikel/Lager/Angebote ein+aus), Warenkorb-View mit Suche/Sortieren/Filtern/
+# Gruppieren/Vorschau, wiederholbarer Checkout (Session-Korb + gespeicherte Warenkörbe),
+# 3 lokale Exportwege (Copy/Notiz/ZIP), sevDesk-Postbox-Format als beschriftete Vorschau
+# (noch keine Live-Anbindung). 822 Tests, keine externen Writes.
 # 8.6.1 (2026-07-02, spät): Gute-Nacht-Checkpoint — keine neuen Features, nur der
 # verifizierte Stand vor dem Nacht-Automode gesichert + frisch gestempelt (Git-Commit +
 # Build-Zeitpunkt in Info.plist, siehe Diagnose-Injektion unten).
@@ -21,7 +26,7 @@ APP_VERSION="8.6.1"
 # Konsolidierungs-Session (Doku-Wahrheit + toter Code + Prompt-Caching).
 APP_NAME="mykilOS $APP_VERSION"
 DISPLAY_NAME="mykilOS $APP_VERSION"
-BUILD_VERSION="15"
+BUILD_VERSION="16"
 MIN_SYSTEM_VERSION="14.0"
 APP_ICON="AppIcon.icns"
 
