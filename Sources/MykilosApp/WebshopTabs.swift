@@ -960,6 +960,10 @@ struct WarenkorbListeTab: View {
     @State private var filterStatus: String? = nil   // nil = alle, "Aktuell", "Archiviert"
     @State private var ausgewahlterEintrag: WarenkorbEintrag? = nil
     @State private var zeigeWiederherstellungsBestaetigung = false
+    // Härtung (2026-07-02, Johannes/Screenshot-Review): „Wiederherstellen" öffnet zwar
+    // ein funktionierendes Sheet, framt sich aber immer als Aktion („wird geladen"),
+    // nie als reine Ansicht — es fehlte eine neutrale Vorschau ohne Warenkorb-Mutation.
+    @State private var zeigeVorschau = false
 
     private static let datumsFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -1026,8 +1030,26 @@ struct WarenkorbListeTab: View {
                     warenkorb: warenkorb,
                     datumsFormatter: Self.datumsFormatter,
                     preisFormatter: Self.preisFormatter,
+                    previewOnly: false,
                     onDismiss: {
                         zeigeWiederherstellungsBestaetigung = false
+                        ausgewahlterEintrag = nil
+                    }
+                )
+            }
+        }
+        // Reine Vorschau (kein Laden in den aktiven Warenkorb) — separater Trigger,
+        // damit ein Klick auf „Vorschau" nie versehentlich den aktiven Warenkorb ersetzt.
+        .sheet(isPresented: $zeigeVorschau) {
+            if let eintrag = ausgewahlterEintrag {
+                WarenkorbWiederherstellungsSheet(
+                    eintrag: eintrag,
+                    warenkorb: warenkorb,
+                    datumsFormatter: Self.datumsFormatter,
+                    preisFormatter: Self.preisFormatter,
+                    previewOnly: true,
+                    onDismiss: {
+                        zeigeVorschau = false
                         ausgewahlterEintrag = nil
                     }
                 )
@@ -1101,7 +1123,7 @@ struct WarenkorbListeTab: View {
                 Text("Pos.").frame(width: 40, alignment: .trailing)
                 Text("EK netto").frame(width: 90, alignment: .trailing)
                 Text("VK netto").frame(width: 90, alignment: .trailing)
-                Text("").frame(width: 110) // Wiederherstellen
+                Text("").frame(width: 150) // Vorschau + Wiederherstellen
             }
             .font(.mykMono(9))
             .foregroundStyle(MykColor.muted.color)
@@ -1125,6 +1147,10 @@ struct WarenkorbListeTab: View {
                                 eintrag: eintrag,
                                 datumsFormatter: Self.datumsFormatter,
                                 preisFormatter: Self.preisFormatter,
+                                onVorschau: {
+                                    ausgewahlterEintrag = eintrag
+                                    zeigeVorschau = true
+                                },
                                 onWiederherstellen: {
                                     ausgewahlterEintrag = eintrag
                                     zeigeWiederherstellungsBestaetigung = true
@@ -1160,6 +1186,7 @@ private struct WarenkorbZeile: View {
     let eintrag: WarenkorbEintrag
     let datumsFormatter: DateFormatter
     let preisFormatter: NumberFormatter
+    let onVorschau: () -> Void
     let onWiederherstellen: () -> Void
 
     @State private var isHovered = false
@@ -1227,29 +1254,47 @@ private struct WarenkorbZeile: View {
             .frame(width: 90, alignment: .trailing)
 
             if eintrag.positionenJSON != nil {
-                Button {
-                    onWiederherstellen()
-                } label: {
-                    HStack(spacing: MykSpace.s2) {
-                        Image(systemName: "arrow.clockwise.circle")
+                HStack(spacing: MykSpace.s2) {
+                    // Neutrale Vorschau — öffnet dieselben Positionen read-only,
+                    // ändert den aktiven Warenkorb NIE (Härtung 2026-07-02).
+                    Button {
+                        onVorschau()
+                    } label: {
+                        Image(systemName: "eye")
                             .font(.mykCaption)
-                        Text("Wiederherstellen")
-                            .font(.mykMono(9))
+                            .foregroundStyle(MykColor.muted.color)
+                            .padding(MykSpace.s2)
+                            .background(MykColor.card.color)
+                            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
                     }
-                    .foregroundStyle(MykColor.paper.color)
-                    .padding(.horizontal, MykSpace.s3)
-                    .padding(.vertical, MykSpace.s2)
-                    .background(MykColor.cash.color)
-                    .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                    .buttonStyle(.plain)
+                    .help("Vorschau — lädt nichts in den aktiven Warenkorb")
+
+                    Button {
+                        onWiederherstellen()
+                    } label: {
+                        HStack(spacing: MykSpace.s2) {
+                            Image(systemName: "arrow.clockwise.circle")
+                                .font(.mykCaption)
+                            Text("Wiederherstellen")
+                                .font(.mykMono(9))
+                        }
+                        .foregroundStyle(MykColor.paper.color)
+                        .padding(.horizontal, MykSpace.s3)
+                        .padding(.vertical, MykSpace.s2)
+                        .background(MykColor.cash.color)
+                        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(isHovered ? 1.0 : 0.7)
                 }
-                .buttonStyle(.plain)
-                .frame(width: 110, alignment: .center)
-                .opacity(isHovered ? 1.0 : 0.7)
+                .frame(width: 150, alignment: .center)
             } else {
                 Text("–")
                     .font(.mykMono(9))
                     .foregroundStyle(MykColor.faint.color)
-                    .frame(width: 110, alignment: .center)
+                    .frame(width: 150, alignment: .center)
             }
         }
         .font(.mykMono(10))
@@ -1268,12 +1313,16 @@ private struct WarenkorbWiederherstellungsSheet: View {
     @Bindable var warenkorb: WarenkorbState
     let datumsFormatter: DateFormatter
     let preisFormatter: NumberFormatter
+    /// Härtung (2026-07-02): true = reine Ansicht, „In Warenkorb laden" entfällt komplett —
+    /// der aktive Warenkorb wird nie angefasst. Deckt die fehlende Vorschau-Funktion ab,
+    /// ohne den bestehenden, funktionierenden Wiederherstellungs-Pfad zu verändern.
+    var previewOnly: Bool = false
     let onDismiss: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
             VStack(alignment: .leading, spacing: MykSpace.s2) {
-                Text("Warenkorb wiederherstellen")
+                Text(previewOnly ? "Warenkorb — Vorschau" : "Warenkorb wiederherstellen")
                     .font(.mykHeadline)
                     .foregroundStyle(MykColor.ink.color)
                 Text(eintrag.bezeichnung)
@@ -1319,36 +1368,45 @@ private struct WarenkorbWiederherstellungsSheet: View {
                     .foregroundStyle(MykColor.muted.color)
             }
 
-            Text("Dieser Warenkorb wird in deinen aktiven Warenkorb geladen. Danach kannst du Artikel ergänzen und einen neuen Warenkorb speichern (append-only — der alte bleibt erhalten).")
-                .font(.mykSmall)
-                .foregroundStyle(MykColor.muted.color)
-                .fixedSize(horizontal: false, vertical: true)
+            if previewOnly {
+                Text("Reine Vorschau — der aktive Warenkorb wird NICHT verändert.")
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.muted.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("Dieser Warenkorb wird in deinen aktiven Warenkorb geladen. Danach kannst du Artikel ergänzen und einen neuen Warenkorb speichern (append-only — der alte bleibt erhalten).")
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.muted.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             HStack(spacing: MykSpace.s4) {
                 Spacer()
-                Button("Abbrechen") { onDismiss() }
+                Button(previewOnly ? "Schließen" : "Abbrechen") { onDismiss() }
                     .buttonStyle(.plain)
                     .font(.mykSmall)
                     .foregroundStyle(MykColor.muted.color)
 
-                Button("In Warenkorb laden") {
-                    if let items = eintrag.decodedItems() {
-                        warenkorb.leeren()
-                        for item in items {
-                            warenkorb.addWarenkorbItem(item)
+                if previewOnly == false {
+                    Button("In Warenkorb laden") {
+                        if let items = eintrag.decodedItems() {
+                            warenkorb.leeren()
+                            for item in items {
+                                warenkorb.addWarenkorbItem(item)
+                            }
+                            warenkorb.showPanel = true
                         }
-                        warenkorb.showPanel = true
+                        onDismiss()
                     }
-                    onDismiss()
+                    .buttonStyle(.plain)
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.paper.color)
+                    .padding(.horizontal, MykSpace.s5)
+                    .padding(.vertical, MykSpace.s3)
+                    .background(MykColor.cash.color)
+                    .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                    .disabled(eintrag.positionenJSON == nil)
                 }
-                .buttonStyle(.plain)
-                .font(.mykSmall)
-                .foregroundStyle(MykColor.paper.color)
-                .padding(.horizontal, MykSpace.s5)
-                .padding(.vertical, MykSpace.s3)
-                .background(MykColor.cash.color)
-                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
-                .disabled(eintrag.positionenJSON == nil)
             }
         }
         .padding(MykSpace.s9)
