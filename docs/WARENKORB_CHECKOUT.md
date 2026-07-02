@@ -264,13 +264,19 @@ Textblöcke als Picks, z. B. für Dokument-/Mail-Ports).
 
 ### 5i. NEUE REGEL + LEITLINIE — sevDesk-Adapter-„Briefkasten" (Johannes, 2026-07-02)
 
-**Warenkörbe können jetzt an die Airtable-Tabelle `mykilOS_Adapter Sevdesk` übergeben werden.**
+**Warenkörbe können jetzt an die Airtable-Tabelle `mykilOS_Sevdesk Postbox` übergeben werden.**
 Die Tabelle ist ein **Briefkasten**: mykilOS *legt hinein*, sevDesk *holt ab* (Pull außerhalb
 von mykilOS) und verarbeitet die Warenkörbe **rechtskonform** zu Angeboten etc.
-**mykilOS berührt sevDesk weiterhin NIE direkt** — das harte NO-GO bleibt; der Kontakt läuft
-ausschließlich über diesen Airtable-Briefkasten. Konkrete Ausformung des §5d-Ports.
+**mykilOS berührt sevDesk weiterhin NIE direkt — weder schreibend NOCH lesend** (Johannes,
+verschärft 2026-07-02). Der Kontakt läuft ausschließlich über **Einweg-Postboxen**: die
+`mykilOS_Sevdesk Postbox` ist die Ausgangs-Postbox (mykilOS legt ab → sevDesk holt ab).
+Braucht mykilOS umgekehrt sevDesk-Daten (z. B. Ist-Umsatz fürs Cash-Widget), läuft das über
+eine **eigene Eingangs-Postbox in Gegenrichtung** (sevDesk schreibt Airtable → mykilOS liest),
+nie per direktem sevDesk-Read. ⚠️ **To-Fix:** der heutige direkte `SevdeskClient`-Read (Cash-
+Widget) ist damit regelwidrig und muss auf eine Eingangs-Postbox umgestellt werden.
+Konkrete Ausformung des §5d-Ports.
 
-**Harte Regeln für die `mykilOS_Adapter Sevdesk`-Tabelle:**
+**Harte Regeln für die `mykilOS_Sevdesk Postbox`-Tabelle:**
 1. **Keine Bilder.** Die Tabelle empfängt niemals Bilddaten (nur Text/Zahlen/Links/Referenzen).
 2. **Einmalige Warenkorb-ID.** Jede Übergabe trägt eine **immer identifizierbare, individuelle
    ID** zur Abholung durch sevDesk. IDs sind nie identisch, nie wiederverwendet.
