@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import MykilosDesign
 import MykilosServices
 import MykilosKit
@@ -26,6 +27,9 @@ struct ArtikelShopTab: View {
     @State private var anzahlProSeite: Int = 50
     @State private var seite: Int = 0           // 0-basiert
     @State private var zeigeKacheln: Bool = false
+    // Preislisten-Detailvorschau: Klick auf einen Artikel öffnet ein Detail-Sheet
+    // (großes Bild, alle Felder, EK/VK/Marge, „In den Warenkorb"). Nil = kein Sheet.
+    @State private var detailArtikel: ArtikelItem? = nil
 
     private static let preisFormatter: NumberFormatter = {
         let f = NumberFormatter()
@@ -122,6 +126,19 @@ struct ArtikelShopTab: View {
         .onChange(of: filterKategorie) { seite = 0 }
         .onChange(of: filterHersteller) { seite = 0 }
         .onChange(of: anzahlProSeite) { seite = 0 }
+        .sheet(item: $detailArtikel) { artikel in
+            ArtikelDetailSheet(
+                artikel: artikel,
+                lagerTreffer: lagerTreffenFuer(artikel),
+                preisFormatter: Self.preisFormatter,
+                onAddToCart: {
+                    warenkorb.addArtikel(artikel)
+                    warenkorb.showPanel = true
+                    detailArtikel = nil
+                },
+                onClose: { detailArtikel = nil }
+            )
+        }
     }
 
     // MARK: - Toolbar
@@ -266,7 +283,8 @@ struct ArtikelShopTab: View {
                                 ergebnis: ergebnis,
                                 lagerTreffer: lagerTreffenFuer(ergebnis.artikel),
                                 preisFormatter: Self.preisFormatter,
-                                onAddToCart: { warenkorb.addArtikel($0); warenkorb.showPanel = true }
+                                onAddToCart: { warenkorb.addArtikel($0); warenkorb.showPanel = true },
+                                onOpenDetail: { detailArtikel = $0 }
                             )
                             Divider().overlay(MykColor.line.color)
                         }
@@ -298,7 +316,8 @@ struct ArtikelShopTab: View {
                                 ergebnis: ergebnis,
                                 lagerTreffer: lagerTreffenFuer(ergebnis.artikel),
                                 preisFormatter: Self.preisFormatter,
-                                onAddToCart: { warenkorb.addArtikel($0); warenkorb.showPanel = true }
+                                onAddToCart: { warenkorb.addArtikel($0); warenkorb.showPanel = true },
+                                onOpenDetail: { detailArtikel = $0 }
                             )
                         }
                     }
@@ -425,6 +444,7 @@ private struct ArtikelZeile: View {
     let lagerTreffer: AufLagerMatcherResult
     let preisFormatter: NumberFormatter
     let onAddToCart: (ArtikelItem) -> Void
+    let onOpenDetail: (ArtikelItem) -> Void
 
     @State private var isHovered = false
 
@@ -499,6 +519,9 @@ private struct ArtikelZeile: View {
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s2)
         .background(isHovered ? MykColor.paper2.color : Color.clear)
+        // Klick auf die Zeile (außerhalb des +Korb-Buttons) → Detail-Vorschau.
+        .contentShape(Rectangle())
+        .onTapGesture { onOpenDetail(ergebnis.artikel) }
         .onHover { isHovered = $0 }
         .animation(.easeInOut(duration: 0.12), value: isHovered)
     }
@@ -572,6 +595,215 @@ private struct ArtikelMiniaturBild: View {
     }
 }
 
+// MARK: - ArtikelDetailSheet (Preislisten-Detailvorschau)
+// Klick auf einen Artikel (Zeile oder Kachel) öffnet dieses Sheet: großes Produktbild,
+// alle Stammdaten, EK/VK/Marge und „In den Warenkorb". Read-only auf die Artikel-Daten —
+// kein Schreiben in die Airtable-Artikel-Tabelle (die ist Daniels Hoheit, read-only).
+@MainActor
+private struct ArtikelDetailSheet: View {
+    let artikel: ArtikelItem
+    let lagerTreffer: AufLagerMatcherResult
+    let preisFormatter: NumberFormatter
+    let onAddToCart: () -> Void
+    let onClose: () -> Void
+
+    /// Marge in % = (VK − EK) / VK · 100 — nur wenn beide Preise > 0.
+    private var margeProzent: Double? {
+        guard let ek = artikel.ekNetto, let vk = artikel.vkNetto, vk > 0 else { return nil }
+        return (vk - ek) / vk * 100
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            kopfzeile
+            produktbild
+            titelBlock
+            preisBlock
+            lagerZeile
+            Spacer(minLength: 0)
+            aktionen
+        }
+        .padding(MykSpace.s7)
+        .frame(width: 480, height: 640)
+        .background(MykColor.paper.color)
+    }
+
+    // MARK: Kopfzeile (Hersteller + Schließen)
+    private var kopfzeile: some View {
+        HStack {
+            Text((artikel.hersteller ?? "Artikel").uppercased())
+                .font(.mykMono(11))
+                .foregroundStyle(MykColor.muted.color)
+                .tracking(1.5)
+            Spacer()
+            Button { onClose() } label: {
+                Image(systemName: "xmark")
+                    .font(.mykCaption)
+                    .foregroundStyle(MykColor.faint.color)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Detailvorschau schließen")
+        }
+    }
+
+    // MARK: Produktbild (groß, klickbar → Browser)
+    @ViewBuilder
+    private var produktbild: some View {
+        Group {
+            if let urlStr = artikel.produktbildURL, let url = URL(string: urlStr) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().aspectRatio(contentMode: .fit)
+                    case .failure: bildPlatzhalter
+                    case .empty: ProgressView()
+                    @unknown default: bildPlatzhalter
+                    }
+                }
+                .onTapGesture { NSWorkspace.shared.open(url) }
+                .help("Produktbild im Browser öffnen")
+            } else {
+                bildPlatzhalter
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 220)
+        .background(MykColor.paper2.color)
+        .clipShape(RoundedRectangle(cornerRadius: MykRadius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: MykRadius.md)
+                .stroke(MykColor.line.color, lineWidth: 1)
+        )
+    }
+
+    private var bildPlatzhalter: some View {
+        Image(systemName: "photo")
+            .font(.mykDisplay)
+            .foregroundStyle(MykColor.faint.color)
+    }
+
+    // MARK: Titel + Meta-Chips
+    private var titelBlock: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s3) {
+            Text(artikel.artikelbeschreibung ?? artikel.artikelnummer)
+                .font(.mykHeadline)
+                .foregroundStyle(MykColor.ink.color)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: MykSpace.s2) {
+                metaChip(icon: "number", text: artikel.artikelnummer)
+                if let kat = artikel.kategorie, !kat.isEmpty {
+                    metaChip(icon: "tag", text: kat)
+                }
+            }
+        }
+    }
+
+    private func metaChip(icon: String, text: String) -> some View {
+        HStack(spacing: MykSpace.s2) {
+            Image(systemName: icon).font(.mykMono(9))
+            Text(text).font(.mykMono(10)).lineLimit(1)
+        }
+        .foregroundStyle(MykColor.muted.color)
+        .padding(.horizontal, MykSpace.s3)
+        .padding(.vertical, MykSpace.s2)
+        .background(MykColor.card.color)
+        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+        .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+    }
+
+    // MARK: Preis-Block (EK / VK / Marge)
+    private var preisBlock: some View {
+        HStack(spacing: MykSpace.s3) {
+            preisFeld(titel: "EK NETTO", wert: artikel.ekNetto, farbe: MykColor.muted)
+            preisFeld(titel: "VK MYKILOS", wert: artikel.vkNetto, farbe: MykColor.tasks)
+            margeFeld
+        }
+    }
+
+    private func preisFeld(titel: String, wert: Double?, farbe: MykColor) -> some View {
+        VStack(alignment: .leading, spacing: MykSpace.s2) {
+            Text(titel).font(.mykMono(9)).foregroundStyle(MykColor.faint.color).tracking(1)
+            Text(wert.flatMap { preisFormatter.string(from: NSNumber(value: $0)) } ?? "–")
+                .font(.mykHeadline)
+                .foregroundStyle(wert == nil ? MykColor.faint.color : farbe.color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(MykSpace.s4)
+        .background(MykColor.card.color)
+        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+    }
+
+    private var margeFeld: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s2) {
+            Text("MARGE").font(.mykMono(9)).foregroundStyle(MykColor.faint.color).tracking(1)
+            Text(margeProzent.map { String(format: "%.0f %%", $0) } ?? "–")
+                .font(.mykHeadline)
+                .foregroundStyle(margeProzent == nil ? MykColor.faint.color : MykColor.positive.color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(MykSpace.s4)
+        .background(MykColor.card.color)
+        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+    }
+
+    // MARK: Lager-Hinweis
+    @ViewBuilder
+    private var lagerZeile: some View {
+        if !lagerTreffer.exakt.isEmpty {
+            let bestand = lagerTreffer.exakt.first?.bestand
+            lagerHinweis(icon: "checkmark.circle.fill",
+                         text: bestand.map { "Auf Lager (\($0) Stück)" } ?? "Auf Lager",
+                         farbe: MykColor.positive)
+        } else if !lagerTreffer.aehnlich.isEmpty {
+            lagerHinweis(icon: "circle.dotted",
+                         text: "Ähnlicher Artikel im Lager",
+                         farbe: MykColor.people)
+        } else {
+            lagerHinweis(icon: "shippingbox",
+                         text: "Nicht am Lager — Bestellartikel",
+                         farbe: MykColor.muted)
+        }
+    }
+
+    private func lagerHinweis(icon: String, text: String, farbe: MykColor) -> some View {
+        HStack(spacing: MykSpace.s2) {
+            Image(systemName: icon).font(.mykCaption)
+            Text(text).font(.mykSmall)
+        }
+        .foregroundStyle(farbe.color)
+    }
+
+    // MARK: Aktionen
+    private var aktionen: some View {
+        HStack(spacing: MykSpace.s3) {
+            Button { onClose() } label: {
+                Text("Schließen")
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.muted.color)
+                    .padding(.horizontal, MykSpace.s5)
+                    .padding(.vertical, MykSpace.s3)
+                    .background(MykColor.card.color)
+                    .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+
+            Button { onAddToCart() } label: {
+                HStack(spacing: MykSpace.s2) {
+                    Image(systemName: "cart.badge.plus").font(.mykCaption)
+                    Text("In den Warenkorb").font(.mykSmall)
+                }
+                .foregroundStyle(MykColor.paper.color)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, MykSpace.s3)
+                .background(MykColor.tasks.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
 // MARK: - ArtikelKachel (Kachelansicht)
 
 @MainActor
@@ -580,6 +812,7 @@ private struct ArtikelKachel: View {
     let lagerTreffer: AufLagerMatcherResult
     let preisFormatter: NumberFormatter
     let onAddToCart: (ArtikelItem) -> Void
+    let onOpenDetail: (ArtikelItem) -> Void
 
     @State private var isHovered = false
 
@@ -659,6 +892,9 @@ private struct ArtikelKachel: View {
             RoundedRectangle(cornerRadius: MykRadius.md)
                 .stroke(isHovered ? MykColor.tasks.color.opacity(0.5) : MykColor.line.color, lineWidth: 1)
         )
+        // Klick auf die Kachel (außerhalb des Buttons) → Detail-Vorschau.
+        .contentShape(Rectangle())
+        .onTapGesture { onOpenDetail(ergebnis.artikel) }
         .onHover { isHovered = $0 }
         .animation(.easeInOut(duration: 0.12), value: isHovered)
     }

@@ -184,6 +184,7 @@ extension WidgetKind {
         case .clockodo:       .tasks
         case .recentActivity: .drive
         case .kalkulation:    .tasks
+        case .warenkorb:      .cash
         }
     }
 }

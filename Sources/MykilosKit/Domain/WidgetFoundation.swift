@@ -18,6 +18,7 @@ public enum WidgetKind: String, Codable, CaseIterable, Sendable {
     case recentActivity // Letzte Aktivität · Terrakotta
     case mail           // E-Mails · Pflaume
     case kalkulation    // Schätz-Brain · Ocker
+    case warenkorb      // Projekt-Warenkorb · Tiefblau
     // Akt 3+: sevdesk…
 }
 
@@ -50,7 +51,7 @@ public struct WidgetInstance: Codable, Identifiable, Equatable, Sendable {
 }
 
 // MARK: - Default-Layouts (Option A: einheitlicher vollständiger Widget-Satz)
-// Alle Projekttypen erhalten dieselben 7 Widgets. Project.kind beeinflusst
+// Alle Projekttypen erhalten denselben Widget-Satz. Project.kind beeinflusst
 // nur die Hero-Gradient-Farbe, nie den Funktionsumfang.
 // WidgetBoardStore.reconcileCanonicalWidgets() ergänzt diese Widgets
 // nicht-destruktiv in bereits gespeicherten Boards (Migration ohne Datenverlust).
@@ -65,7 +66,8 @@ public enum WidgetBoardDefault {
             WidgetInstance(kind: .cash,      size: .wide,   position: 3),
             WidgetInstance(kind: .calendar,  size: .medium, position: 4),
             WidgetInstance(kind: .notes,     size: .medium, position: 5),
-            WidgetInstance(kind: .assistant, size: .full,   position: 6),
+            WidgetInstance(kind: .warenkorb, size: .wide,   position: 6),
+            WidgetInstance(kind: .assistant, size: .full,   position: 7),
         ]
     }
 

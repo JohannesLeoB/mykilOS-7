@@ -48,6 +48,38 @@ public final class WidgetBoardStore {
             // respektiert der Store User-Entscheidungen (entfernte Widgets
             // kommen nicht zurück).
             try reconcileCanonicalWidgetsOnce()
+            // Nachzügler-Migration (2026-07-02): das Warenkorb-Widget kam NACH dem
+            // ersten canonicalLayout-Reconcile hinzu. Boards, die schon reconciled
+            // waren, hätten es sonst nie bekommen. Eigener, einmaliger Marker je
+            // Board — respektiert spätere User-Entfernung (Marker bleibt gesetzt).
+            try ensureWidgetOnce(.warenkorb, size: .wide)
+        }
+    }
+
+    // Ergänzt EIN bestimmtes Widget genau einmal je Board (eigener Marker
+    // "<boardID>#<kind>" in reconciledBoards). Für Widget-Arten, die nach dem
+    // initialen canonicalLayout-Reconcile dazukamen. Append-only, kein Schema-Umbau.
+    private func ensureWidgetOnce(_ kind: WidgetKind, size: WidgetSize) throws {
+        // Nur für Boards, deren EIGENES Default-Set dieses Widget vorsieht:
+        // Projekt-Boards (canonicalLayout enthält .warenkorb) bekommen es, das
+        // Home-Board (homeLayout ohne .warenkorb) NICHT. Kein Cross-Layer-Wissen nötig.
+        guard defaultLayout().contains(where: { $0.kind == kind }) else { return }
+        let marker = "\(boardID)#\(kind.rawValue)"
+        let alreadyDone = try db.read { dbConn in
+            try Row.fetchOne(dbConn,
+                sql: "SELECT 1 FROM reconciledBoards WHERE boardID = ?",
+                arguments: [marker]) != nil
+        }
+        guard !alreadyDone else { return }
+        if !instances.contains(where: { $0.kind == kind }) {
+            let next = (instances.map(\.position).max() ?? -1) + 1
+            instances.append(WidgetInstance(kind: kind, size: size, position: next))
+            try save()
+        }
+        try db.write { dbConn in
+            try dbConn.execute(
+                sql: "INSERT OR IGNORE INTO reconciledBoards (boardID) VALUES (?)",
+                arguments: [marker])
         }
     }
 

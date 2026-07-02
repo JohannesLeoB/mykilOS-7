@@ -37,6 +37,7 @@ extension WidgetKind {
         case .clockodo:       "clock"
         case .recentActivity: "bolt"
         case .kalkulation:    "eurosign.square"
+        case .warenkorb:      "cart"
         }
     }
 }
