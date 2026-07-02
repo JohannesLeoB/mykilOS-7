@@ -13,6 +13,7 @@ struct WarenkorbPanel: View {
     @Environment(AppState.self) private var appState
 
     @State private var showVersand = false
+    @State private var showDevCheckout = false
 
     private static let preisFormatter: NumberFormatter = {
         let f = NumberFormatter()
@@ -125,6 +126,21 @@ struct WarenkorbPanel: View {
                     Spacer()
 
                     Button {
+                        showDevCheckout = true
+                    } label: {
+                        Label("Checkout (Dev)", systemImage: "shippingbox")
+                            .font(.mykSmall)
+                            .foregroundStyle(MykColor.cash.color)
+                            .padding(.horizontal, MykSpace.s5)
+                            .padding(.vertical, MykSpace.s3)
+                            .background(MykColor.card.color)
+                            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.cash.color, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Lokaler Dev-Export-Vorschau (kein Airtable-Schreiben)")
+
+                    Button {
                         showVersand = true
                     } label: {
                         Label("An Airtable senden", systemImage: "arrow.up.doc")
@@ -153,6 +169,17 @@ struct WarenkorbPanel: View {
             WarenkorbVersandView(
                 warenkorb: warenkorb,
                 projekte: appState.registry.projects
+            )
+        }
+        .sheet(isPresented: $showDevCheckout) {
+            DevCheckoutSheet(
+                quelle: "session",
+                bezeichnung: nil,
+                projekt: nil,
+                positionen: warenkorb.positionen.map { $0.devExportPosition },
+                summeEKNetto: warenkorb.istLeer ? nil : warenkorb.gesamtEK,
+                summeVKNetto: warenkorb.istLeer ? nil : warenkorb.gesamtVK,
+                onDismiss: { showDevCheckout = false }
             )
         }
     }
