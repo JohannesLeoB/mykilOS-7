@@ -386,6 +386,18 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v20 (2026-07-02): rein lokale Lebenszyklus-Stufe je Projekt. Die App kennt
+        // sonst keine Stufe (phase = nur "Aktiv"/"Archiviert"). Startwert wird aus
+        // echten Signalen abgeleitet (Zeit gebucht), aber der Nutzer besitzt die Wahrheit
+        // und kann sie im Hero-Stepper setzen. Kein externer Write.
+        migrator.registerMigration("v20_project_lifecycle_stage") { db in
+            try db.create(table: "projectLifecycleStage") { t in
+                t.primaryKey("projectNumber", .text)
+                t.column("stageIndex", .integer).notNull()
+                t.column("setAt", .double).notNull()
+            }
+        }
+
         try migrator.migrate(queue)
     }
 

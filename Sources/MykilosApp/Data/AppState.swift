@@ -59,6 +59,9 @@ public final class AppState {
     public let provisioningLedger: ProvisioningLedger
     public let provisioningService: ProjektProvisioningService
     public let clickUpRouting: ClickUpRoutingStore
+    // mykilOS 8 (2026-07-02): rein lokale, nutzergesetzte Lebenszyklus-Stufe je Projekt
+    // für den Hero-Stepper. Kein externer Write.
+    public let projectLifecycle: ProjectLifecycleStore
 
     // Härtung (2026-07-01, Johannes: Erinnerungsfunktion für den Fragebogen). Lebt hier auf
     // AppState-Ebene statt als @State in KatalogeView — sonst zerstört ein Sidebar-
@@ -231,6 +234,7 @@ public final class AppState {
             ledger: ledger, audit: self.audit, writeShadow: self.writeShadow,
             clickUp: ClickUpClient())
         self.clickUpRouting = ClickUpRoutingStore(db: database)
+        self.projectLifecycle = ProjectLifecycleStore(db: database)
         let claudeCredentials = KeychainClaudeCredentialsStore()
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
         self.assistantLLM = ClaudeMessagesClient(credentialsStore: claudeCredentials)
@@ -365,6 +369,7 @@ public final class AppState {
         try? timer.load()              // mykilOS 8, Block B: laufender Timer/offene Buchung überlebt Neustart
         try? nomenklatur.load()        // mykilOS 8, Block C: Konnektoren (v1-Seed), Schema-Version, Kostenstellen-Overrides
         try? clickUpRouting.load()     // mykilOS 8, Block D: ClickUp-Routing-Gerüst (Default-Zeilen seeden)
+        try? projectLifecycle.load()   // mykilOS 8: lokale Lebenszyklus-Stufen je Projekt
         // Registry seeden/laden
         await registry.seedIfEmpty()
         await registry.load()

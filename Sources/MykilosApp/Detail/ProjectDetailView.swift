@@ -32,6 +32,8 @@ struct ProjectDetailView: View {
                     isFavorite: appState.favorites.isFavorite(project.projectNumber),
                     onToggleFavorite: { try? appState.favorites.toggle(projectNumber: project.projectNumber) }
                 )
+                ProjectLifecycleBar(project: project)
+                Divider().overlay(MykColor.line.color)
                 tabBar
                 Divider().overlay(MykColor.line.color)
                 // Chat braucht volle Höhe; alle anderen Tabs scrollen.
