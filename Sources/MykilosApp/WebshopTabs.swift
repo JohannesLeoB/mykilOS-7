@@ -1205,6 +1205,10 @@ struct WarenkorbListeTab: View {
     // (`if let` schlug fehl → EmptyView). Jetzt EIN einziges `.sheet(item:)`, das den
     // Eintrag samt Modus (Vorschau/Wiederherstellen) garantiert gebunden mitführt.
     @State private var sheetKontext: WarenkorbSheetKontext? = nil
+    // Repeatable Dev-Checkout: unabhängig vom Vorschau/Wiederherstellen-Sheet, damit ein
+    // gespeicherter Warenkorb beliebig oft (erneut) lokal exportiert werden kann, ohne den
+    // bestehenden Airtable-Versand-Pfad zu berühren.
+    @State private var devCheckoutEintrag: WarenkorbEintrag? = nil
 
     private static let datumsFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -1279,6 +1283,18 @@ struct WarenkorbListeTab: View {
                 onDismiss: { sheetKontext = nil }
             )
         }
+        .sheet(item: $devCheckoutEintrag) { eintrag in
+            let items = eintrag.decodedItems() ?? []
+            DevCheckoutSheet(
+                quelle: "gespeicherter-warenkorb:\(eintrag.id)",
+                bezeichnung: eintrag.bezeichnung,
+                projekt: eintrag.projekt,
+                positionen: items.map { $0.devExportPosition },
+                summeEKNetto: eintrag.gesamtEK,
+                summeVKNetto: eintrag.gesamtVK,
+                onDismiss: { devCheckoutEintrag = nil }
+            )
+        }
     }
 
     // MARK: - Toolbar
@@ -1348,7 +1364,7 @@ struct WarenkorbListeTab: View {
                 Text("Pos.").frame(width: 40, alignment: .trailing)
                 Text("EK netto").frame(width: 90, alignment: .trailing)
                 Text("VK netto").frame(width: 90, alignment: .trailing)
-                Text("").frame(width: 150) // Vorschau + Wiederherstellen
+                Text("").frame(width: 210) // Vorschau + Wiederherstellen + Checkout (Dev)
             }
             .font(.mykMono(9))
             .foregroundStyle(MykColor.muted.color)
@@ -1377,6 +1393,9 @@ struct WarenkorbListeTab: View {
                                 },
                                 onWiederherstellen: {
                                     sheetKontext = WarenkorbSheetKontext(eintrag: eintrag, previewOnly: false)
+                                },
+                                onCheckout: {
+                                    devCheckoutEintrag = eintrag
                                 }
                             )
                             Divider().overlay(MykColor.line.color)
@@ -1411,6 +1430,7 @@ private struct WarenkorbZeile: View {
     let preisFormatter: NumberFormatter
     let onVorschau: () -> Void
     let onWiederherstellen: () -> Void
+    let onCheckout: () -> Void
 
     @State private var isHovered = false
 
@@ -1503,13 +1523,21 @@ private struct WarenkorbZeile: View {
                     }
                     .buttonStyle(.plain)
                     .opacity(isHovered ? 1.0 : 0.7)
+
+                    // Wiederholbarer lokaler Dev-Export — funktioniert auch ohne
+                    // positionenJSON nicht (Positionen kommen aus decodedItems()),
+                    // daher nur sichtbar, wenn positionenJSON vorhanden ist.
+                    MykIconButton("shippingbox", label: "Checkout (Dev) — lokaler Export, kein Airtable-Schreiben",
+                                  style: .bordered) {
+                        onCheckout()
+                    }
                 }
-                .frame(width: 150, alignment: .center)
+                .frame(width: 210, alignment: .center)
             } else {
                 Text("–")
                     .font(.mykMono(9))
                     .foregroundStyle(MykColor.faint.color)
-                    .frame(width: 150, alignment: .center)
+                    .frame(width: 210, alignment: .center)
             }
         }
         .font(.mykMono(10))

@@ -55,6 +55,18 @@ public final class WarenkorbState {
                 quelle: source
             )
         }
+
+        /// Konvertiert zu DevBasketExportPosition (Dev-Checkout-Exporter, lokal-only).
+        public var devExportPosition: DevBasketExportPosition {
+            DevBasketExportPosition(
+                quelle: source,
+                bezeichnung: bezeichnung,
+                artikelnummer: artikelnummer,
+                menge: menge,
+                ekNetto: ekNetto,
+                vkNetto: vkNetto
+            )
+        }
     }
 
     // MARK: - State
