@@ -52,6 +52,17 @@ Detailtiefe/Zeitraum). Ein naiver Sync würde Dubletten erzeugen statt eine Wahr
 **Das ist der erste Klärungspunkt, wenn der Strang drankommt** — nicht Detail, sondern
 Voraussetzung: ohne sauberen Merge-Schritt entsteht beim Sync zusätzliches Chaos statt weniger.
 
+### 2c. Dritte Quelle — „Leads"-Space/-Ordner (Johannes, 2026-07-02)
+
+Es existiert zusätzlich ein **Leads-Space/-Ordner** (neue Anfragen), der bisher **unstrukturiert
+/ „tollpatschig"** gepflegt wurde — kein sauberes Schema wie die Projektordner. Muss ebenfalls
+ins Ghost-System übertragen werden, braucht aber vor dem Sync eine **eigene Aufräum-/
+Struktur-Klärung** (welches Zielschema? gehört er unter dieselbe Projekt-Struktur oder bleibt er
+ein eigener vorgelagerter Bereich für „noch kein Projekt"?). **Dritte Quelle neben Live-Struktur
+und Slack-Archiv (§2b)** — beim Merge/Dedupe-Schritt mitzudenken, nicht nachträglich anzuflicken.
+
+**Das ist der zweite Klärungspunkt** vor dem eigentlichen Sync (nach §2b Merge, vor §3 Architektur).
+
 ---
 
 ## 3. Architektur-Skizze
