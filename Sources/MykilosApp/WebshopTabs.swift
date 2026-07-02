@@ -1198,12 +1198,13 @@ struct WarenkorbListeTab: View {
 
     @State private var query: String = ""
     @State private var filterStatus: String? = nil   // nil = alle, "Aktuell", "Archiviert"
-    @State private var ausgewahlterEintrag: WarenkorbEintrag? = nil
-    @State private var zeigeWiederherstellungsBestaetigung = false
-    // Härtung (2026-07-02, Johannes/Screenshot-Review): „Wiederherstellen" öffnet zwar
-    // ein funktionierendes Sheet, framt sich aber immer als Aktion („wird geladen"),
-    // nie als reine Ansicht — es fehlte eine neutrale Vorschau ohne Warenkorb-Mutation.
-    @State private var zeigeVorschau = false
+    // Fix (2026-07-02, Johannes/Screenshot 17.48/17.49): „Vorschau"/„Wiederherstellen"
+    // öffneten ein LEERES weißes Sheet. Ursache waren ZWEI `.sheet(isPresented:)`-Modifier
+    // am selben View (bekannter SwiftUI-Konflikt → eines präsentiert leer) plus die Race,
+    // dass `ausgewahlterEintrag` beim Aufbau des Sheet-Inhalts noch nil sein konnte
+    // (`if let` schlug fehl → EmptyView). Jetzt EIN einziges `.sheet(item:)`, das den
+    // Eintrag samt Modus (Vorschau/Wiederherstellen) garantiert gebunden mitführt.
+    @State private var sheetKontext: WarenkorbSheetKontext? = nil
 
     private static let datumsFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -1263,37 +1264,20 @@ struct WarenkorbListeTab: View {
             }
         }
         .task { await store.load() }
-        .sheet(isPresented: $zeigeWiederherstellungsBestaetigung) {
-            if let eintrag = ausgewahlterEintrag {
-                WarenkorbWiederherstellungsSheet(
-                    eintrag: eintrag,
-                    warenkorb: warenkorb,
-                    datumsFormatter: Self.datumsFormatter,
-                    preisFormatter: Self.preisFormatter,
-                    previewOnly: false,
-                    onDismiss: {
-                        zeigeWiederherstellungsBestaetigung = false
-                        ausgewahlterEintrag = nil
-                    }
-                )
-            }
-        }
-        // Reine Vorschau (kein Laden in den aktiven Warenkorb) — separater Trigger,
-        // damit ein Klick auf „Vorschau" nie versehentlich den aktiven Warenkorb ersetzt.
-        .sheet(isPresented: $zeigeVorschau) {
-            if let eintrag = ausgewahlterEintrag {
-                WarenkorbWiederherstellungsSheet(
-                    eintrag: eintrag,
-                    warenkorb: warenkorb,
-                    datumsFormatter: Self.datumsFormatter,
-                    preisFormatter: Self.preisFormatter,
-                    previewOnly: true,
-                    onDismiss: {
-                        zeigeVorschau = false
-                        ausgewahlterEintrag = nil
-                    }
-                )
-            }
+        // EIN einziges item-getriebenes Sheet für Vorschau UND Wiederherstellen.
+        // Der `previewOnly`-Modus steckt im Kontext, damit ein Klick auf „Vorschau"
+        // nie versehentlich den aktiven Warenkorb ersetzt. Weil `.sheet(item:)` erst
+        // präsentiert, sobald der Kontext gesetzt ist, ist der Eintrag garantiert da —
+        // kein leeres weißes Sheet mehr.
+        .sheet(item: $sheetKontext) { kontext in
+            WarenkorbWiederherstellungsSheet(
+                eintrag: kontext.eintrag,
+                warenkorb: warenkorb,
+                datumsFormatter: Self.datumsFormatter,
+                preisFormatter: Self.preisFormatter,
+                previewOnly: kontext.previewOnly,
+                onDismiss: { sheetKontext = nil }
+            )
         }
     }
 
@@ -1389,12 +1373,10 @@ struct WarenkorbListeTab: View {
                                 datumsFormatter: Self.datumsFormatter,
                                 preisFormatter: Self.preisFormatter,
                                 onVorschau: {
-                                    ausgewahlterEintrag = eintrag
-                                    zeigeVorschau = true
+                                    sheetKontext = WarenkorbSheetKontext(eintrag: eintrag, previewOnly: true)
                                 },
                                 onWiederherstellen: {
-                                    ausgewahlterEintrag = eintrag
-                                    zeigeWiederherstellungsBestaetigung = true
+                                    sheetKontext = WarenkorbSheetKontext(eintrag: eintrag, previewOnly: false)
                                 }
                             )
                             Divider().overlay(MykColor.line.color)
@@ -1539,6 +1521,16 @@ private struct WarenkorbZeile: View {
     }
 }
 
+// MARK: - WarenkorbSheetKontext
+// Identifiable-Kontext, der Eintrag + Modus (Vorschau/Wiederherstellen) bündelt und
+// so das item-getriebene Sheet speist. Bewusst pro Modus eine eigene `id`, damit ein
+// direkter Wechsel Vorschau→Wiederherstellen (oder umgekehrt) das Sheet neu aufbaut.
+private struct WarenkorbSheetKontext: Identifiable {
+    let eintrag: WarenkorbEintrag
+    let previewOnly: Bool
+    var id: String { "\(previewOnly ? "preview" : "restore")-\(eintrag.id)" }
+}
+
 // MARK: - WarenkorbWiederherstellungsSheet
 @MainActor
 private struct WarenkorbWiederherstellungsSheet: View {
@@ -1596,9 +1588,22 @@ private struct WarenkorbWiederherstellungsSheet: View {
 
                 Divider().overlay(MykColor.line.color)
             } else {
-                Text("Positionen konnten nicht geladen werden (kein JSON).")
-                    .font(.mykSmall)
-                    .foregroundStyle(MykColor.muted.color)
+                // Kein leeres Nichts: klarer Hinweis, wenn dieser Warenkorb keine
+                // (dekodierbaren) Positionen mitbringt — statt eines weißen Sheets.
+                VStack(alignment: .leading, spacing: MykSpace.s2) {
+                    Label("Keine Positionen hinterlegt", systemImage: "tray")
+                        .font(.mykSmall)
+                        .foregroundStyle(MykColor.ink.color)
+                    Text("Für diesen Warenkorb liegen keine (lesbaren) Positionen vor. "
+                         + "Er wurde vermutlich ohne Positionen-JSON gespeichert.")
+                        .font(.mykMono(9))
+                        .foregroundStyle(MykColor.muted.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, MykSpace.s4)
+
+                Divider().overlay(MykColor.line.color)
             }
 
             if previewOnly {
@@ -1643,7 +1648,9 @@ private struct WarenkorbWiederherstellungsSheet: View {
             }
         }
         .padding(MykSpace.s9)
-        .frame(minWidth: 480, maxWidth: 560)
+        // Feste Mindestgröße, damit das Sheet auf macOS nie auf einen leeren
+        // weißen Kasten kollabiert (auch bei leeren Positionen).
+        .frame(minWidth: 480, idealWidth: 520, maxWidth: 560, minHeight: 360)
         .background(MykColor.paper.color)
     }
 }
