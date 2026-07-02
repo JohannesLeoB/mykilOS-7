@@ -53,6 +53,7 @@ struct FragebogenView: View {
             Divider().overlay(MykColor.line.color)
             schrittLeiste
             Divider().overlay(MykColor.line.color)
+            dublettenWarnung
             Group {
                 if zeigeBestaetigung, let ergebnis {
                     bestaetigungsView(ergebnis: ergebnis)
@@ -66,6 +67,55 @@ struct FragebogenView: View {
         }
         .frame(width: 720, height: 700)
         .background(MykColor.paper.color)
+    }
+
+    // MARK: Dubletten-Warnung (proaktiv, nie Auto-Match)
+    // Prüft die eingegebenen Namen gegen die bestehende Registry und warnt sichtbar,
+    // wenn ein ähnliches Projekt/Kunde existiert — damit nichts dupliziert/vermatscht wird
+    // (Vinahl + Uetersen = EIN Projekt). Reiner Hinweis, keine automatische Zuordnung.
+    private func normName(_ s: String) -> String {
+        s.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var moeglicheDubletten: [String] {
+        let suchbegriffe = [modell.kundeNachname, modell.kundeFirma, modell.projektName]
+            .map { normName($0) }.filter { $0.count >= 3 }
+        guard !suchbegriffe.isEmpty else { return [] }
+        var treffer: [String] = []
+        for p in appState.registry.projects {
+            let kunde = appState.registry.customer(for: p)?.name ?? ""
+            let hay = normName(p.title) + " " + normName(kunde)
+            if suchbegriffe.contains(where: { hay.contains($0) }) {
+                treffer.append("\(p.projectNumber) · \(p.title)" + (kunde.isEmpty ? "" : " · \(kunde)"))
+            }
+        }
+        return Array(Set(treffer)).sorted().prefix(4).map { $0 }
+    }
+
+    @ViewBuilder private var dublettenWarnung: some View {
+        let treffer = moeglicheDubletten
+        if !treffer.isEmpty {
+            VStack(alignment: .leading, spacing: MykSpace.s2) {
+                HStack(spacing: MykSpace.s2) {
+                    Image(systemName: "exclamationmark.triangle.fill").font(.mykCaption)
+                        .foregroundStyle(MykColor.tasks.color)
+                    Text("Mögliche Dublette — ähnliche Projekte existieren bereits:")
+                        .font(.mykSmall).foregroundStyle(MykColor.tasks.color)
+                }
+                ForEach(treffer, id: \.self) { t in
+                    Text("· \(t)").font(.mykMono(10)).foregroundStyle(MykColor.muted.color).lineLimit(1)
+                }
+                Text("Prüfe, ob du ein bestehendes Projekt meinst — kein Auto-Match, du entscheidest.")
+                    .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+            }
+            .padding(MykSpace.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.tasks.color.opacity(0.08)))
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.tasks.color.opacity(0.3), lineWidth: 1))
+            .padding(.horizontal, MykSpace.s6)
+            .padding(.vertical, MykSpace.s3)
+        }
     }
 
     // MARK: Header
