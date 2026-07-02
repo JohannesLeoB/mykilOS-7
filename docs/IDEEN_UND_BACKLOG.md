@@ -25,6 +25,11 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ## Nachtrag 2026-07-02 spät — Drive/Mail-Alerts auf bestehenden Beobachtungspfaden (Johannes)
 
+- 📋 **„Bitte reagieren"-Alert bei liegengebliebenem Eingang:** eingehendes Freigabe-Dokument, Mail
+  oder Angebot, auf das Johannes lange nicht reagiert hat → Erinnerung. **Gegenrichtung** zur
+  bereits geloggten Nachfass-Erinnerung (dort: ausgehendes Angebot ohne Kundenreaktion; hier:
+  eingehendes Ding ohne EIGENE Reaktion) — gleiche zeitbasierte Alters-Schwellen-Logik, andere
+  Blickrichtung. Beide gehören zusammen in den ohnehin schon geforderten zentralen Alerts-Strang.
 - 📋 **„Kontakt anlegen"-Alert bei neu erkannten Kontaktdaten:** tauchen in Mail-Signaturen,
   Mail-Body oder Dokumenten Kontaktdaten auf, die noch **nicht** in der bestehenden Datenbank
   stehen → Vorschlag „Kontakt anlegen?". **Immer** Abgleich gegen die bestehende Datenbank vorher,
