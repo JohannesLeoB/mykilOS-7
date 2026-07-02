@@ -23,6 +23,61 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-02 spät — Studio-Notizen-Thread (Johannes + Daniel, loser Sammel-Thread)
+
+Roh-Fundgrube aus einem gemeinsamen Notizen-Thread. Einordnung nach Überschneidung mit
+heutigem Stand.
+
+### 🔴 BUG (kein Feature — separat zu triagieren, nicht im Backlog versanden lassen)
+- **Mail-Signaturen laufen noch nicht sauber aus dem Assistenten-Versand.** Braucht eigene
+  Untersuchung, kein Ideen-Eintrag.
+
+### 🟢 Bereits im S10-Blueprint/Backlog verankert (Bestätigung, kein Neuland)
+- Sevdesk-Integration → §5i/§5j Postbox.
+- Lead-Workflow-Effizienz (schneller Schätzpreis, Moodboards aus Templates+Fragebogen-Daten,
+  Firefly-Render-Prompts aus Kundenkonfiguration) → **exakt die C2-Ports** (Moodboard-Port,
+  Firefly-Prompt-Port) — starke Geschäfts-Validierung für C2.
+- ClickUp-Reset mit passendem Schema → [[mykilos8-clickup-orchestration]] / CLICKUP_GHOST_SHADOW_SYNC.md.
+- Alerts bei Aufgaben/Terminen → der ganze heutige Alerts-Komplex (5 Ideen + Sound-Bibliothek +
+  Push-Notifications + Datenschutz-Toggle).
+- Nutzer-Onboarding/Einstellungen/Zugriffsrechte/„sichtbare Bereiche" + Admin Layer →
+  D1-Rechte-Schicht (S10 §9).
+- Moodboards aus Datensammlung/Warenkorb automatisch vor-designen → C2 Moodboard-Port.
+  **Neu dabei:** „Figma?" als mögliche Alternative zum bisher angedachten SwiftUI-nativ+später-
+  Adobe-Weg (§5h) — bisher nicht auf dem Schirm, bei C2-Entscheidung mitdenken.
+- Abnahmeprotokolle/Gerätelisten mit Link+Montagedokument automatisch an Tischler/Kunde →
+  bereits im Port-Katalog v1 (§5c, Punkte 2/12/13).
+- Dokumenten-Templates zum Befüllen → Dokument-Port (C2).
+- Textbausteine für „Warenkorb Projektroutinen" → deckt sich mit heute geloggtem
+  Textbausteine-Katalog-Miner.
+- Schätzpreis-Konfigurator-Ausbau (IKEA-artige Module, 146-Tischlerangebote-Abgleich, grafischer
+  Konfigurator Korpus+Front+Menge) → deckt sich mit dem bereits bewerteten
+  `CODEX_AUTARKE_SCHAETZKONFIGURATOR_SESSION_PLAN.md` ([[codex-handoffs-zuordnung]]) — als native
+  Konfigurator-UI auf der bestehenden KalkulationsEngine, nicht als Standalone-Web-App.
+
+### 🆕 Echt neu — heute Nacht nicht besprochen
+- 💡 **Token-/API-Kosten-Governance:** wer/was ruft wie oft welche API (Google/Airtable/Claude/
+  ClickUp), Limits/Beschränkungen einbauen. Kompletter Governance-Gap bisher.
+- 💡 **Systemkosten-Transparenz:** was kostet wann warum wie viel (App + Sub-Systeme + Pings).
+  Hängt mit obigem Punkt zusammen.
+- 💡 **DSGVO/Arbeitsrecht/Datenschutz-Compliance:** nirgends heute behandelt, real und wichtig
+  angesichts der vielen personenbezogenen Daten (Google/Airtable/Clockodo).
+- ❓ **Nummernkreis-/Projektnummer-Systematik: wer führt die globale Wahrheit?** Echte
+  Governance-Frage, keine technische — braucht Team-Entscheidung, nicht Code.
+- ⚠️ **Apple Developer Account — Konflikt/Klärungsbedarf:** Notiz weist die Aufgabe **@Daniel**
+  zu. Widerspricht der heutigen Erkenntnis, dass **Johannes** aktuell nur den kostenlosen Zugang
+  hat (siehe iPad-Eintrag oben). Wer registriert wirklich den bezahlten Account — Johannes oder
+  Daniel? Team-Klärung nötig, nicht meine Entscheidung.
+- 💡 **Make vs. native Airtable-Automations:** könnte Make.com ersetzen, wenn effizienter/
+  verlustfrei — ungeprüft, mögliche Kostenersparnis.
+- 💡 **Slack-Export-Nadelöhr-Analyse:** wo verlieren wir Kunden im Prozess, welche Routine
+  dauert am längsten, wo geht Zeit/Geld/Kontrolle verloren? Andere Analyse-Richtung als das
+  bestehende Slack-Brain-Wissen — spezifisch Funnel-/Bottleneck-fokussiert.
+- 💡 **Customer-Journey aus Slack ableiten:** durchschnittliche Kundenbindungsdauer, Zeitaufwand
+  pro Projekt, wiederkehrende Routinen/Probleme. Gleiche Datenquelle wie oben, andere Fragestellung.
+- ⚠️ **Prompt-Bibliothek:** in der Notiz referenziert, aber kein Bildinhalt angekommen (nur
+  leerer Platzhalter) — erneut zuschicken, um zu bewerten.
+
 ## Nachtrag 2026-07-02 spät — Großes Vormerken: In-App-Assistent als Dev-Agent (Johannes)
 
 - 💡 **In-App-Assistent selbst an der App-Codebase arbeiten lassen — via Dev-Mode?** Frage nach
