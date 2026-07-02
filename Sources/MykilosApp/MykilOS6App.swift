@@ -203,6 +203,9 @@ extension FocusedValues {
 // MARK: - ContentView
 struct ContentView: View {
     @State private var module: AppModule = .today
+    // Settings-Sidebar-Modus: gewählte Kategorie + letztes Nicht-Settings-Modul (Rückkehr).
+    @State private var settingsCategory: SettingsCategory = .profil
+    @State private var lastModule: AppModule = .today
     @AppStorage("ui.sidebarCollapsed") private var sidebarCollapsed = false
     @Environment(AppState.self) private var appState
     @Environment(StudioContext.self) private var context
@@ -274,10 +277,16 @@ struct ContentView: View {
             SidebarView(
                 selection: $module,
                 isCompact: $sidebarCollapsed,
-                // Klick auf den Initialen-Avatar öffnet IMMER die Einstellungen
-                // (dort steckt das Profil-/Identitäts-Panel). Der Onboarding-Wizard
-                // erzwingt sich beim Erststart weiterhin über isOnboardingUp.
-                onOpenProfile: { module = .settings },
+                // Klick auf den Initialen-Avatar wechselt in den Settings-Sidebar-Modus
+                // (die Sidebar zeigt dann die Einstellungs-Kategorien). Merkt das aktuelle
+                // Modul, um beim Zurücktoggeln (Avatar/MYKILOS-Button) dorthin zurückzukehren.
+                onOpenProfile: {
+                    if module != .settings { lastModule = module }
+                    module = .settings
+                },
+                settingsMode: module == .settings,
+                settingsCategory: $settingsCategory,
+                onExitSettings: { module = lastModule },
                 timerCheckInRequested: $timerCheckInRequested
             )
             .fixedSize(horizontal: true, vertical: false)
@@ -329,7 +338,7 @@ struct ContentView: View {
         case .projects:    ProjectGalleryView()
         case .assistant:   AssistantPageView()
         case .kataloge:    KatalogeView()
-        case .settings:    SettingsView()
+        case .settings:    SettingsView(externalCategory: $settingsCategory)
         }
     }
 }

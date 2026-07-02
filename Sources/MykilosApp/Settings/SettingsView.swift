@@ -60,12 +60,23 @@ struct SettingsView: View {
     // Zweispaltige Einstellungsebene (2026-07-02, Johannes: „Benutzer-Menü + Einstellungs-
     // ebene ausbauen"). Kategorie-Rail links (wie macOS-Systemeinstellungen) statt eines
     // endlosen Scrolls; die Sektionen selbst bleiben unverändert.
-    @State private var category: SettingsCategory = .profil
+    // 2026-07-02: Die Kategorie kann EXTERN gesteuert werden — dann lebt die Rail in der
+    // Sidebar (Settings-Sidebar-Modus) und hier bleibt nur der Content. `nil` = eigenständig.
+    var externalCategory: Binding<SettingsCategory>? = nil
+    @State private var internalCategory: SettingsCategory = .profil
+    private var category: SettingsCategory { externalCategory?.wrappedValue ?? internalCategory }
+    private func selectCategory(_ c: SettingsCategory) {
+        if let e = externalCategory { e.wrappedValue = c } else { internalCategory = c }
+    }
 
     var body: some View {
         HStack(spacing: 0) {
-            categoryRail
-            Divider().overlay(MykColor.line.color)
+            // Im Settings-Sidebar-Modus (externalCategory gesetzt) lebt die Kategorie-Rail
+            // in der Sidebar — hier bleibt nur der Content.
+            if externalCategory == nil {
+                categoryRail
+                Divider().overlay(MykColor.line.color)
+            }
             ScrollView {
                 VStack(alignment: .leading, spacing: MykSpace.s7) {
                     HStack(spacing: MykSpace.s4) {
@@ -117,7 +128,7 @@ struct SettingsView: View {
                 .foregroundStyle(MykColor.muted.color)
                 .padding(.horizontal, MykSpace.s4).padding(.bottom, MykSpace.s4).padding(.top, MykSpace.s2)
             ForEach(SettingsCategory.allCases) { cat in
-                Button { withAnimation(.easeInOut(duration: 0.15)) { category = cat } } label: {
+                Button { withAnimation(.easeInOut(duration: 0.15)) { selectCategory(cat) } } label: {
                     HStack(spacing: MykSpace.s4) {
                         Image(systemName: cat.icon).font(.mykBody).frame(width: 20)
                         Text(cat.title).font(.mykBody)

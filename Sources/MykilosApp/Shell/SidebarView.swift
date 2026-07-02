@@ -21,6 +21,12 @@ struct SidebarView: View {
     @Binding var selection: AppModule
     @Binding var isCompact: Bool
     var onOpenProfile: () -> Void = {}
+    // Settings-Sidebar-Modus (2026-07-02, Johannes): der Avatar/MYKILOS-Button
+    // wechselt die normale Nav-Sidebar gegen die Einstellungs-Kategorien aus
+    // (gleiches Layout). settingsMode = ob wir gerade im Einstellungs-Modul sind.
+    var settingsMode: Bool = false
+    var settingsCategory: Binding<SettingsCategory>? = nil
+    var onExitSettings: () -> Void = {}
     // mykilOS 8, Block B: Klick auf die Aktiv-Timer-Pille öffnet den globalen Check-in.
     @Binding var timerCheckInRequested: Bool
     @Environment(AppState.self) private var appState
@@ -55,7 +61,12 @@ struct SidebarView: View {
     // orangen Marken-Chip (die Wortmarke ist zu breit für ein 26pt-Quadrat).
     private var brand: some View {
         Button {
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) { isCompact.toggle() }
+            if settingsMode {
+                // Im Settings-Modus togglet der MYKILOS-Button zurück zur normalen Sidebar.
+                withAnimation(.easeInOut(duration: 0.2)) { onExitSettings() }
+            } else {
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) { isCompact.toggle() }
+            }
         } label: {
             HStack(spacing: 10) {
                 RoundedRectangle(cornerRadius: 8)
@@ -74,20 +85,33 @@ struct SidebarView: View {
         }
         .buttonStyle(.plain)
         .onHover { brandHovered = $0 }
-        .help(isCompact ? "Sidebar ausklappen" : "Sidebar einklappen")
-        .accessibilityLabel(isCompact ? "Sidebar ausklappen" : "Sidebar einklappen")
+        .help(settingsMode ? "Zurück zur Navigation" : (isCompact ? "Sidebar ausklappen" : "Sidebar einklappen"))
+        .accessibilityLabel(settingsMode ? "Zurück zur Navigation" : (isCompact ? "Sidebar ausklappen" : "Sidebar einklappen"))
     }
 
-    // MARK: Navigations-Items (ohne Settings — kommt als Icon in den Footer)
-    private var navItems: some View {
-        VStack(spacing: 2) {
-            ForEach(AppModule.allCases.filter { $0 != .settings }) { module in
-                NavItem(module: module, isSelected: selection == module, compact: isCompact) {
-                    withAnimation(.easeInOut(duration: 0.18)) { selection = module }
+    // MARK: Navigations-Items. Normal: App-Module (ohne Settings). Im Settings-Modus:
+    // die Einstellungs-Kategorien (gleiche Zeilen-Optik) — die Sidebar IST dann die
+    // Settings-Navigation, der Content zeigt nur noch die gewählte Kategorie.
+    @ViewBuilder private var navItems: some View {
+        if settingsMode, let category = settingsCategory {
+            VStack(spacing: 2) {
+                ForEach(SettingsCategory.allCases) { cat in
+                    NavItem(title: cat.title, icon: cat.icon, isSelected: category.wrappedValue == cat, compact: isCompact) {
+                        withAnimation(.easeInOut(duration: 0.18)) { category.wrappedValue = cat }
+                    }
                 }
             }
+            .frame(maxWidth: .infinity)
+        } else {
+            VStack(spacing: 2) {
+                ForEach(AppModule.allCases.filter { $0 != .settings }) { module in
+                    NavItem(title: module.rawValue, icon: module.icon, isSelected: selection == module, compact: isCompact) {
+                        withAnimation(.easeInOut(duration: 0.18)) { selection = module }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
     }
 
     // MARK: Fußzeile — nur noch der Avatar (Initialen). Klick öffnet die Einstellungen
@@ -108,7 +132,8 @@ struct SidebarView: View {
     @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
 
     private var profileButton: some View {
-        Button(action: onOpenProfile) {
+        // Toggle: im Settings-Modus zurück zur normalen Sidebar, sonst Einstellungen öffnen.
+        Button(action: { withAnimation(.easeInOut(duration: 0.2)) { settingsMode ? onExitSettings() : onOpenProfile() } }) {
             AvatarCircle(initials: initials, online: footIsOnline)
                 .scaleEffect(profileHovered ? 1.06 : 1.0)
         }
@@ -171,8 +196,11 @@ private struct AvatarCircle: View {
 }
 
 // MARK: - NavItem
+// Generische Sidebar-Nav-Zeile (title/icon) — von den App-Modulen UND (im
+// Settings-Modus) von den Einstellungs-Kategorien genutzt. Gleiches Design.
 private struct NavItem: View {
-    let module: AppModule
+    let title: String
+    let icon: String
     let isSelected: Bool
     let compact: Bool
     let action: () -> Void
@@ -190,19 +218,13 @@ private struct NavItem: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
-        .help(compact ? module.rawValue : "")
-        // A11y (2026-07-02): VoiceOver braucht das Modul-Label IMMER — auch im Breitmodus,
-        // wo der Tooltip bewusst leer bleibt (dort ist der Text zwar sichtbar, aber das
-        // Label macht den Button als Navigations-Ziel konsistent benannt).
-        .accessibilityLabel(module.rawValue)
+        .help(compact ? title : "")
+        .accessibilityLabel(title)
     }
 
     @ViewBuilder private var content: some View {
         if compact {
-            // Icon füllt die Rail-Innenbreite (kein fixes 44 mehr, das über den
-            // s4-Rail-Rand hinausragte). So teilt die Auswahl-Pille exakt dieselbe
-            // Breite/Mittellinie wie die App-Dock-Pille darunter — ein Rail-Rand (s4).
-            Image(systemName: module.icon)
+            Image(systemName: icon)
                 .font(.mykBody)
                 .frame(height: 38)
                 .frame(maxWidth: .infinity)
@@ -211,7 +233,7 @@ private struct NavItem: View {
                 Circle()
                     .fill(isSelected ? MykColor.drive.color : MykColor.faint.color)
                     .frame(width: 6, height: 6)
-                Text(module.rawValue).font(.mykBody)
+                Text(title).font(.mykBody)
                 Spacer()
             }
             .padding(.vertical, 10)
