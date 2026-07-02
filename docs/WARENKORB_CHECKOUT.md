@@ -276,6 +276,14 @@ nie per direktem sevDesk-Read. ⚠️ **To-Fix:** der heutige direkte `SevdeskCl
 Widget) ist damit regelwidrig und muss auf eine Eingangs-Postbox umgestellt werden.
 Konkrete Ausformung des §5d-Ports.
 
+**Wer & welche Körbe (Johannes, 2026-07-02):** NICHT alle Warenkörbe landen hier — **nur**
+die, die ein **berechtigter** User (Port-Recht „an sevDesk", §5f) im Checkout bewusst über den
+Port **„an sevDesk"** sendet. Warenkörbe anderer Zusammenstellungen gehen in **andere
+Postboxen** — jeder Port hat seine **eigene Ziel-Postbox** (= die „Versandadresse" aus §5e).
+Die sevDesk-Postbox ist also EINE Port-Zieladresse unter mehreren; sie erscheint im Checkout
+nur bei **Inhalts-Art ∩ User-Recht**. Die anderen Postboxen werden je Port definiert, wenn er
+gebaut wird.
+
 **Harte Regeln für die `mykilOS_Sevdesk Postbox`-Tabelle:**
 1. **Keine Bilder.** Die Tabelle empfängt niemals Bilddaten (nur Text/Zahlen/Links/Referenzen).
 2. **Einmalige Warenkorb-ID.** Jede Übergabe trägt eine **immer identifizierbare, individuelle
