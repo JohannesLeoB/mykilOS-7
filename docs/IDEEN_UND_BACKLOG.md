@@ -95,7 +95,9 @@ Dokumente/Templates). Vereint Formulare-Ebene + Geräteliste + Moodboard + Angeb
   Klick → Detail-Vorschau + editierbares Menü. Braucht Kalender-Schreibpfad.
 - **Mail: Senden** fehlt (nur Entwürfe) — Fähigkeit + Bestätigungs-Gate; braucht `gmail.send`-
   Re-Consent (M2). Auch Nachrichten-Aktionen (gelesen/Stern/Archiv/Löschen) fehlen.
-- **Preisliste:** Klick-Detail-Vorschau pro Produkt.
+- **✅ erledigt (2026-07-02) — Preisliste:** Klick-Detail-Vorschau pro Produkt. Klick auf
+  einen Artikel (Zeile/Kachel) im Shop → Detail-Sheet (großes Bild klickbar, Bezeichnung,
+  Art.-Nr./Kategorie, EK/VK/**Marge %**, Lager-Hinweis, „In den Warenkorb"). `ArtikelDetailSheet`.
 - **Artikel-Anreicherung** (Links/Doks/Bilder/Montage/CAD): extern erschlossen, NICHT in der
   Airtable-Artikel-Tabelle — Fundort klären (vermutl. lokales DB-Prefill-Paket), dann integrieren.
 - **Projekt-Hero-Bild** editierbar (Upload/Import je Nutzer), **Volle Identität** (Avatar-Wähler/
@@ -109,12 +111,14 @@ Dokumente/Templates). Vereint Formulare-Ebene + Geräteliste + Moodboard + Angeb
 - **Kataloge → Warenkörbe:** „UNGENÜGENDE BEARBEITUNGS- UND ANSICHTS-/VORSCHAU-/
   Editierfunktionen" — die Liste zeigt nur Metadaten, kein Öffnen/Editieren/Vorschauen der
   Positionen. **Der „Wiederherstellen"-Button ist tot** (Button ohne Funktion, klar markiert).
-- **Warenkorb-Checkout-Widget auf der Projekt-Detailseite:** ein Warenkorb-Icon (Mini-Widget
-  oder großer Button) direkt im Übersicht-Tab, hält den **aktuellsten Warenkorb des Projekts**
-  als Liste mit Vorschau griffbereit. Direkter Bezug zum bereits dokumentierten
-  **[WARENKORB_CHECKOUT.md](WARENKORB_CHECKOUT.md)**-Konzept (Warenkorb = universeller Picker) —
-  dieses Widget wäre ein konkreter, kleiner erster Baustein davon (Projekt-Picks sichtbar machen,
-  bevor der volle Checkout-Router existiert).
+- **✅ erledigt (2026-07-02) — Warenkorb-Widget auf der Projekt-Detailseite:** `WidgetKind.warenkorb`
+  ist live im Übersicht-Board (Position 6, wide). `WarenkorbWidget` zeigt den **aktuellsten
+  gespeicherten Warenkorb des Projekts** (Match über Bezeichnung: Projektnummer/-name, weil das
+  Airtable-„Projekt"-Link-Feld bewusst leer bleibt) mit Positionen + EK/VK-Summen und allen
+  Renderstates. Bestehende Boards bekommen es per Nachzügler-Migration (`ensureWidgetOnce`,
+  eigener Marker, respektiert Entfernen). Erster konkreter Baustein des
+  **[WARENKORB_CHECKOUT.md](WARENKORB_CHECKOUT.md)**-Konzepts (Projekt-Picks sichtbar machen).
+  Offen bleibt der volle Checkout-Router (universeller Picker über alle Matrizen).
 
 ### 💡 UI-Batch 2026-07-02 Runde 3 (Abend-Screenshots, Assistent + Zukunftswünsche)
 - **Upload-/Anhang-Icon im Chat-Composer:** Johannes fragt nach einem „schöneren" kleinen

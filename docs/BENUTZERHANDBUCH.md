@@ -75,10 +75,19 @@ offene Aufgaben und Kalender-Ereignisse auf einen Blick.
 **Tabs:**
 
 ### Übersicht
-Widget-Board mit bis zu 8 Widget-Arten: Drive, Aufgaben (ClickUp), Kontakte,
-Cash/Umsatz, Kalender, Notizen, Mail, Assistent.
+Widget-Board mit Widget-Arten: Drive, Aufgaben (ClickUp), Kontakte,
+Cash/Umsatz, Kalender, Notizen, **Warenkorb**, Mail, Assistent.
 
 Widgets sind drag-and-drop sortierbar. Jedes Widget zeigt Quelle und SaveState.
+
+**Warenkorb-Widget (2026-07-02):** Zeigt den **aktuellsten gespeicherten
+Warenkorb dieses Projekts** (aus dem Kataloge-Modul → Warenkörbe): Positionen
+(Menge × Bezeichnung · Art.-Nr. · VK) und die EK/VK-Summen, plus Version/Datum.
+Zuordnung erfolgt über die Warenkorb-Bezeichnung (Projektnummer oder -name).
+Read-only — Zusammenstellen/Editieren passiert im Kataloge-Modul. Ist noch kein
+Warenkorb zugewiesen, erklärt ein Hinweis, wie man einen anlegt. Bestehende
+Projekte bekommen das Widget automatisch nachgereicht (einmalige Migration,
+respektiert späteres Entfernen). *Wo:* Projekt → Übersicht.
 
 **Assistent-Widget (S25):** Das volle-Breite Assistent-Widget zeigt jetzt den
 **kompletten konversationellen Chat** (statt der alten Insight-Liste) — kompakt
@@ -150,6 +159,13 @@ Kostenschätzung sind fester Teil des Chats — **kein Opt-in-Toggle, kein separ
 Schätzchat-Modus** mehr. Frag einfach (z. B. „was kostet eine 4,5 m Eiche-Küche?")
 → die Schätz-Engine antwortet direkt als Karte im Chat.
 
+**Dateien in den Chat ziehen (Mehrfach, 2026-07-02):** Dateien auf den Chat droppen —
+**mehrere gleichzeitig**, auch **ganze Ordner** (werden aufgelöst; ZIPs bleiben als eine
+Datei). Eine Sammelkarte unter dem Eingabefeld listet alle Dateien (Gesamtgröße, Einzel-
+Entfernen). Zwei Sammelaktionen, beide mit Bestätigung — **kein Auto-Schreiben**:
+**„Alle in Drive"** (lädt jede Datei in den Projektordner; braucht `drive.file`) und
+**„Alle an Mail-Entwurf"** (hängt **alle** Dateien an **einen** Gmail-Entwurf — kein Versand).
+
 ### Dateien (global)
 Alle Drive-Dateien des Accounts, nach Änderungszeit sortiert.
 
@@ -178,13 +194,22 @@ im Code entspricht.
 Ebenfalls hier: verbundene Dienste (Google, Airtable, ClickUp, Clockodo, Sevdesk, Claude).
 
 ### Kataloge (⌘8)
-Vier **umsortierbare Unter-Tabs** (Tab mit der Maus ziehen → Reihenfolge wird gemerkt,
-`@AppStorage`):
+**Umsortierbare Unter-Tabs** (Tab mit der Maus ziehen → Reihenfolge wird gemerkt,
+`@AppStorage`): Artikel/Shop, Lager, Warenkörbe, Angebote, Kontakte, Notizen, Aufgaben.
+Oben rechts: **+ Neues Projekt** (Fragebogen) und der **Warenkorb-Badge** (Positionszahl).
 
-- **Geräte** — Gerätekatalog read-only. Suche nach Hersteller, Beschreibung oder Artikelnummer.
-  Zeigt MYKILOS-VK. Quelle: `_Daten/Kalkulation/Devices/catalog.csv`
-  (5.565 Artikel aus Airtable-DB `appdxTeT6bhSBmwx5` — nur Export, nie schreiben).
-  **Voraussetzung:** CSV-Datei muss im `_Daten/`-Ordner liegen (nicht im Repo).
+- **Artikel / Shop** — der Live-Artikelkatalog (Airtable-Base `appdxTeT6bhSBmwx5`, ~13.419
+  Records), clientseitig durch-/filterbar (Bezeichnung/Hersteller/Art.-Nr., Kategorie- und
+  Hersteller-Filter), Liste **oder** Kachel, Pagination (25/50/100). Je Zeile Auf-Lager-Badge
+  + **+ Korb**. **Neu (2026-07-02): Preislisten-Detailvorschau** — Klick auf einen Artikel
+  (Zeile oder Kachel, außerhalb des +Korb-Buttons) öffnet ein Detail-Sheet: großes Produktbild
+  (klickbar → im Browser öffnen), Bezeichnung, Art.-Nr.- und Kategorie-Chip, **EK / VK / Marge %**,
+  Lager-Hinweis und **In den Warenkorb**. Read-only auf die Artikel-Daten (Daniels Base bleibt
+  unangetastet).
+- **Warenkörbe** — die gespeicherten Warenkörbe (Airtable „Warenkörbe", read-only Liste, neueste
+  zuerst; Filter Aktuell/Archiviert). **Vorschau** (Auge-Icon) öffnet die Positionen read-only,
+  **ohne** den aktiven Warenkorb zu verändern; **Wiederherstellen** lädt sie zurück in den
+  aktiven Warenkorb. Editieren der Mengen passiert im Warenkorb-Panel (Badge oben rechts).
 - **Kontakte** — das geteilte **Airtable-Kontaktverzeichnis** (Mastermind-Base, Tabelle
   „Kontakte"): Kunden, Lieferanten, Handwerker, Architekt/Planer, Team. Sortier- und filterbar
   (Kategorie + Freitext über Name/Firma/Projekt). **Zeile klicken** → Detailkarte: alle Felder
