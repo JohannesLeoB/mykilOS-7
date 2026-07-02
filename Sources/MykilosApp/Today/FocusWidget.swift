@@ -56,12 +56,12 @@ struct FocusWidget: View {
 
     private var noSignalHint: some View {
         HStack(spacing: 8) {
-            Image(systemName: "arrow.up.left")
+            Image(systemName: "checkmark.circle")
                 .font(.mykCaption)
-                .foregroundStyle(MykColor.faint.color)
-            Text("Signal-Demo oben drücken um Signale zu simulieren")
+                .foregroundStyle(MykColor.positive.color)
+            Text("Alles ruhig — keine offenen Signale.")
                 .font(.mykCaption)
-                .foregroundStyle(MykColor.faint.color)
+                .foregroundStyle(MykColor.muted.color)
         }
     }
 

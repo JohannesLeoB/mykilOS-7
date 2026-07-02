@@ -93,10 +93,10 @@ struct ProjectHeroView: View {
                 .font(.mykHero)
                 .foregroundStyle(.white)
                 .lineLimit(2)
+                .minimumScaleFactor(0.5)   // SCHMIDT→DT-Fix: lange Titel skalieren statt abschneiden
             metaRow
-            if let budget {
-                budgetLine(budget)
-            }
+            // Budget steht bereits als Pille oben rechts — keine zweite Zeile hier
+            // (Redundanz raubte dem Hero Ruhe).
         }
     }
 

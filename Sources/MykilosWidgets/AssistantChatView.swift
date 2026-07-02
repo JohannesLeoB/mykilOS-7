@@ -270,13 +270,7 @@ public struct AssistantChatView: View {
             Text("Er kennt deine Projekte und offenen Signale. Beispiele:")
                 .font(.mykSmall).foregroundStyle(MykColor.muted.color)
             ForEach(exampleQuestions, id: \.self) { q in
-                Button { send(q) } label: {
-                    Text("„\(q)")
-                        .font(.mykSmall).foregroundStyle(MykColor.ink.color)
-                        .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s3)
-                        .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.card.color))
-                }
-                .buttonStyle(.plain)
+                ExampleQuestionChip(text: q) { send(q) }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -863,6 +857,36 @@ enum AssistantCapability: CaseIterable {
         case .studio:      .brand
         case .kalkulation: .tasks
         }
+    }
+}
+
+// Beispiel-Frage-Chip im leeren Chat — mit Hover, damit klar klickbar (erster Eindruck).
+private struct ExampleQuestionChip: View {
+    let text: String
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: MykSpace.s3) {
+                Text("„\(text)")
+                    .font(.mykSmall).foregroundStyle(hovered ? MykColor.ink.color : MykColor.inkSoft.color)
+                Spacer(minLength: 0)
+                if hovered {
+                    Image(systemName: "arrow.up.right").font(.mykMono(9)).foregroundStyle(MykColor.brand.color)
+                }
+            }
+            .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s3)
+            .background(
+                RoundedRectangle(cornerRadius: MykRadius.sm)
+                    .fill(hovered ? MykColor.paper2.color : MykColor.card.color)
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.sm)
+                        .stroke(hovered ? MykColor.brand.color.opacity(0.4) : MykColor.line.color, lineWidth: 1))
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { h in withAnimation(.easeInOut(duration: 0.12)) { hovered = h } }
     }
 }
 

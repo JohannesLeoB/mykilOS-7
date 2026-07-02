@@ -318,12 +318,17 @@ private struct TabButton: View {
     var body: some View {
         Button(action: action) {
             Text(tab.rawValue).font(.mykSmall)
-                .foregroundStyle(isActive ? MykColor.ink.color : MykColor.muted.color)
+                .foregroundStyle(isActive ? MykColor.ink.color : (isHovered ? MykColor.inkSoft.color : MykColor.muted.color))
                 .padding(.horizontal, MykSpace.s5).padding(.bottom, MykSpace.s4)
                 .overlay(alignment: .bottom) {
-                    if isActive { Rectangle().fill(MykColor.ink.color).frame(height: 2) }
+                    if isActive {
+                        Rectangle().fill(MykColor.ink.color).frame(height: 2)
+                    } else if isHovered {
+                        Rectangle().fill(MykColor.line.color).frame(height: 2)
+                    }
                 }
         }
-        .buttonStyle(.plain).onHover { isHovered = $0 }
+        .buttonStyle(.plain)
+        .onHover { hovering in withAnimation(.easeInOut(duration: 0.12)) { isHovered = hovering } }
     }
 }

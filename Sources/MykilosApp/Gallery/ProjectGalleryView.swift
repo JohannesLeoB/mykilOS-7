@@ -161,10 +161,10 @@ struct ProjectGalleryView: View {
             .padding(.horizontal, MykSpace.s5)
             .padding(.vertical, MykSpace.s3)
             .background(
-                RoundedRectangle(cornerRadius: 11)
+                RoundedRectangle(cornerRadius: MykRadius.md)
                     .fill(MykColor.card.color)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 11)
+                        RoundedRectangle(cornerRadius: MykRadius.md)
                             .stroke(MykColor.line.color, lineWidth: 1)
                     )
             )
@@ -185,8 +185,8 @@ struct ProjectGalleryView: View {
             Label("Sortieren: \(sort.label)", systemImage: "arrow.up.arrow.down")
                 .font(.mykSmall).foregroundStyle(MykColor.muted.color)
                 .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
-                .background(RoundedRectangle(cornerRadius: 11).fill(MykColor.card.color)
-                    .overlay(RoundedRectangle(cornerRadius: 11).stroke(MykColor.line.color, lineWidth: 1)))
+                .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color)
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1)))
         }
         .menuStyle(.borderlessButton).fixedSize()
     }
@@ -207,8 +207,8 @@ struct ProjectGalleryView: View {
                 .font(.mykSmall)
                 .foregroundStyle(kategorieFilter.isEmpty ? MykColor.muted.color : MykColor.brand.color)
                 .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
-                .background(RoundedRectangle(cornerRadius: 11).fill(MykColor.card.color)
-                    .overlay(RoundedRectangle(cornerRadius: 11).stroke(MykColor.line.color, lineWidth: 1)))
+                .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color)
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1)))
         }
         .menuStyle(.borderlessButton).fixedSize()
     }
@@ -230,12 +230,37 @@ struct ProjectGalleryView: View {
     private var emptyView: some View {
         VStack(spacing: MykSpace.s5) {
             Spacer()
-            Image(systemName: "square.grid.2x2")
-                .font(.mykDisplay)
-                .foregroundStyle(MykColor.faint.color)
-            Text(searchText.isEmpty ? "Noch keine Projekte." : "Keine Treffer für „\(searchText)“.")
-                .font(.mykBody)
+            ZStack {
+                RoundedRectangle(cornerRadius: MykRadius.lg)
+                    .fill(MykColor.paper2.color)
+                    .frame(width: 96, height: 96)
+                    .overlay(GridTexture().opacity(0.25).clipShape(RoundedRectangle(cornerRadius: MykRadius.lg)))
+                Image(systemName: searchText.isEmpty ? "square.grid.2x2" : "magnifyingglass")
+                    .font(.mykDisplay)
+                    .foregroundStyle(MykColor.brand.color.opacity(0.7))
+            }
+            Text(searchText.isEmpty ? "Noch keine Projekte hier." : "Keine Treffer für „\(searchText)“.")
+                .font(.mykTitle)
+                .foregroundStyle(MykColor.inkSoft.color)
+            Text(searchText.isEmpty
+                 ? "Projekte kommen aus dem Drive-Ordner PROJEKTE und der Airtable-Registry."
+                 : (kategorieFilter.isEmpty ? "Andere Schreibweise probieren?" : "Vielleicht liegt es am Kategorie-Filter?"))
+                .font(.mykSmall)
                 .foregroundStyle(MykColor.muted.color)
+            if searchText.isEmpty == false || kategorieFilter.isEmpty == false {
+                Button {
+                    searchText = ""
+                    kategorieFilter = ""
+                } label: {
+                    Text("Filter zurücksetzen")
+                        .font(.mykMono(10)).tracking(0.5)
+                        .foregroundStyle(MykColor.paper.color)
+                        .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s3)
+                        .background(Capsule().fill(MykColor.ink.color))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, MykSpace.s2)
+            }
             Spacer()
         }
     }
