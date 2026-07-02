@@ -23,6 +23,21 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-02 spät — Futurefeature: „Boss Button" als App-Satellit (Johannes)
+
+- 💡 **„Boss Button" — Widget als Satellit außerhalb des App-Fensters:** aus den Widgets der
+  „Heute"-Seite ein kleiner, sanft **pulsierender Button** (ca. 1-Euro-Münzen-Größe, **orange wie
+  das mykilOS-Sidebar-Icon**, nur größer) konfigurierbar, den man frei **auf den gesamten
+  Monitorbereich ziehen und droppen** kann — auch außerhalb des App-Fensters, über anderen Apps
+  schwebend. Klick führt immer zurück in mykilOS, **Fullscreen, mit wählbarem Ziel-Fenster** (in
+  User-Einstellungen konfigurierbar). Dort auch **andere Actions verdrahtbar** — Beispiele:
+  Montags-Briefing-Assistent triggern (siehe eigener Backlog-Eintrag oben), **Clockodo-Timer
+  starten/stoppen** (Timer-Infrastruktur existiert schon, `ProjektTimerView`/`TimerGlobalDialogs`).
+- **Technische Einordnung (grob, nicht spezifiziert):** braucht ein eigenes, immer-oberstes
+  `NSWindow` außerhalb des Haupt-App-Fensters (ähnlich System-Overlays/Picture-in-Picture-
+  Controls), das über Spaces/Vollbild-Apps hinweg sichtbar bleibt — ein echtes natives macOS-
+  Fenster-Feature, kein einfaches SwiftUI-Widget. Eigener, späterer Strang.
+
 ## Nachtrag 2026-07-02 spät — 🏆 MEGA-Funktion: Angebots-Positionen-Extraktion (Johannes) — FLAGGSCHIFF-USE-CASE der Wirbelsäule
 
 **Kein Nebenfeature — das ist der End-to-End-Beweis, dass die ganze S10-Wirbelsäule trägt.**
