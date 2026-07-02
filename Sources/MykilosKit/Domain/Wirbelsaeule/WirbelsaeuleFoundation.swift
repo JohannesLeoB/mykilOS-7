@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Wirbelsäule-Fundament (Welle C, Schritt C1)
 //
 // Die vier Primitive der generischen Checkout-Pipeline aus dem S10-Blueprint
-// (`docs/S10_WIRBELSAEULE.md`): Pick → WorkBasket → Port → PortRegistry.
+// (`docs/S10_WIRBELSAEULE.md`): Pick → WorkBasket → CheckoutPort → PortRegistry.
 //
 // HARTE MODULREGEL: Diese Datei lebt in MykilosKit und importiert AUSSCHLIESSLICH
 // Foundation — nie SwiftUI, nie GRDB, nie ein anderes unserer Module. Reine
@@ -288,8 +288,8 @@ public struct PortID: Hashable, Sendable, Codable, CustomStringConvertible {
 
 // MARK: - PortZiel
 
-/// Port-spezifische Ziel-Konfiguration (§5 Schritt 2, „Versandadresse").
-/// Bewusst minimal gehalten: ein `kind` plus freie Parameter — jeder Port
+/// CheckoutPort-spezifische Ziel-Konfiguration (§5 Schritt 2, „Versandadresse").
+/// Bewusst minimal gehalten: ein `kind` plus freie Parameter — jeder CheckoutPort
 /// interpretiert die Parameter selbst.
 public struct PortZiel: Hashable, Sendable, Codable {
     /// Art der Zieladresse/Postbox (port-spezifisch, z. B. "postbox", "drive-ordner").
@@ -334,17 +334,17 @@ public struct CheckoutResult: Sendable, Equatable {
     }
 }
 
-// MARK: - Port
+// MARK: - CheckoutPort
 
 /// Benannter Ausgang (= CheckoutTarget, §1/§4): nimmt einen WorkBasket und
-/// erzeugt Output in eine Ziel-Postbox. Jeder Port deklariert selbst, welche
+/// erzeugt Output in eine Ziel-Postbox. Jeder CheckoutPort deklariert selbst, welche
 /// Inhalts-Arten er verarbeiten kann (Inhalts-Art-Gate).
-public protocol Port: Sendable {
-    /// Stabiler Port-Bezeichner (auch der Schlüssel im Rechte-Gate).
+public protocol CheckoutPort: Sendable {
+    /// Stabiler CheckoutPort-Bezeichner (auch der Schlüssel im Rechte-Gate).
     var id: PortID { get }
-    /// Menschenlesbarer Name (Port-Liste im Checkout-Sheet).
+    /// Menschenlesbarer Name (CheckoutPort-Liste im Checkout-Sheet).
     var name: String { get }
-    /// Welche Inhalts-Arten dieser Port verarbeiten kann (§5b/§5d).
+    /// Welche Inhalts-Arten dieser CheckoutPort verarbeiten kann (§5b/§5d).
     func erlaubteInhaltsArten() -> Set<InhaltsArt>
     /// Vorschau des geplanten Outputs — schreibt nichts.
     func preview(basket: WorkBasket, ziel: PortZiel) async throws -> CheckoutPreview
@@ -360,7 +360,7 @@ public protocol PortRightsProviding: Sendable {
     func erlaubtePorts(userID: String) -> Set<PortID>
 }
 
-/// Übergangs-Implementierung: erlaubt jedem User jeden Port. Der echte
+/// Übergangs-Implementierung: erlaubt jedem User jeden CheckoutPort. Der echte
 /// Admin-verteilte Rechte-Filter aus Airtable kommt in D1 (§9 Rechte-Schicht).
 ///
 /// Umsetzung: Das PortRegistry kennt seine registrierten Ports; dieser Provider
@@ -385,20 +385,20 @@ public struct AllowAllPortRights: PortRightsProviding {
 /// Hält die registrierten Ports und liefert die im Checkout verfügbaren:
 /// **Inhalts-Art-Gate ∩ User-Recht** (§4/§5f).
 ///
-/// Ein Port erscheint genau dann, wenn
+/// Ein CheckoutPort erscheint genau dann, wenn
 /// 1. seine `erlaubteInhaltsArten()` die gefragte `inhaltsArt` enthält **und**
 /// 2. seine `id` in der vom Rechte-Provider erlaubten Menge des Users liegt.
 public struct PortRegistry {
     /// Registrierte Ports (Reihenfolge = Reihenfolge der Registrierung).
-    public private(set) var ports: [any Port]
+    public private(set) var ports: [any CheckoutPort]
 
-    public init(ports: [any Port] = []) {
+    public init(ports: [any CheckoutPort] = []) {
         self.ports = ports
     }
 
-    /// Registriert einen weiteren Port. Neue Ports erscheinen automatisch in der
-    /// Checkout-Liste — kein neues UI je Port (§4).
-    public mutating func registriere(_ port: any Port) {
+    /// Registriert einen weiteren CheckoutPort. Neue Ports erscheinen automatisch in der
+    /// Checkout-Liste — kein neues UI je CheckoutPort (§4).
+    public mutating func registriere(_ port: any CheckoutPort) {
         ports.append(port)
     }
 
@@ -412,7 +412,7 @@ public struct PortRegistry {
         fuer inhaltsArt: InhaltsArt,
         userID: String,
         rechte: PortRightsProviding
-    ) -> [any Port] {
+    ) -> [any CheckoutPort] {
         let erlaubte = rechte.erlaubtePorts(userID: userID)
         return ports.filter { port in
             port.erlaubteInhaltsArten().contains(inhaltsArt)
