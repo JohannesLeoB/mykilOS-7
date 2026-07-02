@@ -15,6 +15,8 @@ struct ProjectHeroView: View {
 
     // Nutzer-eigenes Hero-Bild (lokal, je Projekt). Nil = Gradient.
     @State private var heroImage: NSImage?
+    // Fokus-Punkt (0…1) für den Fill-Zuschnitt. Default Mitte.
+    @State private var focalPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
@@ -41,28 +43,54 @@ struct ProjectHeroView: View {
         .frame(maxWidth: .infinity)
         .task(id: project.projectNumber) {
             heroImage = ProjectHeroImageStore.image(for: project.projectNumber)
+            focalPoint = ProjectHeroImageStore.focalPoint(for: project.projectNumber)
         }
     }
 
     private var budget: Double? { project.links.budget }
 
     // MARK: Hintergrund — eigenes Bild wenn vorhanden, sonst Kind-Gradient.
-    @ViewBuilder
+    // Harte Grenze via GeometryReader: das Bild ist eine geclippte Overlay mit fester
+    // Rahmengröße und kann NIE das Layout treiben (früherer „Bild sprengt Pane"-Bug).
     private var heroBackground: some View {
-        if let heroImage {
-            Image(nsImage: heroImage)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(maxWidth: .infinity)
-                .clipped()
-        } else {
-            LinearGradient(
-                colors: heroGradient,
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
-            .overlay(GridTexture().opacity(0.4))
-            .frame(maxWidth: .infinity)
+        GeometryReader { geo in
+            Group {
+                if let heroImage {
+                    focalImage(heroImage, in: geo.size)
+                } else {
+                    LinearGradient(
+                        colors: heroGradient,
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                    .overlay(GridTexture().opacity(0.4))
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .clipped()
         }
+    }
+
+    // Fokus-zentrierter Fill-Zuschnitt: das (evtl. übergroße) Bild liegt als Overlay in
+    // einem fixen Rahmen und wird nur per Offset verschoben + geclippt — keine
+    // Layout-Rückwirkung. `focalPoint` (0…1) bestimmt, welcher Bildpunkt zur Mitte rückt.
+    private func focalImage(_ image: NSImage, in frame: CGSize) -> some View {
+        let iw = max(image.size.width, 1)
+        let ih = max(image.size.height, 1)
+        let scale = max(frame.width / iw, frame.height / ih)   // Fill: größere Skala
+        let sw = iw * scale
+        let sh = ih * scale
+        // Offset so, dass der Fokus zur Mitte rückt — geklemmt, damit keine leeren Ränder.
+        let offsetX = min(0, max(frame.width - sw, frame.width / 2 - focalPoint.x * sw))
+        let offsetY = min(0, max(frame.height - sh, frame.height / 2 - focalPoint.y * sh))
+        return Color.clear
+            .overlay(alignment: .topLeading) {
+                Image(nsImage: image)
+                    .resizable()
+                    .frame(width: sw, height: sh)
+                    .offset(x: offsetX, y: offsetY)
+            }
+            .frame(width: frame.width, height: frame.height)
+            .clipped()
     }
 
     // Bild ändern/entfernen (lokal, je Projekt).
