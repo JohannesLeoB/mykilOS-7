@@ -45,6 +45,14 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
     PDF-Export (existiert), Port-Katalog §5c (Abnahmeprotokoll/Geräteliste/Spec-Liste stehen schon
     drin). Der Katalog = eine neue Inhalts-Art/Pick-Matrix (`dokumente`), Checkout-Ziel = DokumentPort
     → PDF in Drive/Checkout-Index (§5k). **Textbausteine-Katalog** speist die Leer-Templates.
+  - **✅ Render-Entscheidung (Johannes 2026-07-03): HTML-Templates**, nicht MykPDFRenderer für jedes
+    Dokument. Designer-editierbar (ohne Swift), portabel, rendert nativ via **WKWebView→PDF** (kein
+    Adobe nötig; Adobe Express optional später via `export_html_to_express`-MCP). Deckt sich mit §5h
+    und mit dem **bereits laufenden sevDesk-HTML-Briefpapier-Vorhaben** (separate Chat-Session) →
+    Briefpapier-HTML wiederverwenden, keine Doppelarbeit. MykPDFRenderer bleibt für strukturierte
+    Daten-Tabellen (Geräteliste); Freiform-Dokumente (Abnahmeprotokoll/Pflege/Anschreiben) = HTML.
+    **Zwei-Teile-Bau:** (1) HTML-Template-Design (Chat-Session, wie sevDesk) mit Platzhalter-Tokens;
+    (2) Swift WKWebView→PDF-Pipeline + Daten-Binding (Codex/Claude Code).
 
 ## Nachtrag 2026-07-02 spät — Studio-Notizen-Thread (Johannes + Daniel, loser Sammel-Thread)
 
