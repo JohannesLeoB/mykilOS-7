@@ -36,7 +36,7 @@ sie einmalig in der ClickUp-UI selbst löschen.**
 
 | Kind | Liste/Muster | Tasks | Verifiziert in `_TEST_PROVISIONING` |
 |---|---|---|---|
-| `kitchen` | `TEST_{JJJJ}_{NNN}_{Kunde}[_{Code}]` | bestehendes 8-Task-Template (unverändert) | bereits live (KUE-2026-014) |
+| `kitchen` | `TEST_{JJJJ}_{NNN}_{Kunde}[_{Code}]` | altes 8-Task-Template noch live (KUE-2026-014); **verbesserte 28-Task/10-Phasen-Referenz mit 10 echten Dependencies siehe „Nachtrag" unten** | ✅ `TEST_KUECHE_Vorlage_v2` (901219239199) |
 | `lighting` | `TEST_{JJJJ}_{NNN}_{Kunde}_LICHT` | 8 Tasks, vom kitchen-Template abgeleitet | ✅ `TEST_LICHT_Vorlage` (901219238554) |
 | `addendum` | `TEST_{JJJJ}_{NNN}_{Kunde}_NACHTRAG_{lfdNr}` | 6-Task-Mini-Template, Elternprojekt als Klartext-Bezug | ✅ `TEST_NACHTRAG_Vorlage` (901219238563) |
 | `lead` | **eine** Jahres-Sammelliste `Leads {JJJJ}` — jeder Lead ein Task, keine eigene Liste | 3 Tasks pro Lead-Task-Vorlage | ✅ Liste `Leads 2026` angelegt (901219238378), Struktur bereit, Tasks entstehen pro echtem Lead |
@@ -68,6 +68,103 @@ Nichts wird je gelöscht, nur ergänzt (deckt sich mit der Airtable-No-Delete-Re
 **Nachgeholt (2026-07-02):** die 6 Döhle-Tasks (`2024_007_Doehle`, Slack-Rekonstruktions-Pilot)
 hatten keine Ledger-Gegenbuchung — jetzt nachgetragen (Source=Slack, Status=unmapped).
 
+## Nachtrag (2026-07-02): Vollständiges Nachlesen von 3 echten Slack-Projektverläufen
+
+Johannes' Nachfrage „sind Routinen/Meilensteine/Abhängigkeiten wirklich funktional verdrahtet?"
+führte zu einer ehrlichen Prüfung (siehe Chat-Antwort davor: Felder/Flows/Syncs/Warnungen waren
+NICHT funktional — nur Struktur, kein einziges echtes Projekt außer Döhle durchgespielt). Auf
+Anweisung wurden danach **3 Slack-Kanäle vollständig** gelesen (nicht mehr nur Stichprobe):
+`p_hh_fuckner_huetter_se` (849 Zeilen, 2025-01 bis 2026-06), `p_schw_schneider_dk` (470 Zeilen,
+2025-12 bis 2026-06), `p_hh_junge_dk_jlb_jb` (271 Zeilen, 2026-01 bis 2026-06) — zusätzlich zum
+bereits vollständig gelesenen Döhle-Kanal (398 Zeilen).
+
+### Befund 1: Das alte 8-Task-Template ist zu flach — echte Projekte haben ~28 Schritte in 10 Phasen mit echten Abhängigkeiten
+
+Über alle 3 Kanäle hinweg wiederkehrend beobachtete Phasenfolge (nicht geraten — jede Phase hat
+mindestens 2 unabhängige Textbelege):
+
+1. **Akquise** — Lead qualifizieren → Kontaktdaten erfassen → **„Kunden anlegen und
+   Projektübersicht starten"** (wörtlicher Trigger-Satz, BenjaminMartin 2025-11-07) = der reale
+   Lead→kitchen-Übergangspunkt.
+2. **Bestandsaufnahme** — Grob-Aufmaß/Grundriss, Beratungstermin(e), Wünsche dokumentieren.
+3. **Konzept** — Geräteliste+Schätzpreis, **mindestens 2 parallele Moodboard-Varianten** (nie
+   nur 1 — Schneider: „Angebot 1 mit Pyrolav und Angebot 2 mit Alternative"), Kundenfeedback mit
+   Revisionsschleife (Schneider hatte mehrere Korrekturrunden nach widersprüchlichen internen
+   Rückfragen — reales Konfliktsignal, siehe unten).
+4. **Angebot** — **Mehrfach-Tischlerangebote parallel** (Schneider fragte HKT, Weichsel78,
+   Salzwedel, Rami, MGB gleichzeitig an, „ins Rennen schicken"), Vergleich, Angebot an Kunde.
+5. **GATE: Beauftragung** — harter Meilenstein („Beauftragung Schneider inkl. der dem Angebot
+   zugrundeliegenden Zeichnung", 2026-04-10). **Werksplanung darf nachweislich erst danach
+   starten** — mehrfach im Text als Reihenfolge behandelt.
+6. **Werksplanung & Feinaufmaß** — Werkzeichnung (oft mit Revisionsrunden, „Werkplanung
+   Revision II"), finales Aufmaß beim Tischler (separat vom groben Erst-Aufmaß!), Materialmuster
+   bestellen/versenden — „Vor Auftragsvergabe wird ein Muster vom Kunden freigegeben" zeigt: auch
+   Muster-Freigabe kann selbst ein Gate sein.
+7. **Beschaffung** — Geräte final erst NACH finaler Werksplanung bestellen (Fuckner/Hütter:
+   Kühlschrank-Modell musste mehrfach korrigiert werden, weil vorher zu früh bestellt worden
+   wäre), Sonderanfertigungen (Stein/Metall), Lieferort festlegen.
+8. **Fremdgewerke-Koordination** — Elektro-/Sanitärplanung als **paralleler, hochriskanter
+   Blocker-Strang**: bei Fuckner/Hütter verzögerte eine externe Elektrofirma (Conrad) das
+   GESAMTE Projekt monatelang, die Kunden schrieben einen expliziten Beschwerdebrief. Explizite
+   Abhängigkeit im Text: „Schnittstelle Elektriker, wichtig! Wann ist Conrad durch und wann
+   startet Arne? **Erst danach Trockenbau!**"
+9. **Montage** — Zeitfenster/Zugänglichkeit (Aufzug/Baulift-Abhängigkeiten kommen in ALLEN 3
+   Kanälen vor), Montage, **Qualitätskontrolle vor Ort** (Fuckner/Hütter: Einputzring-Fehler des
+   Trockenbauers wurde nur durch gezielten Kontrollbesuch entdeckt — sonst unbemerkt geblieben).
+10. **Abschluss** — Schlussrechnung, Übergabeprotokoll.
+
+**Nachtrag als wiederkehrendes Querschnittsmuster** (nicht Teil der linearen Kette, kann in
+JEDER Phase auftreten): Wunsch/Änderung erfassen → Preis/Angebot einholen → Kunde-GO →
+Auftrag/AB aktualisieren → betroffenes Gewerk informieren. Beobachtet u. a. bei Steinrückwand,
+Filzeinleger, Quooker-Modelltausch, Fensterbank Pyrolave — bei Fuckner/Hütter zusätzlich ein
+kompletter Nachtrags-Streit um falsch spezifizierte LED-Treiber (rund 850€ Mehrkosten,
+Lieferantenverhandlung über mehrere Wochen).
+
+**Umgesetzt:** neue Referenzliste `TEST_KUECHE_Vorlage_v2 (phasiert, mit Abhängigkeiten)` in
+`_TEST_PROVISIONING` (901219239199) — 28 Tasks in 10 Phasen + 1 wiederverwendbarer
+Nachtrag-Subflow-Task (5 Subtasks), **10 echte ClickUp-Task-Dependencies gesetzt**
+(`clickup_add_task_dependency`, Typ `waiting_on`) entlang der oben belegten Kette:
+Angebote einholen→vergleichen→senden→**Beauftragung**→Werksplanung/Aufmaß→Geräte
+bestellen/Fremdgewerke→Montage→Schlussrechnung. Multi-Vendor-Vergleich (P4.1) und
+Nachtrag-Subflow als Subtasks (ClickUp-native, per `parent`-Parameter) statt als einzelne
+flache Zeilen. **Noch nicht:** Übernahme in `ClickUpProjectTemplate.swift` (weiterhin
+Folgeauftrag, siehe unten) — dieser Schritt ist bewusst nur ClickUp-seitig demonstriert.
+
+### Befund 2: „Kind mit eingebetteter Subphase" — mein 1-Kind-pro-Projekt-Mapping bricht
+
+Fuckner/Hütter ist ein `kitchen`-Projekt, das eine komplette eigenständige
+Lichtplanungs-Subphase enthält (KNX, Modular-Leuchten, Szenen/Schalter, eigene Bemusterung,
+eigene Rechnungsstellung „Schlussrechnung Leuchten"). Das ist **keine Lichtplanung als
+eigenständiges Projekt**, sondern ein Workstream innerhalb eines Küchenprojekts. Das
+`lighting`-Template (eigener Ordner/eigene Liste) würde das falsch als separates Projekt
+abbilden. **Empfehlung statt Sofort-Fix:** `lighting` als eigenes Kind nur für echte
+Standalone-Lichtprojekte behalten; bei einer Lichtplanungs-Subphase innerhalb `kitchen`
+stattdessen die P3–P6-Phasen des Küchen-Templates um eine Lichtplanungs-Task-Gruppe erweitern
+(nicht umgesetzt — Entscheidung sollte Johannes treffen, da es das Kern-Template verändert).
+
+### Befund 3: JungeSchultzendorff passt auf KEINEN der 6 ProjectKind-Fälle
+
+„gesamtes Interior erfassen, Bauleitung und Kreativberatung", Stundenkontingent-Angebot
+(keine Küchengeräte, keine Tischlerbeauftragung im beobachteten Zeitraum), **explizit erwähnte
+„Unterprojekte"** in Clockodo, wiederkehrende (nicht lineare) Termine mit fester Agenda,
+mehrere parallele Moodboards je Raum, Schnittstelle zu externem Architekturbüro (HS Architekten)
+UND weiterem Gewerk (Belli). Passt weder zu `kitchen` (keine Geräte/Tischler-Kette) noch zu
+`quote` (laufendes Mandat, keine Einzelentscheidung). **Bemerkenswert:** Das Team selbst hat
+auf genau dieses Strukturproblem reagiert — Jilliana kündigte den Kunden gegenüber proaktiv ein
+„gemeinsames Google Sheet als Projektboard, das zu einem Raumbuch weiterentwickelt wird" an,
+nachdem der Kunde sich über einen „nicht ganz rund und klar strukturiert" verlaufenen Termin
+beschwert hatte — ein reales, unstrukturiertes internes Werkzeug für genau die Lücke, die ein
+7. `ProjectKind` (Arbeitstitel: `.interiorConsulting`) schließen würde. **Nicht gebaut** — echte
+Produktentscheidung, die Johannes treffen sollte, nicht geraten.
+
+### Befund 4: Konfliktsignal ohne strukturelles Feld
+
+Schneider-Kanal, 2026-01-14: Kundin beschwert sich wörtlich, dass zwei Mitarbeiter unabhängig
+dieselben Fragen gestellt und widersprüchliche Erstentwürfe geliefert haben (Metallbecken vs.
+gewünscht kein Metall, eckige vs. gewünscht runde Insel). Genau das Szenario, für das
+`blocker_type`/`review_required` (Custom Fields, noch nicht anlegbar) gedacht sind — bestätigt
+zusätzlich die Priorität dieser beiden Felder unter den 10 Custom-Field-Wünschen.
+
 ## Nicht Teil dieses Schritts — als Folgeauftrag benannt
 
 Zwei kleine, additive Swift-Änderungen (brechen nichts Bestehendes, kitchen-Pfad bleibt
@@ -88,3 +185,9 @@ verhaltensgleich):
 3. Die 4 offenen `Ghost-Rolle-Primär`-Felder (Da/Fra/Sen/Jil) in `Ghost-Personas` entscheiden.
 4. `Go-Live-Enabled` pro Person + `Go-Live Ready` pro Task-Record manuell setzen, wenn so weit.
 5. Themenaufteilung der 2-3 Dauerlisten in „06 Studio Intern" festlegen.
+6. Entscheiden: neues `ProjectKind` `.interiorConsulting` für Vollausstattungs-/Bauleitungs-
+   Mandate (Befund 3 oben) — ja/nein, und wenn ja, welches Template.
+7. Entscheiden: Lichtplanungs-Subphase innerhalb `kitchen` ins Template integrieren (Befund 2
+   oben) — verändert das Kern-Template, bewusst nicht ungefragt gemacht.
+8. `TEST_KUECHE_Vorlage_v2` gegenlesen und freigeben, bevor sie `ClickUpProjectTemplate.swift`
+   ersetzt (Folgeauftrag unten).
