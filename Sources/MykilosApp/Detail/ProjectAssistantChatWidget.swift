@@ -111,7 +111,7 @@ struct ProjectAssistantChatWidget: View {
                 }
                 return await appState.uploadFileToDrive(file, parentFolderID: folderID)
             },
-            onAttachFileToMailDraft: { await appState.createDraftWithAttachment($0) }
+            onAttachFilesToMailDraft: { await appState.createDraftWithAttachments($0) }
         )
     }
 }

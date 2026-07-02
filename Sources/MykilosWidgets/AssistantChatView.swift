@@ -60,13 +60,14 @@ public struct AssistantChatView: View {
     // Nil wenn Drive-Upload nicht verfügbar (z. B. kein fokussierter Ordner).
     let onUploadFileToDrive: ((DroppedFile) async -> DriveUploadOutcome)?
     // feat/assistant-file-drop: Mail-Anhang-Callback (App-Layer: Gmail createDraft + Audit).
-    let onAttachFileToMailDraft: ((DroppedFile) async -> DraftCreateOutcome)?
+    // 2026-07-02: nimmt ALLE gesammelten Dateien als EINE Mail mit N Anhängen.
+    let onAttachFilesToMailDraft: (([DroppedFile]) async -> DraftCreateOutcome)?
 
     @Environment(StudioContext.self) private var context
     @State private var draft = ""
     @State private var showClearConfirm = false
     // feat/assistant-file-drop: aktuell gedropte Datei (nil = keine Drop-Karte sichtbar).
-    @State private var droppedFile: DroppedFile? = nil
+    @State private var droppedFiles: [DroppedFile] = []
     // feat/assistant-file-drop: vorgeschlagener Drive-Ordner (wird beim Drop aufgelöst).
     @State private var driveFolder: (id: String, name: String)? = nil
     // feat/assistant-file-drop: Highlight wenn Datei über dem Chat schwebt.
@@ -90,7 +91,7 @@ public struct AssistantChatView: View {
         onCreateDraft: ((EmailDraft) async -> DraftCreateOutcome)? = nil,
         onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)? = nil,
         onUploadFileToDrive: ((DroppedFile) async -> DriveUploadOutcome)? = nil,
-        onAttachFileToMailDraft: ((DroppedFile) async -> DraftCreateOutcome)? = nil
+        onAttachFilesToMailDraft: (([DroppedFile]) async -> DraftCreateOutcome)? = nil
     ) {
         self.scope = scope
         self.chatStore = chatStore
@@ -106,7 +107,7 @@ public struct AssistantChatView: View {
         self.onCreateDraft = onCreateDraft
         self.onWriteAirtableContact = onWriteAirtableContact
         self.onUploadFileToDrive = onUploadFileToDrive
-        self.onAttachFileToMailDraft = onAttachFileToMailDraft
+        self.onAttachFilesToMailDraft = onAttachFilesToMailDraft
     }
 
     private var messages: [ChatMessage] { chatStore.messages(for: scope) }
@@ -116,14 +117,15 @@ public struct AssistantChatView: View {
             if isConnected {
                 conversation
                 // feat/assistant-file-drop: Drop-Karte zwischen Verlauf und Composer.
-                if let file = droppedFile {
+                if droppedFiles.isEmpty == false {
                     FileDropCardView(
-                        file: file,
+                        files: droppedFiles,
                         suggestedFolderID: driveFolder?.id,
                         suggestedFolderName: driveFolder?.name,
                         onUploadToDrive: onUploadFileToDrive,
-                        onAttachToMailDraft: onAttachFileToMailDraft,
-                        onDismiss: { droppedFile = nil; driveFolder = nil }
+                        onAttachToMailDraft: onAttachFilesToMailDraft,
+                        onRemove: { file in droppedFiles.removeAll { $0.id == file.id } },
+                        onDismiss: { droppedFiles = []; driveFolder = nil }
                     )
                     .padding(.horizontal, MykSpace.s9)
                     .padding(.top, MykSpace.s3)
@@ -144,8 +146,8 @@ public struct AssistantChatView: View {
         }
         // feat/assistant-file-drop: Dateien per Drag-and-Drop in den Chat
         .dropDestination(for: URL.self) { urls, _ in
-            guard let url = urls.first else { return false }
-            handleDrop(url: url)
+            guard urls.isEmpty == false else { return false }
+            handleDrop(urls: urls)
             return true
         } isTargeted: { targeted in
             withAnimation(.easeInOut(duration: 0.15)) { isDropTargeted = targeted }
@@ -157,25 +159,39 @@ public struct AssistantChatView: View {
                 .animation(.easeInOut(duration: 0.15), value: isDropTargeted)
                 .allowsHitTesting(false)
         )
-        .animation(.easeOut(duration: 0.2), value: droppedFile != nil)
+        .animation(.easeOut(duration: 0.2), value: droppedFiles.isEmpty)
     }
 
-    // MARK: - Drop-Handler
-    // Liest die URL, mappt sie auf DroppedFile (Bytes im RAM), löst den Drive-Ordner auf.
-    private func handleDrop(url: URL) {
-        // Zugriff starten (Security-Scoped oder normal)
-        let securityScoped = url.startAccessingSecurityScopedResource()
-        defer { if securityScoped { url.stopAccessingSecurityScopedResource() } }
-
-        guard let data = try? Data(contentsOf: url) else { return }
-        let fileName = url.lastPathComponent
-        let mimeType = Self.mimeType(for: url)
-        let file = DroppedFile(fileName: fileName, mimeType: mimeType, data: data)
-
-        droppedFile = file
+    // MARK: - Drop-Handler (2026-07-02: mehrere Dateien, Ordner-Expansion, ZIP-as-is)
+    // Sammelt ALLE gedropten URLs (append, nicht ersetzen). Ordner werden flach in ihre
+    // Dateien aufgelöst; ZIPs/Archive bleiben als eine Datei (bewusst nicht entpackt).
+    private func handleDrop(urls: [URL]) {
+        var neu: [DroppedFile] = []
+        for url in urls {
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
+                // Ordner: flach alle enthaltenen Dateien mitnehmen (keine Unterordner).
+                let kinder = (try? FileManager.default.contentsOfDirectory(
+                    at: url, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])) ?? []
+                for kind in kinder where (try? kind.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true {
+                    if let f = Self.readFile(kind) { neu.append(f) }
+                }
+            } else if let f = Self.readFile(url) {
+                neu.append(f)
+            }
+        }
+        guard neu.isEmpty == false else { return }
+        // Dedupe nach Name+Größe, damit ein Doppel-Drop nicht dupliziert.
+        for f in neu where droppedFiles.contains(where: { $0.fileName == f.fileName && $0.data.count == f.data.count }) == false {
+            droppedFiles.append(f)
+        }
         driveFolder = nil   // zurücksetzen — wird asynchron aufgelöst
 
-        // Drive-Ordner für fokussiertes Projekt vorschlagen (best-effort, kein Fehler)
+        // Drive-Ordner für fokussiertes Projekt vorschlagen (best-effort, kein Fehler).
+        // Keyword aus dem ersten neuen Element.
+        let mimeType = neu.first?.mimeType ?? "application/octet-stream"
         if let driveFolderID = focusedDriveFolderID {
             Task {
                 let resolver = DriveFolderSuggestionResolver(driveClient: GoogleDriveClient())
@@ -189,6 +205,12 @@ public struct AssistantChatView: View {
                 }
             }
         }
+    }
+
+    /// Liest eine Datei-URL in ein DroppedFile (Bytes im RAM). nil, wenn nicht lesbar.
+    private static func readFile(_ url: URL) -> DroppedFile? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return DroppedFile(fileName: url.lastPathComponent, mimeType: mimeType(for: url), data: data)
     }
 
     /// MIME-Typ aus URL-Extension (UTType.preferredMIMEType, Fallback application/octet-stream).

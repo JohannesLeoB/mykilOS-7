@@ -504,12 +504,24 @@ public final class AppState {
     // Wird der AssistantChatView als `onAttachFileToMailDraft` injiziert.
     // Versendet NIE — nur Gmail-Entwurf anlegen.
     public func createDraftWithAttachment(_ file: DroppedFile) async -> DraftCreateOutcome {
-        let attachment = DraftAttachment(filename: file.fileName, mimeType: file.mimeType, data: file.data)
+        await createDraftWithAttachments([file])
+    }
+
+    // feat/assistant-file-drop (2026-07-02): mehrere gedropte Dateien als EINE Mail mit
+    // N Anhängen. Der Gmail-Client baut multipart/mixed mit beliebig vielen Parts (fertig),
+    // hier nur alle DroppedFiles zu DraftAttachments sammeln. Versendet NIE — nur Entwurf.
+    public func createDraftWithAttachments(_ files: [DroppedFile]) async -> DraftCreateOutcome {
+        guard files.isEmpty == false else { return .failed("Keine Dateien zum Anhängen.") }
+        let attachments = files.map { DraftAttachment(filename: $0.fileName, mimeType: $0.mimeType, data: $0.data) }
+        let gesamt = files.reduce(0) { $0 + $1.data.count }
+        let sizeLabel = ByteCountFormatter.string(fromByteCount: Int64(gesamt), countStyle: .file)
+        let liste = files.map { "· \($0.fileName)" }.joined(separator: "\n")
+        let subject = files.count == 1 ? files[0].fileName : "\(files.count) Dateien"
         let draft = EmailDraft(
             to: nil,
-            subject: file.fileName,
-            body: "Datei: \(file.fileName) (\(file.humanSize))",
-            attachments: [attachment]
+            subject: subject,
+            body: "Angehängt (\(files.count), \(sizeLabel)):\n\(liste)",
+            attachments: attachments
         )
         return await createDraft(draft)
     }

@@ -158,7 +158,7 @@ struct ProjectDetailView: View {
                     }
                     return await appState.uploadFileToDrive(file, parentFolderID: folderID)
                 },
-                onAttachFileToMailDraft: { await appState.createDraftWithAttachment($0) }
+                onAttachFilesToMailDraft: { await appState.createDraftWithAttachments($0) }
             )
         case .files:
             FilesTabView(
