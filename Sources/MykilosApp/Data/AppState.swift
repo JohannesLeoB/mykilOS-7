@@ -500,6 +500,22 @@ public final class AppState {
         }
     }
 
+    // feat/assistant-file-drop (2026-07-02): listet die unmittelbaren Unterordner eines
+    // Drive-Ordners für die Ziel-Ordner-Auswahl beim Datei-Drop. Read-only; Fehler → leer
+    // (die Drop-Card fällt dann auf den Projektordner zurück).
+    public func listDriveSubfolders(parentFolderID: String) async -> [DriveFolderChoice] {
+        guard !parentFolderID.isEmpty else { return [] }
+        do {
+            let items = try await GoogleDriveClient().listFolder(folderID: parentFolderID)
+            return items
+                .filter(\.isFolder)
+                .map { DriveFolderChoice(id: $0.id, name: $0.name) }
+                .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        } catch {
+            return []
+        }
+    }
+
     // feat/assistant-file-drop: legt einen Mail-Entwurf mit Dateianhang an.
     // Wird der AssistantChatView als `onAttachFileToMailDraft` injiziert.
     // Versendet NIE — nur Gmail-Entwurf anlegen.

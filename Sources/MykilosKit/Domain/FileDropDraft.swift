@@ -37,6 +37,18 @@ public struct DroppedFile: Sendable, Equatable, Identifiable {
     }
 }
 
+// MARK: - DriveFolderChoice
+// Ein wählbarer Drive-Zielordner für den Datei-Upload aus dem Chat.
+// Foundation-only. `id` = Drive-Ordner-ID, `name` = Anzeigename.
+public struct DriveFolderChoice: Sendable, Equatable, Identifiable {
+    public let id: String
+    public let name: String
+    public init(id: String, name: String) {
+        self.id = id
+        self.name = name
+    }
+}
+
 // MARK: - DriveUploadOutcome
 // Ergebnis eines bestätigten Drive-Uploads. Analoges Muster zu DraftCreateOutcome.
 public enum DriveUploadOutcome: Sendable, Equatable {

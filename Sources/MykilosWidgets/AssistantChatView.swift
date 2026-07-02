@@ -58,7 +58,11 @@ public struct AssistantChatView: View {
     let onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)?
     // feat/assistant-file-drop: Upload-Callback (App-Layer: GoogleDriveClient + Audit).
     // Nil wenn Drive-Upload nicht verfügbar (z. B. kein fokussierter Ordner).
-    let onUploadFileToDrive: ((DroppedFile) async -> DriveUploadOutcome)?
+    // 2026-07-02: 2. Parameter = gewählte Ziel-Ordner-ID (Ziel-Ordner-Auswahl in der Drop-Card).
+    let onUploadFileToDrive: ((DroppedFile, String) async -> DriveUploadOutcome)?
+    // feat/assistant-file-drop (2026-07-02): lädt die Unterordner eines Drive-Ordners für die
+    // Ziel-Ordner-Auswahl. Nil = keine Unterordner-Auswahl (nur Projektordner-Wurzel).
+    let onLoadTargetFolders: ((String) async -> [DriveFolderChoice])?
     // feat/assistant-file-drop: Mail-Anhang-Callback (App-Layer: Gmail createDraft + Audit).
     // 2026-07-02: nimmt ALLE gesammelten Dateien als EINE Mail mit N Anhängen.
     let onAttachFilesToMailDraft: (([DroppedFile]) async -> DraftCreateOutcome)?
@@ -90,7 +94,8 @@ public struct AssistantChatView: View {
         onCreateContact: ((ContactDraft) async -> ContactCreateOutcome)? = nil,
         onCreateDraft: ((EmailDraft) async -> DraftCreateOutcome)? = nil,
         onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)? = nil,
-        onUploadFileToDrive: ((DroppedFile) async -> DriveUploadOutcome)? = nil,
+        onUploadFileToDrive: ((DroppedFile, String) async -> DriveUploadOutcome)? = nil,
+        onLoadTargetFolders: ((String) async -> [DriveFolderChoice])? = nil,
         onAttachFilesToMailDraft: (([DroppedFile]) async -> DraftCreateOutcome)? = nil
     ) {
         self.scope = scope
@@ -107,6 +112,7 @@ public struct AssistantChatView: View {
         self.onCreateDraft = onCreateDraft
         self.onWriteAirtableContact = onWriteAirtableContact
         self.onUploadFileToDrive = onUploadFileToDrive
+        self.onLoadTargetFolders = onLoadTargetFolders
         self.onAttachFilesToMailDraft = onAttachFilesToMailDraft
     }
 
@@ -120,8 +126,8 @@ public struct AssistantChatView: View {
                 if droppedFiles.isEmpty == false {
                     FileDropCardView(
                         files: droppedFiles,
-                        suggestedFolderID: driveFolder?.id,
-                        suggestedFolderName: driveFolder?.name,
+                        rootFolder: driveFolder.map { DriveFolderChoice(id: $0.id, name: $0.name) },
+                        loadSubfolders: onLoadTargetFolders,
                         onUploadToDrive: onUploadFileToDrive,
                         onAttachToMailDraft: onAttachFilesToMailDraft,
                         onRemove: { file in droppedFiles.removeAll { $0.id == file.id } },

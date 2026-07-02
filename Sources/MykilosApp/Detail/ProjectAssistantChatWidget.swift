@@ -105,12 +105,13 @@ struct ProjectAssistantChatWidget: View {
             profile: appState.profile.profile,
             onCreateContact: { await appState.createContact($0) },
             onCreateDraft: { await appState.createDraft($0) },
-            onUploadFileToDrive: { [folderID = driveFolderID] file in
-                guard let folderID, !folderID.isEmpty else {
+            onUploadFileToDrive: { file, targetFolderID in
+                guard !targetFolderID.isEmpty else {
                     return .failed("Kein Drive-Ordner für dieses Projekt konfiguriert.")
                 }
-                return await appState.uploadFileToDrive(file, parentFolderID: folderID)
+                return await appState.uploadFileToDrive(file, parentFolderID: targetFolderID)
             },
+            onLoadTargetFolders: { await appState.listDriveSubfolders(parentFolderID: $0) },
             onAttachFilesToMailDraft: { await appState.createDraftWithAttachments($0) }
         )
     }

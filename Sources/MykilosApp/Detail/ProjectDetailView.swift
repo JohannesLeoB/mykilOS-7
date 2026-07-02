@@ -151,14 +151,15 @@ struct ProjectDetailView: View {
                 profile: appState.profile.profile,
                 onCreateContact: { await appState.createContact($0) },
                 onCreateDraft: { await appState.createDraft($0) },
-                onUploadFileToDrive: { [driveFolderID = project.links.driveFolderID] file in
-                    // Ordner-ID zum Zeitpunkt des Drops aufgelöst (via FileDropCardView /
-                    // DriveFolderSuggestionResolver). Hier kennen wir ihn direkt.
-                    guard let folderID = driveFolderID, !folderID.isEmpty else {
+                onUploadFileToDrive: { file, targetFolderID in
+                    // targetFolderID = in der Drop-Card gewählter Ziel-Ordner (Projektordner
+                    // oder ein Unterordner). Leerer Wert wird schon in der Card abgefangen.
+                    guard !targetFolderID.isEmpty else {
                         return .failed("Kein Drive-Ordner für dieses Projekt konfiguriert.")
                     }
-                    return await appState.uploadFileToDrive(file, parentFolderID: folderID)
+                    return await appState.uploadFileToDrive(file, parentFolderID: targetFolderID)
                 },
+                onLoadTargetFolders: { await appState.listDriveSubfolders(parentFolderID: $0) },
                 onAttachFilesToMailDraft: { await appState.createDraftWithAttachments($0) }
             )
         case .files:
