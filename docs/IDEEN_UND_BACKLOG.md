@@ -58,6 +58,12 @@ genau die fehlende Absicherung — dieses Feature könnte der sichere, offiziell
 `importPDF` werden, WENN die Karte→Bestätigung→Audit-Kette (inkl. der Editierebene) sauber davor
 sitzt. Kein automatisches Speichern ohne menschlichen Blick auf die extrahierten Daten.
 
+**UX-Workflow (Johannes, Konkretisierung):** Klick auf ein Angebot in der Angebots-Katalogansicht
+→ öffnet als **große Vorschau** (PDF-Ansicht, heutiges Verhalten). **Toggle** wechselt in eine
+**Detailansicht**, die die einzelnen Positionen des Angebots zeigt und einzeln „mitnehmbar" macht
+(Pick-Auswahl je Position). Zwei Ansichtsmodi eines Objekts, ein Toggle dazwischen — kein neuer
+Screen, sondern eine Erweiterung der bestehenden Angebots-Vorschau.
+
 **Bau-Einordnung:** gehört in Welle C (C1 ist die Pick-Grundlage, die es schon gibt; die
 PDF-Extraktion selbst ist ein eigener, substanzieller Teilstrang — vermutlich Claude-Vision auf
 PDF-Text, analog zum bereits bestehenden `OfferDocumentClassifier`-Muster, aber viel tiefer:
