@@ -59,6 +59,9 @@ NICHT** und soll es auch nicht automatisch tun. Johannes: die Kalkulations-Engin
 Positions-Picker ist eine **eigenständige Datengrundlage** (für Warenkorb/Checkout) — was davon
 später Richtung **Kalkulations-Engine-Review/-Tuning** fließt, ist ein **separater, bewusst
 manuell getriggerter Schritt**, keine automatische Kopplung/kein impliziter `importPDF`-Aufruf.
+**Zeitpunkt (Johannes):** diese Kopplung — falls überhaupt — kommt **ganz am Ende, erst in der
+„diamantenen Version"** (spätester Reifegrad). Für die aktuelle Bau-Reihenfolge irrelevant, nur
+zur Einordnung: nicht Welle C, nicht bald.
 `importPDF` bleibt ein eigenes, separates offenes Thema (weiterhin „geladene Waffe", braucht
 seinen eigenen Aufrufer/seine eigene Bestätigungsschicht, wenn/falls das mal angegangen wird).
 
