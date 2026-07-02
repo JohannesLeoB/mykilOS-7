@@ -108,6 +108,9 @@ struct MailClientView: View {
         .onAppear { openComposeFromRequestIfNeeded() }
         .onChange(of: composeToRequest) { _, _ in openComposeFromRequestIfNeeded() }
         .task {
+            // Härtung (2026-07-02): dieselbe TTL-Cache-Instanz wie der Assistent nutzen,
+            // bevor der erste Load läuft — sonst greift der Cache erst ab dem zweiten Aufruf.
+            store.attachCache(appState.gmailCache)
             // Auto-Posteingang: beim ersten Erscheinen sofort die Inbox laden,
             // sofern noch kein Suchergebnis vorliegt (store.phase == .idle).
             await store.loadInboxIfNeeded()
@@ -647,11 +650,19 @@ final class MailClientStore {
     private(set) var isLoadingBody = false
 
     private let client: any GoogleGmailFetching
+    private var cache: GmailCacheStore?
     private var searchGen = 0
     private var bodyGen = 0
 
     init(client: any GoogleGmailFetching = GoogleGmailClient()) {
         self.client = client
+    }
+
+    /// Härtung (2026-07-02): dieselbe TTL-Cache-Instanz nutzen, die AppState schon für
+    /// search_gmail im Assistenten führt — sonst läuft jeder Ordnerwechsel/jede Suche im
+    /// Mail-Tab live gegen die API, obwohl derselbe Cache längst existiert.
+    func attachCache(_ cache: GmailCacheStore?) {
+        self.cache = cache
     }
 
     /// Ordner wechseln (setzt Suche zurück).
@@ -688,9 +699,16 @@ final class MailClientStore {
     }
 
     /// Gemeinsamer Kern für Inbox-Load + Ordner-Wechsel + freie Suche.
+    /// Prüft zuerst den TTL-Cache (dieselbe Instanz wie search_gmail im Assistenten) —
+    /// nur bei Cache-Miss live gegen die API laden, Ergebnis danach im Cache ablegen.
     private func fetchMessages(query q: String) async {
         searchGen &+= 1
         let gen = searchGen
+        if let cached = await cache?.cached(for: q) {
+            messages = cached
+            phase = cached.isEmpty ? .empty : .loaded
+            return
+        }
         phase = .loading
         isLoading = true
         do {
@@ -698,6 +716,7 @@ final class MailClientStore {
             guard gen == searchGen else { return }
             messages = result
             phase = result.isEmpty ? .empty : .loaded
+            await cache?.store(result, for: q)
         } catch GoogleGmailError.notConnected {
             guard gen == searchGen else { return }
             phase = .notConnected; messages = []

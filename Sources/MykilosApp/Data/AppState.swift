@@ -98,7 +98,9 @@ public final class AppState {
     // gebaut (GmailCacheStore, eigene Tests) aber nie hier instanziiert/übergeben, sodass
     // jede Gmail-Suche im Chat immer live gegen die API lief. Eine EINZIGE, langlebige
     // Instanz (nicht pro updateRegistry-Aufruf neu), sonst verliert der Cache seinen Zweck.
-    private let gmailCache = GmailCacheStore()
+    // Härtung (2026-07-02): nicht mehr private — MailClientView nutzte bislang denselben
+    // Cache nicht, jede Ordner-/Suchaktion im Mail-Tab lief live gegen die API.
+    let gmailCache = GmailCacheStore()
 
     // S13: Snapshot der Airtable-Tabelle „Kontakte" (Adresse/Telefon/E-Mail) für lookup_kontakt.
     // public(set) damit KontakteKatalogTab den Snapshot direkt lesen kann (read-only).

@@ -110,9 +110,14 @@ M3 ClickUp-Listen-IDs · M4 sevdeskRef+Budget · M5 Clockodo-Stundensätze · M6
 revoken · M7 `2026_20`→`2026_020` · Backup-Base-Tabellenname verifizieren.
 
 **⚪ Nach Live-Abnahme (diese Session, vor 8.0-Tag):**
-Toter Code raus (`AssistantWidget.swift`, Fragebogen-Stubs, tote Bootstrap-Sondierung),
-Anthropic Prompt-Caching einbauen, `GmailCacheStore` verdrahten, Test-Sandbox-UI nach
-Abnahme wieder entfernen, dann PR gegen `main`.
+~~Toter Code raus~~ — geprüft (2026-07-02): `AssistantWidget.swift` existiert nicht mehr,
+Fragebogen-Stub-Kommentare referenzieren bereits gelöschten Code, `ProvisioningTestView`
+ist bewusst noch aktiv für M3 (nicht tot). Nichts zu entfernen. ~~Anthropic Prompt-Caching
+einbauen~~ — bereits aktiv (Härtung 2026-07-01, `cache_control` auf System-Prompt + Tools,
+siehe `ClaudeChatClient.swift`). ~~`GmailCacheStore` verdrahten~~ — erledigt (2026-07-02):
+`MailClientView`/`MailClientStore` nutzen jetzt dieselbe TTL-Cache-Instanz wie der
+Assistent (`AppState.gmailCache`, nicht mehr `private`), 793 Tests grün. **Verbleibend:**
+Test-Sandbox-UI nach Abnahme wieder entfernen, dann PR gegen `main`.
 
 **⚪ Version 8.1 (danach, auf Ansage):** Block E (Clockodo-Write) · Block F
 (Abnahme-/Warenkorb-Widgets, Export) · Block G (Politur+TEST→PROD) · WorkBasket-
