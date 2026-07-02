@@ -78,6 +78,24 @@ Versuche verlaufen im Sande — genau dafür gibt es den Safe State.
 
 ---
 
+## ⛔ EISERNE REGEL: ClickUp — nur Testspace, nur Ghost-Personas, keine echten Notifikationen
+
+**Verankert 2026-07-02.** Jede ClickUp-Arbeit (App-Code UND jede Agenten-Session mit
+ClickUp-Zugriff) bleibt ausschließlich im Space **„MYKILOS API TESTSPACE"** (`90128024109`).
+
+- **NIE** eine echte ClickUp-Assignee-ID setzen (die 5 echten Mitglieder: Johannes/Daniel/
+  Frauke/Jilliana/Sebastian) — das löst eine ECHTE Benachrichtigung an eine reale Person aus,
+  unabhängig davon, ob die Aufgabe „nur ein Test" ist.
+- Simulierte Zuweisung läuft ausschließlich über **Ghost-Persona-Kürzel** (`Jo`/`Da`/`Fra`/`Sen`/
+  `Jil`) als Klartext-Marker in der Task-Beschreibung — niemals über das native `assignees`-Feld.
+- **Keinerlei echte externe Notifikation** senden — gilt sinngemäß für jedes System (Kalender,
+  Mail, Slack), solange etwas als Simulation/Testaufbau gekennzeichnet ist.
+- Ghost→echt wird erst verdrahtet, wenn Johannes das ausdrücklich freigibt — nie als Nebeneffekt.
+- Voller Vertrag + Vorfall/Korrektur-Protokoll:
+  **[docs/ops-clickup-mykilos8/GHOST_PERSONA_REGEL.md](docs/ops-clickup-mykilos8/GHOST_PERSONA_REGEL.md)**.
+
+---
+
 ## Ideen & Backlog
 
 **Vor jeder Session lesen, am Ende aktualisieren:**
