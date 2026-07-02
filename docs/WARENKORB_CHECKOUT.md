@@ -261,3 +261,40 @@ als optionale Ausbaustufe. Template-Wahl = die „Versandadresse" (§5e).
 
 **Vorgemerkt (später):** **Textbausteine-Katalog** als weitere Katalog-Quelle (wiederverwendbare
 Textblöcke als Picks, z. B. für Dokument-/Mail-Ports).
+
+### 5i. NEUE REGEL + LEITLINIE — sevDesk-Adapter-„Briefkasten" (Johannes, 2026-07-02)
+
+**Warenkörbe können jetzt an die Airtable-Tabelle `mykilOS_Adapter Sevdesk` übergeben werden.**
+Die Tabelle ist ein **Briefkasten**: mykilOS *legt hinein*, sevDesk *holt ab* (Pull außerhalb
+von mykilOS) und verarbeitet die Warenkörbe **rechtskonform** zu Angeboten etc.
+**mykilOS berührt sevDesk weiterhin NIE direkt** — das harte NO-GO bleibt; der Kontakt läuft
+ausschließlich über diesen Airtable-Briefkasten. Konkrete Ausformung des §5d-Ports.
+
+**Harte Regeln für die `mykilOS_Adapter Sevdesk`-Tabelle:**
+1. **Keine Bilder.** Die Tabelle empfängt niemals Bilddaten (nur Text/Zahlen/Links/Referenzen).
+2. **Einmalige Warenkorb-ID.** Jede Übergabe trägt eine **immer identifizierbare, individuelle
+   ID** zur Abholung durch sevDesk. IDs sind nie identisch, nie wiederverwendet.
+3. **Nie überschreiben, nie löschen.** Append-only. Inaktivierung ausschließlich per Status
+   (`inaktiv`) — deckt sich mit der Airtable-Kein-DELETE-Regel. Immer fortschreiben.
+4. **Schematisch immer gleich.** Alle Detailangaben, Texte, Links und Angaben aus dem Checkout
+   werden in **exakt gleichem Schema** geschrieben (feste Feldstruktur, jede Übergabe gleich geformt).
+
+**Inhalts-Arten, die ein Warenkorb tragen kann:** Kundendaten · Projektdaten · Artikel ·
+Textblöcke · Eingangsangebote (oder einzelne Positionen daraus) · Dienstleistungen ·
+weitere, noch zu definierende Artikel/Items.
+
+**Pflicht-Übertragungsinhalt je Warenkorb:** Datum · Projekt · Kunde · Zeitstempel · Artikel ·
+**Gesamtwert vor Rabatt in EK UND VK** · Fließtexte · alle Details.
+
+**Rückverfolgbarkeit (LEITLINIE, gilt über den Adapter hinaus):** Jedes Feld/Detail muss
+einwandfrei in mykilOS zurückverfolgbar sein. **Jedes Katalog-Objekt trägt eine einmalig
+vergebene Hash/ID**, die **nicht weitergegeben, kopiert, gelöscht oder verändert** wird.
+Warenkorb-Positionen referenzieren diese IDs → lückenlose Rückverfolgung ins Original.
+Grundsatz überall: **immer fortschreiben und auf inaktiv setzen, nie löschen oder überschreiben.**
+
+**Erhält/ergänzt aus §5d:** doppelte Bestätigung, Erzeuger (Nutzer) + Inhalts-Hash (SHA256)
+je Record, Kreativ-Inhalte (Bilder/Moodboard/Zeichnungen) kategorisch ausgeschlossen, alles
+zusätzlich lokal als AuditEntry + Write-Shadow-Log.
+
+**Bau-Ort:** Welle C / C4 — **nach** der S10-Grundsatzentscheidung, nicht vorher. Feld-Schema
+(v1) + ID-Schema werden mit Johannes bestätigt, bevor gebaut wird.
