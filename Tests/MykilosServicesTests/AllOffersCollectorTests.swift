@@ -134,6 +134,14 @@ struct AllOffersSorterTests {
         #expect(AllOffersSorter.filtered(sample(), query: "zzz").isEmpty)
         #expect(AllOffersSorter.filtered(sample(), query: "").count == 2)
     }
+
+    @Test func filterNachKategorieGreiftProDokumenttyp() {
+        // sample(): ein .angebot (ausgehend) + ein .eingehendesAngebot (eingehend).
+        #expect(AllOffersSorter.filtered(sample(), category: .angebot).count == 1)
+        #expect(AllOffersSorter.filtered(sample(), category: .eingehendesAngebot).count == 1)
+        #expect(AllOffersSorter.filtered(sample(), category: .schlussrechnung).isEmpty)
+        #expect(AllOffersSorter.filtered(sample(), category: nil).count == 2)   // nil = alle
+    }
 }
 
 // MARK: - Hilfen

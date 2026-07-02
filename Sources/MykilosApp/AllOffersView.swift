@@ -92,14 +92,30 @@ struct AllOffersView: View {
     @State private var loader = AllOffersLoader()
     @State private var searchText = ""
     @State private var reloadToken = 0
+    /// Kategorie-Filter (Dokumenttyp). `nil` = alle Kategorien.
+    @State private var categoryFilter: OfferDocumentType?
     @AppStorage("angebote.alle.sort") private var sortRaw = AllOffersSort.datum.rawValue
 
-    private var sort: AllOffersSort { AllOffersSort(rawValue: sortRaw) ?? .datum }
+    // Richtung übernimmt jetzt das zweispaltige Layout — als Sortierschlüssel
+    // wäre sie redundant, daher hier ausgeklammert.
+    private var sort: AllOffersSort {
+        let s = AllOffersSort(rawValue: sortRaw) ?? .datum
+        return s == .richtung ? .datum : s
+    }
+    private var sortOptions: [AllOffersSort] { AllOffersSort.allCases.filter { $0 != .richtung } }
 
+    // Kategorie → Volltext → Sortierung. Danach nach Richtung in zwei Spalten geteilt.
     private var visible: [AllOffersCollector.AggregatedOffer] {
-        AllOffersSorter.sorted(
-            AllOffersSorter.filtered(loader.offers, query: searchText),
-            by: sort)
+        let byCategory = AllOffersSorter.filtered(loader.offers, category: categoryFilter)
+        let byQuery = AllOffersSorter.filtered(byCategory, query: searchText)
+        return AllOffersSorter.sorted(byQuery, by: sort)
+    }
+
+    private var visibleIncoming: [AllOffersCollector.AggregatedOffer] {
+        visible.filter { $0.direction == .incoming }
+    }
+    private var visibleOutgoing: [AllOffersCollector.AggregatedOffer] {
+        visible.filter { $0.direction == .outgoing }
     }
 
     var body: some View {
@@ -155,6 +171,7 @@ struct AllOffersView: View {
 
     private var toolbar: some View {
         HStack(spacing: MykSpace.s4) {
+            categoryMenu
             sortMenu
             HStack(spacing: MykSpace.s3) {
                 Image(systemName: "magnifyingglass")
@@ -163,7 +180,7 @@ struct AllOffersView: View {
                 TextField("Datei, Projekt oder Belegnummer suchen…", text: $searchText)
                     .font(.mykSmall)
                     .textFieldStyle(.plain)
-                    .frame(minWidth: 220)
+                    .frame(minWidth: 200)
             }
             .padding(.horizontal, MykSpace.s4)
             .padding(.vertical, MykSpace.s3)
@@ -177,9 +194,31 @@ struct AllOffersView: View {
         }
     }
 
+    private var categoryMenu: some View {
+        Menu {
+            Button { categoryFilter = nil } label: {
+                Label("Alle Kategorien", systemImage: categoryFilter == nil ? "checkmark" : "square.stack.3d.up")
+            }
+            Divider()
+            ForEach(OfferDocumentType.allCases, id: \.self) { type in
+                Button { categoryFilter = type } label: {
+                    Label(type.label, systemImage: categoryFilter == type ? "checkmark" : "tag")
+                }
+            }
+        } label: {
+            Label(categoryFilter?.label ?? "Alle Kategorien", systemImage: "line.3.horizontal.decrease.circle")
+                .font(.mykSmall).foregroundStyle(categoryFilter == nil ? MykColor.muted.color : MykColor.drive.color)
+                .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
+                .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.card.color)
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1)))
+        }
+        .menuStyle(.borderlessButton).fixedSize()
+        .help("Nach Beleg-Kategorie filtern")
+    }
+
     private var sortMenu: some View {
         Menu {
-            ForEach(AllOffersSort.allCases, id: \.self) { option in
+            ForEach(sortOptions, id: \.self) { option in
                 Button { sortRaw = option.rawValue } label: {
                     Label(option.label, systemImage: sort == option ? "checkmark" : option.icon)
                 }
@@ -202,7 +241,7 @@ struct AllOffersView: View {
         case .loading:
             loadingState
         case .content:
-            offerList
+            twoColumns
         case .empty:
             hint(icon: "tray", text: "Keine Angebote/Rechnungen in den 04/05-Ordnern gefunden.")
         case .permissionRequired:
@@ -228,16 +267,17 @@ struct AllOffersView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var offerList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(visible) { item in
-                    AllOfferRow(item: item)
-                    Divider().overlay(MykColor.line.color.opacity(0.5))
-                }
-            }
+    // Zwei Spalten nach Richtung (Eingehend | Ausgehend) — die Richtung steckt schon
+    // im Beleg-Modell (`AggregatedOffer.direction`). Jede Spalte scrollt eigenständig
+    // und gruppiert innerhalb nach Dokumenttyp; jede Zeile trägt ihre echte
+    // Projektzuordnung (Titel · Nummer).
+    private var twoColumns: some View {
+        HStack(alignment: .top, spacing: MykSpace.s7) {
+            GlobalOfferColumn(title: "Eingehend", offers: visibleIncoming)
+            Divider().overlay(MykColor.line.color.opacity(0.6))
+            GlobalOfferColumn(title: "Ausgehend", offers: visibleOutgoing)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private func hint(icon: String, text: String, retry: Bool = false, critical: Bool = false) -> some View {
@@ -277,88 +317,6 @@ struct AllOffersView: View {
             return s
         default:
             return "GOOGLE DRIVE"
-        }
-    }
-}
-
-// MARK: - AllOfferRow
-// Spiegelt OfferRow (Projekt-Tab): lokale Vorschau zuerst, sonst Drive-Bytes,
-// Klick → FilePreviewView-Popover (mit Vollvorschau-Button), Kontextmenü.
-private struct AllOfferRow: View {
-    let item: AllOffersCollector.AggregatedOffer
-
-    @State private var showPreview = false
-    @State private var resolvedLocalURL: URL?
-
-    private var file: GoogleDriveFile { item.offer.file }
-
-    private var metaLine: String {
-        var parts: [String] = [item.projectTitle, item.projectNumber, item.direction.label, item.offer.type.label]
-        if let nr = item.offer.belegNummer { parts.append(nr) }
-        if let v = item.offer.version { parts.append(v) }
-        if let modifiedAt = file.modifiedAt {
-            parts.append(modifiedAt.formatted(.relative(presentation: .named)))
-        }
-        return parts.joined(separator: " · ")
-    }
-
-    private func resolveLocalURL() -> URL? {
-        guard item.projectFolderID.isEmpty == false else { return nil }
-        return LocalDriveRootResolver.shared.localURL(
-            forFileID: file.id, fileName: file.name,
-            inProjectFolderID: item.projectFolderID, explicitProjectPath: nil)
-    }
-
-    private func remoteContent() -> (@Sendable () async -> Data?)? {
-        let fileID = file.id
-        return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
-    }
-
-    var body: some View {
-        Button {
-            resolvedLocalURL = resolveLocalURL()
-            showPreview.toggle()
-        } label: {
-            HStack(spacing: MykSpace.s4) {
-                Image(systemName: file.iconName)
-                    .font(.mykCaption)
-                    .foregroundStyle(MykColor.cash.color)
-                    .frame(width: 20)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(file.name)
-                        .font(.mykSmall)
-                        .foregroundStyle(MykColor.ink.color)
-                        .lineLimit(1)
-                    Text(metaLine)
-                        .font(.mykMono(9))
-                        .foregroundStyle(MykColor.muted.color)
-                        .lineLimit(1)
-                }
-                Spacer()
-                Image(systemName: "eye")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.faint.color)
-            }
-            .padding(.vertical, MykSpace.s3)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .popover(isPresented: $showPreview, arrowEdge: .trailing) {
-            FilePreviewView(file: file, localURL: resolvedLocalURL, remoteContent: remoteContent())
-                .frame(width: 320)
-                .padding(MykSpace.s2)
-        }
-        .contextMenu {
-            Button("Im Finder zeigen") {
-                if let local = resolveLocalURL() {
-                    LocalDriveRootResolver.shared.revealInFinder(localURL: local)
-                } else if let link = file.webViewLink, let url = URL(string: link) {
-                    NSWorkspace.shared.open(url)
-                }
-            }
-            if let link = file.webViewLink, let url = URL(string: link) {
-                Button("Im Browser öffnen") { NSWorkspace.shared.open(url) }
-            }
         }
     }
 }

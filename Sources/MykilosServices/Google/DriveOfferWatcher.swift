@@ -61,14 +61,47 @@ public final class DriveOfferWatcher {
     // Beleg verpassen als jeden Drive-Upload als Angebot melden.
     // `public`, damit die Angebote-Tab dieselbe Erkennung nutzt wie das Signal —
     // eine Quelle der Wahrheit (keine zweite, abweichende Heuristik in der UI).
-    public static let offerKeywords = ["angebot", "rechnung", "kostenvoranschlag", "offer", "invoice"]
+    nonisolated public static let offerKeywords = ["angebot", "rechnung", "kostenvoranschlag", "offer", "invoice"]
 
-    public static func detectOffers(in files: [GoogleDriveFile]) -> [GoogleDriveFile] {
+    // MARK: - Akzeptierte Beleg-Dateitypen (EINE Quelle der Wahrheit)
+    // Angebote/Belege sind NIE ZIP oder .numbers: **meist PDF** (primär),
+    // **manchmal Bilder** (sekundär, z.B. abfotografierte Angebote), **selten Mail**.
+    // Alles andere (ZIP, .numbers, Office-Tabellen, Sonstiges) fällt raus. Diese
+    // Whitelist gilt für den Angebote-Tab, „Alle Angebote" UND das offerDetected-
+    // Signal — die UI filtert NIEMALS ein zweites Mal (kein abweichender Filter).
+    nonisolated public static let acceptedOfferExtensions: Set<String> = [
+        "pdf",                                                              // primär
+        "jpg", "jpeg", "png", "heic", "heif", "tiff", "tif", "gif", "webp", // Bilder
+        "eml", "msg"                                                        // Mail (selten)
+    ]
+    nonisolated public static let acceptedOfferMimeTypes: Set<String> = [
+        "application/pdf",
+        "message/rfc822"
+    ]
+
+    /// True, wenn die Datei ein plausibler Angebots-/Beleg-Dateityp ist — kein
+    /// Ordner, kein ZIP/.numbers/Office-Sonstiges. Endung zuerst (Drive-MIME ist oft
+    /// generisch wie `application/octet-stream`); ohne Endung entscheidet die MIME
+    /// (PDF/Mail) bzw. das `image/`-Präfix.
+    nonisolated public static func isAcceptedOfferFileType(_ file: GoogleDriveFile) -> Bool {
+        if file.isFolder { return false }
+        let ext = (file.name as NSString).pathExtension.lowercased()
+        if ext.isEmpty {
+            return acceptedOfferMimeTypes.contains(file.mimeType)
+                || file.mimeType.hasPrefix("image/")
+        }
+        return acceptedOfferExtensions.contains(ext)
+    }
+
+    nonisolated public static func detectOffers(in files: [GoogleDriveFile]) -> [GoogleDriveFile] {
         files.filter { isOffer($0) }
     }
 
-    public static func isOffer(_ file: GoogleDriveFile) -> Bool {
-        guard file.mimeType == "application/pdf" else { return false }
+    // Ein „Angebot" = akzeptierter Beleg-Dateityp (Whitelist) MIT Angebots-/
+    // Rechnungs-Schlüsselwort im Namen. Der Typ-Filter ist die gemeinsame Basis
+    // mit dem Angebote-Tab; das Schlüsselwort hält das Signal bewusst konservativ.
+    nonisolated public static func isOffer(_ file: GoogleDriveFile) -> Bool {
+        guard isAcceptedOfferFileType(file) else { return false }
         let name = file.name.lowercased()
         return offerKeywords.contains { name.contains($0) }
     }

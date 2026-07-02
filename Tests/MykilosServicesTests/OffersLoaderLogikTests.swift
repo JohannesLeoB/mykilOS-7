@@ -171,6 +171,29 @@ struct OffersCollectorLoadTests {
         #expect(result.incoming.contains { $0.file.id == "f1" })   // PDF in 01 INFOS/05/Vorplanung
     }
 
+    @Test func loadFiltertNichtBelegTypenRaus() async throws {
+        // Filter-Regel (EINE Quelle der Wahrheit, DriveOfferWatcher): im 05-Ordner
+        // liegen gemischt PDF + Bild (rein) sowie ZIP + .numbers (raus).
+        let pdf = makePDF("Angebot.pdf", id: "p")
+        let bild = GoogleDriveFile(id: "b", name: "Scan_Angebot.jpg", mimeType: "image/jpeg",
+                                   modifiedAt: nil, webViewLink: nil)
+        let zip = GoogleDriveFile(id: "z", name: "Produktdatenblätter.zip", mimeType: "application/zip",
+                                  modifiedAt: nil, webViewLink: nil)
+        let numbers = GoogleDriveFile(id: "n", name: "Geräteübersicht.numbers",
+                                      mimeType: "application/x-iwork-numbers-sffnumbers",
+                                      modifiedAt: nil, webViewLink: nil)
+        let client = TreeFakeDriveClient(tree: [
+            "root": [makeFolder("05 eingehende Angebote", id: "ein")],
+            "ein":  [pdf, bild, zip, numbers],
+        ])
+
+        let result = try await OffersCollector.load(rootFolderID: "root", client: client)
+        let ids = Set(result.incoming.map(\.file.id))
+        #expect(ids == ["p", "b"])            // PDF + Bild rein
+        #expect(ids.contains("z") == false)   // ZIP raus
+        #expect(ids.contains("n") == false)   // .numbers raus
+    }
+
     @Test func loadOhneAngebotsOrdnerMeldetNichtGefunden() async throws {
         let client = TreeFakeDriveClient(tree: ["root": [makeFolder("01 INFOS", id: "x")]])
         let result = try await OffersCollector.load(rootFolderID: "root", client: client)
