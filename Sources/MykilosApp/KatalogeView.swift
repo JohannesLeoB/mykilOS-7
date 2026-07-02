@@ -125,14 +125,11 @@ struct KatalogeView: View {
 
     private var header: some View {
         HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: MykSpace.s2) {
-                Text("Kataloge")
-                    .font(.mykDisplay)
-                    .foregroundStyle(MykColor.ink.color)
-                Text("Artikel, Lager, Warenkörbe, Angebote, Kontakte, Notizen \u{00B7} Tabs ziehen zum Umsortieren")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.muted.color)
-            }
+            // UI-Polish (2026-07-02, Johannes): beschreibender Untertitel entfernt —
+            // er wiederholte nur die Tab-Namen, die direkt darunter als echte Tabs stehen.
+            Text("Kataloge")
+                .font(.mykDisplay)
+                .foregroundStyle(MykColor.ink.color)
             Spacer()
 
             // Intake: + Neues Projekt (Fragebogen)

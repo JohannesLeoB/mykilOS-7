@@ -361,18 +361,13 @@ struct AssistantPageView: View {
         // Wurzel VStack (kein äußeres ScrollView), damit der Chat eigenständig
         // scrollt und der Composer unten verankert bleibt.
         VStack(alignment: .leading, spacing: 0) {
-            // Header mit Titel + Segmented-Picker
+            // Header mit Titel + Segmented-Picker.
+            // UI-Polish (2026-07-02, Johannes): beschreibende Untertitel entfernt
+            // (Mock-up-Überbleibsel) — der Toggle daneben erklärt die zwei Modi selbst.
             HStack(alignment: .center, spacing: MykSpace.s6) {
-                VStack(alignment: .leading, spacing: MykSpace.s2) {
-                    Text(activeTab == .assistant ? "Assistent" : "Mail")
-                        .font(.mykDisplay)
-                        .foregroundStyle(MykColor.ink.color)
-                    Text(activeTab == .assistant
-                         ? "Fragt deine Projekte, Signale und den Tag — im Dialog."
-                         : "Gmail · Lesen und Entwürfe verfassen.")
-                        .font(.mykSmall)
-                        .foregroundStyle(MykColor.muted.color)
-                }
+                Text(activeTab == .assistant ? "Assistent" : "Mail")
+                    .font(.mykDisplay)
+                    .foregroundStyle(MykColor.ink.color)
                 Spacer()
                 // Segmented-Picker: Assistent ⇄ Mail
                 Picker("Modus", selection: $activeTab) {

@@ -48,6 +48,20 @@ MYKILOS-Briefpapier/Logo(SVG)/Monument-Grotesk(woff2 + fertige stylesheet.css)/
 Pflicht-Fußtext gesichtet & spezifiziert. Erweitert `MykPDFRenderer` bzw. speist die
 Formulare-Engine. Offen: Font-Embedding-Lizenz. → **docs/brand/README.md**
 
+**Update 2026-07-02:** echtes Design-System-Export lokal gefunden (Ordner
+„MYKILOS Design System" auf dem Desktop) — enthält jetzt zusätzlich die tatsächlichen
+Font-Dateien (`ABCMonumentGrotesk-Medium.otf`, `ABCMonumentGroteskMono-Regular.otf`,
+Foundry: **Dinamo Typefaces**) + das echte Vektor-Logo (SVG) + eine präzise CSS-
+Spezifikation (Farben/Typografie/Spacing/Radien). **Logo ist bereits eingebaut**
+(`Sources/MykilosApp/Resources/mykilos-wordmark-*.svg`, `MykWordmark`-Komponente,
+Sidebar-Breitmodus) — eigenes IP, keine Lizenzfrage. **Fonts liegen bereit, sind
+aber NICHT ins App-Bundle eingebettet** — die Lizenzfrage (Dinamo-Foundry) ist
+weiterhin offen und wurde bewusst nicht eigenmächtig entschieden. Ein bestätigter
+Bug dabei gefixt: „ABCMonumentGrotesk-Regular" existierte nie als Datei (nur Medium
++ Mono Regular wurden geliefert) — Typography.swift nutzte das trotzdem für
+Body/Small/Caption, was lautlos auf den System-Fallback zurückfiel. Jetzt einheitlich
+auf den echten Medium-Schnitt gemappt.
+
 ### 💡 Herstellerbilder-/Bild-Assetkatalog (für Moodboards)
 Bild-Datenbank **wie die Kataloge** (Artikel-Base hat schon ein Produktbild-Feld),
 Zusammenstellung **wie der Warenkorb** („zusammenklicken" → Moodboard-Bildraster).

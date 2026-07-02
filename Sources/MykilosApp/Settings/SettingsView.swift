@@ -100,9 +100,8 @@ struct SettingsView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .frame(maxWidth: 360, alignment: .leading)
-            Text("Gilt nur für diese Ansicht, unabhängig vom System — pro Nutzer.")
-                .font(.mykCaption)
-                .foregroundStyle(MykColor.muted.color)
+            // UI-Polish (2026-07-02, Johannes): Erklärtext entfernt — der Umschalter
+            // erklärt sich selbst, das Verhalten steht im Benutzerhandbuch.
         }
     }
 
@@ -161,9 +160,8 @@ struct SettingsView: View {
                         .foregroundStyle(MykColor.positive.color)
                 }
             }
-            Text("Name und Rolle fließen in den System-Prompt des Assistenten ein.")
-                .font(.mykMono(9.5))
-                .foregroundStyle(MykColor.faint.color)
+            // UI-Polish (2026-07-02, Johannes): Erklärtext („fließen in den System-Prompt…")
+            // entfernt — Mock-up-Überbleibsel, Detail steht im Benutzerhandbuch.
         }
         .padding(MykSpace.s6)
         .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
@@ -186,10 +184,8 @@ struct SettingsView: View {
                     .font(.mykHeadline)
                     .foregroundStyle(MykColor.ink.color)
             }
-            Text("Wird beim Verfassen eines Entwurfs ans Ende des Textes angehängt. Gmail hängt Signaturen bei API-Entwürfen nicht automatisch an.")
-                .font(.mykMono(9.5))
-                .foregroundStyle(MykColor.muted.color)
-                .fixedSize(horizontal: false, vertical: true)
+            // UI-Polish (2026-07-02, Johannes): Erklärtext entfernt (Mock-up-Überbleibsel);
+            // das Gmail-API-Detail steht im Benutzerhandbuch + als Code-Kommentar oben.
             TextEditor(text: $mailSignature)
                 .font(.mykMono(11))
                 .foregroundStyle(MykColor.ink.color)
@@ -204,7 +200,9 @@ struct SettingsView: View {
                     RoundedRectangle(cornerRadius: MykRadius.sm)
                         .stroke(MykColor.line.color, lineWidth: 1)
                 )
-            Text("Wird sofort gespeichert · LOKAL (UserDefaults)")
+            // Quellzeile im Design-System-Stil (SaveState sichtbar = Eiserne Regel) —
+            // das technische „(UserDefaults)"-Detail ist raus (UI-Polish 2026-07-02).
+            Text("LOKAL · SOFORT GESPEICHERT")
                 .font(.mykMono(9))
                 .foregroundStyle(MykColor.faint.color)
         }

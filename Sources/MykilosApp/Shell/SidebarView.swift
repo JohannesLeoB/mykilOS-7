@@ -49,6 +49,10 @@ struct SidebarView: View {
     }
 
     // MARK: Brand — toggelt kompakt/breit
+    // Design-Hero (2026-07-02): echtes MYKILOS-Wortmarken-SVG statt Platzhalter-Text
+    // im Breitmodus — es ist unser eigenes Markenzeichen, keine Lizenzfrage (anders
+    // als die Schrift-Dateien, siehe Typography.swift). Kompakt-Modus behält den
+    // orangen Marken-Chip (die Wortmarke ist zu breit für ein 26pt-Quadrat).
     private var brand: some View {
         Button {
             withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) { isCompact.toggle() }
@@ -59,7 +63,8 @@ struct SidebarView: View {
                     .frame(width: 26, height: 26)
                     .scaleEffect(brandHovered ? 1.08 : 1.0)
                 if !isCompact {
-                    Text("mykilOS").font(.mykHeadline).foregroundStyle(MykColor.ink.color)
+                    MykWordmark()
+                        .frame(height: 15)
                     Spacer()
                 }
             }

@@ -76,10 +76,8 @@ struct ProjektTimerView: View {
 
             Text("Kostenstelle in diesem Projekt").font(.mykCaption).foregroundStyle(MykColor.muted.color)
             kostenstellenRow
-
-            Text("Kostenstelle wechseln während der Timer läuft → das aktuelle Segment wird beendet, ein neues startet sofort. Keine Zeit geht verloren, keine Stunde landet im falschen Topf.")
-                .font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
-                .padding(.top, MykSpace.s2)
+            // UI-Polish (2026-07-02, Johannes): Erklärabsatz zum Segment-Wechsel entfernt
+            // (Mock-up-Überbleibsel) — das Verhalten steht im Benutzerhandbuch.
         }
         .padding(MykSpace.s7)
         .background(MykColor.card.color)
