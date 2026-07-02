@@ -189,6 +189,9 @@ private struct ActiveModuleKey: FocusedValueKey {
 private struct SidebarCollapsedKey: FocusedValueKey {
     typealias Value = Binding<Bool>
 }
+private struct PaletteOpenKey: FocusedValueKey {
+    typealias Value = Binding<Bool>
+}
 extension FocusedValues {
     var activeModule: Binding<AppModule>? {
         get { self[ActiveModuleKey.self] }
@@ -197,6 +200,10 @@ extension FocusedValues {
     var sidebarCollapsed: Binding<Bool>? {
         get { self[SidebarCollapsedKey.self] }
         set { self[SidebarCollapsedKey.self] = newValue }
+    }
+    var paletteOpen: Binding<Bool>? {
+        get { self[PaletteOpenKey.self] }
+        set { self[PaletteOpenKey.self] = newValue }
     }
 }
 
@@ -216,6 +223,8 @@ struct ContentView: View {
     // Härtung 2026-07-01: kurzer Start-Hinweis, welcher Build gerade läuft (Antwort
     // auf wiederholte Verwechslungen zwischen parallel installierten Versionen).
     @State private var showFreshnessBanner = true
+    // ⌘K Command-Palette (S5): globaler Fuzzy-Sprung zu Modulen + Projekten.
+    @State private var showPalette = false
 
     // Direkt nutzbar: der Wizard erzwingt sich beim ersten Start NUR, wenn Claude
     // fehlt (= Assistent stumm). Google ist "empfohlen", nicht Pflicht — wer nur
@@ -240,9 +249,23 @@ struct ContentView: View {
                     onDismiss: hasCompleted ? { showOnboarding = false } : nil
                 )
             }
+            // ⌘K Command-Palette — über allen Modulen, unter dem Onboarding.
+            if showPalette && !isOnboardingUp {
+                CommandPaletteView(
+                    isPresented: $showPalette,
+                    projects: appState.registry.projects,
+                    customerFor: { appState.registry.customer(for: $0) },
+                    onSelectModule: { module = $0 },
+                    onSelectProject: { project in
+                        appState.pendingProjectSelection = project
+                        module = .projects
+                    }
+                )
+            }
         }
         .focusedValue(\.activeModule, $module)
         .focusedValue(\.sidebarCollapsed, $sidebarCollapsed)
+        .focusedValue(\.paletteOpen, $showPalette)
         // Navigations-Brücke (siehe AppState.pendingProjectSelection): sobald ein
         // anderes Modul "öffne Projekt X" anfordert, wechselt hier nur das Modul
         // — das tatsächliche Öffnen übernimmt ProjectGalleryView selbst.
@@ -588,6 +611,7 @@ public enum AppIdentity {
 struct AppCommands: Commands {
     @Environment(\.openWindow) private var openWindow
     @FocusedBinding(\.activeModule)           private var activeModule
+    @FocusedBinding(\.paletteOpen)            private var paletteOpen
     @AppStorage("ui.sidebarCollapsed") private var sidebarCollapsed = false
 
     var body: some Commands {
@@ -604,6 +628,8 @@ struct AppCommands: Commands {
                 .keyboardShortcut(",", modifiers: .command)
         }
         CommandMenu("Navigation") {
+            Button("Suchen & Springen …") { paletteOpen = true }
+                .keyboardShortcut("k", modifiers: .command)
             Button(sidebarCollapsed ? "Sidebar ausklappen" : "Sidebar einklappen") {
                 withAnimation(.easeInOut(duration: 0.22)) { sidebarCollapsed.toggle() }
             }
