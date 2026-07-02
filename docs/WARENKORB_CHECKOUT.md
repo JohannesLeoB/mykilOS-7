@@ -132,3 +132,33 @@ Firefly/Express-Integration ist perspektivisch als MCP verfügbar — eigener sp
 **Konsequenz fürs Datenmodell:** Warenkorb bekommt `inhaltsArt` (Kategorie) + der Checkout
 kennt eine `PortRegistry`, die je `inhaltsArt` die zulässigen Ports liefert. Beides gehört in
 die S10-Grundsatzentscheidung, bevor breit gebaut wird.
+
+### 5c. Port-Katalog v1 (Arbeitsstand, Johannes bestätigt + erweitert 2026-07-02)
+
+Feste, benannte Ausgänge der Checkout-Registry. Erweiterbar — das ist der lebende Kern.
+
+**Von Johannes bestätigt:**
+1. Moodboard (Generator)
+2. Geräteliste (an Tischler)
+3. Angebot
+4. Materialauswahl
+5. Bestellung
+6. Präsentation
+7. Nachtrag zu …
+
+**Ergänzt (Studio-Alltag / vorhandene Fähigkeiten):**
+8. Firefly-Bild-Prompt (Material+Moodboard+Zeichnung → Adobe-Firefly-Prompt)
+9. Kalkulation / Kostenschätzung (→ KalkulationsEngine)
+10. Ausstattungs-/Spec-Liste (Finish Schedule)
+11. Auftragsbestätigung
+12. Abnahmeprotokoll
+13. Aufmaß-/Montageliste
+14. Mail-Entwurf / -Versand (Bündel als Mail)
+15. Drive-Ablage (Bündel in den Projekt-Ordner)
+16. ClickUp-Aufgaben (aus Picks)
+17. CAD-/Zeichnungs-Handoff
+18. Datenblatt-/Doku-Sammlung
+
+**Reifegrad (fürs Bauen):** 14/15/3/9 nutzen weitgehend Vorhandenes (Mail-Entwurf, Drive-Upload,
+Angebots-Erkennung, KalkulationsEngine); 1/8/10 sind neue Renderer/Generatoren; alle laufen über
+Karte→Bestätigung→Audit. Liste bleibt offen — neue Ports werden hier ergänzt.
