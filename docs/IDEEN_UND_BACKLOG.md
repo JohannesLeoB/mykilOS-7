@@ -23,6 +23,17 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-02 spät — Großes Vormerken: iPad-Version von mykilOS (Johannes)
+
+- 💡 **mykilOS fürs iPad — eventuelle Idee für die nächsten Monate.** Kein Detail-Scope heute,
+  bewusst nur als großes Thema vorgemerkt. **Eigener Strang, eigene Grundsatzentscheidungen**
+  (Feature-Parität vs. reduzierter Umfang, SwiftUI-Code-Sharing zwischen macOS/iPadOS-Targets,
+  Touch-first-Bedienung der bestehenden Widget-/Katalog-Flows, Offline-/Sync-Fragen). **Löst
+  nebenbei elegant die Handy-Push-Frage von oben:** eine echte native iPadOS/iOS-App bekäme
+  normale Apple-Notifications direkt, kein Umweg über Drittanbieter-Relay nötig (siehe
+  Push-Benachrichtigungen-Eintrag unten). Ganz am Anfang der Überlegung — nicht mit Welle C/D
+  verwechseln, eigene spätere Zeitachse.
+
 ## Nachtrag 2026-07-02 spät — Futurefeature: „Boss Button" als App-Satellit (Johannes)
 
 - 💡 **„Boss Button" — Widget als Satellit außerhalb des App-Fensters:** aus den Widgets der
