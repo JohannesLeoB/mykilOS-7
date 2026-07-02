@@ -825,3 +825,36 @@ Datenbezug, kein Audit-Rauschen. Neue Ideen hier ergänzen.
   Glückwunsch beim App-Start. Braucht ein **Geburtstagsdatum** an Profil/Kontakt (kleiner
   Daten-Job: Feld an UserProfile bzw. Airtable-Kontakt) — Datenschutz beachten (nur Team-Namen,
   keine sensiblen Daten). Auch ohne Datum baubar: manuell „heute hat X Geburtstag" markieren.
+
+---
+
+## Nachtrag 2026-07-02 spät — Massendaten-Miner + externe Zeichnungs-Integration
+
+Aus der Wirbelsäulen-Session (S10-Blueprint-Arbeit). Vier verwandte „Massendaten
+crawlen/taggen/zuordnen/sortieren"-Ideen für die künftigen Kataloge (§4 im
+S10_WIRBELSAEULE.md nennt Textbausteine-/Bilderdatenbank-Katalog bereits vorgemerkt).
+Werkzeug-Einordnung in [[massendaten-katalog-miner]] (Memory):
+
+- 💡 **Textbausteine-Katalog aus Angeboten destillieren:** ähnliche/routine-bedeutende
+  Formulierungen aus der Angebotsdatenbank clustern + sauber destillieren. **ChatGPT-web-
+  geeignet** (reine Textmuster-Analyse auf exportierten eigenen Daten, kein Crawling, keine
+  Rechte-Fragen) — einzige der vier Ideen, die sofort ohne Codex-Session anlaufen kann.
+- 💡 **Preislisten + passender Weblink/Montage-PDF/Datenblatt/Maße/Produktbild pro Artikel
+  massenhaft beschaffen.** Braucht echtes Web-Crawling + Rechte-Prüfung (Hersteller-IP,
+  Fehl-Matching gefährlich) — **Codex-Strang**, deckt sich mit bereits bewertetem Handoff-Paket
+  `CODEX_LOCAL_ONLY_SELF_TESTING_COMPLETENESS_LOOP_HANDOFF_v4.zip`
+  ([[codex-handoffs-zuordnung]]), local-only, keine Prod-Writes.
+- 💡 **Moodboard-PDFs aus den Projekt-Unterordnern nach Parametern matchen/filtern**, als
+  eigener Katalog vorbereiten. Braucht echten Drive-Zugriff (read-only, unproblematisch) über
+  hunderte Projektordner — **Codex-Strang**, gleicher Bauplan wie oben, andere Quelle (Drive
+  statt Web).
+- 💡 **Vectorworks-Sync (Zeichnungs-Integration):** Artikel-Warenkörbe (Geräte/Material/Kunde/
+  Projekt) in Vectorworks-Zeichnungsfelder exportieren/importieren/syncen. Trifft den bereits
+  benannten, aber leeren **Port #17 „CAD-/Zeichnungs-Handoff"** im S10-Blueprint
+  (`docs/S10_WIRBELSAEULE.md` §4). **Technische Machbarkeit ungeklärt** (Vectorworks'
+  Worksheet-/Records-/IFC-/Scripting-Mechanik nicht recherchiert) — vor jedem Bau erst eine
+  eigene, günstige Recherche-Session. Rückrichtung (Vectorworks→mykilOS) besonders vorsichtig
+  angehen (Zeichnungsarbeit der Planer nicht überschreiben) — analog Read-only-first-Prinzip
+  der sevDesk-Postbox.
+
+**Alle vier: nicht selbstständig starten.** Erst auf Johannes' ausdrücklichen Zuruf zünden.
