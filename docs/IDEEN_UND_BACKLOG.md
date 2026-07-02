@@ -53,6 +53,22 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
     Daten-Tabellen (Geräteliste); Freiform-Dokumente (Abnahmeprotokoll/Pflege/Anschreiben) = HTML.
     **Zwei-Teile-Bau:** (1) HTML-Template-Design (Chat-Session, wie sevDesk) mit Platzhalter-Tokens;
     (2) Swift WKWebView→PDF-Pipeline + Daten-Binding (Codex/Claude Code).
+  - **✅ Echte Referenz-Vorlagen vorhanden (Johannes 2026-07-03, Projekt Amoulong HH_25003):**
+    Abnahmeprotokoll + Übergabeprotokoll (PDF **+ `.indd` InDesign-Quelle**) + Projektfragebogen
+    (PDF), im Archiv unter `_PROJEKTE_ARCHIV/2025/HH_25003_Amoulong/01 INFOS/` (07 Fragebogen, 10
+    Abnahmeprotokoll). **Erkenntnis: heute werden diese Dokumente MANUELL in InDesign pro Projekt
+    gebaut** → der HTML-Template-Weg ersetzt genau diesen manuellen Schritt (auto-befüllt aus
+    Projektdaten → PDF, keine InDesign-Handarbeit mehr je Projekt). Kundendaten NICHT ins Repo
+    kopieren — nur als Design-Referenz per Pfad, beim Bauen „später durchgehen".
+  - **Zwei Priorität-1-Templates + Workflow-Punkt (Johannes: „mit in Entwicklung nehmen"):**
+    - **Projektfragebogen** → **Migration**: die App hat schon Intake-Maske (`FragebogenView`) +
+      PDF-Export (`MykPDFRenderer`). Umstellen auf HTML-Template im Amoulong-Look (InDesign-Design
+      als Vorlage), gefüllt aus der bestehenden Aufnahme-Maske → schließt den Loop Maske→PDF sauber.
+    - **Abnahmeprotokoll** → **neu**: HTML-Template (Amoulong-`.indd` als Look-Vorlage) + eine
+      Befüll-Maske (aus Projektdaten + manuelle Mängel-/Unterschriftsfelder) → PDF auf Briefpapier.
+    - **Andockpunkt im Plan:** Dokumenten-Katalog (neue Inhalts-Art `dokumente`) + DokumentPort
+      (§5c/§5k), Datenquelle = Projekt-Aufnahme-Maske. Erst wenn Datenschutz-/Abnabelung-Stränge
+      Kapazität lassen — aber als konkreter, referenz-gestützter Bau vorgemerkt.
 
 ## Nachtrag 2026-07-02 spät — Studio-Notizen-Thread (Johannes + Daniel, loser Sammel-Thread)
 
