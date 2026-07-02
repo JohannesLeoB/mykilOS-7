@@ -68,18 +68,18 @@ struct SidebarView: View {
                 withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) { isCompact.toggle() }
             }
         } label: {
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 8)
+            HStack(spacing: 11) {
+                RoundedRectangle(cornerRadius: 10)
                     .fill(MykColor.brand.color)
-                    .frame(width: 26, height: 26)
+                    .frame(width: 34, height: 34)
                     .scaleEffect(brandHovered ? 1.08 : 1.0)
                 if !isCompact {
                     MykWordmark()
-                        .frame(height: 15)
+                        .frame(height: 20)
                     Spacer()
                 }
             }
-            .padding(.leading, isCompact ? 0 : MykSpace.s4)
+            .padding(.leading, isCompact ? 0 : MykSpace.s3)
             .frame(maxWidth: .infinity, alignment: isCompact ? .center : .leading)
             .contentShape(Rectangle())
         }
@@ -121,10 +121,17 @@ struct SidebarView: View {
             if isCompact {
                 profileButton.frame(maxWidth: .infinity)
             } else {
-                HStack(spacing: 0) { profileButton; Spacer() }
-                    .padding(.horizontal, MykSpace.s4)
+                // Gleiche Zeilenstruktur wie die App-Dock-Icons: führender Platzhalter-Dot
+                // (6 px) + 12 Spacing → der Avatar fluchtet exakt mit der Icon-Spalte.
+                HStack(spacing: 12) {
+                    Circle().fill(Color.clear).frame(width: 6, height: 6)
+                    profileButton
+                    Spacer()
+                }
+                .padding(.horizontal, MykSpace.s4)
             }
         }
+        .padding(.top, MykSpace.s2)
         .padding(.bottom, MykSpace.s3)
     }
 
