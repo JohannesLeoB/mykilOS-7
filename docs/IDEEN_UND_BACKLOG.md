@@ -1015,6 +1015,14 @@ Datenbezug, kein Audit-Rauschen. Neue Ideen hier ergänzen.
   vorhanden, siehe `AssistantChatView.onUploadFileToDrive`), Easter-Egg-Trigger-Logik, Verknüpfung
   an Signal-/ClickUp-Ereignisse. Rein spaßig, kein Datenbezug zu Geschäftsdaten — sollte NIE echte
   Projekt-/Kundendaten in ausgespielten „Fails" bloßstellen (Anonymisierung/Opt-in beachten).
+- 💡 **Erweiterung — Casual-Mode-Toggle für kontextuelle GIF-Antworten (Johannes 2026-07-02
+  spät):** ein Toggle „Casual Mode", das dem Assistenten erlaubt, **passende GIFs aus dem
+  Team-Meme-Ordner kontextbezogen** in Antworten/Alerts einzustreuen — nicht nur auf expliziten
+  Befehl („zeig mir was Lustiges"), sondern situativ im normalen Gesprächsfluss, wenn der Kontext
+  passt. Braucht eine leichte Kontext→GIF-Zuordnung (Tags aus dem Meme-Ordner gegen Gesprächs-
+  thema/Stimmung matchen) — kein Datenbezug zu Geschäftsdaten. **Gehört zur selben
+  Datenschutz/Dezent-Familie wie Alerts** ([[alerts-dezent-datenschutz-toggle-regel]]) — eigener
+  Ein/Aus-Schalter, standardmäßig aus, nie aufdringlich.
 
 ---
 
