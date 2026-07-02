@@ -33,6 +33,13 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
   normale Apple-Notifications direkt, kein Umweg über Drittanbieter-Relay nötig (siehe
   Push-Benachrichtigungen-Eintrag unten). Ganz am Anfang der Überlegung — nicht mit Welle C/D
   verwechseln, eigene spätere Zeitachse.
+- **⚠️ Bekannter Zwischenschritt (verifiziert 2026-07-02 spät, Screenshot):** Johannes hat aktuell
+  nur den **kostenlosen** Apple-Developer-Zugang (Profil/Dokumentation), **nicht** die bezahlte
+  Mitgliedschaft im Apple Developer Program ($99/Jahr — Banner „Jetzt Mitglied werden" noch
+  nicht angeklickt). TestFlight, echte APNs-Push-Zertifikate und App-Store-Einreichung (für
+  diese Idee UND für die Handy-Push-Idee oben) brauchen diese bezahlte Stufe, als **Individual**
+  (Privatperson reicht, kein Firmen-Setup). Erster konkreter Schritt, wenn eine der beiden Ideen
+  drankommt.
 
 ## Nachtrag 2026-07-02 spät — Futurefeature: „Boss Button" als App-Satellit (Johannes)
 
