@@ -23,6 +23,29 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-02 spät — Drive/Mail-Alerts auf bestehenden Beobachtungspfaden (Johannes)
+
+- 📋 **Nachfass-Erinnerung bei Angebot ohne Reaktion:** „bei dem Angebot müsste ich mal wieder
+  nachfassen" — zeitbasiertes Signal, wenn ein ausgehendes Angebot seit N Tagen ohne erkennbare
+  Reaktion (keine neue Datei/Mail im Projekt) liegt. **Buildbar auf Bestehendem:** Datum steckt
+  schon in `AllOffersView`/`DriveOfferWatcher`, nur eine Alters-Schwelle + Signal fehlt.
+- 💡 **„Ist die Rechnung eingegangen/bezahlt?"** — **ehrliche Einschränkung:** ob eine Rechnung
+  *bezahlt* ist, lässt sich NICHT zuverlässig daraus ableiten, dass ein PDF im Drive-Ordner liegt
+  (ein abgelegtes Dokument beweist nur „Dokument da", nicht „bezahlt"). Echter Bezahlt-Status
+  braucht eine echte Datenquelle — deckt sich mit der bereits geplanten **sevDesk-Eingangs-Postbox**
+  (Rückrichtung aus §5i/§5j: sevDesk schreibt Status → mykilOS liest, nie direkter Read). Ohne die
+  bleibt es Vermutung, nicht Fakt — sollte im UI klar als „ungewiss" markiert sein, falls doch
+  heuristisch gebaut wird.
+- 📋 **„Neue Werkzeichnung"-Alert:** entweder bei passendem **Mail-Betreff** (neuer, paralleler
+  Watcher analog zum bestehenden Gmail-Search-Tool) oder bei **neuer Datei im Drive-Projektordner**
+  — **Zweiteres direkt auf dem bestehenden `DriveOfferWatcher`-Muster baubar**: Keyword-Set einfach
+  um „zeichnung"/„werkzeichnung" erweitern (heute nur angebot/rechnung/kostenvoranschlag/offer/
+  invoice), gleiche Baseline-/Signal-Logik (`offerDetected` → Mediator → Widget-Hinweis).
+- **Querverbindung:** das ist bereits die **vierte** Alert-Idee heute (CAD-Adapter, Angebots-/
+  Rechnungs-Status, Werkzeichnung, plus die früher erkannte Lücke „Benachrichtigungs-Zentrum" aus
+  `FINALE_APP_RUECKWAERTS.md`) — verstärkt den Fall für einen eigenen, zentralen Alerts-Strang statt
+  vieler Einzel-Watcher. Nicht jetzt bauen, aber als wiederkehrendes Muster im Blick behalten.
+
 ## Nachtrag 2026-07-02 spät — Montags-Projektbesprechung-Briefing (Johannes)
 
 - 📋 **Assistent-Modus „Montags-Briefing":** Jeden Montag ~60–120 Min. Team-Runde nach
