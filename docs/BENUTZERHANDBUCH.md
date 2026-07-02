@@ -24,10 +24,16 @@ Hauptbereiche. Tastenkürzel:
 - **„Integrationen" ist kein eigener Sidebar-Punkt mehr** — der Inhalt (Verbindungs-Status,
   Datenstrom-Schaltzentrale, Projektnummer-Bindung, Provisioning-Test) lebt vollständig in
   den **Einstellungen**.
-- **Einstellungen öffnen sich über den Initialen-Avatar** unten links in der Sidebar
-  (kein Zahnrad-Icon mehr) — gespiegelt im macOS-App-Menü über **⌘,**.
+- **Einstellungen als Sidebar-Modus (2026-07-02):** Klick auf den **Initialen-Avatar** unten
+  links wechselt die normale Nav-Sidebar gegen die **Einstellungs-Kategorien** (gleiches Layout
+  und Design). Der Content rechts zeigt nur noch die gewählte Kategorie. **Zurück:** erneuter
+  Klick auf den Avatar **oder** auf den **MYKILOS-Button** oben — beides toggelt zur normalen
+  Sidebar (und zum zuletzt aktiven Bereich). Gespiegelt im macOS-App-Menü über **⌘,**.
 - **Avatar-Initialen** (Sidebar + Einstellungen) zeigen jetzt einheitlich **Vorname+Nachname**
-  (z. B. „Johannes Leo Berger" → „JB"), vorher uneinheitlich.
+  (z. B. „Johannes Leo Berger" → „JB").
+- **Profil-Einstellungen mit Speichern/Abbrechen:** „Speichern" ist nur bei echter Änderung
+  aktiv, „Abbrechen" stellt den gespeicherten Stand wieder her (kein stiller Verlust beim
+  Kategoriewechsel). Integrationen speichern über Verbinden/Trennen, Darstellung sofort.
 
 ---
 
@@ -39,6 +45,10 @@ offene Aufgaben und Kalender-Ereignisse auf einen Blick.
 **Wo:** Sidebar → Heute (⌘1)
 
 **Funktionen:**
+- **Widget-Selektor (2026-07-02):** Button **„Widgets"** oben rechts im Heute-Kopf öffnet den
+  Selektor — Heute-Widgets (Fokus-Liste, Notiz, Projekt-Favoriten, Letzte Aktivität,
+  Zeiterfassung) frei **ein-/ausblenden** und in der **Größe** wählen (Klein/Mittel/Breit/Voll).
+  Dieselbe Mechanik wie in der Projekt-Übersicht; Reihenfolge per Drag im Board.
 - **DriveFolderRefreshBar**: zeigt wann der Drive-Ordner zuletzt geprüft wurde.
   "Jetzt prüfen" erzwingt einen sofortigen Poll aller aktiven Projektordner auf neue Angebots-PDFs.
 - **Signal-Strip**: zeigt Signale aus dem aktuellen Projektkontext (z.B. neue Angebote erkannt).
