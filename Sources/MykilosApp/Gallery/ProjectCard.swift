@@ -1,6 +1,7 @@
 import SwiftUI
 import MykilosKit
 import MykilosDesign
+import MykilosServices
 
 // MARK: - ProjectCard
 // Die Projektkachel in der Galerie. Image-led: Projekte sind Bildflächen,
@@ -128,14 +129,34 @@ struct ProjectCard: View {
                 Spacer()
                 kindChip
             }
-            if let phase = project.phase {
-                Text(phase)
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.muted.color)
-                    .tracking(0.5)
-            }
+            lifecycleRow
         }
         .padding(MykSpace.s5)
+    }
+
+    // MARK: Lebenszyklus-Mini (2026-07-02) — zeigt auf einen Blick, wo das Projekt steht.
+    // Nutzt die lokal gesetzte Stufe (ProjectLifecycleStore) bzw. die ehrlich abgeleitete
+    // Startstufe. Ersetzt das nutzlose „Aktiv"-Phasenfeld (bei allen Projekten gleich).
+    private var lifecycleStage: ProjectLifecycleStage {
+        appState.projectLifecycle.stage(for: project.projectNumber)
+            ?? ProjectLifecycleDeriver.derive(
+                timeBookedHours: appState.timer.gebuchteStunden(for: project.projectNumber),
+                isArchived: project.phase == "Archiviert")
+    }
+
+    private var lifecycleRow: some View {
+        HStack(spacing: MykSpace.s3) {
+            HStack(spacing: 3) {
+                ForEach(ProjectLifecycleStage.allCases) { s in
+                    Capsule()
+                        .fill(s.rawValue <= lifecycleStage.rawValue ? MykColor.brand.color : MykColor.line.color)
+                        .frame(width: s.rawValue == lifecycleStage.rawValue ? 13 : 7, height: 3)
+                }
+            }
+            Text(lifecycleStage.label)
+                .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color).tracking(0.3)
+            Spacer()
+        }
     }
 
     // Stern-Toggle (L25). Eigener Plain-Button im Hero — macOS leitet den inneren
