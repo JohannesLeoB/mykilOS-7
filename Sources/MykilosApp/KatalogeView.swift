@@ -62,8 +62,27 @@ enum KatalogTab: String, CaseIterable, Identifiable {
 struct KatalogeView: View {
     @Environment(AppState.self) private var appState
     @AppStorage("kataloge.taborder") private var orderRaw: String = ""
+    // Selbst-konfigurierbar wie Widgets: welche Kataloge in DIESER Ansicht aktiv sind
+    // (leer = alle). Reihenfolge weiterhin per Drag (kataloge.taborder).
+    @AppStorage("kataloge.aktiveTabs") private var aktiveTabsRaw: String = ""
     @State private var order: [KatalogTab] = KatalogTab.defaultOrder
     @State private var selected: KatalogTab = .artikel
+    @State private var showTabSelector = false
+
+    private var aktiveTabs: Set<KatalogTab> {
+        let parsed = aktiveTabsRaw.split(separator: ",").compactMap { KatalogTab(rawValue: String($0)) }
+        return parsed.isEmpty ? Set(KatalogTab.allCases) : Set(parsed)
+    }
+    private var sichtbareTabs: [KatalogTab] {
+        let sichtbar = order.filter { aktiveTabs.contains($0) }
+        return sichtbar.isEmpty ? order : sichtbar
+    }
+    private func setzeTabAktiv(_ tab: KatalogTab, _ aktiv: Bool) {
+        var set = aktiveTabs
+        if aktiv { set.insert(tab) } else if set.count > 1 { set.remove(tab) }  // nie alle deaktivieren
+        aktiveTabsRaw = order.filter { set.contains($0) }.map(\.rawValue).joined(separator: ",")
+        if !set.contains(selected) { selected = order.first { set.contains($0) } ?? .artikel }
+    }
 
     // Webshop: listenübergreifender Warenkorb (lokal, in-session)
     @State private var warenkorb = WarenkorbState()
@@ -152,6 +171,21 @@ struct KatalogeView: View {
             .help("Neues Projekt über Fragebogen anlegen")
             .accessibilityLabel("Neues Projekt über Fragebogen anlegen")
 
+            // Kataloge-Selektor (welche Tabs aktiv sind — wie der Widget-Selektor)
+            Button { showTabSelector.toggle() } label: {
+                Image(systemName: "square.grid.2x2")
+                    .font(.mykBody)
+                    .foregroundStyle(MykColor.muted.color)
+                    .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s2)
+                    .background(MykColor.card.color)
+                    .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .help("Kataloge ein-/ausblenden")
+            .accessibilityLabel("Kataloge konfigurieren")
+            .popover(isPresented: $showTabSelector, arrowEdge: .bottom) { katalogSelektor }
+
             // Warenkorb-Badge-Button
             Button {
                 warenkorb.showPanel.toggle()
@@ -185,9 +219,39 @@ struct KatalogeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    // Kataloge-Selektor: pro Katalog ein/aus (nie alle aus). Reihenfolge per Drag im Strip.
+    private var katalogSelektor: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s3) {
+            HStack(spacing: MykSpace.s2) {
+                Image(systemName: "square.grid.2x2").font(.mykCaption).foregroundStyle(MykColor.brand.color)
+                Text("Kataloge dieser Ansicht").font(.mykHeadline).foregroundStyle(MykColor.ink.color)
+            }
+            Text("Ein-/ausblenden. Reihenfolge per Drag an den Tabs.")
+                .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+            Divider().overlay(MykColor.line.color)
+            ForEach(order) { tab in
+                HStack(spacing: MykSpace.s3) {
+                    Image(systemName: tab.icon).font(.mykCaption).foregroundStyle(tab.accent.color).frame(width: 20)
+                    Text(tab.title).font(.mykSmall).foregroundStyle(MykColor.ink.color)
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { aktiveTabs.contains(tab) },
+                        set: { setzeTabAktiv(tab, $0) }
+                    ))
+                    .labelsHidden().toggleStyle(.switch).tint(tab.accent.color)
+                    .accessibilityLabel(tab.title)
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .padding(MykSpace.s5)
+        .frame(width: 300)
+        .background(MykColor.card.color)
+    }
+
     private var tabStrip: some View {
         HStack(spacing: MykSpace.s2) {
-            ForEach(order) { tab in
+            ForEach(sichtbareTabs) { tab in
                 tabPill(tab)
                     .draggable(tab.rawValue) {
                         tabPillLabel(tab, active: false).opacity(0.9)
@@ -265,7 +329,8 @@ struct KatalogeView: View {
         for t in parsed where !seen.contains(t) { result.append(t); seen.insert(t) }
         for t in KatalogTab.defaultOrder where !seen.contains(t) { result.append(t); seen.insert(t) }
         order = result
-        if let first = order.first { selected = order.contains(selected) ? selected : first }
+        // Auswahl muss ein SICHTBARER (aktiver) Tab sein.
+        if !sichtbareTabs.contains(selected) { selected = sichtbareTabs.first ?? .artikel }
     }
 }
 
