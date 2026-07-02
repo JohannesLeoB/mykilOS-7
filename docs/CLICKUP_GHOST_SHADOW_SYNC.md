@@ -31,6 +31,29 @@ Testspace live schaltet — Ghosts → echte Member gemappt, alles auf einmal �
 
 ---
 
+## 2b. ⚠️ Bekannte Überschneidung — VOR dem Sync zu klären (Johannes, 2026-07-02)
+
+Der Testspace enthält bereits **zwei unabhängig gewachsene Kopien** desselben Projekts:
+- **`PROJEKTE > AKTIV`** (Live-Struktur, z. B. `2025_014_BenjaminMartin_FUN16` mit 7 Tasks)
+- **`88 Slack-Archiv (historisch)`** (Slack-Export-Import, dasselbe Projekt mit 26 Tasks)
+
+Beide Zweige sind **nicht deckungsgleich** (unterschiedliche Task-Zahl = unterschiedliche
+Detailtiefe/Zeitraum). Ein naiver Sync würde Dubletten erzeugen statt eine Wahrheit.
+
+**Konsequenz fürs Sync-Design:** vor dem eigentlichen Live→Shadow-Sync braucht es einen
+**Merge/Dedupe-Schritt** für bereits vorhandene Überschneidungen:
+1. Projekt-Identität matchen (Projektnummer/Kdnr, nicht Freitext-Name).
+2. Je Match: welche Kopie ist die vollständigere/aktuellere Quelle je Task (Slack-Historie hat
+   oft mehr Kontext, Live-Struktur oft aktuelleren Status)?
+3. Zusammenführen zu EINER Shadow-Wahrheit je Projekt — append-only, keine der beiden
+   Ursprungskopien wird zerstört, bis der Merge bestätigt ist.
+4. Erst danach greift die ID-Mapping-Registry (§3) für laufenden Sync.
+
+**Das ist der erste Klärungspunkt, wenn der Strang drankommt** — nicht Detail, sondern
+Voraussetzung: ohne sauberen Merge-Schritt entsteht beim Sync zusätzliches Chaos statt weniger.
+
+---
+
 ## 3. Architektur-Skizze
 
 ```
@@ -55,7 +78,8 @@ Ghost-Kürzel → echte Member gemappt · Notifikationen scharf · Testspace WIR
    Notifikationen dort aus.
 2. **ID-Mapping-Registry** (Airtable oder lokal): `LiveTaskID ↔ ShadowTaskID`, `LiveListID ↔
    ShadowListID` — macht den Sync **idempotent** (wiederholbar ohne Dubletten). Append/Update,
-   **nie Delete**.
+   **nie Delete**. **Muss zusätzlich `SlackArchivTaskID` als dritten Schlüssel führen** (§2b) —
+   sonst matcht der Sync nicht gegen die bereits vorhandene Slack-Archiv-Kopie.
 3. **Ghost↔Member-Mapping-Tabelle:** Ghost-Kürzel → echte ClickUp-Member-ID. Aktuell nur
    `Johannes → echter User` gemappt; alle anderen bleiben Ghost bis GO-LIVE.
 4. **Historie:** ClickUp erlaubt keinen direkten History-Write → Task-Historie wird als
