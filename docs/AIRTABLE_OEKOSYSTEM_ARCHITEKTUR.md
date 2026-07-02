@@ -32,10 +32,15 @@ Handbuch, sondern hier dokumentiert).
 |---|---|---|
 | `Datenstrom-Handbuch` (Mastermind) | JEDER App-Code-I/O-Fluss | — ist selbst der Hub |
 | `mykilOS_TRESOR` → `Zugangsdaten-Registry` | Welches System braucht welchen Zugang (Keychain-Referenz, NIE der echte Wert) | Andere Fragestellung: Credential-Metadaten, nicht Datenfluss |
-| `mykilOS_Projekte` → `Intake — Daniel-DB Zuordnung` | Übersetzungsschicht Daniels read-only Kunden-DB → mykilOS-Projektnummern, mit Warnstufen | Reine Datenabgleichs-/Reconciliation-Aufgabe, kein wiederkehrender Datenfluss |
-| `mykilOS Mastermind` → `Datenqualität` (neu) | Sichtbare Duplikat-/Schema-Verstoß-Warnungen für Projekte | Warnungs-Ledger, kein I/O-Fluss — aber bewusst in Mastermind, nicht in einer 4. leeren Base |
+| `mykilOS_Projekte` → `Intake — Daniel-DB Zuordnung` | **DEPRECATED (2026-07-02, zweite Selbstkorrektur):** dupliziert `ExternalMappingRegistry.candidateBindings` (Sources/MykilosServices/ExternalMappingRegistry.swift) — bereits laufender App-Mechanismus, sichtbar im Schaltzentrum als „Projektnummer-Bindungsvorschläge" (`PROJECT_NUMBER_LOCAL_BINDING`). Der App-Weg ist besser: Mehrdeutigkeits-Schutz (nur bei GENAU einem Titel-Treffer ein Vorschlag), echter Bestätigungs-/Audit-Pfad (GRDB + AuditEntry + DataFlowLogger), keine zweite Wahrheit. Tabelle bleibt als historische Analyse stehen, ist aber kein aktiver Zuordnungs-Pfad mehr — neue Zuordnungen laufen über die App-UI. | War ohnehin kein I/O-Fluss (siehe rechts, jetzt zusätzlich obsolet) |
+| `mykilOS Mastermind` → `Datenqualität` (neu) | Bleibt gültig — erfasst etwas, was `ExternalMappingRegistry` NICHT tut: qualitative Verdachtsmomente (Testdaten, interne/Test-Einträge, Duplikat-Verdacht zwischen zwei Daniel-Records). Der App-Matcher prüft nur „passt der Titel exakt zu genau einem Routing-Projekt", nicht „sieht das nach Testdaten aus". Ergänzt den App-Mechanismus, dupliziert ihn nicht. | Warnungs-Ledger, kein I/O-Fluss — aber bewusst in Mastermind, nicht in einer 4. leeren Base |
 | `mykilOS-Adapter Clockodo` | Bereits real live verdrahtet (`TimerStore.confirmBooking` schreibt hierhin) | Eigenständige funktionale Infrastruktur, kein Dokumentations-Duplikat |
 | `mykilOS_Alerts News/Cash/Timelines` | **Bewusst nicht angefasst** — alle 3 sind identische, leere Airtable-Standardvorlagen ohne inhaltlichen Bezug zu ihrem Namen. Für Datenqualität ungeeignet (siehe oben). Wofür sie stattdessen gedacht waren: unklar, nicht geraten. | — |
+
+**Lehre aus dieser zweiten Selbstkorrektur:** Bevor eine neue Airtable-Struktur für „X abgleichen/
+zuordnen" gebaut wird, zuerst im Schaltzentrum (SchaltzentrumView) und im Datenstrom-Handbuch
+nachsehen, ob es dafür nicht schon einen laufenden App-Mechanismus gibt — genau wie beim ersten
+Fund (`CLICKUP_FRAGEBOGEN_PROJEKT_ANLEGEN`/Schnittstellen-Duplikat weiter oben.
 
 ## Airtable-Automationen: bewusst NICHT gebaut
 

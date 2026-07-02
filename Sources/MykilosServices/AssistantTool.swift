@@ -122,9 +122,20 @@ public struct SearchGmailTool: AssistantTool {
     }
 
     public let name = "search_gmail"
+    // Härtung (2026-07-02): reale Beobachtung — bei unklaren Absendernamen (z. B. Umlaut-
+    // Varianten "häfele"/"haefele"/"hafele") baute das Modell wiederholt unklammerte,
+    // mehrteilige OR-Ketten ("from:x OR y freitext OR z"), die Gmail falsch parst (OR muss
+    // großgeschrieben UND bei gemischten Bedingungen geklammert sein) — jeder Versuch lief
+    // ins Leere, bis die Runde ohne Ergebnis aufgab. Der Client/das Encoding war nie das
+    // Problem (URLComponents kodiert Umlaute korrekt), nur die fehlende Anleitung hier.
     public let description =
         "Durchsucht die E-Mails des Nutzers (nur lesen). Verwende Gmail-Suchsyntax im query, "
         + "z. B. 'from:gesa', 'to:gesa subject:Angebot', 'newer_than:30d', 'after:2025/01/01'. "
+        + "WICHTIG bei Alternativen: 'OR' IMMER großgeschrieben und bei gemischten Bedingungen "
+        + "klammern, z. B. 'from:(häfele OR haefele OR hafele) (Angebot OR Besteckeinsatz)' — "
+        + "NIEMALS unklammertes 'from:x OR y freitext OR z' (wird falsch geparst). Bei Namen "
+        + "mit Umlaut/Schreibvarianten zuerst eine EINFACHE Suche ohne OR probieren (z. B. nur "
+        + "'from:häfele'), bevor komplexere OR-Ketten versucht werden. "
         + "Gibt Treffer mit Betreff, Absender und Datum zurück. Für einen Rückblick über mehr "
         + "Mails 'anzahl' erhöhen (Standard 25, max 100)."
     public var parameters: [ToolParameter] {

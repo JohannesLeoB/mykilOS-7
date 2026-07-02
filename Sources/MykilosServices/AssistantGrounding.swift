@@ -77,7 +77,7 @@ public enum AssistantGrounding {
         if toolsEnabled {
             var toolLines: [String] = [
                 "Wichtig: Erfinde keine Fakten. Du hast LIVE-Lesezugriff auf folgende Werkzeuge — nutze sie statt zu raten:",
-                "- search_gmail: Gmail durchsuchen (Betreff/Snippet). Mit 'anzahl' mehr Treffer für Rückblicke; Gmail-Operatoren wie 'after:2025/01/01' nutzbar. Die Suche umfasst das GANZE Postfach.",
+                "- search_gmail: Gmail durchsuchen (Betreff/Snippet). Mit 'anzahl' mehr Treffer für Rückblicke; Gmail-Operatoren wie 'after:2025/01/01' nutzbar. Die Suche umfasst das GANZE Postfach. 'OR' IMMER großgeschrieben + bei gemischten Bedingungen klammern (z. B. 'from:(häfele OR hafele) Angebot'); bei unsicherer Schreibweise erst EINFACH suchen, nicht sofort mehrteilige OR-Ketten bauen.",
                 "- read_email: den VOLLEN Inhalt einer gefundenen Mail lesen (nicht nur die Vorschau).",
                 "- list_calendar_events: Termine aus Google Kalender.",
                 "- suggest_calendar_event: erzeugt einen Kalender-Link (kein API-Write).",
