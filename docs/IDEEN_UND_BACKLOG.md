@@ -116,6 +116,35 @@ Dokumente/Templates). Vereint Formulare-Ebene + Geräteliste + Moodboard + Angeb
   dieses Widget wäre ein konkreter, kleiner erster Baustein davon (Projekt-Picks sichtbar machen,
   bevor der volle Checkout-Router existiert).
 
+### 💡 UI-Batch 2026-07-02 Runde 3 (Abend-Screenshots, Assistent + Zukunftswünsche)
+- **Upload-/Anhang-Icon im Chat-Composer:** Johannes fragt nach einem „schöneren" kleinen
+  Upload-Icon rechts neben dem Chat-Eingabefeld. Stand 2026-07-02: der Composer
+  (`AssistantChatView.composer`) hat NUR das TextField + den Senden-/Stop-Button
+  (`arrow.up.circle.fill`) — es gibt aktuell KEIN dediziertes Upload-/Anhang-Icon dort. Zu
+  klären: soll ein echter Datei-Anhang-Button rein (Bild/PDF an den Chat/Entwurf hängen), oder
+  ist nur der Senden-Pfeil gemeint (dann Aesthetik-Feinschliff)? Nicht geraten — beim nächsten
+  Mal mit Johannes am Bildschirm zeigen lassen.
+- **✅ erledigt (2026-07-02):** Kopieren-Knopf im Assistentenchat (Hover-Button unter
+  Assistenten-Antworten + Kopieren am Mail-Entwurf + Text markierbar), `CopyButton`.
+
+### 🗺️ Future: Google-Maps-Widget je Projekt (Baustelle/Kundenadresse)
+Kleines, echtes Google-Maps-Widget auf der Projekt-Detailseite: zeigt die Baustellen- bzw.
+Kundenadresse des Projekts als klickbare Karte mit Stecknadel. Datenquelle: `Project`-Adresse
+(Projektadresse Straße/PLZ/Ort) bzw. Kundenadresse. Umsetzung: statische Maps (Static Maps API,
+ein Bild + Deep-Link zu Google Maps) ist am einfachsten und braucht keine JS-Karte; interaktive
+Einbettung wäre ein WKWebView. Klick öffnet Google Maps mit der Adresse. Offen: Maps-API-Key
+(→ Zugangsdaten-Registry/TRESOR), Kosten-/Kontingent-Frage der Static-Maps-API.
+
+### 🗄️ Future: Archivierte Drive-Projektordner (alte Nomenklatur) in mykilOS abbilden
+Für den Rückblick 1–2 Jahre: die im Drive `_PROJEKTE_ARCHIV` liegenden, teils nach ALTEN,
+uneinheitlichen Namensschemata (Standort-Präfixe `B_`/`HH_`/`K_`/`WI_`, verschachtelte
+Jahres-Unterordner) aufgebauten Projektordner sollen bei Bedarf auch in mykilOS sicht-/
+durchsuchbar sein — ohne die aktive Projektliste zu verschmutzen. Ansatz (schon früher grob
+skizziert, jetzt als Feature notiert): eigener Alt-Nomenklatur-Parser + eine
+Übersetzungsregistry (Alt-Name ↔ `JJJJ-NNN`-Schema, dieselbe Intake-/Warnungs-Mechanik wie beim
+Daniel-DB-Abgleich), als GETRENNTER „Archiv"-Bereich (eigener Filter/Modus), read-only. Bewusst
+noch nicht angefasst — großer, eigener Strang.
+
 ---
 
 ## Architektur-Vorschlag: WorkBasket/Checkout-Pipeline (generisches Schreib-Modell)

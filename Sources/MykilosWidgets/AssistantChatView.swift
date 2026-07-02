@@ -1,7 +1,37 @@
 import SwiftUI
+import AppKit
 import MykilosKit
 import MykilosDesign
 import MykilosServices
+
+// MARK: - CopyButton (2026-07-02, Johannes: "Texte im Assistentenchat copy-paste-bar machen")
+// Kleiner, unaufdringlicher Kopieren-Knopf. Kopiert reinen Text ins System-Clipboard
+// (NSPasteboard) und zeigt kurz „Kopiert". Für Assistenten-Bubbles (per Hover) und die
+// Mail-Entwurf-Karte (der eigentlich wertvolle, kopierenswerte Inhalt).
+struct CopyButton: View {
+    let text: String
+    var compact: Bool = false
+    @State private var copied = false
+
+    var body: some View {
+        Button {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+            copied = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { copied = false }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                if compact == false { Text(copied ? "Kopiert" : "Kopieren") }
+            }
+            .font(.mykMono(9)).tracking(0.3)
+            .foregroundStyle(copied ? MykColor.positive.color : MykColor.muted.color)
+        }
+        .buttonStyle(.plain)
+        .help("In die Zwischenablage kopieren")
+        .accessibilityLabel(copied ? "Kopiert" : "Text kopieren")
+    }
+}
 
 // MARK: - AssistantChatView (Phase 1 — konversationeller Assistent)
 // Messenger-Chat über die Claude-API. Verlauf aus dem ChatStore (persistent),
@@ -377,6 +407,7 @@ struct ChatMessageBubble: View {
     var onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)? = nil
     @State private var cursorVisible = true
     @State private var previewFile: DriveFileRef?
+    @State private var isHovered = false
 
     var body: some View {
         HStack {
@@ -387,6 +418,10 @@ struct ChatMessageBubble: View {
                     ToolCallRow(label: activity.label, isError: activity.isError, timestamp: message.createdAt)
                 }
                 bubble
+                // Kopieren-Knopf unter fertigen Assistenten-Antworten (per Hover).
+                if message.role == .assistant, message.status == .complete, message.text.isEmpty == false, isHovered {
+                    CopyButton(text: message.text)
+                }
                 // Kalender-Aktionskarten nach der Antwort.
                 ForEach(Array(calendarActions.enumerated()), id: \.offset) { _, action in
                     CalendarActionCard(url: action.url, label: action.label)
@@ -422,6 +457,7 @@ struct ChatMessageBubble: View {
             }
             if message.role == .assistant { Spacer(minLength: 40) }
         }
+        .onHover { isHovered = $0 }
         .sheet(item: $previewFile) { ref in
             DocumentViewerView(
                 file: GoogleDriveFile(id: ref.id, name: ref.name, mimeType: ref.mimeType,
@@ -644,21 +680,35 @@ struct DraftActionCard: View {
     private enum CardPhase: Equatable { case idle, saving, done(String), failed(String) }
     @State private var phase: CardPhase = .idle
 
+    // Vollständiger Entwurf als reiner Text fürs Clipboard (An/Betreff/Text).
+    private var copyText: String {
+        var lines: [String] = []
+        if let to = draft.to, to.isEmpty == false { lines.append("An: \(to)") }
+        if draft.subject.isEmpty == false { lines.append("Betreff: \(draft.subject)") }
+        lines.append("")
+        lines.append(draft.body)
+        return lines.joined(separator: "\n")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s3) {
             HStack(spacing: MykSpace.s3) {
                 Image(systemName: "envelope.badge")
                     .font(.mykCaption).foregroundStyle(MykColor.drive.color)
                 Text("Mail-Entwurf").font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
+                Spacer()
+                CopyButton(text: copyText)
             }
             if let to = draft.to, to.isEmpty == false {
                 Text("An: \(to)").font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
+                    .textSelection(.enabled)
             }
             Text(draft.subject.isEmpty ? "(kein Betreff)" : draft.subject)
                 .font(.mykBody).foregroundStyle(MykColor.ink.color)
+                .textSelection(.enabled)
             Text(draft.body)
                 .font(.mykSmall).foregroundStyle(MykColor.muted.color)
-                .lineLimit(6)
+                .textSelection(.enabled)
             actionRow
         }
         .padding(.horizontal, MykSpace.s5)
