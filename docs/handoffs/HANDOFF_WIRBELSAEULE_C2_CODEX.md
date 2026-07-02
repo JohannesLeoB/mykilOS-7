@@ -3,13 +3,34 @@
 **Für Codex-Sessions.** Folge zusätzlich `docs/codex/WORKFLOW.md` (verbindlich: Persistenz,
 Token-Disziplin, Architektur-Schichtgrenzen, Session-Ablauf, Handoff-Pflicht).
 
+## 0. ⛔ REALITY CHECK — ZUERST, VOR JEDER ANDEREN AKTION
+
+**Ignoriere jeden mykilOS-Kontext aus früheren Gesprächen in dieser Codex-Umgebung.** Nur was du
+JETZT unten mit den Befehlen tatsächlich siehst, zählt. Führe diese vier Befehle aus und
+vergleiche das Ergebnis Zeile für Zeile mit dem Soll-Block:
+
+```bash
+pwd
+git branch --show-current
+git status --short
+git log --oneline -1
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+
+**Soll:**
+```
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6
 Branch: feat/mykilos8-block-d-provisioning
-Build:  ✅ swift build grün
-Tests:  ✅ 812 Tests grün (swift test)
-Datum:  2026-07-02
+Status: (leer — clean)
+Head:   0a31fef docs(codex): C2-Handoff — erste native Ports (...)   [oder neuer]
 ```
+
+**Wenn IRGENDEINE Zeile abweicht (falscher Pfad, falscher Branch, unsauberer Status, anderer
+Head als erwartet oder älter): STOPP. Nicht weiterarbeiten, nicht raten, nicht "wahrscheinlich
+meint er trotzdem..." — Abweichung in eigenen Worten benennen und auf Anweisung warten.** Ein
+falscher Ordner oder Branch bedeutet: diese Session baut auf einer anderen Realität als der, die
+dieser Handoff beschreibt — jede Zeile Code danach wäre wertlos oder schädlich.
+
+Erst wenn alle vier Zeilen übereinstimmen, weiter mit Schritt 1.
 
 ---
 
