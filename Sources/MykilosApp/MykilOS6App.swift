@@ -378,16 +378,19 @@ struct AssistantPageView: View {
                 .pickerStyle(.segmented)
                 .frame(width: 200)
                 .labelsHidden()
-                // „Verfassen" sitzt rechts neben dem Toggle (nur im Mail-Tab) —
-                // bewusst NICHT in der Fenster-Toolbar (die verschob beim Wechsel).
-                if activeTab == .mail {
-                    Button { mailCompose = true } label: {
-                        Label("Verfassen", systemImage: "square.and.pencil")
-                            .font(.mykSmall)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(MykColor.personal.color)
+                // „Verfassen"-Slot: IMMER präsent (feste intrinsische Breite), damit der
+                // Toggle beim Wechsel Assistent⇄Mail nicht verspringt (2026-07-02, Johannes).
+                // Nur im Mail-Tab sichtbar/aktiv — sonst unsichtbar, hält aber seinen Platz.
+                Button { mailCompose = true } label: {
+                    Label("Verfassen", systemImage: "square.and.pencil")
+                        .font(.mykSmall)
                 }
+                .buttonStyle(.plain)
+                .foregroundStyle(MykColor.personal.color)
+                .opacity(activeTab == .mail ? 1 : 0)
+                .disabled(activeTab != .mail)
+                .allowsHitTesting(activeTab == .mail)
+                .accessibilityHidden(activeTab != .mail)
             }
             .padding(.horizontal, MykSpace.s9)
             .padding(.top, MykSpace.s9)

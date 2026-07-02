@@ -12,6 +12,8 @@ import MykilosServices
 @MainActor
 struct WidgetSelectorView: View {
     let boardStore: WidgetBoardStore
+    // Auswählbare Widget-Arten je Board (Projekt- vs. Heute-Board).
+    var kinds: [WidgetKind] = WidgetBoardDefault.projectSelectableKinds
 
     var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s4) {
@@ -30,9 +32,9 @@ struct WidgetSelectorView: View {
             Divider().overlay(MykColor.line.color)
 
             VStack(spacing: 0) {
-                ForEach(WidgetBoardDefault.projectSelectableKinds, id: \.self) { kind in
+                ForEach(kinds, id: \.self) { kind in
                     zeile(for: kind)
-                    if kind != WidgetBoardDefault.projectSelectableKinds.last {
+                    if kind != kinds.last {
                         Divider().overlay(MykColor.line.color.opacity(0.5))
                     }
                 }
@@ -126,9 +128,9 @@ struct WidgetSelectorView: View {
 
     private func standardGroesse(_ kind: WidgetKind) -> WidgetSize {
         switch kind {
-        case .assistant:              .full
-        case .drive, .cash, .warenkorb: .wide
-        default:                       .medium
+        case .assistant, .projectFaves:            .full
+        case .drive, .cash, .warenkorb, .focus, .recentActivity: .wide
+        default:                                    .medium
         }
     }
 
@@ -143,6 +145,11 @@ struct WidgetSelectorView: View {
         case .warenkorb: "Warenkorb"
         case .mail:      "Mail"
         case .assistant: "Assistent"
+        // Heute-Board-Arten
+        case .focus:          "Fokus-Liste"
+        case .projectFaves:   "Projekt-Favoriten"
+        case .recentActivity: "Letzte Aktivität"
+        case .clockodo:       "Zeiterfassung"
         default:         kind.rawValue.capitalized
         }
     }

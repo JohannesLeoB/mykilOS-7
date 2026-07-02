@@ -199,30 +199,22 @@ struct MailClientView: View {
             store.switchFolder(folder)
             Task { await store.loadFolder() }
         } label: {
-            HStack(spacing: MykSpace.s2) {
-                Image(systemName: folder.icon)
-                    .font(.mykMono(10))
-                Text(folder.label)
-                    .font(.mykMono(10))
-            }
-            .foregroundStyle(isActive ? MykColor.personal.color : MykColor.muted.color)
-            .padding(.horizontal, MykSpace.s3)
-            .padding(.vertical, 4)
-            .background(
-                isActive
-                    ? MykColor.personal.color.opacity(0.1)
-                    : Color.clear
-            )
-            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
-            .overlay(
-                RoundedRectangle(cornerRadius: MykRadius.sm)
-                    .stroke(
-                        isActive ? MykColor.personal.color.opacity(0.25) : Color.clear,
-                        lineWidth: 1
-                    )
-            )
+            // Icon-only (2026-07-02, Johannes): Icon+Text brach in der schmalen
+            // Listenspalte um. Jetzt kompakte Icon-Segmente mit Tooltip/Label.
+            Image(systemName: folder.icon)
+                .font(.mykBody)
+                .foregroundStyle(isActive ? MykColor.personal.color : MykColor.muted.color)
+                .frame(width: 36, height: 26)
+                .background(isActive ? MykColor.personal.color.opacity(0.1) : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                .overlay(
+                    RoundedRectangle(cornerRadius: MykRadius.sm)
+                        .stroke(isActive ? MykColor.personal.color.opacity(0.25) : Color.clear, lineWidth: 1)
+                )
         }
         .buttonStyle(.plain)
+        .help(folder.label)
+        .accessibilityLabel(folder.label)
     }
 
     private var searchBar: some View {
