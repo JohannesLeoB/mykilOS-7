@@ -27,14 +27,31 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 **Kein Nebenfeature — das ist der End-to-End-Beweis, dass die ganze S10-Wirbelsäule trägt.**
 
-**Idee (Johannes, 2026-07-02):** Alle eingehenden UND ausgehenden PDF-Angebote (Katalog-Ansicht
-Angebote) einmalig komplett maschinell analysieren. Pro Angebots-**Position** genau auslesen:
-Positionstext, Anzahl, Stückpreis, Beschreibung, Artikelnummer, alle Details. Ergebnis: eine
-einzelne **Unterposition** eines Angebots lässt sich „ausschneiden" und als eigenständiger
-**Single-Pick** in einen Warenkorb droppen. **Davor eine Editierebene** — Auslesefehler korrigieren,
-Menge/Text/andere Felder anpassbar, bevor gespeichert wird. Die extrahierten Einzelpositionen
-landen automatisiert in einer eigenen Tabelle, mit **Tags, Markern, Ident (stabile ID)**. Ziel:
-daraus wieder Warenkörbe füllen → Richtung sevDesk oder andere Checkout-Ziele.
+**⚠️ KORRIGIERTES Mechanismus-Modell (Johannes, 2026-07-02 — ersetzt die erste Fassung):**
+**KEIN** automatisches Batch-Auslesen ganzer PDFs durch eine KI, die rät, was eine Position ist.
+Stattdessen: **live, klick-getriebenes Picking auf der bereits sichtbaren PDF-Seite.**
+
+Im Angebots-Tab liegen alle ein-/ausgehenden Angebote als PDF-Auszüge aus ihren Drive-Ordnern —
+das ist die bestehende große Vorschau. Ein **togglebarer erweiterter Vorschau-/Picking-Modus**
+zeigt dieselbe sichtbare Seite, aber jetzt klickbar: **Mausklick auf die exakte Rechteck-Box
+einer einzelnen Position** auf der aktuell dargestellten Seite „schnappt" NUR diesen einen
+Bereich — nicht das ganze Dokument, nicht automatisch geraten. Der Klick selbst ist die
+Auswahl. Danach: Korrekturen inline (Menge/Text/Felder anpassbar), dann in den Checkout
+mitnehmen. **Da der Mensch geklickt UND korrigiert hat, gilt die Position beim Abschicken
+automatisch als human-verifiziert** — es gibt keinen separaten „KI hat geraten, Mensch prüft
+hinterher eine lange Liste"-Schritt. Verifikation ist in den Auswahlvorgang selbst eingebaut,
+nicht nachgelagert.
+
+Extrahierte Einzelpositionen landen in einer eigenen Tabelle mit **Tags, Markern, Ident (stabile
+ID)**. Ziel: daraus Warenkörbe füllen → Richtung sevDesk oder andere Checkout-Ziele.
+
+**Konsequenz für die Nacht-/Unbeaufsichtigt-Frage:** Weil das Picking per Design immer einen
+sichtbaren Klick auf eine konkrete Bildschirm-Position braucht, gibt es **keinen sinnvollen
+„Batch-Test über Nacht ohne Johannes"** für diese Funktion — anders als bei einer KI-Rate-
+Pipeline. Was OHNE ihn geht: die UI-/Code-Bausteine bauen (togglebarer Vorschau-Modus, Rechteck-
+Auswahl-Overlay über PDFKit, Korrektur-Editor) und mit **von Johannes selbst vorgegebenen
+Test-Koordinaten** auf bekannten PDFs prüfen, ob „Rechteck X auf Seite Y" sauberen Text liefert
+— das ist reine Technik-Verifikation, kein KI-Rate-Test.
 
 **Warum das die Wirbelsäule validiert (nicht nur eine Idee ist):**
 - **`CatalogMatrix.eingangsangebot`** existiert bereits im C1-Fundament
@@ -53,14 +70,15 @@ bestehende Datenbank. Gleiches Muster wie der bereits geloggte „Kontakt anlege
 (Mail-Signaturen/Dokumente) im Drive/Mail-Alerts-Block unten — hier PDF-Angebote als zusätzliche
 Quelle. Nutzt denselben bestehenden `ContactActionCard`-Flow (gated, Karte→Bestätigung→Audit).
 
-**🆕 Freigabe zum TESTEN (Johannes 2026-07-02 spät):** Extraktion/OCR/Parsing darf **jetzt schon
-ausprobiert** werden — an allen bereits bekannten Angeboten, „OCR oder was auch immer nötig ist".
-**Wichtige Grenze:** Testen/Prototyping = nur **lesend** auf bestehenden PDFs, lokal ausprobieren,
-Genauigkeit prüfen. **KEIN dauerhaftes Speichern von Positionen oder Kontakten ohne Johannes'
-Live-Bestätigung** — dafür ist niemand da, der die Bestätigungs-Karte klickt. Ergebnisse für die
-morgendliche Durchsicht vorbereiten/protokollieren, nicht scharf schalten. Bei echter Unsicherheit
-oder etwas potenziell Riskantem: **fragen, nicht raten** (Johannes' eigene Formulierung: „bevor du
-kacke baust").
+**⚠️ KORRIGIERT (Johannes 2026-07-02, „NÖ!"):** die vorherige „Freigabe zum Testen"-Formulierung
+ging von einem automatischen Batch-OCR-Modell aus — **falsch**, siehe korrigiertes Mechanismus-
+Modell oben. Kein „KI liest alle bekannten Angebote automatisch aus und ich prüfe morgens eine
+Liste" — das Feature ist per Design IMMER live/klick-getrieben, es gibt kein sinnvolles
+unbeaufsichtigtes „Ausprobieren an allen Angeboten". Was nachts sicher geht: UI-/Technik-Bausteine
+bauen (Vorschau-Toggle, Rechteck-Auswahl-Overlay, Editor), Text-Extraktion aus einer **von
+Johannes selbst vorgegebenen** Koordinate auf einer bekannten PDF-Seite technisch verifizieren
+— nicht „irgendwelche Positionen selbst erkennen und raten". Bei Unsicherheit: fragen, nicht
+raten („bevor du kacke baust").
 
 **⚠️ Wichtig — vermutlich KEIN Zero-to-One:** aus der Schätz-Engine-Arbeit (Kalkulations-Port)
 existiert bereits ein Korpus mit **~818 bereits extrahierten `position_candidates`** aus 164 PDFs
