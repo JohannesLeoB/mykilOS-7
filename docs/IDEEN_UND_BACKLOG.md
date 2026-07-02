@@ -790,3 +790,30 @@ Nutzer stellt sich seine eigenen **Farb-Swatches** für SEINE Ansicht zusammen.
   bleibt unangetastet; die Token-Disziplin/SwiftLint gilt weiter, „Crazy" ist ein Runtime-Override).
 - Spaß-Feature, „für später oder wenn es passt". Schöner Vertrauensbeweis: local-first heißt auch
   „deine App, deine Farben".
+
+### 🎉 Easter-Egg-Sammlung — alles hinter EINEM Opt-in „Spaß-Mode" (Johannes 2026-07-02)
+Grundregel: **ein Schalter in Settings** („Spaß-Mode / Easter Eggs") — Default AUS. Nichts davon
+stört den professionellen Betrieb; erst der Opt-in weckt die Spielereien. Dezent, kurz, nie im Weg.
+
+**Assistent / Kalkulation:**
+- 💶 **Cash-Regen/GIF**, wenn eine Küchenschätzung reinkommt — Intensität ~ Höhe der Schätzung
+  (kleine Summe = ein paar Scheine, große = kurzer Geldregen). Dann sofort weg.
+- 🦆 „Rubber-Duck"-Aside: seltener, trockener Einzeiler des Assistenten („…schöne Marge übrigens.").
+- 🎯 Wenn eine Schätzung auf eine runde/lustige Zahl fällt → Mini-Zwinkern.
+
+**Momente / Meilensteine:**
+- 🥂 **Konfetti**, wenn ein Projekt in die Stufe „Abschluss" wandert (Pipeline-Board).
+- ✉️ Kleiner Funken, wenn die **erste echte Mail** gesendet wird (S3).
+- 🛒 Warenkorb erreicht viele Positionen → kurzer „voll beladen"-Wackler.
+- 🌙 **Feierabend-Zen:** wenn alle Aufgaben abgehakt / Inbox leer → ruhiger Glückwunsch-Moment.
+
+**Versteckt / klassisch:**
+- ⬆️⬆️⬇️⬇️⬅️➡️⬅️➡️ **Konami-Code** → schaltet den „Crazy"-Theme-Editor (🌈) frei.
+- 🔢 Versionsnummer im About-Fenster N-mal klicken → Credits / Augenzwinkern.
+- ❄️ Dezent saisonal (z. B. minimaler Schnee im Dezember) — sehr subtil.
+
+**Ton (optional, extra Unter-Schalter):**
+- 🔔 Feiner Chime bei Speichern/Bestätigen (nur wenn zusätzlich aktiviert).
+
+Umsetzung: reine Overlay-/Animations-Schicht (SwiftUI transitions/particles), rein lokal, kein
+Datenbezug, kein Audit-Rauschen. Neue Ideen hier ergänzen.
