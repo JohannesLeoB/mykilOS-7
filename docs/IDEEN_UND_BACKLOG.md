@@ -780,3 +780,13 @@ Die Kataloge-Tabs sollen sich pro User **individuell aufziehen** — analog zum 
   persistent (@AppStorage/lokal, per User). Skaliert mit den wachsenden Katalog-Quellen
   (Artikel/Lager/Warenkörbe/Angebote/Kontakte/Notizen/Aufgaben + Bilderdatenbank/Doku-Template/
   Textbausteine/Zeichnungen/Shopify …).
+
+### 🌈 Easter Egg: „Crazy"-Mode (eigenes Theme) — Johannes 2026-07-02
+Bei Erscheinungsbild (Hell/Dunkel/System) ein **viertes Regenbogen-Icon = „Crazy"** anbieten.
+Aktiviert einen **User-eigenen Theme-Editor**: Farbwähler für Text/Hintergründe/Akzente — der
+Nutzer stellt sich seine eigenen **Farb-Swatches** für SEINE Ansicht zusammen.
+- Rein lokal (@AppStorage, pro User), nur die eigene Ansicht — kein geteilter Zustand.
+- Umsetzung: ein Opt-in-**Override-Layer** über den MykColor-Tokens zur Laufzeit (Default = CI
+  bleibt unangetastet; die Token-Disziplin/SwiftLint gilt weiter, „Crazy" ist ein Runtime-Override).
+- Spaß-Feature, „für später oder wenn es passt". Schöner Vertrauensbeweis: local-first heißt auch
+  „deine App, deine Farben".
