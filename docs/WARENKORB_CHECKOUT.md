@@ -204,3 +204,22 @@ Karte→Bestätigung→Audit. Liste bleibt offen — neue Ports werden hier erg�
   aus (z. B. Kreativ-Korb zeigt keine sevDesk-Übergabe, §5d).
 - „Versandadresse" ist port-spezifisch konfigurierbar (Prompt-Parameter, Template-Wahl,
   Ziel-Ordner, Format …) — die einzige Stelle, wo ein Port eigene Felder mitbringt.
+
+### 5f. Port-Rechte (Admin) + Shopify-Katalog vormerken (Johannes, 2026-07-02)
+
+**Port-Berechtigungen — Admin verteilt Rechte:**
+- **Nicht alle „Zahlungsarten" (Ports) sind für alle User freigegeben.** Ein **Admin** legt fest,
+  welcher Nutzer welche Ports nutzen darf.
+- Der PortRegistry-Filter wird damit dreifach: `ports(fuer: inhaltsArt, user:)` =
+  **Inhalts-Art-Gate (§5d) ∩ User-Rechte**. Ein User sieht im Checkout nur Ports, die (a) zur
+  Inhalts-Art passen UND (b) für ihn freigegeben sind.
+- Braucht eine **Admin-Rolle + Rechteverwaltung** (koppelt an Team-/Identitätsmodell + die
+  per-User-Härtung von Clockodo/ClickUp). Heikle Ports (z. B. **sevDesk-Übergabe**) sind
+  typischerweise nur Finance/Admin.
+- Rechte-Quelle: perspektivisch Airtable (pro User → erlaubte Ports), lokal gecacht.
+
+**Shopify-Webshop als Katalog-Quelle (VORMERKEN, später):**
+- Ein **Shopify-geführter Webshop** kommt als weitere Katalog-Quelle in die Kataloge
+  (Produkte/Varianten/Bestände aus Shopify als Picks). Read-first; Schreibrichtung offen.
+- Eigener späterer Strang — jetzt nur als Katalog-Erweiterung vorgemerkt (analog Artikel/Lager,
+  aber Quelle = Shopify statt Airtable-Artikel-DB).
