@@ -96,6 +96,8 @@ struct AllPlansView: View {
     @State private var reloadToken = 0
     /// Kategorie-Filter. `nil` = alle Kategorien.
     @State private var categoryFilter: PlanCategory?
+    /// Datei-Typ-Filter über alle Ordner hinweg. `nil` = alle Typen.
+    @State private var typeFilter: PlanTypeFilter?
     @AppStorage("plaene.alle.sort") private var sortRaw = AllPlansSort.datum.rawValue
 
     private var sort: AllPlansSort { AllPlansSort(rawValue: sortRaw) ?? .datum }
@@ -105,10 +107,11 @@ struct AllPlansView: View {
         PlanCategory.allCases.filter(\.inGlobalKatalog)
     }
 
-    // Kategorie → Volltext → Sortierung. Sektionen teilen danach nach Kategorie.
+    // Kategorie → Typ → Volltext → Sortierung. Spalten teilen danach nach Kategorie.
     private var visible: [AllPlansCollector.AggregatedPlan] {
         let byCategory = AllPlansSorter.filtered(loader.plans, category: categoryFilter)
-        let byQuery = AllPlansSorter.filtered(byCategory, query: searchText)
+        let byType = byCategory.filter { typeFilter?.matches($0.file) ?? true }
+        let byQuery = AllPlansSorter.filtered(byType, query: searchText)
         return AllPlansSorter.sorted(byQuery, by: sort)
     }
 
@@ -167,6 +170,7 @@ struct AllPlansView: View {
     private var toolbar: some View {
         HStack(spacing: MykSpace.s4) {
             categoryMenu
+            typeMenu
             sortMenu
             HStack(spacing: MykSpace.s3) {
                 Image(systemName: "magnifyingglass")
@@ -211,6 +215,28 @@ struct AllPlansView: View {
         .help("Nach Plan-Kategorie filtern")
     }
 
+    private var typeMenu: some View {
+        Menu {
+            Button { typeFilter = nil } label: {
+                Label("Alle Typen", systemImage: typeFilter == nil ? "checkmark" : "doc.on.doc")
+            }
+            Divider()
+            ForEach(PlanTypeFilter.allCases, id: \.self) { type in
+                Button { typeFilter = type } label: {
+                    Label(type.label, systemImage: typeFilter == type ? "checkmark" : type.icon)
+                }
+            }
+        } label: {
+            Label(typeFilter?.label ?? "Alle Typen", systemImage: "doc.badge.ellipsis")
+                .font(.mykSmall).foregroundStyle(typeFilter == nil ? MykColor.muted.color : MykColor.drive.color)
+                .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
+                .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.card.color)
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1)))
+        }
+        .menuStyle(.borderlessButton).fixedSize()
+        .help("Nach Datei-Typ filtern (über alle Ordner)")
+    }
+
     private var sortMenu: some View {
         Menu {
             ForEach(AllPlansSort.allCases, id: \.self) { option in
@@ -236,7 +262,7 @@ struct AllPlansView: View {
         case .loading:
             loadingState
         case .content:
-            categorySections
+            categoryColumns
         case .empty:
             hint(icon: "tray", text: "Keine Pläne/Zeichnungen in den Schema-Ordnern gefunden.")
         case .permissionRequired:
@@ -262,10 +288,13 @@ struct AllPlansView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // EINE scrollende Liste, gruppiert in Sektionen pro Kategorie (Enum-Reihenfolge).
-    private var categorySections: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MykSpace.s7) {
+    // Spalten je Parent-Ordner-Kategorie (Johannes, 2026-07-03) — nur nicht-leere
+    // Kategorien bekommen eine Spalte; bei mehr Spalten als Fensterbreite scrollt
+    // die Leiste horizontal. Jede Spalte scrollt vertikal eigenständig
+    // (gleiche Idee wie die zwei Richtungs-Spalten der Angebote).
+    private var categoryColumns: some View {
+        ScrollView(.horizontal) {
+            HStack(alignment: .top, spacing: MykSpace.s7) {
                 ForEach(globalCategories) { category in
                     let plans = visiblePlans(in: category)
                     if plans.isEmpty == false {
@@ -281,19 +310,23 @@ struct AllPlansView: View {
                                     .font(.mykMono(9.5))
                                     .foregroundStyle(MykColor.faint.color)
                             }
-                            VStack(spacing: 0) {
-                                ForEach(plans) { plan in
-                                    AllPlanRow(plan: plan)
-                                    if plan.id != plans.last?.id {
-                                        Divider().overlay(MykColor.line.color.opacity(0.6))
+                            Divider().overlay(MykColor.line.color.opacity(0.6))
+                            ScrollView {
+                                VStack(spacing: 0) {
+                                    ForEach(plans) { plan in
+                                        AllPlanRow(plan: plan)
+                                        if plan.id != plans.last?.id {
+                                            Divider().overlay(MykColor.line.color.opacity(0.6))
+                                        }
                                     }
                                 }
                             }
                         }
+                        .frame(width: 330, alignment: .topLeading)
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .frame(maxHeight: .infinity, alignment: .topLeading)
         }
     }
 
@@ -334,6 +367,36 @@ struct AllPlansView: View {
             return s
         default:
             return "GOOGLE DRIVE"
+        }
+    }
+}
+
+// MARK: - PlanTypeFilter
+// Datei-Typ-Filter über alle Ordner hinweg ("nur PDFs" / "nur Bilder").
+private enum PlanTypeFilter: String, CaseIterable {
+    case pdf, bild
+
+    var label: String {
+        switch self {
+        case .pdf:  "PDF"
+        case .bild: "Bilder"
+        }
+    }
+    var icon: String {
+        switch self {
+        case .pdf:  "doc.text"
+        case .bild: "photo"
+        }
+    }
+
+    func matches(_ file: GoogleDriveFile) -> Bool {
+        let ext = (file.name as NSString).pathExtension.lowercased()
+        switch self {
+        case .pdf:
+            return ext == "pdf" || file.mimeType == "application/pdf"
+        case .bild:
+            return ext != "pdf" && (file.mimeType.hasPrefix("image/")
+                || ["jpg", "jpeg", "png", "heic", "heif", "tiff", "tif", "webp"].contains(ext))
         }
     }
 }
