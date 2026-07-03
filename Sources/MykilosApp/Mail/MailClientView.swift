@@ -2,12 +2,13 @@ import SwiftUI
 import MykilosKit
 import MykilosDesign
 import MykilosServices
+import MykilosWidgets
 
 // MARK: - MailFolder
 // Ordner/Ansichten-Auswahl — dezente mykilOS-Segment-Reihe (kein Apple-Mail-Klon).
 // Jeder Ordner hat eine Gmail-Query, ein SF-Symbol und einen kurzen Label.
 enum MailFolder: CaseIterable, Identifiable {
-    case inbox, starred, sent
+    case inbox, starred, sent, drafts
 
     var id: Self { self }
 
@@ -16,6 +17,7 @@ enum MailFolder: CaseIterable, Identifiable {
         case .inbox:   return "Eingang"
         case .starred: return "Markiert"
         case .sent:    return "Gesendet"
+        case .drafts:  return "Entwürfe"
         }
     }
 
@@ -24,6 +26,7 @@ enum MailFolder: CaseIterable, Identifiable {
         case .inbox:   return "tray"
         case .starred: return "flag"
         case .sent:    return "paperplane"
+        case .drafts:  return "doc.text"
         }
     }
 
@@ -34,6 +37,10 @@ enum MailFolder: CaseIterable, Identifiable {
         // Apple-Mail-Flags syncen zu Gmail-Sternen → is:starred
         case .starred: return "is:starred"
         case .sent:    return "in:sent"
+        // Härtung (2026-07-01, Johannes): "Entwürfe"-Ordner fehlte im Mail-Modus.
+        // Nutzt dieselbe generische searchMessages(query:)-Infrastruktur wie die
+        // anderen drei Ordner — Gmails messages.list-Suche versteht "in:drafts" genauso.
+        case .drafts:  return "in:drafts"
         }
     }
 }
@@ -45,13 +52,14 @@ enum MailFolder: CaseIterable, Identifiable {
 // Tabelle Kontakte (tblncfQzQa8TzCZQC) → StudioContact → Empfänger-Picker.
 @MainActor
 struct MailClientView: View {
+    @Environment(AppState.self) private var appState
     // Eingebettet im Assistenten-Toggle bringt die Seite ihren Titel schon mit —
     // dann KEINEN eigenen „Mail"-Kopf rendern (sonst steht „Mail" doppelt).
     var showsOwnHeader: Bool = true
-    // „Verfassen" wird vom Seiten-Header (neben dem Toggle) gesteuert — NICHT mehr
-    // über ein Fenster-Toolbar-Item, das beim Tab-Wechsel auftauchte/verschwand und
-    // dabei den ganzen Inhalt verschob.
-    @Binding var showCompose: Bool
+    // Vorbefüllter Empfänger aus einer Kontakt-Mail-Anfrage. Non-nil → Entwurf mit diesem
+    // „An" öffnen, danach die Weiche sofort auf nil zurücksetzen (kein stehenbleibender
+    // Prefill beim nächsten manuellen „Verfassen").
+    @Binding var composeToRequest: String?
     @State private var store = MailClientStore()
     @State private var airtableContacts: [StudioContact] = []
     @State private var composeConfig: ComposeConfig? = nil
@@ -82,22 +90,33 @@ struct MailClientView: View {
                 prefilledTo: config.to,
                 prefilledCc: config.cc,
                 prefilledSubject: config.subject,
-                prefilledBody: config.body
+                prefilledBody: config.body,
+                onSend: { await appState.sendMail($0) }
             )
         }
-        // Externer Trigger von außen (z. B. Header-Button "Verfassen").
-        .onChange(of: showCompose) { _, newValue in
-            if newValue {
-                composeConfig = ComposeConfig()
-                showCompose = false
-            }
-        }
+        // Kontakt-Mail-Weiche: vorbefüllten Empfänger übernehmen und Entwurf öffnen.
+        // onAppear deckt den Fall ab, dass diese View erst durch den Tab-Wechsel montiert wird.
+        .onAppear { openComposeFromRequestIfNeeded() }
+        .onChange(of: composeToRequest) { _, _ in openComposeFromRequestIfNeeded() }
         .task {
+            // Härtung (2026-07-02): dieselbe TTL-Cache-Instanz wie der Assistent nutzen,
+            // bevor der erste Load läuft — sonst greift der Cache erst ab dem zweiten Aufruf.
+            store.attachCache(appState.gmailCache)
             // Auto-Posteingang: beim ersten Erscheinen sofort die Inbox laden,
             // sofern noch kein Suchergebnis vorliegt (store.phase == .idle).
             await store.loadInboxIfNeeded()
             await loadAirtableContacts()
         }
+    }
+
+    /// Öffnet einen Entwurf mit vorbefülltem Empfänger, sobald eine Kontakt-Mail-Anfrage
+    /// anliegt — und gibt die Weiche sofort wieder frei (nil), damit ein späteres manuelles
+    /// „Verfassen" nicht denselben Empfänger erbt.
+    private func openComposeFromRequestIfNeeded() {
+        guard let addr = composeToRequest?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !addr.isEmpty else { return }
+        composeConfig = ComposeConfig(to: addr)
+        composeToRequest = nil
     }
 
     /// Lädt Kontakte aus Airtable Mastermind-Base (appuVMh3KDfKw4OoQ).
@@ -108,6 +127,13 @@ struct MailClientView: View {
         let tableID = "tblncfQzQa8TzCZQC"
         guard let records = try? await client.fetchRecords(baseID: baseID, table: tableID) else { return }
         airtableContacts = AirtableClient.mapContacts(from: records)
+        // Härtung (2026-07-01, Audit): dritter, unabhängiger Reader derselben Kontakte-Tabelle
+        // (neben AppState.syncKontakte + AirtableContactsLoader) — bisher ohne jedes
+        // dataFlow.log. Nutzt dieselbe Manifest-ID wie AppState.syncKontakte, da es
+        // semantisch derselbe Lookup ist.
+        appState.dataFlow.log(integrationID: "AIRTABLE_KONTAKTE_LOOKUP", actorUserID: appState.actorUserID,
+                               action: .success, recordsRead: airtableContacts.count,
+                               summary: "Mail-Compose: Kontakte für Empfänger-Picker geladen")
     }
 
     // MARK: - Linke Spalte: Ordner + Suche + Nachrichtenliste
@@ -146,11 +172,15 @@ struct MailClientView: View {
     // MARK: Ordner-Leiste (dezent, mykilOS-Stil — kein Apple-Mail-Klon)
 
     private var folderBar: some View {
-        HStack(spacing: MykSpace.s2) {
+        HStack(spacing: MykSpace.s3) {
             ForEach(MailFolder.allCases) { folder in
                 folderButton(folder)
             }
             Spacer()
+            // „Verfassen" lebt jetzt in der Postfach-Leiste (2026-07-02, Johannes) — nicht
+            // mehr im Seiten-Header. Primär-Aktion → gefüllte Pflaume-Pille am rechten Rand,
+            // rechte Kante bündig mit dem Suchfeld darunter.
+            composeButton
         }
         .padding(.horizontal, MykSpace.s5)
         .padding(.vertical, MykSpace.s3)
@@ -164,30 +194,41 @@ struct MailClientView: View {
             store.switchFolder(folder)
             Task { await store.loadFolder() }
         } label: {
-            HStack(spacing: MykSpace.s2) {
-                Image(systemName: folder.icon)
-                    .font(.mykMono(10))
-                Text(folder.label)
-                    .font(.mykMono(10))
-            }
-            .foregroundStyle(isActive ? MykColor.personal.color : MykColor.muted.color)
-            .padding(.horizontal, MykSpace.s3)
-            .padding(.vertical, 4)
-            .background(
-                isActive
-                    ? MykColor.personal.color.opacity(0.1)
-                    : Color.clear
-            )
-            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
-            .overlay(
-                RoundedRectangle(cornerRadius: MykRadius.sm)
-                    .stroke(
-                        isActive ? MykColor.personal.color.opacity(0.25) : Color.clear,
-                        lineWidth: 1
-                    )
-            )
+            // Icon-only Segmente (2026-07-02, Johannes): etwas größere Icons, gleichmäßige
+            // Abstände, sauberes Raster — linke Kante bündig mit dem Suchfeld darunter.
+            Image(systemName: folder.icon)
+                .font(.mykTitle)
+                .foregroundStyle(isActive ? MykColor.personal.color : MykColor.muted.color)
+                .frame(width: 40, height: 34)
+                .background(isActive ? MykColor.personal.color.opacity(0.1) : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                .overlay(
+                    RoundedRectangle(cornerRadius: MykRadius.sm)
+                        .stroke(isActive ? MykColor.personal.color.opacity(0.25) : Color.clear, lineWidth: 1)
+                )
         }
         .buttonStyle(.plain)
+        .help(folder.label)
+        .accessibilityLabel(folder.label)
+    }
+
+    /// Primär-Aktion der Postfach-Leiste: leeren Entwurf öffnen. Gleiche Kantenlänge
+    /// wie die Ordner-Icons (sauberes Raster), aber gefüllt (Pflaume) statt Outline,
+    /// damit sie als Aktion — nicht als weiterer Ordner — gelesen wird.
+    private var composeButton: some View {
+        Button {
+            composeConfig = ComposeConfig()
+        } label: {
+            Image(systemName: "square.and.pencil")
+                .font(.mykTitle)
+                .foregroundStyle(MykColor.paper.color)
+                .frame(width: 40, height: 34)
+                .background(MykColor.personal.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+        }
+        .buttonStyle(.plain)
+        .help("Verfassen")
+        .accessibilityLabel("Neue Mail verfassen")
     }
 
     private var searchBar: some View {
@@ -470,6 +511,7 @@ private struct MailDetailView: View {
         }
         .buttonStyle(.plain)
         .help(label)
+        .accessibilityLabel(label)
     }
 
     // MARK: Nachrichten-Header
@@ -540,7 +582,7 @@ private struct MailDetailView: View {
                 .font(.mykMono(9))
                 .foregroundStyle(MykColor.muted.color)
             ForEach(message.attachments, id: \.attachmentID) { att in
-                AttachmentRow(attachment: att)
+                AttachmentRow(messageID: message.id, attachment: att)
             }
         }
     }
@@ -556,44 +598,7 @@ private struct MailDetailView: View {
     }
 }
 
-// MARK: - AttachmentRow
-private struct AttachmentRow: View {
-    let attachment: GmailAttachment
-
-    var body: some View {
-        HStack(spacing: MykSpace.s3) {
-            Image(systemName: iconName(for: attachment.mimeType))
-                .foregroundStyle(MykColor.personal.color)
-                .frame(width: 22)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(attachment.filename)
-                    .font(.mykSmall)
-                    .foregroundStyle(MykColor.ink.color)
-                Text(humanSize(attachment.sizeBytes))
-                    .font(.mykMono(9))
-                    .foregroundStyle(MykColor.muted.color)
-            }
-            Spacer()
-        }
-        .padding(MykSpace.s4)
-        .background(MykColor.card.color)
-        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
-        .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
-    }
-
-    private func iconName(for mimeType: String) -> String {
-        if mimeType.hasPrefix("image/") { return "photo" }
-        if mimeType == "application/pdf" { return "doc.richtext" }
-        if mimeType.hasPrefix("text/") { return "doc.text" }
-        return "paperclip"
-    }
-
-    private func humanSize(_ bytes: Int) -> String {
-        if bytes < 1024 { return "\(bytes) B" }
-        if bytes < 1_048_576 { return "\(bytes / 1024) KB" }
-        return String(format: "%.1f MB", Double(bytes) / 1_048_576)
-    }
-}
+// AttachmentRow lebt in MailAttachmentRow.swift (klickbare Vorschau + „In Drive ablegen").
 
 // MARK: - MailClientStore
 @MainActor
@@ -614,11 +619,19 @@ final class MailClientStore {
     private(set) var isLoadingBody = false
 
     private let client: any GoogleGmailFetching
+    private var cache: GmailCacheStore?
     private var searchGen = 0
     private var bodyGen = 0
 
     init(client: any GoogleGmailFetching = GoogleGmailClient()) {
         self.client = client
+    }
+
+    /// Härtung (2026-07-02): dieselbe TTL-Cache-Instanz nutzen, die AppState schon für
+    /// search_gmail im Assistenten führt — sonst läuft jeder Ordnerwechsel/jede Suche im
+    /// Mail-Tab live gegen die API, obwohl derselbe Cache längst existiert.
+    func attachCache(_ cache: GmailCacheStore?) {
+        self.cache = cache
     }
 
     /// Ordner wechseln (setzt Suche zurück).
@@ -655,9 +668,16 @@ final class MailClientStore {
     }
 
     /// Gemeinsamer Kern für Inbox-Load + Ordner-Wechsel + freie Suche.
+    /// Prüft zuerst den TTL-Cache (dieselbe Instanz wie search_gmail im Assistenten) —
+    /// nur bei Cache-Miss live gegen die API laden, Ergebnis danach im Cache ablegen.
     private func fetchMessages(query q: String) async {
         searchGen &+= 1
         let gen = searchGen
+        if let cached = await cache?.cached(for: q) {
+            messages = cached
+            phase = cached.isEmpty ? .empty : .loaded
+            return
+        }
         phase = .loading
         isLoading = true
         do {
@@ -665,6 +685,7 @@ final class MailClientStore {
             guard gen == searchGen else { return }
             messages = result
             phase = result.isEmpty ? .empty : .loaded
+            await cache?.store(result, for: q)
         } catch GoogleGmailError.notConnected {
             guard gen == searchGen else { return }
             phase = .notConnected; messages = []

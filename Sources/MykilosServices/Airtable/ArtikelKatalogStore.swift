@@ -59,31 +59,45 @@ public final class ArtikelKatalogStore {
     // MARK: - Private
 
     private let client: AirtableFetching
+    // Härtung (2026-07-01, Johannes: "Preislisten dauern sehr lange zu laden"): ~13.419
+    // Records über Airtables paginierte List-API sind ~135 sequenzielle Netzwerk-Roundtrips
+    // — spürbar langsam bei JEDEM App-Start. Lokaler Datei-Cache (gleiches Muster wie
+    // CachedProjectRegistry/CachedBusinessRegistry) zeigt sofort den letzten Stand, dann
+    // wird im Hintergrund still von Airtable aktualisiert.
+    private let cache: FileBackedRepository<ArtikelItem>?
 
     // MARK: - Init
 
-    public init(client: AirtableFetching = AirtableClient()) {
+    public init(client: AirtableFetching = AirtableClient(), cacheDirectory: URL? = nil) {
         self.client = client
+        self.cache = try? FileBackedRepository<ArtikelItem>(filename: "artikel_katalog_cache", directory: cacheDirectory)
     }
 
     // MARK: - Laden
 
-    /// Lädt den vollständigen Katalog (paginiert). Bereits geladener Cache wird
-    /// nicht erneut geladen — für Force-Refresh `reload()` verwenden.
+    /// Lädt den vollständigen Katalog. Bereits geladener In-Memory-Stand wird nicht erneut
+    /// geladen — für Force-Refresh `reload()` verwenden. Gibt es einen lokalen Datei-Cache,
+    /// wird dessen Stand SOFORT angezeigt (kein Warten auf Airtable), danach still im
+    /// Hintergrund aktualisiert.
     public func load() async {
         switch state {
-        case .content: return  // bereits gecacht
+        case .content: return  // bereits gecacht (in-memory)
         case .loading: return  // läuft schon
         default: break
         }
-        state = .loading(0)
-        await _fetchAll()
+        if let cached = try? cache?.loadAll(), !cached.isEmpty {
+            state = .content(cached)
+            await _fetchAll(showLoadingState: false)
+        } else {
+            state = .loading(0)
+            await _fetchAll(showLoadingState: true)
+        }
     }
 
     /// Erzwingt Reload — bestehenden Cache verwerfen. Für Refresh-Buttons.
     public func reload() async {
         state = .loading(0)
-        await _fetchAll()
+        await _fetchAll(showLoadingState: true)
     }
 
     // MARK: - Clientseitiges Filtern / Suchen
@@ -157,31 +171,38 @@ public final class ArtikelKatalogStore {
     /// gibt es einen einzigen Aufruf. Für sichtbaren Fortschritt: der State wechselt
     /// von .loading(0) → .loading(N nach Fetch) → .content oder .empty.
     /// Fehler werden sauber auf die passenden States gemappt — nie stilles Leer.
-    private func _fetchAll() async {
+    /// `showLoadingState`: false beim stillen Hintergrund-Refresh (ein Cache-Stand hängt
+    /// bereits sichtbar in `state`) — ein Fehler dabei fällt NICHT auf `.error`/`.notConnected`
+    /// zurück (der alte Cache-Stand bleibt sichtbar), er wird nur nicht überschrieben.
+    private func _fetchAll(showLoadingState: Bool) async {
         do {
             let records = try await client.fetchRecords(
                 baseID: Self.baseID,
                 table: Self.tableID
             )
             // Fortschritt sichtbar machen: kurze Zwischenstation mit Anzahl geladener Records
-            state = .loading(records.count)
+            if showLoadingState { state = .loading(records.count) }
             // Mapping auf Background-Thread auslagern (13k Records sind nicht trivial)
             let mapped = await Task.detached(priority: .userInitiated) {
                 Self.mapArtikelItems(from: records)
             }.value
             if mapped.isEmpty {
                 // Wenn wir Records hatten aber alle ausgefiltert wurden → Fehler-Hinweis,
-                // nicht stilles .empty (wäre verwirrend bei 13k-Tabelle)
-                state = records.isEmpty ? .empty : .error("Keine Artikel mit Artikelnummer-Feld gemappt (\(records.count) Rohdaten). Feld-Namen prüfen.")
+                // nicht stilles .empty (wäre verwirrend bei 13k-Tabelle) — nur wenn kein
+                // Cache-Stand bereits sichtbar ist (sonst bleibt der alte Stand stehen).
+                if showLoadingState {
+                    state = records.isEmpty ? .empty : .error("Keine Artikel mit Artikelnummer-Feld gemappt (\(records.count) Rohdaten). Feld-Namen prüfen.")
+                }
             } else {
                 state = .content(mapped)
+                try? cache?.saveAll(mapped)
             }
         } catch AirtableError.notConnected {
-            state = .notConnected
+            if showLoadingState { state = .notConnected }
         } catch AirtableError.httpError(let code) {
-            state = .error("HTTP \(code) — Airtable nicht erreichbar oder Base-ID falsch.")
+            if showLoadingState { state = .error("HTTP \(code) — Airtable nicht erreichbar oder Base-ID falsch.") }
         } catch AirtableError.decodingFailed {
-            state = .error("Antwort konnte nicht dekodiert werden — API-Format geändert?")
+            if showLoadingState { state = .error("Antwort konnte nicht dekodiert werden — API-Format geändert?") }
         } catch {
             state = .error(error.localizedDescription)
         }

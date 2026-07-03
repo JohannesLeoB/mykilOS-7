@@ -12,9 +12,12 @@ struct ConversationEngineTests {
         var error: Error?
         private(set) var callCount = 0
         private(set) var lastTools: [ClaudeToolDefinition] = []
+        // Stufe-2-Tests: Nachrichtenlänge je respond()-Aufruf, um zu beweisen, dass
+        // die Distillation den an die API gesendeten Verlauf wirklich verkürzt.
+        private(set) var messageCounts: [Int] = []
         init(responses: [ClaudeChatResponse] = [], error: Error? = nil) { self.responses = responses; self.error = error }
         func respond(messages: [ChatMessage], system: String, tools: [ClaudeToolDefinition], maxTokens: Int) async throws -> ClaudeChatResponse {
-            lastTools = tools; callCount += 1
+            lastTools = tools; callCount += 1; messageCounts.append(messages.count)
             if let error { throw error }
             return responses[min(callCount - 1, responses.count - 1)]
         }
@@ -194,6 +197,166 @@ struct ConversationEngineTests {
         #expect(logger.entries.first?.action == .success)
     }
 
+    // MARK: Härtung 2026-07-01 — Loop-Effizienz (Wiederholungs-Erkennung + Timeout)
+    // Claude fragt fünfmal identisch nach demselben (leeren) Ergebnis. Die Schleife
+    // muss das nach der zweiten identischen Runde erkennen und sofort abbrechen,
+    // statt bis maxToolRounds (6) durchzulaufen — sonst würde jede Wiederholung
+    // eine volle, kostenpflichtige Claude-Runde kosten.
+    @Test func toolSchleifeBrichtBeiWiederholtemIdentischenAufrufAb() async throws {
+        let store = ChatStore(db: try GRDBDatabase.inMemory())
+        let fakeGmail = FakeGmailForEngine(messages: [])
+        let registry = AssistantToolRegistry.standard(gmail: fakeGmail)
+        let toolUse = ClaudeToolUse(id: "tu_1", name: "search_gmail", inputJSON: Data(#"{"query":"from:nobody"}"#.utf8))
+        let repeated = ClaudeChatResponse(text: "", toolUses: [toolUse], stopReason: "tool_use")
+        let provider = ScriptedProvider(responses: Array(repeating: repeated, count: 6))
+        let engine = ConversationEngine(chatStore: store, provider: provider, registry: registry)
+
+        await engine.send("Suche nach nichts", scope: .home, focusedProjectID: nil, signals: [], projects: [], toolsEnabled: true)
+
+        // Bricht nach der zweiten (wiederholten) Runde ab — nicht erst bei maxToolRounds=6.
+        #expect(provider.callCount == 2)
+        let last = store.messages(for: .home).last
+        #expect(last?.status == .complete)
+        #expect(last?.text.contains("keine neuen Daten") == true)
+    }
+
+    // Härtung 2026-07-02 — Regression: bei Erreichen von maxToolRounds durfte ein in
+    // genau dieser letzten Runde geplanter tool_use (z. B. create_draft) nie mehr
+    // stillschweigend verworfen werden — das brach die sichtbare Antwort mitten im
+    // Satz ab (z. B. "...Entwurf:" ohne Fortsetzung, echt beobachtet bei einer
+    // Gmail-Suche mit mehrdeutigem Absendernamen). Jetzt: sichtbarer Hinweis statt
+    // stillem Abschneiden.
+    @Test func toolSchleifeMachtRundenlimitMitOffenemToolUseSichtbar() async throws {
+        let store = ChatStore(db: try GRDBDatabase.inMemory())
+        let fakeGmail = FakeGmailForEngine(messages: [])
+        let registry = AssistantToolRegistry.standard(gmail: fakeGmail)
+        // 9 unterschiedliche Suchrunden (keine Wiederholungs-Erkennung), die 10. Runde
+        // (== maxToolRounds) liefert schon Text ("...Entwurf:") UND einen weiteren
+        // tool_use (create_draft) — genau das reale Szenario aus dem Bug-Report.
+        var responses: [ClaudeChatResponse] = (1...9).map { i in
+            let toolUse = ClaudeToolUse(
+                id: "tu_\(i)", name: "search_gmail",
+                inputJSON: Data(#"{"query":"häfele besteck \#(i)"}"#.utf8)
+            )
+            return ClaudeChatResponse(text: "", toolUses: [toolUse], stopReason: "tool_use")
+        }
+        let finalRoundToolUse = ClaudeToolUse(id: "tu_draft", name: "create_draft", inputJSON: Data("{}".utf8))
+        responses.append(ClaudeChatResponse(text: "Alles klar. Entwurf:", toolUses: [finalRoundToolUse], stopReason: "tool_use"))
+        let provider = ScriptedProvider(responses: responses)
+        let engine = ConversationEngine(chatStore: store, provider: provider, registry: registry)
+
+        await engine.send("Antworte auf die Häfele-Mail", scope: .home, focusedProjectID: nil, signals: [], projects: [], toolsEnabled: true)
+
+        #expect(provider.callCount == 10)
+        let last = store.messages(for: .home).last
+        #expect(last?.status == .complete)
+        // Der angefangene Text bleibt sichtbar (nicht durch eine generische Fehlermeldung
+        // ersetzt) UND es gibt einen klaren Hinweis, dass mehr Schritte nötig gewesen wären.
+        #expect(last?.text.contains("Alles klar. Entwurf:") == true)
+        #expect(last?.text.contains("abgebrochen") == true)
+    }
+
+    // Ein hängendes Tool darf die Runde nicht blockieren — winzig injiziertes Timeout
+    // (statt der Produktions-15s) hält den Test schnell, prüft aber denselben Pfad.
+    @Test func toolSchleifeBrichtHaengendenToolCallPerTimeoutAb() async throws {
+        let store = ChatStore(db: try GRDBDatabase.inMemory())
+        let slowTool = SlowAssistantTool()
+        let registry = AssistantToolRegistry(tools: [slowTool])
+        let toolUse = ClaudeToolUse(id: "tu_slow", name: "slow_tool", inputJSON: Data("{}".utf8))
+        let provider = ScriptedProvider(responses: [
+            ClaudeChatResponse(text: "", toolUses: [toolUse], stopReason: "tool_use"),
+            textResponse("Fertig trotz Zeitüberschreitung."),
+        ])
+        let engine = ConversationEngine(
+            chatStore: store, provider: provider, registry: registry, toolTimeoutSeconds: 0.05
+        )
+
+        await engine.send("Frag das langsame Tool", scope: .home, focusedProjectID: nil, signals: [], projects: [], toolsEnabled: true)
+
+        let last = store.messages(for: .home).last
+        #expect(last?.status == .complete)
+        #expect(last?.text == "Fertig trotz Zeitüberschreitung.")
+        // Tool-Spur zeigt einen Fehler (Zeitüberschreitung), nicht das eigentliche Ergebnis.
+        let hasErrorActivity = last?.blocks.contains {
+            if case .toolActivity(_, let isError) = $0 { isError } else { false }
+        } == true
+        #expect(hasErrorActivity)
+    }
+
+    // MARK: Stufe 2 (Härtung 2026-07-01) — Gedächtnis-Distillation
+    // Baut `count` alternierende user/assistant-Turns in den Verlauf, chronologisch
+    // aufsteigend (älteste zuerst), damit windowed die reale Append-Reihenfolge widerspiegelt.
+    private func seedHistory(_ store: ChatStore, scope: ChatScope, count: Int, endingBefore now: Date) throws {
+        for i in 0..<count {
+            let t = now.addingTimeInterval(Double(i - count - 1) * 60)
+            try store.append(ChatMessage(role: .user, blocks: [.text("Alte Frage \(i)")], status: .complete, createdAt: t), to: scope)
+            try store.append(ChatMessage(role: .assistant, blocks: [.text("Alte Antwort \(i)")], status: .complete, createdAt: t.addingTimeInterval(5)), to: scope)
+        }
+    }
+
+    @Test func distillationBleibtUnterhalbDerSchwelleAus() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let store = ChatStore(db: db)
+        let memory = ChatMemoryStore(db: db)
+        let scope = ChatScope.home
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        try seedHistory(store, scope: scope, count: 3, endingBefore: now)   // 6 alte Nachrichten — weit unter der Schwelle
+
+        let provider = ScriptedProvider(responses: [textResponse("Finale Antwort")])
+        let engine = ConversationEngine(chatStore: store, provider: provider, memoryStore: memory)
+        await engine.send("Neue Frage", scope: scope, focusedProjectID: nil, signals: [], projects: [], now: now)
+
+        #expect(provider.callCount == 1)   // kein zusätzlicher Distillations-Call
+        #expect(try memory.summary(for: scope) == nil)
+    }
+
+    @Test func distillationVerdichtetAbSchwelleUndVerkuerztDenGesendetenVerlauf() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let store = ChatStore(db: db)
+        let memory = ChatMemoryStore(db: db)
+        let scope = ChatScope.home
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        try seedHistory(store, scope: scope, count: 11, endingBefore: now)   // 22 alte Nachrichten — über der Schwelle
+
+        let provider = ScriptedProvider(responses: [
+            textResponse("Zusammenfassung X"),   // Distillations-Call (1. respond())
+            textResponse("Finale Antwort"),       // eigentlicher Turn (2. respond(), via streamText-Default)
+        ])
+        let engine = ConversationEngine(chatStore: store, provider: provider, memoryStore: memory)
+        await engine.send("Neue Frage", scope: scope, focusedProjectID: nil, signals: [], projects: [], now: now)
+
+        #expect(provider.callCount == 2)
+        #expect(provider.messageCounts.first == 1)   // Distillations-Call: nur der Verdichtungs-Prompt
+        // Der eigentliche Turn bekommt NICHT die volle Historie (23 inkl. neuer Frage) — deutlich weniger.
+        #expect((provider.messageCounts.last ?? .max) < 23)
+        #expect(try memory.summary(for: scope)?.summaryText == "Zusammenfassung X")
+
+        let last = store.messages(for: scope).last
+        #expect(last?.status == .complete && last?.text == "Finale Antwort")
+    }
+
+    @Test func distillationUeberschreibtStattAnzuhaeufen() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let memory = ChatMemoryStore(db: db)
+        let scope = ChatScope.home
+        try memory.save(ChatMemorySummary(scopeKey: scope.rawKey, summaryText: "Version 1", coveredThroughMessageID: "a", updatedAt: Date()))
+        try memory.save(ChatMemorySummary(scopeKey: scope.rawKey, summaryText: "Version 2", coveredThroughMessageID: "b", updatedAt: Date()))
+
+        // EINE Zeile je Scope, nicht angehäuft — die neueste Fassung gewinnt vollständig.
+        let saved = try memory.summary(for: scope)
+        #expect(saved?.summaryText == "Version 2")
+        #expect(saved?.summaryText.contains("Version 1") == false)
+    }
+
+    @Test func distillationIstScopeSauber() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let memory = ChatMemoryStore(db: db)
+        try memory.save(ChatMemorySummary(scopeKey: ChatScope.home.rawKey, summaryText: "Home-Summary", coveredThroughMessageID: "a", updatedAt: Date()))
+
+        #expect(try memory.summary(for: .home)?.summaryText == "Home-Summary")
+        #expect(try memory.summary(for: .project("2026-001")) == nil)   // kein Leck zwischen Scopes
+    }
+
     // MARK: Mandate E — search_gmail loggt unter GMAIL_SEARCH (Hustadt-Gate)
     // Beweist genau die Schaltzentrum-Bedingung: nach einem echten search_gmail-
     // Tool-Lauf existiert ein DataFlow-Eintrag mit integrationID == "GMAIL_SEARCH"
@@ -248,6 +411,19 @@ private final class MultiDeltaProvider: AssistantConversing, @unchecked Sendable
                 continuation.finish()
             }
         }
+    }
+}
+
+// Härtung 2026-07-01: simuliert einen hängenden Tool-Call (z. B. ein Google-Client
+// ohne Antwort). Nutzt Task.sleep statt Thread.sleep, damit Task-Cancellation
+// (via runToolWithTimeout's group.cancelAll()) den Test nicht ausbremst.
+private final class SlowAssistantTool: AssistantTool, @unchecked Sendable {
+    let name = "slow_tool"
+    let description = "Testtool, das absichtlich hängt (Timeout-Test)."
+    let parameters: [ToolParameter] = []
+    func run(input: [String: String]) async -> ToolRunResult {
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        return ToolRunResult(text: "Doch noch fertig geworden.")
     }
 }
 

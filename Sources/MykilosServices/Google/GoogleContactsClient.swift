@@ -8,13 +8,24 @@ public struct GoogleContact: Identifiable, Equatable, Sendable {
     public var email: String?
     public var phone: String?
     public var organization: String?
+    // Härtung (2026-07-01, Johannes: Bestandskunden-Auswahl im Fragebogen): die People-API
+    // liefert givenName/familyName bereits im "names"-readMask mit — bisher verworfen und
+    // nur displayName behalten. Für ein sauberes Vorname/Nachname-Prefill statt Raten
+    // (z. B. erstes Wort als Vorname) jetzt direkt mitgeführt, wenn vorhanden.
+    public var givenName: String?
+    public var familyName: String?
 
-    public init(id: String, displayName: String, email: String?, phone: String?, organization: String?) {
+    public init(
+        id: String, displayName: String, email: String?, phone: String?, organization: String?,
+        givenName: String? = nil, familyName: String? = nil
+    ) {
         self.id = id
         self.displayName = displayName
         self.email = email
         self.phone = phone
         self.organization = organization
+        self.givenName = givenName
+        self.familyName = familyName
     }
 }
 
@@ -188,7 +199,9 @@ public struct GoogleContactsClient: GoogleContactsFetching, GoogleContactsWritin
                     ?? "(neuer Kontakt)",
                 email: person.emailAddresses?.first?.value,
                 phone: person.phoneNumbers?.first?.value,
-                organization: person.organizations?.first?.name)
+                organization: person.organizations?.first?.name,
+                givenName: person.names?.first?.givenName,
+                familyName: person.names?.first?.familyName)
         } catch {
             throw GoogleContactsError.decodingFailed
         }
@@ -245,7 +258,9 @@ public struct GoogleContactsClient: GoogleContactsFetching, GoogleContactsWritin
                     displayName: person.names?.first?.displayName ?? "(ohne Namen)",
                     email: person.emailAddresses?.first?.value,
                     phone: person.phoneNumbers?.first?.value,
-                    organization: person.organizations?.first?.name)
+                    organization: person.organizations?.first?.name,
+                    givenName: person.names?.first?.givenName,
+                    familyName: person.names?.first?.familyName)
             }
         } catch {
             throw GoogleContactsError.decodingFailed
@@ -262,7 +277,9 @@ public struct GoogleContactsClient: GoogleContactsFetching, GoogleContactsWritin
                     displayName: person?.names?.first?.displayName ?? "(ohne Namen)",
                     email: person?.emailAddresses?.first?.value,
                     phone: person?.phoneNumbers?.first?.value,
-                    organization: person?.organizations?.first?.name
+                    organization: person?.organizations?.first?.name,
+                    givenName: person?.names?.first?.givenName,
+                    familyName: person?.names?.first?.familyName
                 )
             }
         } catch {
@@ -294,6 +311,7 @@ private struct GoogleContactsPerson: Decodable {
 private struct GoogleContactsName: Decodable {
     var displayName: String?
     var givenName: String?
+    var familyName: String?
 }
 
 private struct GoogleContactsEmail: Decodable {

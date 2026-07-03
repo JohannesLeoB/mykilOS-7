@@ -139,6 +139,9 @@ public extension GoogleGmailFetching {
 // Braucht den gmail.compose-Scope → Google Re-Consent (M2).
 public protocol GoogleGmailWriting: Sendable {
     func createDraft(_ draft: EmailDraft) async throws -> String   // gibt Draft-ID zurück
+    // S3: echter Versand (messages.send). Braucht gmail.compose (Re-Consent M2).
+    // Wird NIE automatisch aufgerufen — nur nach ausdrücklicher Bestätigung im App-Layer.
+    func sendMessage(_ draft: EmailDraft) async throws
 }
 
 // MARK: - GoogleGmailClient
@@ -177,19 +180,36 @@ public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting {
         let messageIDs = try Self.parseMessageIDs(from: listData)
         guard !messageIDs.isEmpty else { return [] }
 
-        var messages: [GoogleGmailMessage] = []
-        for id in messageIDs {
-            guard let detailURL = Self.buildDetailURL(messageID: id, baseURL: baseURL) else { continue }
-            var detailRequest = URLRequest(url: detailURL)
-            detailRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-            let (detailData, detailResponse) = try await session.data(for: detailRequest)
-            guard let detailHTTP = detailResponse as? HTTPURLResponse,
-                  (200...299).contains(detailHTTP.statusCode) else { continue }
-            if let msg = try? Self.parseMessage(from: detailData) {
-                messages.append(msg)
+        // Härtung (2026-07-01, Johannes: "Mail dauert sehr lange zu laden"): die Detail-Fetches
+        // liefen bisher SEQUENZIELL (ein await pro Nachricht) — bei 25 Treffern also 26
+        // Netzwerk-Roundtrips hintereinander statt gleichzeitig. Jetzt parallel über eine
+        // TaskGroup, Reihenfolge über den Original-Index wiederhergestellt (Gmail garantiert
+        // keine Antwortreihenfolge bei nebenläufigen Requests).
+        let indexedMessages: [(Int, GoogleGmailMessage)] = try await withThrowingTaskGroup(
+            of: (Int, GoogleGmailMessage?).self
+        ) { group in
+            for (index, id) in messageIDs.enumerated() {
+                group.addTask {
+                    guard let detailURL = Self.buildDetailURL(messageID: id, baseURL: self.baseURL) else {
+                        return (index, nil)
+                    }
+                    var detailRequest = URLRequest(url: detailURL)
+                    detailRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+                    guard let (detailData, detailResponse) = try? await self.session.data(for: detailRequest),
+                          let detailHTTP = detailResponse as? HTTPURLResponse,
+                          (200...299).contains(detailHTTP.statusCode) else {
+                        return (index, nil)
+                    }
+                    return (index, try? Self.parseMessage(from: detailData))
+                }
             }
+            var results: [(Int, GoogleGmailMessage)] = []
+            for try await (index, message) in group {
+                if let message { results.append((index, message)) }
+            }
+            return results
         }
-        return messages
+        return indexedMessages.sorted { $0.0 < $1.0 }.map(\.1)
     }
 
     // MARK: - Volltext-Body lesen (S15)
@@ -258,6 +278,27 @@ public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting {
         guard (200...299).contains(http.statusCode) else { throw GoogleGmailError.httpError(http.statusCode) }
         let decoded = try? JSONDecoder().decode(GmailDraftResponse.self, from: data)
         return decoded?.id ?? ""
+    }
+
+    // S3: sendet die Nachricht direkt (messages.send). Gleicher MIME-Aufbau wie der
+    // Entwurf; nur nach ausdrücklicher Bestätigung im App-Layer aufgerufen.
+    public func sendMessage(_ draft: EmailDraft) async throws {
+        guard let accessToken = try? await tokenProvider.validAccessToken() else {
+            throw GoogleGmailError.notConnected
+        }
+        guard let url = URL(string: baseURL + "/send") else { throw GoogleGmailError.invalidResponse }
+        let raw = Self.base64URL(Data(Self.buildMIMEMultipart(draft).utf8))
+        let payload = try JSONSerialization.data(withJSONObject: ["raw": raw])
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = payload
+
+        let (_, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw GoogleGmailError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw GoogleGmailError.httpError(http.statusCode) }
     }
 
     // MARK: - Reine, testbare Bausteine

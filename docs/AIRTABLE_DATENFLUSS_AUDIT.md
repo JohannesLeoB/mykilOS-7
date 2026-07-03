@@ -38,6 +38,20 @@ Regel:  CREATE/PATCH gated (Whitelist), NIE DELETE/Overwrite. Verifiziert: kein 
 
 ## 3. ⚠️ Wichtigster Befund: Doppelte Identität bei Kunden + Projekte
 
+> **Status (2026-06-30, mykilOS 8 Block A): Resolver gebaut, Daten-Lücke offen.**
+> `ExternalMappingRegistry` (`Sources/MykilosServices/ExternalMappingRegistry.swift`) ist jetzt
+> der einzige Join-Punkt — er joint Mastermind-Routing und Artikel-Geschäft ausschließlich über
+> die Projektnummer, nie per Namens-Fuzzy-Match. **Live verifiziert (code-grep, nicht nur Doku):**
+> der Schreibpfad `AppState.erzeugeKundeUndProjekt` schrieb bisher zwar nach Artikel-`Projekte`,
+> der anschließende `registry.syncFromAirtable(...)`-Aufruf synct aber NUR Mastermind — ein neu
+> angelegtes Intake-Projekt war dadurch in der App komplett unsichtbar, bis irgendwann ein
+> Mastermind-Routing-Eintrag dafür entsteht (was heute nirgends automatisch passiert). Block A
+> behebt das für die Registry-Schicht (`syncBusinessRegistry()` läuft jetzt zusätzlich), aber die
+> eigentliche Lücke bleibt: **Artikel-`Projekte` hat kein `Projektnummer`-Feld** — neue
+> Geschäftsprojekte laufen als `businessOnlyUnbound`, sichtbar über
+> `ExternalMappingRegistry.unboundBusinessProjects()`. Schließt entweder Daniel (Feld ergänzen)
+> oder Block C (Nomenklatur schreibt die Nummer beim Anlegen mit).
+
 Es gibt **zwei `Kunden`-Tabellen** und **zwei `Projekte`-Tabellen** — je eine pro Base. Sie sind **keine
 Duplikate, sondern zwei Schichten**:
 

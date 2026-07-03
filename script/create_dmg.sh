@@ -6,9 +6,16 @@ set -euo pipefail
 # liegt bereits unter dist/mykilOS 7.5.app).
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Härtung 2026-07-01: vor jeder neuen Release-DMG /Applications auf höchstens
+# 1 bestehende Installation eintrimmen — sobald der Nutzer die gleich gebaute
+# DMG installiert, sind es wieder genau 2 (aktuell + vorherig). Verhindert die
+# Ansammlung beliebig vieler Altversionen (Ursache echter Verwechslungen).
+KEEP=1 "$ROOT_DIR/script/cleanup_old_app_versions.sh" || true
+
 DIST_DIR="$ROOT_DIR/dist"
 # EINE Quelle für die Versionsnummer (synchron mit build_and_run.sh).
-APP_VERSION="7.7.2"
+APP_VERSION="10.0.0-alpha4"
 APP_BUNDLE="$DIST_DIR/mykilOS $APP_VERSION.app"
 DMG_NAME="mykilOS-$APP_VERSION"
 DMG_PATH="$DIST_DIR/$DMG_NAME.dmg"

@@ -4,7 +4,9 @@ import Foundation
 // Gekapselt eine vom Nutzer in den Chat gedropte Datei — nur im RAM, nie
 // automatisch geschrieben. Bytes werden erst bei ausdrücklicher Bestätigung
 // (Drive-Upload oder Mail-Anhang) an die jeweilige API übergeben.
-public struct DroppedFile: Sendable, Equatable {
+public struct DroppedFile: Sendable, Equatable, Identifiable {
+    /// Stabile Identität aus Name + Größe (für ForEach/Entfernen in der Multi-Drop-Karte).
+    public var id: String { "\(fileName)-\(data.count)" }
     /// Dateiname inkl. Extension (z. B. „Angebot_2026.pdf").
     public let fileName: String
     /// MIME-Typ (z. B. „application/pdf").
@@ -32,6 +34,18 @@ public struct DroppedFile: Sendable, Equatable {
         if mimeType.hasPrefix("image/") { return "photo" }
         if mimeType.hasPrefix("text/") { return "doc.text" }
         return "doc"
+    }
+}
+
+// MARK: - DriveFolderChoice
+// Ein wählbarer Drive-Zielordner für den Datei-Upload aus dem Chat.
+// Foundation-only. `id` = Drive-Ordner-ID, `name` = Anzeigename.
+public struct DriveFolderChoice: Sendable, Equatable, Identifiable {
+    public let id: String
+    public let name: String
+    public init(id: String, name: String) {
+        self.id = id
+        self.name = name
     }
 }
 

@@ -7,6 +7,9 @@ public enum IntakeSchreibFehler: Error, LocalizedError, Sendable {
     case nichtVerbunden
     case whitelist(String)
     case http(Int)
+    /// Härtung (2026-07-01): trägt Airtables tatsächliche Fehlermeldung aus dem
+    /// Antwort-Body (z. B. welches Feld genau abgelehnt wurde) statt nur des HTTP-Codes.
+    case validationFailed(Int, String)
     case allgemein(String)
 
     public var errorDescription: String? {
@@ -19,6 +22,8 @@ public enum IntakeSchreibFehler: Error, LocalizedError, Sendable {
             return "Airtable-Token hat keine Schreibrechte (Fehler \(code)). Token mit Scope data.records:write erstellen."
         case .http(let code):
             return "Airtable-Fehler HTTP \(code)"
+        case .validationFailed(let code, let message):
+            return "Airtable-Fehler HTTP \(code): \(message)"
         case .allgemein(let msg):
             return msg
         }

@@ -1,4 +1,4 @@
-# mykilOS 7.5 — Claude Code Projektgedächtnis
+# mykilOS 10 — Claude Code Projektgedächtnis
 
 **Smarte Projektplanung und Management mit intelligenten Automationen und Integrationen.**
 Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
@@ -75,6 +75,24 @@ Versuche verlaufen im Sande — genau dafür gibt es den Safe State.
 - Neue Arbeit nur auf Branches (`release/7.5`, `feat/…`, `experiment/…`), signiert (SSH).
 - Frisch aufrufen: `./script/recall_safe_state.sh` (separater Worktree) oder `git checkout v7.0.0`.
 - Verträge: **[docs/SAFE_STATE.md](docs/SAFE_STATE.md)** + **[docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md)**.
+
+---
+
+## ⛔ EISERNE REGEL: ClickUp — nur Testspace, nur Ghost-Personas, keine echten Notifikationen
+
+**Verankert 2026-07-02.** Jede ClickUp-Arbeit (App-Code UND jede Agenten-Session mit
+ClickUp-Zugriff) bleibt ausschließlich im Space **„MYKILOS API TESTSPACE"** (`90128024109`).
+
+- **NIE** eine echte ClickUp-Assignee-ID setzen (die 5 echten Mitglieder: Johannes/Daniel/
+  Frauke/Jilliana/Sebastian) — das löst eine ECHTE Benachrichtigung an eine reale Person aus,
+  unabhängig davon, ob die Aufgabe „nur ein Test" ist.
+- Simulierte Zuweisung läuft ausschließlich über **Ghost-Persona-Kürzel** (`Jo`/`Da`/`Fra`/`Sen`/
+  `Jil`) als Klartext-Marker in der Task-Beschreibung — niemals über das native `assignees`-Feld.
+- **Keinerlei echte externe Notifikation** senden — gilt sinngemäß für jedes System (Kalender,
+  Mail, Slack), solange etwas als Simulation/Testaufbau gekennzeichnet ist.
+- Ghost→echt wird erst verdrahtet, wenn Johannes das ausdrücklich freigibt — nie als Nebeneffekt.
+- Voller Vertrag + Vorfall/Korrektur-Protokoll:
+  **[docs/ops-clickup-mykilos8/GHOST_PERSONA_REGEL.md](docs/ops-clickup-mykilos8/GHOST_PERSONA_REGEL.md)**.
 
 ---
 
@@ -163,7 +181,7 @@ Signal-Leck, Loader-Races u. a.). **118 Tests grün.** Details in
 
 **⚠️ Externe Daten — harte NO-GOs (User, 2026-06-27/28):**
 - Sevdesk nie lesen/schreiben.
-- Die geteilte Airtable-Base (`appkPzoEiI5eSMkNK`) nie anfassen; Artikel-DB (`appdxTeT6bhSBmwx5`) read-only.
+- **KORRIGIERT (Johannes, 2026-07-03):** `appkPzoEiI5eSMkNK` (mykilOS Zuliefererpreise Schätzung) ist **NICHT mehr tabu** — freigegeben, eigene Base. Die EINZIGE geschützte Base ist **`appdxTeT6bhSBmwx5`** (Daniels „Artikel- & Einkaufsdatenbank"): **Lesen/rauskopieren frei**, aber **Daniels heutiger Stand (bestehende Records) darf NIE verändert, überschrieben oder gelöscht werden** — er will ungestört mit seiner Tabelle arbeiten. (Offener Punkt: die app-eigenen Warenkorb-/Projektartikel-Appends dorthin — Reroute in eine mykilOS-eigene Base empfohlen, damit Daniels Workspace sauber bleibt; Johannes-Entscheidung ausstehend.)
 - Google-Drive-Ordner (`0AOeReQBQKkKBUk9PVA`) **read-only** — Kopie nur zu ausdrücklich genanntem Ziel.
 - **Airtable-Einträge dürfen NIEMALS gelöscht oder direkt überschrieben werden** (auch nicht in `appuVMh3KDfKw4OoQ`). Inaktivierung erfolgt ausschließlich per Status-/Archiv-Feld (z. B. `Status = "Archived"`). Kein DELETE-Endpoint, niemals.
 - Externe Daten sind heilig; bei Datenverlust-Gefahr sofort warnen.
@@ -249,10 +267,17 @@ ist bitgenau roundtrip-sicher).
 - `SaveState` (.idle/.saving/.saved(Date)/.failed(String)) ist in der UI sichtbar.
 - Cold-Start-Test für jedes neue persistierbare Feature: schreiben → neue Instanz → lesen → identisch.
 
+### Belegführung
+- mykilOS stellt NIE selbst verbuchungspflichtige Dokumente aus (kein Angebot, keine Rechnung). Nur Warenkörbe + sevDesk-Postbox + Drive.
+- Jedes von mykilOS erzeugte Dokument mit Preisen ist eine beschriftete Vorschau ("Kalkulations-Vorschau — kein offizielles Angebot"), nie als fertiges/offizielles Angebot dargestellt. Das offizielle Angebot entsteht separat in sevDesk.
+
+### Clockodo
+- NIE POST an die Clockodo-API. Timer/Drafts landen in der privaten Clockodo-Postbox als Stundenprotokoll für die manuelle Eigeneingabe. Wahre Zeiten kommen NUR LESEND aus Clockodo zurück.
+
 ### Token-Disziplin (SwiftLint erzwingt das)
 - Keine `.font(.system(...))` in Feature-/Widget-Code → `Font.mykHero` etc. aus `MykilosDesign`.
 - Keine `Color(red:...)` → `MykColor.drive.color` etc.
-- Keine `Color(hex:)` in Widgets/Features → `public` in `MykilosDesign/Tokens.swift` nutzen.
+- Keine `Color(hex:)`/`NSColor(hex:)` in Widgets/Features → `public` in `MykilosDesign/Tokens.swift` nutzen (Ausnahme: dokumentierter `NSColor(hex:)`-Fall in `MykPDFRenderer.swift` für reine PDF-Druckausgabe).
 
 ### Secrets & Private Area
 - Tokens, API-Keys, PATs → nur Keychain. Nie in Code, Dateien, Repo, Logs.
@@ -260,12 +285,32 @@ ist bitgenau roundtrip-sicher).
 - **User-Secrets sind pro Nutzer isoliert:** Keychain-Service mit nutzer-spezifischem Suffix (z. B. `com.mykilos6.clockodo.<userID>`). Nie teamweit geteilt.
 - **Clockodo ist datensensitiv.** Zeitdaten, Stundensätze, Entwürfe gehören ausschließlich in die **Private Area** der Settings. Kein Log, kein Audit-Eintrag darf Clockodo-Rohdaten anderer User enthalten. Jeder User sieht und bucht nur seine eigenen Einträge.
 - **Private Area in Settings** (eigener Abschnitt, visuell getrennt von geteilten Integrationen): enthält alle nutzer-persönlichen Credentials — Clockodo zuerst, perspektivisch auch andere personenbezogene Tokens.
+- **Mail, Memos/Notizen und Assistent-Chat-Verlauf sind PRIVAT, nie teamweit kreuzlesbar**
+  (Johannes, 2026-07-02 — eiserne Regel). Strukturell größtenteils gesichert durch per-User
+  Google-OAuth (jeder User hat sein eigenes Token, keine geteilte Mail-API-Session). Der reale
+  Risikopunkt liegt in **geteilten/aggregierten Wissensschichten** (Studio-Wissen/Slack-Brain,
+  ein künftiges Assistent-Tagebuch): dort dürfen NIEMALS Rohinhalte aus Mail/Memo/Chat eines
+  Users landen, nur aggregierte/anonyme Signale ohne Zitate. Bei jedem neuen geteilten Log/
+  Wissens-Store diese Prüfung als Design-Voraussetzung mitdenken, nicht nachträglich anflicken.
+- **Kein Identitäts-Vortäuschen bei Kolleg:innen-Ansprache:** der Assistent eines Users darf
+  andere Team-Mitglieder nie so ansprechen, als wäre er der Nutzer selbst — bei jeder Assistent-
+  vermittelten Kommunikation (Mail-Entwurf, Nachricht) muss klar bleiben, dass der Assistent im
+  Auftrag handelt, nicht der Mensch persönlich spricht. Gleiche Grenze wie die Ghost-Persona-
+  Regel bei ClickUp (Identität bleibt immer erkennbar, nie verwischt).
 
 ### Widgets
 - Widgets reden NIE direkt miteinander → nur über `StudioContext.emit()`.
 - Signale sind VORSCHLÄGE (laut für Einsicht). Schreiben nur über Action-Card → Bestätigung → Audit.
 - Jedes Widget hat alle Renderstates: loading / content / empty / permissionRequired / offline / error.
 - Quelle ist immer sichtbar (Quellenzeile unten).
+
+### Aufgaben & Autorität (Eiserne Regel — ab 2026-07-03, systemweit)
+- **Aufgaben werden immer nur von Menschen an Menschen gegeben. Niemals von KI an Menschen.**
+- ClickUp: App/KI setzt NIE einen Assignee, erstellt NIE einen Task „an" eine Person — auch nach
+  Go-Live. KI legt höchstens Entwürfe vor; ein Mensch weist zu und ist sichtbar der Absender.
+- Alerts sind dezente Hinweise an den Nutzer selbst — nie Aufträge, nie an Dritte.
+- Assistent: Action-Card → menschliche Bestätigung → der Mensch ist Auftraggeber. KI spricht
+  Teammitglieder nie auffordernd an.
 
 ### Architektur
 - Multi-Target: `App → Widgets → Design`, `Services → Kit`, `Integrations → Kit`.
@@ -378,8 +423,13 @@ in geteilten Logs, nie in Airtable-Tabellen ohne expliziten User-Scope-Filter.
 
 ## Nächste Schritte
 
-**Version 6.4.0 ist die aktuelle stabile Version.** UI stabil, alle Integrationen
-live verifiziert (Phase A + B abgeschlossen). Nächste Code-Session: S18.
+**Korrektur 2026-07-01 (Doku-Konsolidierung):** Dieser Abschnitt war massiv veraltet
+(stand auf „Version 6.4.0 / Nächste Code-Session: S18", obwohl seither Akt 5,
+Post-Akt-5 1–21, S17/S18/S26, Kalkulations-Port, mykilOS 7 Safe State und der
+komplette mykilOS-8-Rolling-Plan Block A–D gelaufen sind). Aktueller Stand siehe
+[HYPERBUILD.md](HYPERBUILD.md) — das ist seit 2026-06-29 die verbindliche
+Status-Quelle, dieser Abschnitt bleibt als historisches Sprungbrett zu den
+Post-Akt-5-Handoffs stehen, wird aber nicht mehr als "aktueller Stand" gepflegt.
 
 **✅ Phase A + B abgeschlossen (2026-06-28):**
 - Phase A: IdentityView, Private Area, clearLocalCache, B2-Fix, GRDB-v5 → 192 Tests
@@ -584,7 +634,7 @@ M4: sevdeskRef + Budget in Airtable Projekte (→ B6 live)
   - `Clockodo-Buchungen` (`tblYQxlauwej7FD1w`): Master-Audit-Log nach Bestätigung.
   - `Clockodo-Leistungen` (`tblRtsegocdpM8CJd`): bereits befüllt (8 Services).
   - `Kunden.Clockodo-Kunden-ID`: bereits gemappt (10 von 30 Kunden).
-- **6-Schichten-Architektur (Code noch nicht implementiert):**
+- **6-Schichten-Architektur (Code noch nicht implementiert; Schritt 5 überholt — siehe "Clockodo" unter Absolute Regeln: NIE POST an Clockodo, nur Postbox):**
   1. Intent Layer: `ClaudeConversationEngine` erkennt `clockodoDraft`-Intent,
      extrahiert Dauer, Leistungstyp, Kunden-/Projektreferenz.
   2. Resolution Layer: `ClockodoDraftResolver` mappt Freitext auf echte IDs

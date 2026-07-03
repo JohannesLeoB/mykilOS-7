@@ -7,6 +7,20 @@
     "link": "mykilos://datastream/AIRTABLE_KUNDEN_PROJEKTE"
   },
   {
+    "integrationID": "WRITE_SHADOW_LOG",
+    "name": "Write-Shadow-Log (Backup-Base)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/WRITE_SHADOW_LOG"
+  },
+  {
+    "integrationID": "PROJECT_NUMBER_LOCAL_BINDING",
+    "name": "Projektnummer-Bindungs-Brücke (lokal)",
+    "system": "Lokal",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/PROJECT_NUMBER_LOCAL_BINDING"
+  },
+  {
     "integrationID": "DATAFLOW_LOG_WRITE",
     "name": "Schaltzentrum Sync-Log",
     "system": "Airtable",
@@ -250,5 +264,89 @@
     "system": "Airtable",
     "direction": "WRITE",
     "link": "mykilos://datastream/AIRTABLE_KONTAKTE_UPDATE"
+  },
+  {
+    "integrationID": "AIRTABLE_GESCHAEFT_KUNDEN_PROJEKTE",
+    "name": "Airtable Geschäfts-Kunden & -Projekte (Artikel-Base, ExternalMappingRegistry)",
+    "system": "Airtable",
+    "direction": "READ",
+    "link": "mykilos://datastream/AIRTABLE_GESCHAEFT_KUNDEN_PROJEKTE"
+  },
+  {
+    "integrationID": "WRITE_SHADOW_BACKUP_FEHLT",
+    "name": "Write-Shadow ohne mykilOS-Backup-Base (Sichtbarkeits-Warnung, Block A)",
+    "system": "Lokal",
+    "direction": "READ",
+    "link": "mykilos://datastream/WRITE_SHADOW_BACKUP_FEHLT"
+  },
+  {
+    "integrationID": "DRIVE_FRAGEBOGEN_PROJEKT_ORDNER",
+    "name": "Fragebogen: echter Projekt-Ordnerbaum in Drive (PROJEKTE-Root)",
+    "system": "Google Drive",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/DRIVE_FRAGEBOGEN_PROJEKT_ORDNER"
+  },
+  {
+    "integrationID": "AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING",
+    "name": "Fragebogen: Mastermind-Routing-Eintrag für neues Projekt",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_FRAGEBOGEN_PROJEKT_ROUTING"
+  },
+  {
+    "integrationID": "CLICKUP_FRAGEBOGEN_PROJEKT_ANLEGEN",
+    "name": "Fragebogen: ClickUp-Liste + Standard-Tasks für neues Projekt",
+    "system": "ClickUp",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/CLICKUP_FRAGEBOGEN_PROJEKT_ANLEGEN"
+  },
+  {
+    "integrationID": "AIRTABLE_INTAKE_KUNDE_ANLEGEN",
+    "name": "Intake: Kunde in Artikel-DB anlegen (alle Anlege-Stufen)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_INTAKE_KUNDE_ANLEGEN"
+  },
+  {
+    "integrationID": "AIRTABLE_INTAKE_PROJEKT_ANLEGEN",
+    "name": "Intake: Projekt in Artikel-DB anlegen (Stufe Lead/Projekt mit Ordner)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_INTAKE_PROJEKT_ANLEGEN"
+  },
+  {
+    "integrationID": "AIRTABLE_WARENKORB_SENDEN",
+    "name": "Warenkorb an Airtable senden (Warenkörbe + Projektartikel)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_WARENKORB_SENDEN"
+  },
+  {
+    "integrationID": "WORKBASKET_INTAKE_PERSIST",
+    "name": "Fragebogen-Warenkorb als WorkBasket lokal persistieren (V10 Block D)",
+    "system": "Lokal (GRDB)",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/WORKBASKET_INTAKE_PERSIST"
+  },
+  {
+    "integrationID": "DRIVE_ALL_OFFERS",
+    "name": "Alle Angebote (global)",
+    "system": "Google Drive",
+    "direction": "READ",
+    "link": "mykilos://datastream/DRIVE_ALL_OFFERS"
+  },
+  {
+    "integrationID": "AIRTABLE_CLOCKODO_ADAPTER_ZEITBUCHUNG",
+    "name": "Zeitbuchung an Clockodo-Adapter (Vorgebucht)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/AIRTABLE_CLOCKODO_ADAPTER_ZEITBUCHUNG"
+  },
+  {
+    "integrationID": "KALKULATION_PDF_IMPORT",
+    "name": "PDF-Import: SHA256-Dedup + Eingehende-Angebote",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/KALKULATION_PDF_IMPORT"
   }
 ]

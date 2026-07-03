@@ -30,6 +30,71 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-07-01 · Claude Code (Opus 4.8, Ultracode) — mykilOS 8 Block C: Identität + Nomenklatur (S2)
+
+```
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Branch: feat/mykilos8-block-c-identitaet-nomenklatur
+Build:  ✅ swift build grün
+Tests:  ✅ 695 Tests grün (24 neu)
+```
+
+Identitäts- + Nomenklatur-Schicht (rein lokal, kein externer Write): `Projektnummer` (max+1, nie
+wiederverwenden), `NumberAuthority`-Adapter + `LocalSequentialAuthority` (aktiv+Archiv, atomare
+`nextAndReserve`), `STRNummer` (Adresse/ORT/Varianten-Whitelist/Warn+Block), `FolderSchema v1` +
+Ordner-Konnektoren (versionierte GRDB-Config), `AntiDuplikat`, `KostenstellenProviding` (Default +
+Override, Airtable-ready), `NomenklaturStore`, Registry voll (Kdnr/Projektnr/Token-Lookups, Kdnr≠
+Projektnr), Kdnr auf Detail-Übersicht. GRDB-Migration v16. Johannes' Vorab-Entscheidungen:
+Provider-Abstraktion, GRDB-Config-Heimat, Varianten-Whitelist, voll durchziehen. ZIEL-CHECK mit
+adversarialem Multi-Agent-Review (4 Dim., 10 Findings, 8 gefixt inkl. Race-Condition bei der
+Nummernvergabe). Details: [HANDOFF_MYKILOS8_BLOCK_C.md](handoffs/HANDOFF_MYKILOS8_BLOCK_C.md). DMG 7.10.0.
+
+---
+
+## 2026-07-01 · Claude Code (Opus 4.8, Ultracode) — mykilOS 8 Block B: Lokales Zeit-Subsystem (S1)
+
+```
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Branch: feat/mykilos8-block-b-zeit-subsystem
+Build:  ✅ swift build grün
+Tests:  ✅ 672 Tests grün (13 neu)
+```
+
+Lokale Zeiterfassung komplett (rein lokal, kein externer Write): `TimeTracking.swift` (Domain),
+GRDB-Migration `v15_time_tracking` (4 Tabellen, additiv), `TimerStore` (Single-Instance-Invariante,
+Pause/Stopp, Kostenstellen-Wechsel ohne Zeitverlust via Draft-Modell, Übernahme-Queue, doppelte
+Buchungs-Bestätigung, Puls-Logik), Projekt-Timer-Widget (Tab „Zeit"), Sidebar-Pille + Puls-
+Erinnerung (beruhigt nach 3 Min — Johannes' Wahl), globale Dialoge (Übernahme/Buchung/Check-in).
+Johannes' Defaults: Projektwechsel nachfragen (nicht auto), Puls beruhigt nach 3 Min.
+ZIEL-CHECK mit adversarialem Multi-Agent-Review (4 Dimensionen, 12 Findings, 8 gefixt inkl. 1
+critical: `runQueuedStartIfNeeded` schluckte Fehler). Details:
+[HANDOFF_MYKILOS8_BLOCK_B.md](handoffs/HANDOFF_MYKILOS8_BLOCK_B.md). DMG 7.9.0.
+
+---
+
+## 2026-06-30 · Claude Code (Sonnet 5) — mykilOS 8 Block A: Fundament (Eine Wahrheit + Sicherheits-Sockel)
+
+```
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Branch: feat/mykilos8-block-a-fundament (von docs/mykilos8-handoff)
+Build:  ✅ swift build grün
+Tests:  ✅ 652 Tests grün (0 fehlgeschlagen)
+```
+
+S0-Audit + Verständnis-Report bestätigt, danach Block A nach Johannes' „nach deinen besten
+Empfehlungen": `ExternalMappingRegistry` (löst Split-Brain Mastermind↔Artikel über Projektnummer-
+Join auf, code-verifizierte Lücke: Artikel-`Projekte` hat noch kein Projektnummer-Feld →
+`businessOnlyUnbound`), `WriteShadowRecorder` (lokal GRDB vollständig + Backup-Base-Spiegel
+verdrahtet, Base selbst noch nicht angelegt — Airtable-MCP dieser Session sieht keine
+`workspaceId`), `ProvisioningModeStore` (.test-Default, .prod hart gesperrt), `TestSandboxCleaner`
+(Doppel-Marker + eigene Lösch-Whitelist + Re-Fetch-Verifikation, `AirtableClient.deleteRecord`
+neu — einzige DELETE-fähige Stelle im Code). Datenstrom-Handbuch (2 neue Weichen),
+`docs/BENUTZERHANDBUCH.md`, `AIRTABLE_DATENFLUSS_AUDIT.md`, `HANDOFF_TEST_SANDBOX.md`,
+`IDEEN_UND_BACKLOG.md` (Budget-Doppel-Wahrheit + Projektnummer-Lücke neu eingetragen) aktualisiert.
+Details: [HANDOFF_MYKILOS8_BLOCK_A.md](handoffs/HANDOFF_MYKILOS8_BLOCK_A.md).
+
+---
+
 ## 2026-06-29 · Claude Code (Opus) — S24: Assistent-„Fehler 400" behoben (Verlauf-Sanitizer)
 
 ```

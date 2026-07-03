@@ -55,6 +55,18 @@ public final class WarenkorbState {
                 quelle: source
             )
         }
+
+        /// Konvertiert zu DevBasketExportPosition (Dev-Checkout-Exporter, lokal-only).
+        public var devExportPosition: DevBasketExportPosition {
+            DevBasketExportPosition(
+                quelle: source,
+                bezeichnung: bezeichnung,
+                artikelnummer: artikelnummer,
+                menge: menge,
+                ekNetto: ekNetto,
+                vkNetto: vkNetto
+            )
+        }
     }
 
     // MARK: - State
@@ -111,6 +123,33 @@ public final class WarenkorbState {
                 menge: 1,
                 ekNetto: item.ekNetto,
                 vkNetto: item.vkNetto
+            ))
+        }
+    }
+
+    /// Angebots-/Rechnungs-Beleg (Task A, Dev-Checkout-Exporter) hinzufügen (oder Menge
+    /// erhöhen). `eingehend` steuert das source-Präfix — Angebote haben kein EK/VK
+    /// (keine erfundenen Zahlen), Artikelnummer ist die Belegnummer oder der Dateiname.
+    public func addAngebot(
+        fileID: String,
+        bezeichnung: String,
+        belegNummer: String?,
+        eingehend: Bool
+    ) {
+        let quelle = eingehend ? "angebot-eingehend" : "angebot-ausgehend"
+        let posID = "\(quelle)-\(fileID)"
+        if let idx = positionen.firstIndex(where: { $0.id == posID }) {
+            positionen[idx].menge += 1
+        } else {
+            positionen.append(Position(
+                id: posID,
+                source: quelle,
+                artikelRecordID: nil,
+                bezeichnung: bezeichnung,
+                artikelnummer: belegNummer ?? fileID,
+                menge: 1,
+                ekNetto: nil,
+                vkNetto: nil
             ))
         }
     }

@@ -11,6 +11,10 @@ public enum AssistantGrounding {
     public static func systemPrompt(
         profile: UserProfile? = nil,
         focusedProjectID: String?,
+        // Stufe 2 (Härtung 2026-07-01): destillierte Zusammenfassung älterer
+        // Gesprächsabschnitte — landet hier statt in der Nachrichtenliste, damit
+        // sie vom bestehenden System-Prompt-Cache-Breakpoint profitiert.
+        conversationSummary: String? = nil,
         signals: [WidgetSignal],
         projects: [Project],
         now: Date,
@@ -38,6 +42,15 @@ public enum AssistantGrounding {
                 intro += " (\(profile.role))"
             }
             intro += ". "
+            // V10 Folge-Block B: Anti-Impersonation-Minimalguard. Jeder Nutzer
+            // hat sein eigenes mykilOS (Team-Modell, geteilte Instrumente,
+            // getrennte Identitäten) — der Assistent handelt IMMER nur für
+            // die Person, mit der er gerade spricht, nie stellvertretend für
+            // andere Teammitglieder. Siehe Per-User-Datenisolation-Regel
+            // (Mail/Memos/Assistent-Chat nie zwischen Team-Mitgliedern
+            // kreuzlesbar).
+            intro += "Du handelst ausschließlich für \(profile.displayName). "
+            intro += "Sprich nie im Namen anderer Teammitglieder und gib dich nie als jemand anderen aus. "
         }
         intro += "Antworte auf Deutsch — direkt, knapp und sachlich wie ein erfahrener Kollege. "
         intro += "Keine Emojis. Keine Ausrufezeichen als Einleitung. "
@@ -73,7 +86,7 @@ public enum AssistantGrounding {
         if toolsEnabled {
             var toolLines: [String] = [
                 "Wichtig: Erfinde keine Fakten. Du hast LIVE-Lesezugriff auf folgende Werkzeuge — nutze sie statt zu raten:",
-                "- search_gmail: Gmail durchsuchen (Betreff/Snippet). Mit 'anzahl' mehr Treffer für Rückblicke; Gmail-Operatoren wie 'after:2025/01/01' nutzbar. Die Suche umfasst das GANZE Postfach.",
+                "- search_gmail: Gmail durchsuchen (Betreff/Snippet). Mit 'anzahl' mehr Treffer für Rückblicke; Gmail-Operatoren wie 'after:2025/01/01' nutzbar. Die Suche umfasst das GANZE Postfach. 'OR' IMMER großgeschrieben + bei gemischten Bedingungen klammern (z. B. 'from:(häfele OR hafele) Angebot'); bei unsicherer Schreibweise erst EINFACH suchen, nicht sofort mehrteilige OR-Ketten bauen.",
                 "- read_email: den VOLLEN Inhalt einer gefundenen Mail lesen (nicht nur die Vorschau).",
                 "- list_calendar_events: Termine aus Google Kalender.",
                 "- suggest_calendar_event: erzeugt einen Kalender-Link (kein API-Write).",

@@ -16,18 +16,34 @@ public struct CashWidget: View {
     public let sevdeskRef: String?
     public let budget: Double?
     public let auditStore: AuditStore?
+    // Block H: optionale Quelle für die „kalkuliert"-Zeile (WorkBasket-Summe). Nil im
+    // Home-/Nicht-Projekt-Kontext → Zeile bleibt aus, sevDesk-Verhalten unverändert.
+    public let workBasketStore: WorkBasketStore?
 
-    public init(projectID: String, sevdeskRef: String?, budget: Double?, auditStore: AuditStore? = nil) {
+    public init(
+        projectID: String,
+        sevdeskRef: String?,
+        budget: Double?,
+        auditStore: AuditStore? = nil,
+        workBasketStore: WorkBasketStore? = nil
+    ) {
         self.projectID = projectID
         self.sevdeskRef = sevdeskRef
         self.budget = budget
         self.auditStore = auditStore
+        self.workBasketStore = workBasketStore
     }
 
     @Environment(StudioContext.self) private var context
     @State private var reviewAccepted = false
     @State private var auditError: String?
     @State private var loader = SevdeskInvoicesLoader()
+    // Netto-VK-Summe des aktuellsten Projekt-WorkBaskets (0 = nichts kalkuliert).
+    @State private var kalkuliertNetto: Double = 0
+
+    /// Fester MwSt-Satz für die Brutto-Anzeige der kalkulierten Summe (deckt sich mit
+    /// AngebotsRenderMapper.mwstSatz — hier lokal, weil Widgets MykilosApp nicht importieren).
+    private static let mwstSatz = 0.19
 
     // Das echte Signal hinter "hasReviewSignal" — trägt den realen Angebotstext
     // (label) statt eines hartkodierten Platzhalters.
@@ -48,6 +64,7 @@ public struct CashWidget: View {
         ) {
             VStack(alignment: .leading, spacing: MykSpace.s5) {
                 HStack { SourceChip(kind: .cash); Text("Angebote / Cash").mykWidgetTitle(); Spacer() }
+                if kalkuliertNetto > 0 { kalkuliertZeile }
                 if hasReviewSignal && !reviewAccepted {
                     signalPrompt
                 } else {
@@ -75,6 +92,36 @@ public struct CashWidget: View {
             reviewAccepted = auditStore?.entries.contains {
                 $0.projectID == projectID && $0.action == .offerImported
             } ?? false
+            ladeKalkulierteSumme()
+        }
+        // Fix 2026-07-03 (Live-Fund Johannes): .task(id: projectID) lief nur beim
+        // ersten Öffnen — eine Warenkorb-Bearbeitung DANACH aktualisierte die Zeile
+        // nicht. workBasketStore ist pull-basiert (kein eigenes Array-Signal), aber
+        // saveState wechselt bei jedem erfolgreichen Speichern → als zusätzlicher
+        // Trigger nutzen.
+        .onChange(of: workBasketStore?.saveState) {
+            ladeKalkulierteSumme()
+        }
+    }
+
+    // MARK: - Block H: kalkulierte Warenkorb-Summe (schlanke Zeile)
+    // Reine Sicht auf den am Projekt persistierten WorkBasket — unabhängig von sevDesk,
+    // kein Budget-Balken, keine Schreibkette. sevDesk bleibt read-only (Ist-Umsatz).
+    private func ladeKalkulierteSumme() {
+        guard let workBasketStore else { return }
+        let baskets = (try? workBasketStore.alle(projektNummer: projectID)) ?? []
+        kalkuliertNetto = baskets.max(by: { $0.erstellt < $1.erstellt })?.vkNettoSumme ?? 0
+    }
+
+    private var kalkuliertZeile: some View {
+        HStack(spacing: MykSpace.s2) {
+            Text("Kalkuliert (Warenkorb)")
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.muted.color)
+            Spacer()
+            Text("\(currency(kalkuliertNetto)) netto · \(currency(kalkuliertNetto * (1 + Self.mwstSatz))) brutto")
+                .font(.mykMono(10))
+                .foregroundStyle(MykColor.cash.color)
         }
     }
 

@@ -22,7 +22,7 @@ public struct SourceChip: View {
 }
 
 extension WidgetKind {
-    var iconName: String {
+    public var iconName: String {
         switch self {
         case .drive:     "folder"
         case .tasks:     "checklist"
@@ -37,6 +37,7 @@ extension WidgetKind {
         case .clockodo:       "clock"
         case .recentActivity: "bolt"
         case .kalkulation:    "eurosign.square"
+        case .warenkorb:      "cart"
         }
     }
 }

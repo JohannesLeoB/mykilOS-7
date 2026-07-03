@@ -1,0 +1,170 @@
+# ClickUp Ghost-Shadow-Sync + GO-LIVE — Plan (geparkt · Brain-Schema als Referenz)
+
+**Status: 🅿️ GEPARKT · 2026-07-03 (zurückgedreht, Klarstellung Johannes).** Kein laufendes
+Zwei-Agenten-Modell. Die frühere Fassung („in Arbeit über Brain / Arbeitsteilung bestätigt /
+Modell B Shared-State") war eine **Überinterpretation** eines Copy-Paste-Briefings — hiermit
+korrigiert.
+
+**Rolle von „ClickUp Brain" (Claude Opus 4.6 im ClickUp-Workspace) — klargestellt (Johannes):**
+- Brain ist ein **von Claude Code gesteuerter Dev-Phasen-Helfer**, KEIN gleichrangiger Live-Agent
+  und KEIN dauerhaft mitlaufender System-Teilnehmer. Claude Code gibt Brain **Arbeitsanweisungen**
+  (über Johannes als manuelles Gate), Brain hilft in dessen Auftrag.
+- **Beim Go-Live ist Brain OFF.** Er wirkt nur in der Aufbau-/Entwicklungsphase mit, hat im
+  laufenden Produktivsystem keine Rolle.
+- Sein bisheriger Output ist **einmaliger Input/Referenz**: 10 Custom Fields im Testspace
+  `90128024109` (von Claude Code am 2026-07-03 per `clickup_get_custom_fields` unabhängig
+  verifiziert — Namen/Typen/Optionen stimmen). Das **Schema-Mapping unten bleibt als Referenz**
+  für mykilOS 8 wertvoll, ist aber kein Auftrag für ein laufendes Koordinationsmodell.
+
+---
+
+## 0b. Brain-Schema als Referenz-Input für mykilOS 8 (kein laufendes Modell, 2026-07-03)
+
+Brains 10 Custom Fields sind **inhaltlich brauchbarer Referenz-Input für mykilOS 8** — mehrere
+mappen direkt (teils als Verbesserung) auf bestehende/geplante mykilOS-Konzepte. Reine Referenz,
+keine Verpflichtung zu Zwei-System-Synchronität:
+
+| Brain-Feld | mykilOS-Konzept | Nutzen |
+|---|---|---|
+| `project_phase` (7 Phasen: Briefing/Planung/Angebot/Bestellung/Ausführung/Abschluss/Service) | Projekt-Lebenszyklus-Stepper im Hero (heute 5: Akquise/Planung/Angebot/Ausführung/Abschluss) | **Verfeinerung** — Brains 7-Phasen-Modell ist granularer (Briefing vorne, Bestellung + Service hinten). Erwägen, den mykilOS-Stepper darauf anzugleichen → EINE Phasen-Wahrheit innen+außen. |
+| `evidence_grade` (stark/mittel/schwach/konflikt) | Kalkulations-Engine Konfidenz-Badge + Verlässlichkeits-Parameter ([[angebots-brain-synthese]]) | **Gemeinsames Vokabular** für Datenverlässlichkeit über beide Systeme — sollte identisch benannt sein. |
+| `source_system` (Slack/Drive/Airtable/myKilOS/manual) | `DataFlowLogger`-integrationID + „Quelle immer sichtbar"-Regel (Quellenzeile) | **Direkte Entsprechung** — dasselbe Herkunfts-Tracking-Prinzip, nur in ClickUp. |
+| `blocker_type` (intern/Kunde/Lieferant/Daten/Geld/Datei) | Alerts-/Signal-Taxonomie (die 5 heutigen Alert-Ideen) | **Neue, gute Taxonomie** — was blockiert ein Projekt, kategorisiert. Direkt in die Alert-Kategorien übernehmbar. |
+| `finance_relevant` / `change_order_relevant` | sevDesk-Postbox-Gate (§5d: nur geschäftliche Inhalts-Arten) + Nachträge (§5j) | Flags, die das Postbox-Gating und den Nachtrag-Lebenszyklus steuern könnten. |
+| `review_required` | Karte→Bestätigung→Audit-Gate | Ob ein Objekt menschliche Freigabe braucht — dasselbe Prinzip. |
+| `mykilos_project_id` / `client_name` / `drive_folder_url` | Cross-System-Verknüpfungsschlüssel (Projektnummer/Kunde/Drive-Ordner) = `ExternalMappingRegistry` | **Kernstück** — die Felder, die ClickUp↔Airtable↔Drive↔mykilOS zusammenhalten. |
+
+**Wenn Brain in der Dev-Phase helfen soll:** Claude Code kann ihm gezielte Arbeitsanweisungen
+geben (z. B. „entwirf eine ClickUp-Meilenstein-Struktur / ein Automations-Schema als Vorschlag")
+— das Ergebnis ist dann Referenz/Vorschlag, den Claude Code bewertet und ggf. in App/Airtable
+umsetzt. Kein automatischer Zwei-System-Sync, keine stehende Koordination. Bei Go-Live: Brain OFF.
+
+---
+
+## 1. Ausgangslage
+
+Johannes hat MYKILOS API TESTSPACE als **Ghost-Parallelaufbau** angelegt: echte Aufgaben +
+Aufgaben-Historien, aber Team nur als **Ghost-Kürzel** (Jo/Da/Fra/Sen/Jil) im Text — keine echten
+Assignees, keine echten Notifikationen (siehe [[clickup-ghost-persona-rule]], eiserne Regel).
+
+**Erweiterter Wunsch (2026-07-02):** die **live geschalteten Projekte** aus den anderen (echten)
+ClickUp-Spaces/Channels sollen **nach demselben Schema in den Testspace kopiert und
+shadow-gesynct** werden — mit allen echten Tasks, aber weiterhin als Ghosts fürs Team. **Nur
+Johannes selbst** ist bereits Live-User (echt aus ClickUp gespeist).
+
+**Ziel:** irgendwann ein **GO-LIVE-Knopf**, der den (dann fertig angereicherten) Shadow-
+Testspace live schaltet — Ghosts → echte Member gemappt, alles auf einmal „mit Saft versorgt".
+
+---
+
+## 2. Warum eigener Strang (nicht jetzt)
+
+- Braucht **ClickUp read-write** auf die echten Live-Spaces — sensibler Rechte-Scope.
+- **GO-LIVE ist kein Toggle**, sondern eine geführte Migration — verdient volle Aufmerksamkeit,
+  nicht nebenbei neben der Wirbelsäule.
+- Kollidiert sonst mit S10/Welle C (gleiche Ressource: Konzentration + ClickUp-Zugriff).
+
+---
+
+## 2b. ⚠️ Bekannte Überschneidung — VOR dem Sync zu klären (Johannes, 2026-07-02)
+
+Der Testspace enthält bereits **zwei unabhängig gewachsene Kopien** desselben Projekts:
+- **`PROJEKTE > AKTIV`** (Live-Struktur, z. B. `2025_014_BenjaminMartin_FUN16` mit 7 Tasks)
+- **`88 Slack-Archiv (historisch)`** (Slack-Export-Import, dasselbe Projekt mit 26 Tasks)
+
+Beide Zweige sind **nicht deckungsgleich** (unterschiedliche Task-Zahl = unterschiedliche
+Detailtiefe/Zeitraum). Ein naiver Sync würde Dubletten erzeugen statt eine Wahrheit.
+
+**Konsequenz fürs Sync-Design:** vor dem eigentlichen Live→Shadow-Sync braucht es einen
+**Merge/Dedupe-Schritt** für bereits vorhandene Überschneidungen:
+1. Projekt-Identität matchen (Projektnummer/Kdnr, nicht Freitext-Name).
+2. Je Match: welche Kopie ist die vollständigere/aktuellere Quelle je Task (Slack-Historie hat
+   oft mehr Kontext, Live-Struktur oft aktuelleren Status)?
+3. Zusammenführen zu EINER Shadow-Wahrheit je Projekt — append-only, keine der beiden
+   Ursprungskopien wird zerstört, bis der Merge bestätigt ist.
+4. Erst danach greift die ID-Mapping-Registry (§3) für laufenden Sync.
+
+**Das ist der erste Klärungspunkt, wenn der Strang drankommt** — nicht Detail, sondern
+Voraussetzung: ohne sauberen Merge-Schritt entsteht beim Sync zusätzliches Chaos statt weniger.
+
+### 2c. Dritte Quelle — „Leads"-Space/-Ordner (Johannes, 2026-07-02)
+
+Es existiert zusätzlich ein **Leads-Space/-Ordner** (neue Anfragen), der bisher **unstrukturiert
+/ „tollpatschig"** gepflegt wurde — kein sauberes Schema wie die Projektordner. Muss ebenfalls
+ins Ghost-System übertragen werden, braucht aber vor dem Sync eine **eigene Aufräum-/
+Struktur-Klärung** (welches Zielschema? gehört er unter dieselbe Projekt-Struktur oder bleibt er
+ein eigener vorgelagerter Bereich für „noch kein Projekt"?). **Dritte Quelle neben Live-Struktur
+und Slack-Archiv (§2b)** — beim Merge/Dedupe-Schritt mitzudenken, nicht nachträglich anzuflicken.
+
+**Das ist der zweite Klärungspunkt** vor dem eigentlichen Sync (nach §2b Merge, vor §3 Architektur).
+
+---
+
+## 3. Architektur-Skizze
+
+```
+Live-ClickUp-Spaces (echte Kanäle/Channels, oben im Screenshot)
+        │  READ-ONLY (nie schreiben, keine Notifikationen von dort)
+        ▼
+   Sync-Engine  ──▶  ID-Mapping-Registry (Live-ID ↔ Shadow-ID, stabil, idempotent)
+        │
+        ▼
+MYKILOS API TESTSPACE (Ghost-Shadow)
+   - Tasks + Historie (als Kommentare/Description, ClickUp-History ist nicht direkt kopierbar)
+   - Team weiterhin als Ghost-Kürzel im Text (Jo/Da/Fra/Sen/Jil)
+   - Nur Johannes bereits echter Member (Live-User)
+        │
+        │  GO-LIVE-Knopf (geführt, dry-run-bar, reversibel)
+        ▼
+Ghost-Kürzel → echte Member gemappt · Notifikationen scharf · Testspace WIRD Produktion (Modell A)
+```
+
+### Bausteine
+1. **Read-only Live-Quelle:** Sync liest die echten Spaces, schreibt NIE dorthin, löst KEINE
+   Notifikationen dort aus.
+2. **ID-Mapping-Registry** (Airtable oder lokal): `LiveTaskID ↔ ShadowTaskID`, `LiveListID ↔
+   ShadowListID` — macht den Sync **idempotent** (wiederholbar ohne Dubletten). Append/Update,
+   **nie Delete**. **Muss zusätzlich `SlackArchivTaskID` als dritten Schlüssel führen** (§2b) —
+   sonst matcht der Sync nicht gegen die bereits vorhandene Slack-Archiv-Kopie.
+3. **Ghost↔Member-Mapping-Tabelle:** Ghost-Kürzel → echte ClickUp-Member-ID. Aktuell nur
+   `Johannes → echter User` gemappt; alle anderen bleiben Ghost bis GO-LIVE.
+4. **Historie:** ClickUp erlaubt keinen direkten History-Write → Task-Historie wird als
+   **Kommentar/Description mit Ghost-Kürzel + Original-Zeitstempel** mitkopiert (best-effort
+   Chronik, kein 1:1-API-Replay).
+5. **GO-LIVE-Migration:** geführter, **dry-run-barer**, reversibler Schritt: Ghost-Tokens im
+   Testspace werden auf echte Member-IDs geremapped, Notifikationen erst DANACH scharf.
+
+### Cutover-Modell: **A) Testspace WIRD Produktion** (empfohlen)
+- Der angereicherte Shadow-Testspace ist nach GO-LIVE die neue Wahrheit.
+- Team wird eingeladen (Ghost→Member-Mapping löst sich auf), alte Live-Spaces werden archiviert.
+- **Warum A statt B (Zurücksync in bestehende Live-Spaces):** B bedeutet Merge-Schmerz zwischen
+  zwei parallel gewachsenen Strukturen; A hat eine einzige Wahrheit (den Shadow), die bereits
+  bewusst kuratiert wurde.
+
+---
+
+## 4. Rails (gelten unverändert, auch für diesen Strang)
+
+- **Ghost-Persona-Regel bleibt bis GO-LIVE eisern:** nie echte Assignee-ID, nie echte
+  Notifikationen, nur Testspace `90128024109` (siehe [[clickup-ghost-persona-rule]]).
+- Live-Spaces werden beim Sync **nur gelesen**, nie beschrieben.
+- GO-LIVE-Migration nur mit Johannes' expliziter Freigabe, nicht automatisiert im Auto-Mode.
+- Dry-Run vor jedem echten Sync-Lauf; Mapping-Registry ist die Idempotenz-Garantie gegen Dubletten.
+
+---
+
+## 5. Offene Entscheidungen (vor Bau zu klären)
+
+1. Mapping-Registry: Airtable-Tabelle oder lokal (GRDB)?
+2. Wie weit zurück syncen (alle historischen Live-Projekte oder nur aktive)?
+3. Sync-Rhythmus bis GO-LIVE: einmalig kopieren oder laufend spiegeln?
+4. Exakter GO-LIVE-Trigger: manueller Knopf in mykilOS oder Skript/CLI?
+5. Reihenfolge der Team-Mitglieder-Freischaltung (alle auf einmal vs. gestaffelt)?
+
+---
+
+## 6. Nächster Schritt (wenn der Strang drankommt)
+
+Eigene Session mit vollem ClickUp-read-write-Scope. Erst Mapping-Registry + Dry-Run-Sync für
+**ein** Test-Live-Projekt bauen und verifizieren, bevor breit auf alle live geschalteten Projekte
+ausgerollt wird.

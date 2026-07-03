@@ -13,6 +13,22 @@ struct WarenkorbPanel: View {
     @Environment(AppState.self) private var appState
 
     @State private var showVersand = false
+    @State private var showDevCheckout = false
+    @State private var showPreview = false
+
+    // MARK: - Task B: Suche/Sortieren/Filtern/Gruppieren (session-lokal, kein Persistenz-Bedarf)
+    @State private var query: String = ""
+    @State private var sort: WarenkorbSort = .bezeichnung
+    @State private var aktiveQuellenFilter: Set<String> = []   // leer = alle Quellen
+    @State private var gruppieren: Bool = false
+
+    enum WarenkorbSort: String, CaseIterable, Identifiable {
+        case bezeichnung = "Bezeichnung"
+        case menge = "Menge"
+        case vkWert = "VK-Wert"
+        case quelle = "Quelle"
+        var id: String { rawValue }
+    }
 
     private static let preisFormatter: NumberFormatter = {
         let f = NumberFormatter()
@@ -21,6 +37,56 @@ struct WarenkorbPanel: View {
         f.maximumFractionDigits = 2
         return f
     }()
+
+    /// Alle in `warenkorb.positionen` tatsächlich vorkommenden Quellen — Basis für die
+    /// Filter-Chips. Nur echte Quellen anzeigen (keine leeren Chips für nicht genutzte).
+    private var vorhandeneQuellen: [String] {
+        Array(Set(warenkorb.positionen.map(\.source))).sorted()
+    }
+
+    /// Suche (Bezeichnung/Artikelnummer) → Quellen-Filter → Sortierung.
+    private var sichtbarePositionen: [WarenkorbState.Position] {
+        var items = warenkorb.positionen
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if !q.isEmpty {
+            items = items.filter {
+                $0.bezeichnung.lowercased().contains(q) || $0.artikelnummer.lowercased().contains(q)
+            }
+        }
+        if !aktiveQuellenFilter.isEmpty {
+            items = items.filter { aktiveQuellenFilter.contains($0.source) }
+        }
+        switch sort {
+        case .bezeichnung: items.sort { $0.bezeichnung.localizedCaseInsensitiveCompare($1.bezeichnung) == .orderedAscending }
+        case .menge: items.sort { $0.menge > $1.menge }
+        case .vkWert: items.sort { ($0.vkNetto ?? 0) * Double($0.menge) > ($1.vkNetto ?? 0) * Double($1.menge) }
+        case .quelle: items.sort { $0.source < $1.source }
+        }
+        return items
+    }
+
+    /// Gruppiert nach Quelle (nur wenn `gruppieren == true`), sortierte Gruppenreihenfolge.
+    private var gruppierteSektionen: [(quelle: String, items: [WarenkorbState.Position])] {
+        Dictionary(grouping: sichtbarePositionen, by: \.source)
+            .sorted { $0.key < $1.key }
+            .map { (quelle: $0.key, items: $0.value) }
+    }
+
+    private func quellLabel(_ source: String) -> String {
+        switch source {
+        case "katalog": "Artikel"
+        case "lager": "Lager"
+        case "angebot-eingehend": "Angebot eingehend"
+        case "angebot-ausgehend": "Angebot ausgehend"
+        default: source
+        }
+    }
+
+    private func gruppenSumme(_ items: [WarenkorbState.Position]) -> (anzahl: Int, vk: Double) {
+        let anzahl = items.reduce(0) { $0 + $1.menge }
+        let vk = items.reduce(0.0) { $0 + ($1.vkNetto ?? 0) * Double($1.menge) }
+        return (anzahl, vk)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -68,17 +134,47 @@ struct WarenkorbPanel: View {
                 }
                 .frame(maxWidth: .infinity)
             } else {
-                // Positionsliste
+                warenkorbToolbar
+
+                Divider().overlay(MykColor.line.color)
+
+                // Positionsliste (gefiltert/sortiert, optional gruppiert)
                 ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(warenkorb.positionen) { pos in
-                            PositionZeile(
-                                position: pos,
-                                preisFormatter: Self.preisFormatter,
-                                onMengeChange: { warenkorb.setMenge($0, forID: pos.id) },
-                                onRemove: { warenkorb.remove(id: pos.id) }
-                            )
-                            Divider().overlay(MykColor.line.color)
+                    if sichtbarePositionen.isEmpty {
+                        VStack(spacing: MykSpace.s3) {
+                            Spacer(minLength: MykSpace.s9)
+                            Text("Keine Treffer.")
+                                .font(.mykSmall)
+                                .foregroundStyle(MykColor.muted.color)
+                            Spacer(minLength: MykSpace.s9)
+                        }
+                        .frame(maxWidth: .infinity)
+                    } else if gruppieren {
+                        VStack(spacing: 0) {
+                            ForEach(gruppierteSektionen, id: \.quelle) { sektion in
+                                gruppenHeader(sektion.quelle, items: sektion.items)
+                                ForEach(sektion.items) { pos in
+                                    PositionZeile(
+                                        position: pos,
+                                        preisFormatter: Self.preisFormatter,
+                                        onMengeChange: { warenkorb.setMenge($0, forID: pos.id) },
+                                        onRemove: { warenkorb.remove(id: pos.id) }
+                                    )
+                                    Divider().overlay(MykColor.line.color)
+                                }
+                            }
+                        }
+                    } else {
+                        VStack(spacing: 0) {
+                            ForEach(sichtbarePositionen) { pos in
+                                PositionZeile(
+                                    position: pos,
+                                    preisFormatter: Self.preisFormatter,
+                                    onMengeChange: { warenkorb.setMenge($0, forID: pos.id) },
+                                    onRemove: { warenkorb.remove(id: pos.id) }
+                                )
+                                Divider().overlay(MykColor.line.color)
+                            }
                         }
                     }
                 }
@@ -125,6 +221,31 @@ struct WarenkorbPanel: View {
                     Spacer()
 
                     Button {
+                        showPreview = true
+                    } label: {
+                        Label("Vorschau", systemImage: "eye")
+                            .font(.mykSmall)
+                            .foregroundStyle(MykColor.muted.color)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Zeigt das JSON-Format des Dev-Exports, bevor du checkoutest")
+
+                    Button {
+                        showDevCheckout = true
+                    } label: {
+                        Label("Checkout (Dev)", systemImage: "shippingbox")
+                            .font(.mykSmall)
+                            .foregroundStyle(MykColor.cash.color)
+                            .padding(.horizontal, MykSpace.s5)
+                            .padding(.vertical, MykSpace.s3)
+                            .background(MykColor.card.color)
+                            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.cash.color, lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Lokaler Dev-Export-Vorschau (kein Airtable-Schreiben)")
+
+                    Button {
                         showVersand = true
                     } label: {
                         Label("An Airtable senden", systemImage: "arrow.up.doc")
@@ -155,6 +276,176 @@ struct WarenkorbPanel: View {
                 projekte: appState.registry.projects
             )
         }
+        .sheet(isPresented: $showDevCheckout) {
+            DevCheckoutSheet(
+                quelle: "session",
+                bezeichnung: nil,
+                projekt: nil,
+                positionen: warenkorb.positionen.map { $0.devExportPosition },
+                summeEKNetto: warenkorb.istLeer ? nil : warenkorb.gesamtEK,
+                summeVKNetto: warenkorb.istLeer ? nil : warenkorb.gesamtVK,
+                onDismiss: { showDevCheckout = false }
+            )
+        }
+        .sheet(isPresented: $showPreview) {
+            WarenkorbPreviewSheet(
+                positionen: sichtbarePositionen.map { $0.devExportPosition },
+                onDismiss: { showPreview = false }
+            )
+        }
+    }
+
+    // MARK: - Task B: Toolbar (Suche/Sortieren/Filtern/Gruppieren)
+
+    private var warenkorbToolbar: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s3) {
+            HStack(spacing: MykSpace.s2) {
+                Image(systemName: "magnifyingglass")
+                    .font(.mykCaption)
+                    .foregroundStyle(MykColor.muted.color)
+                TextField("Bezeichnung, Art.-Nr. …", text: $query)
+                    .font(.mykSmall)
+                    .textFieldStyle(.plain)
+                if !query.isEmpty {
+                    Button { query = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.mykCaption)
+                            .foregroundStyle(MykColor.faint.color)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Menu {
+                    ForEach(WarenkorbSort.allCases) { option in
+                        Button { sort = option } label: {
+                            Label(option.rawValue, systemImage: sort == option ? "checkmark" : "arrow.up.arrow.down")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.mykCaption)
+                        .foregroundStyle(MykColor.muted.color)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help("Sortieren: \(sort.rawValue)")
+
+                Toggle(isOn: $gruppieren) {
+                    Image(systemName: "square.grid.2x2")
+                        .font(.mykCaption)
+                }
+                .toggleStyle(.button)
+                .buttonStyle(.plain)
+                .foregroundStyle(gruppieren ? MykColor.tasks.color : MykColor.muted.color)
+                .help("Nach Quelle gruppieren")
+                .accessibilityLabel("Nach Quelle gruppieren")
+            }
+            .padding(.horizontal, MykSpace.s3)
+            .padding(.vertical, MykSpace.s2)
+            .background(MykColor.card.color)
+            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+
+            if vorhandeneQuellen.count > 1 {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: MykSpace.s2) {
+                        ForEach(vorhandeneQuellen, id: \.self) { quelle in
+                            quellFilterChip(quelle)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, MykSpace.s7)
+        .padding(.vertical, MykSpace.s4)
+    }
+
+    private func quellFilterChip(_ quelle: String) -> some View {
+        let aktiv = aktiveQuellenFilter.contains(quelle)
+        return Button {
+            if aktiv { aktiveQuellenFilter.remove(quelle) } else { aktiveQuellenFilter.insert(quelle) }
+        } label: {
+            Text(quellLabel(quelle))
+                .font(.mykMono(9))
+                .foregroundStyle(aktiv ? MykColor.paper.color : MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s3)
+                .padding(.vertical, MykSpace.s2)
+                .background(aktiv ? MykColor.tasks.color : MykColor.card.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func gruppenHeader(_ quelle: String, items: [WarenkorbState.Position]) -> some View {
+        let summe = gruppenSumme(items)
+        return HStack {
+            Text(quellLabel(quelle).uppercased())
+                .font(.mykMono(9))
+                .foregroundStyle(MykColor.muted.color)
+            Spacer()
+            Text("\(summe.anzahl) Stk · \(Self.preisFormatter.string(from: NSNumber(value: summe.vk)) ?? "–")")
+                .font(.mykMono(9))
+                .foregroundStyle(MykColor.faint.color)
+        }
+        .padding(.horizontal, MykSpace.s7)
+        .padding(.vertical, MykSpace.s2)
+        .background(MykColor.paper2.color)
+    }
+}
+
+// MARK: - WarenkorbPreviewSheet
+// Task B: zeigt das JSON-Format des Dev-Exports (Task D) VOR dem Checkout — reine
+// Leseansicht, löst keine Ausgabeart aus. Nutzt DevBasketExport.prettyJSON() direkt,
+// damit Vorschau und Checkout-Sheet garantiert dieselbe Form zeigen.
+@MainActor
+private struct WarenkorbPreviewSheet: View {
+    let positionen: [DevBasketExportPosition]
+    let onDismiss: () -> Void
+
+    private var jsonText: String {
+        let export = DevBasketExport(quelle: "session-vorschau", positionen: positionen)
+        return (try? export.prettyJSON()) ?? "Vorschau konnte nicht erzeugt werden."
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            HStack {
+                Text("Warenkorb — Vorschau")
+                    .font(.mykHeadline)
+                    .foregroundStyle(MykColor.ink.color)
+                Spacer()
+                Button { onDismiss() } label: {
+                    Image(systemName: "xmark").font(.mykSmall).foregroundStyle(MykColor.muted.color)
+                }
+                .buttonStyle(.plain)
+            }
+            Text("So sieht das Dev-Export-JSON (Task D) für die aktuell gefilterte Liste aus — reine Leseansicht, keine Aktion wird ausgelöst.")
+                .font(.mykSmall)
+                .foregroundStyle(MykColor.muted.color)
+                .fixedSize(horizontal: false, vertical: true)
+            ScrollView {
+                Text(jsonText)
+                    .font(.mykMono(10))
+                    .foregroundStyle(MykColor.ink.color)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(MykSpace.s4)
+            }
+            .background(MykColor.card.color)
+            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+            HStack {
+                Spacer()
+                Button("Schließen") { onDismiss() }
+                    .buttonStyle(.plain)
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.muted.color)
+            }
+        }
+        .padding(MykSpace.s8)
+        .frame(width: 520, height: 480)
+        .background(MykColor.paper.color)
     }
 }
 
@@ -169,14 +460,33 @@ private struct PositionZeile: View {
 
     @State private var mengeText: String = ""
 
+    private var sourceBadgeLabel: String {
+        switch position.source {
+        case "katalog": "K"
+        case "lager": "L"
+        case "angebot-eingehend": "AE"
+        case "angebot-ausgehend": "AA"
+        default: "?"
+        }
+    }
+
+    private var sourceBadgeColor: Color {
+        switch position.source {
+        case "katalog": MykColor.tasks.color
+        case "lager": MykColor.drive.color
+        case "angebot-eingehend", "angebot-ausgehend": MykColor.cash.color
+        default: MykColor.muted.color
+        }
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: MykSpace.s4) {
-            // Source-Badge
-            Text(position.source == "katalog" ? "K" : "L")
+            // Source-Badge (Task A: generalisiert über alle vier Quell-Strings)
+            Text(sourceBadgeLabel)
                 .font(.mykMono(8))
                 .foregroundStyle(MykColor.paper.color)
                 .frame(width: 16, height: 16)
-                .background(position.source == "katalog" ? MykColor.tasks.color : MykColor.drive.color)
+                .background(sourceBadgeColor)
                 .clipShape(RoundedRectangle(cornerRadius: 4))
 
             VStack(alignment: .leading, spacing: MykSpace.s2) {
@@ -476,8 +786,14 @@ struct WarenkorbVersandView: View {
         // Bezeichnung: eigener Freitext hat Priorität, dann Projektname
         let finalBezeichnung = effectiveBezeichnung
         let initialProjektName: String? = selectedProjekt.map { $0.title }
+        // Härtung (2026-07-01, Audit): `selectedProjekt.airtableRecordID` ist eine Record-ID
+        // aus der Mastermind-Base (appuVMh3KDfKw4OoQ, `registry.syncFromAirtable`). CartStore
+        // schreibt `projektRecordID` aber als Link-Feld in die ANDERE Base, die Artikel-DB
+        // (appdxTeT6bhSBmwx5) — ein Record-Link kann nie über Basen hinweg zeigen. Ohne einen
+        // echten Cross-Base-Lookup (der hier bewusst nicht geraten wird) bleibt nur der
+        // Projektname als Freitext-Zuordnung; ein blind falscher Link wäre schlimmer als keiner.
         let wk = warenkorb.makeWarenkorb(
-            projektRecordID: selectedProjekt?.airtableRecordID,
+            projektRecordID: nil,
             projektName: initialProjektName
         )
         let wkFinal: Warenkorb
@@ -499,11 +815,18 @@ struct WarenkorbVersandView: View {
             switch outcome {
             case .success(let id, let version):
                 sendState = .success(id, version)
+                // Härtung (2026-07-01, Audit): bisher kein dataFlow.log für diesen Write-Pfad.
+                appState.dataFlow.log(integrationID: "AIRTABLE_WARENKORB_SENDEN", actorUserID: appState.actorUserID,
+                                       action: .success, recordsWritten: 1,
+                                       summary: "Warenkorb gesendet (Version \(version), Record \(id))")
             case .leer:
                 sendState = .error("Warenkorb ist leer — nichts gesendet.")
             }
         } catch {
             sendState = .error(error.localizedDescription)
+            appState.dataFlow.log(integrationID: "AIRTABLE_WARENKORB_SENDEN", actorUserID: appState.actorUserID,
+                                   action: .error, errorMessage: error.localizedDescription,
+                                   summary: "Warenkorb-Senden fehlgeschlagen")
         }
     }
 

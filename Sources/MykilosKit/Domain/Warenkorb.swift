@@ -22,6 +22,19 @@ public struct WarenkorbItem: Codable, Sendable, Equatable, Identifiable {
 
     public var id: String { "\(artikelnummer)-\(menge)-\(bezeichnung)" }
 
+    /// Konvertiert zu DevBasketExportPosition (Dev-Checkout-Exporter, lokal-only,
+    /// siehe Sources/MykilosKit/Domain/DevExport/DevBasketExport.swift).
+    public var devExportPosition: DevBasketExportPosition {
+        DevBasketExportPosition(
+            quelle: quelle,
+            bezeichnung: bezeichnung,
+            artikelnummer: artikelnummer,
+            menge: menge,
+            ekNetto: ekNetto,
+            vkNetto: vkNetto
+        )
+    }
+
     public init(
         artikelRecordID: String? = nil,
         bezeichnung: String,

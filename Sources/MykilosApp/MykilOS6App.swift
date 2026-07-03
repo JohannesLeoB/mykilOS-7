@@ -14,6 +14,9 @@ struct MykilOS6App: App {
     @State private var phase: BootPhase
     @State private var context = StudioContext()
     @Environment(\.scenePhase) private var scenePhase
+    // Hell/Dunkel/Auto (2026-07-02): per-Nutzer-Wahl statt System-Zwang.
+    @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
+    private var appearance: AppAppearance { AppAppearance.from(appearanceRaw) }
 
     init() {
         // Single-Instance-Guard: läuft bereits eine andere Instanz, diese aktivieren
@@ -41,6 +44,9 @@ struct MykilOS6App: App {
     var body: some Scene {
         WindowGroup {
             rootView
+                // Per-Nutzer-Wahl treibt die gesamte App-Darstellung; nil (=auto)
+                // folgt weiter dem System.
+                .preferredColorScheme(appearance.preferredColorScheme)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1340, height: 860)
@@ -52,8 +58,9 @@ struct MykilOS6App: App {
         // Damit bleibt die normale, stabile .automatic-Fensterlogik erhalten.
         .commands { AppCommands() }
 
-        WindowGroup("Über mykilOS 7.7", id: "about") {
+        WindowGroup("Über mykilOS", id: "about") {
             AboutMykilOSView()
+                .preferredColorScheme(appearance.preferredColorScheme)
         }
         .defaultSize(width: 440, height: 300)
         .windowResizability(.contentSize)
@@ -161,7 +168,6 @@ enum AppModule: String, CaseIterable, Identifiable {
     case today        = "Heute"
     case projects     = "Projekte"
     case assistant    = "Assistent"
-    case brands       = "Integrationen"
     case kataloge     = "Kataloge"
     case settings     = "Einstellungen"
     var id: String { rawValue }
@@ -170,7 +176,6 @@ enum AppModule: String, CaseIterable, Identifiable {
         case .today:       "sun.min"
         case .projects:    "square.grid.2x2"
         case .assistant:   "sparkles"
-        case .brands:      "building.2"
         case .kataloge:    "books.vertical"
         case .settings:    "gearshape"
         }
@@ -184,6 +189,9 @@ private struct ActiveModuleKey: FocusedValueKey {
 private struct SidebarCollapsedKey: FocusedValueKey {
     typealias Value = Binding<Bool>
 }
+private struct PaletteOpenKey: FocusedValueKey {
+    typealias Value = Binding<Bool>
+}
 extension FocusedValues {
     var activeModule: Binding<AppModule>? {
         get { self[ActiveModuleKey.self] }
@@ -193,15 +201,30 @@ extension FocusedValues {
         get { self[SidebarCollapsedKey.self] }
         set { self[SidebarCollapsedKey.self] = newValue }
     }
+    var paletteOpen: Binding<Bool>? {
+        get { self[PaletteOpenKey.self] }
+        set { self[PaletteOpenKey.self] = newValue }
+    }
 }
 
 // MARK: - ContentView
 struct ContentView: View {
     @State private var module: AppModule = .today
+    // Settings-Sidebar-Modus: gewählte Kategorie + letztes Nicht-Settings-Modul (Rückkehr).
+    @State private var settingsCategory: SettingsCategory = .profil
+    @State private var lastModule: AppModule = .today
     @AppStorage("ui.sidebarCollapsed") private var sidebarCollapsed = false
     @Environment(AppState.self) private var appState
+    @Environment(StudioContext.self) private var context
     @AppStorage("onboarding.hasCompleted") private var hasCompleted = false
     @State private var showOnboarding = false
+    // mykilOS 8, Block B: Check-in-Dialog (aus Sidebar-Pille) — global über allen Modulen.
+    @State private var timerCheckInRequested = false
+    // Härtung 2026-07-01: kurzer Start-Hinweis, welcher Build gerade läuft (Antwort
+    // auf wiederholte Verwechslungen zwischen parallel installierten Versionen).
+    @State private var showFreshnessBanner = true
+    // ⌘K Command-Palette (S5): globaler Fuzzy-Sprung zu Modulen + Projekten.
+    @State private var showPalette = false
 
     // Direkt nutzbar: der Wizard erzwingt sich beim ersten Start NUR, wenn Claude
     // fehlt (= Assistent stumm). Google ist "empfohlen", nicht Pflicht — wer nur
@@ -215,6 +238,9 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             shell
+            // mykilOS 8, Block B: zeit-bezogene Dialoge (Übernahme/Buchung/Check-in) —
+            // über allen Modulen, unter dem Onboarding.
+            TimerGlobalDialogs(checkInRequested: $timerCheckInRequested)
             if isOnboardingUp {
                 MykColor.ink.color.opacity(0.55).ignoresSafeArea()
                     .onTapGesture { }   // blockierender Backdrop — kein Durchklicken
@@ -223,16 +249,48 @@ struct ContentView: View {
                     onDismiss: hasCompleted ? { showOnboarding = false } : nil
                 )
             }
+            // ⌘K Command-Palette — über allen Modulen, unter dem Onboarding.
+            if showPalette && !isOnboardingUp {
+                CommandPaletteView(
+                    isPresented: $showPalette,
+                    projects: appState.registry.projects,
+                    customerFor: { appState.registry.customer(for: $0) },
+                    onSelectModule: { module = $0 },
+                    onSelectProject: { project in
+                        appState.pendingProjectSelection = project
+                        module = .projects
+                    }
+                )
+            }
         }
         .focusedValue(\.activeModule, $module)
         .focusedValue(\.sidebarCollapsed, $sidebarCollapsed)
+        .focusedValue(\.paletteOpen, $showPalette)
         // Navigations-Brücke (siehe AppState.pendingProjectSelection): sobald ein
         // anderes Modul "öffne Projekt X" anfordert, wechselt hier nur das Modul
         // — das tatsächliche Öffnen übernimmt ProjectGalleryView selbst.
         .onChange(of: appState.pendingProjectSelection) { _, new in
             if new != nil { module = .projects }
         }
+        // Mail-Compose-Weiche (StudioContext.mailComposeRequest): Klick auf eine
+        // Kontakt-Mail-Adresse → hier nur das Modul auf „Assistent" schalten. Das
+        // Öffnen des Mail-Tabs + Vorbefüllen des Entwurfs übernimmt AssistantPageView.
+        .onChange(of: context.mailComposeRequest) { _, new in
+            if new != nil { module = .assistant }
+        }
         .guardWindowPosition(on: module)
+        .overlay(alignment: .top) {
+            if showFreshnessBanner {
+                AppFreshnessBanner(onDismiss: { showFreshnessBanner = false })
+                    .padding(.top, MykSpace.s4)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: showFreshnessBanner)
+        .task {
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            showFreshnessBanner = false
+        }
     }
 
     private var shell: some View {
@@ -242,10 +300,17 @@ struct ContentView: View {
             SidebarView(
                 selection: $module,
                 isCompact: $sidebarCollapsed,
+                // Klick auf den Initialen-Avatar wechselt in den Settings-Sidebar-Modus
+                // (die Sidebar zeigt dann die Einstellungs-Kategorien). Merkt das aktuelle
+                // Modul, um beim Zurücktoggeln (Avatar/MYKILOS-Button) dorthin zurückzukehren.
                 onOpenProfile: {
-                    if appState.profile.profile?.isComplete == true { module = .settings }
-                    else { showOnboarding = true }
-                }
+                    if module != .settings { lastModule = module }
+                    module = .settings
+                },
+                settingsMode: module == .settings,
+                settingsCategory: $settingsCategory,
+                onExitSettings: { module = lastModule },
+                timerCheckInRequested: $timerCheckInRequested
             )
             .fixedSize(horizontal: true, vertical: false)
             .layoutPriority(1)
@@ -295,9 +360,8 @@ struct ContentView: View {
         case .today:       TodayView()
         case .projects:    ProjectGalleryView()
         case .assistant:   AssistantPageView()
-        case .brands:      BrandsView(onNavigateToSettings: { module = .settings })
         case .kataloge:    KatalogeView()
-        case .settings:    SettingsView()
+        case .settings:    SettingsView(externalCategory: $settingsCategory)
         }
     }
 }
@@ -320,44 +384,27 @@ struct AssistantPageView: View {
     @Environment(StudioContext.self) private var context
     @Environment(AppState.self) private var appState
     @State private var activeTab: AssistantTab = .assistant
-    @State private var mailCompose = false
+    // Vorbefüllter Empfänger aus einer Kontakt-Mail-Anfrage (StudioContext.mailComposeRequest).
+    // Wird an MailClientView durchgereicht und dort beim Öffnen des Entwurfs konsumiert (→ nil).
+    @State private var mailComposeTo: String? = nil
 
     var body: some View {
         // Wurzel VStack (kein äußeres ScrollView), damit der Chat eigenständig
         // scrollt und der Composer unten verankert bleibt.
         VStack(alignment: .leading, spacing: 0) {
-            // Header mit Titel + Segmented-Picker
+            // Header mit Titel + Segmented-Picker.
+            // UI-Polish (2026-07-02, Johannes): beschreibende Untertitel entfernt
+            // (Mock-up-Überbleibsel) — der Toggle daneben erklärt die zwei Modi selbst.
             HStack(alignment: .center, spacing: MykSpace.s6) {
-                VStack(alignment: .leading, spacing: MykSpace.s2) {
-                    Text(activeTab == .assistant ? "Assistent" : "Mail")
-                        .font(.mykDisplay)
-                        .foregroundStyle(MykColor.ink.color)
-                    Text(activeTab == .assistant
-                         ? "Fragt deine Projekte, Signale und den Tag — im Dialog."
-                         : "Gmail · Lesen und Entwürfe verfassen.")
-                        .font(.mykSmall)
-                        .foregroundStyle(MykColor.muted.color)
-                }
+                Text(activeTab == .assistant ? "Assistent" : "Mail")
+                    .font(.mykDisplay)
+                    .foregroundStyle(MykColor.ink.color)
                 Spacer()
-                // Segmented-Picker: Assistent ⇄ Mail
-                Picker("Modus", selection: $activeTab) {
-                    ForEach(AssistantTab.allCases, id: \.self) { tab in
-                        Label(tab.rawValue, systemImage: tab.systemImage).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 200)
-                .labelsHidden()
-                // „Verfassen" sitzt rechts neben dem Toggle (nur im Mail-Tab) —
-                // bewusst NICHT in der Fenster-Toolbar (die verschob beim Wechsel).
-                if activeTab == .mail {
-                    Button { mailCompose = true } label: {
-                        Label("Verfassen", systemImage: "square.and.pencil")
-                            .font(.mykSmall)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(MykColor.personal.color)
-                }
+                // Eigener mykilOS-Segmented-Toggle ganz am rechten Rand (2026-07-02, Johannes).
+                // Ersetzt den System-.segmented-Picker (aktives Segment war system-blau, passt
+                // nicht zur CI). „Verfassen" ist in die Postfach-Leiste des Mail-Tabs gewandert.
+                // Feste Breite → der Toggle verspringt beim Wechsel Assistent⇄Mail nicht.
+                ModeToggle(selection: $activeTab)
             }
             .padding(.horizontal, MykSpace.s9)
             .padding(.top, MykSpace.s9)
@@ -378,28 +425,121 @@ struct AssistantPageView: View {
                     profile: appState.profile.profile,
                     onCreateContact: { await appState.createContact($0) },
                     onCreateDraft: { await appState.createDraft($0) },
+                    // Fix 2026-07-03: war nie injiziert → „Kontakt anlegen"-Knopf der
+                    // Airtable-Karte blieb permanent disabled (Live-Fund Johannes).
+                    onWriteAirtableContact: { await appState.writeAirtableContact($0) },
                     // Home-Scope: kein Projekt fokussiert → Ordner kann nicht automatisch
                     // ermittelt werden. Der Nutzer bekommt einen klaren Hinweis.
-                    onUploadFileToDrive: { _ in .failed("Bitte ein Projekt öffnen, um Dateien direkt in den Projekt-Ordner hochzuladen.") },
-                    onAttachFileToMailDraft: { await appState.createDraftWithAttachment($0) }
+                    onUploadFileToDrive: { _, _ in .failed("Bitte ein Projekt öffnen, um Dateien direkt in den Projekt-Ordner hochzuladen.") },
+                    onAttachFilesToMailDraft: { await appState.createDraftWithAttachments($0) }
                 )
             case .mail:
-                MailClientView(showsOwnHeader: false, showCompose: $mailCompose)
+                MailClientView(showsOwnHeader: false, composeToRequest: $mailComposeTo)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .background(MykColor.paper.color)
+        // Kontakt-Mail-Weiche: eine offene Anfrage (Klick auf Mail-Adresse) übernehmen —
+        // Mail-Tab öffnen + Empfänger vorbefüllen. onAppear fängt den Fall ab, dass diese
+        // Seite erst durch den Modulwechsel frisch montiert wird (dann feuert onChange nicht).
+        .onAppear { consumeMailComposeRequestIfNeeded() }
+        .onChange(of: context.mailComposeRequest) { _, _ in consumeMailComposeRequestIfNeeded() }
+    }
+
+    /// Übernimmt eine offene Mail-Compose-Anfrage aus dem StudioContext: schaltet auf den
+    /// Mail-Tab, merkt sich den Empfänger (MailClientView öffnet damit den Entwurf) und
+    /// gibt die Weiche im Context sofort wieder frei.
+    private func consumeMailComposeRequestIfNeeded() {
+        guard let email = context.mailComposeRequest else { return }
+        mailComposeTo = email
+        activeTab = .mail
+        context.clearMailComposeRequest()
     }
 }
 
-struct ComingSoonView: View {
-    let module: AppModule
+// MARK: - ModeToggle
+// Eigener mykilOS-Segmented-Toggle (Assistent ⇄ Mail). Ersetzt den System-`.segmented`-
+// Picker, dessen aktives Segment system-blau rendert (2026-07-02, Johannes) — passt nicht
+// zur CI (monochrom + Terrakotta/Ink). Aufbau wie die übrigen Pill-Toggles der App
+// (KatalogeView.tabPill): recessed Track (bone + line), aktives Segment gefüllt
+// (Terrakotta) mit Papier-Text, inaktives Segment nur muted-Text.
+// Feste Gesamtbreite + gleich breite Segmente → der Toggle behält beim Wechsel exakt
+// Größe und Position (kein Verspringen; ersetzt den früheren „festen Verfassen-Slot").
+private struct ModeToggle: View {
+    @Binding var selection: AssistantPageView.AssistantTab
+
     var body: some View {
-        ZStack {
-            MykColor.paper.color
-            Text("\(module.rawValue) — kommt in einem späteren Akt")
-                .font(.mykBody).foregroundStyle(MykColor.muted.color)
+        HStack(spacing: 0) {
+            ForEach(AssistantPageView.AssistantTab.allCases, id: \.self) { tab in
+                segment(tab)
+            }
         }
+        .padding(3)
+        .frame(width: 208)
+        .background(MykColor.bone.color)
+        .clipShape(RoundedRectangle(cornerRadius: MykRadius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: MykRadius.md)
+                .stroke(MykColor.line.color, lineWidth: 1)
+        )
+    }
+
+    private func segment(_ tab: AssistantPageView.AssistantTab) -> some View {
+        let isActive = selection == tab
+        return Button {
+            guard selection != tab else { return }
+            withAnimation(.easeInOut(duration: 0.15)) { selection = tab }
+        } label: {
+            HStack(spacing: MykSpace.s2) {
+                Image(systemName: tab.systemImage)
+                    .font(.mykCaption)
+                Text(tab.rawValue)
+                    .font(.mykSmall)
+            }
+            .foregroundStyle(isActive ? MykColor.paper.color : MykColor.muted.color)
+            .frame(maxWidth: .infinity)
+            .frame(height: 28)
+            .background(isActive ? MykColor.drive.color : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(tab.rawValue)
+        .accessibilityAddTraits(isActive ? .isSelected : [])
+    }
+}
+
+// Härtung 2026-07-01: kurzer Start-Hinweis, welcher Build gerade läuft — Antwort
+// auf wiederholte Verwechslungen zwischen mehreren parallel installierten
+// mykilOS-Versionen (siehe script/cleanup_old_app_versions.sh). Zeigt nur den
+// eigenen Build-Fingerabdruck aus AppIdentity (Version, Commit, Datum) — keine
+// Behauptung "das ist weltweit die neueste Version" (dafür gäbe es in einer
+// local-first App keine Vergleichsgrundlage), sondern ehrlich "das läuft hier
+// gerade". Auto-Dismiss nach 6s (ContentView.task) + manueller Schließen-Button.
+private struct AppFreshnessBanner: View {
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: MykSpace.s4) {
+            Image(systemName: "checkmark.seal.fill")
+                .foregroundStyle(MykColor.positive.color)
+            Text("mykilOS \(AppIdentity.version) · Commit \(AppIdentity.gitCommit) · gebaut \(AppIdentity.buildDate)")
+                .font(.mykMono(10.5))
+                .foregroundStyle(MykColor.ink.color)
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.mykCaption)
+                    .foregroundStyle(MykColor.muted.color)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, MykSpace.s5)
+        .padding(.vertical, MykSpace.s3)
+        .background(
+            RoundedRectangle(cornerRadius: MykRadius.md)
+                .fill(MykColor.card.color)
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
+        )
     }
 }
 
@@ -418,14 +558,14 @@ struct AboutMykilOSView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: MykRadius.md)
                         .fill(MykColor.ink.color)
-                    Text("7.7")
+                    Text(version)
                         .font(.mykHeadline)
                         .foregroundStyle(MykColor.paper.color)
                 }
                 .frame(width: 64, height: 64)
 
                 VStack(alignment: .leading, spacing: MykSpace.s2) {
-                    Text("mykilOS 7.7")
+                    Text("mykilOS \(version)")
                         .font(.mykDisplay)
                         .foregroundStyle(MykColor.ink.color)
                     Text("Version \(version) · Build \(build)")
@@ -508,17 +648,25 @@ public enum AppIdentity {
 struct AppCommands: Commands {
     @Environment(\.openWindow) private var openWindow
     @FocusedBinding(\.activeModule)           private var activeModule
+    @FocusedBinding(\.paletteOpen)            private var paletteOpen
     @AppStorage("ui.sidebarCollapsed") private var sidebarCollapsed = false
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {}
         CommandGroup(replacing: .appInfo) {
-            Button("Über mykilOS 7.7") {
+            Button("Über mykilOS") {
                 openWindow(id: "about")
             }
-            .keyboardShortcut(",", modifiers: .command)
+        }
+        // Einstellungen im App-Menü mit dem macOS-Standard Cmd+, (spiegelt den
+        // Initialen-Avatar in der Sidebar — Integrationen sind Teil der Einstellungen).
+        CommandGroup(replacing: .appSettings) {
+            Button("Einstellungen …") { activeModule = .settings }
+                .keyboardShortcut(",", modifiers: .command)
         }
         CommandMenu("Navigation") {
+            Button("Suchen & Springen …") { paletteOpen = true }
+                .keyboardShortcut("k", modifiers: .command)
             Button(sidebarCollapsed ? "Sidebar ausklappen" : "Sidebar einklappen") {
                 withAnimation(.easeInOut(duration: 0.22)) { sidebarCollapsed.toggle() }
             }
@@ -530,12 +678,10 @@ struct AppCommands: Commands {
                 .keyboardShortcut("2", modifiers: .command)
             Button("Assistent")       { activeModule = .assistant }
                 .keyboardShortcut("3", modifiers: .command)
-            Button("Integrationen")   { activeModule = .brands }
-                .keyboardShortcut("4", modifiers: .command)
             Button("Kataloge")        { activeModule = .kataloge }
-                .keyboardShortcut("5", modifiers: .command)
+                .keyboardShortcut("4", modifiers: .command)
             Button("Einstellungen")   { activeModule = .settings }
-                .keyboardShortcut("7", modifiers: .command)
+                .keyboardShortcut(",", modifiers: .command)
         }
     }
 }

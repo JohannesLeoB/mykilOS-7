@@ -24,6 +24,9 @@ struct ComposeMailView: View {
     var prefilledSubject: String? = nil
     /// Optionaler vorausgefüllter Body — zitierter Text bei Reply/Forward.
     var prefilledBody: String? = nil
+    /// S3: echter Versand (nur im Mail-Client injiziert). Nil = nur Entwurf möglich.
+    /// Der Aufruf erfolgt ausschließlich NACH ausdrücklicher Bestätigung im Sheet.
+    var onSend: ((EmailDraft) async -> MailSendOutcome)? = nil
     @Environment(\.dismiss) private var dismiss
 
     /// Eigene Mail-Signatur (persistent via UserDefaults — kein GRDB nötig, rein lokal).
@@ -39,9 +42,10 @@ struct ComposeMailView: View {
     @State private var phase: ComposePhase = .idle
     @State private var showContactPicker = false
     @State private var isDropTargeted = false
+    @State private var showSendConfirm = false
 
     private enum ComposePhase: Equatable {
-        case idle, saving, saved(String), failed(String)
+        case idle, saving, saved(String), failed(String), sending, sent(String), permissionRequired
     }
 
     /// Body mit optionaler Signatur (wird erst beim Speichern zusammengebaut — nicht live).
@@ -108,9 +112,27 @@ struct ComposeMailView: View {
             .buttonStyle(.plain)
             .foregroundStyle(MykColor.personal.color)
             .disabled(subjectField.isEmpty || phase == .saving)
+
+            // S3: echter Versand — nur wenn injiziert, mit hartem Bestätigungs-Gate.
+            if onSend != nil {
+                Button { showSendConfirm = true } label: {
+                    Label("Senden", systemImage: "paperplane.fill").font(.mykSmall)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(MykColor.drive.color)
+                .disabled(subjectField.isEmpty
+                          || toField.trimmingCharacters(in: .whitespaces).isEmpty
+                          || phase == .sending || phase == .saving)
+            }
         }
         .padding(.horizontal, MykSpace.s6)
         .padding(.vertical, MykSpace.s4)
+        .alert("Mail wirklich senden?", isPresented: $showSendConfirm) {
+            Button("Senden", role: .destructive) { Task { await performSend() } }
+            Button("Abbrechen", role: .cancel) { }
+        } message: {
+            Text("An \(toField). Dies versendet die Nachricht sofort über dein Gmail-Konto — kein Entwurf mehr.")
+        }
     }
 
     // MARK: Felder
@@ -237,9 +259,19 @@ struct ComposeMailView: View {
         HStack {
             switch phase {
             case .idle:
-                Text("GMAIL  ·  NUR ENTWURF — kein Senden")
+                Text(onSend != nil ? "GMAIL  ·  Entwurf oder Senden (mit Bestätigung)" : "GMAIL  ·  NUR ENTWURF — kein Senden")
                     .font(.mykMono(9))
                     .foregroundStyle(MykColor.faint.color)
+            case .sending:
+                ProgressView().scaleEffect(0.7)
+                Text("Sende Mail …").font(.mykMono(9)).foregroundStyle(MykColor.muted.color)
+            case .sent(let info):
+                Image(systemName: "paperplane.circle.fill").foregroundStyle(MykColor.positive.color)
+                Text(info).font(.mykMono(9)).foregroundStyle(MykColor.positive.color)
+            case .permissionRequired:
+                Image(systemName: "lock").foregroundStyle(MykColor.tasks.color)
+                Text("Senden braucht Google-Freigabe: Einstellungen → Verbindungen → Google neu verbinden (gmail.compose).")
+                    .font(.mykMono(9)).foregroundStyle(MykColor.tasks.color).lineLimit(2)
             case .saving:
                 ProgressView().scaleEffect(0.7)
                 Text("Lege Entwurf in Gmail an …")
@@ -284,6 +316,23 @@ struct ComposeMailView: View {
             phase = .saved(id)
         } catch {
             phase = .failed(error.localizedDescription)
+        }
+    }
+
+    // S3: nach ausdrücklicher Bestätigung — sendet über den injizierten onSend-Pfad
+    // (App-Layer: messages.send + Audit). Ohne gmail.compose-Scope → permissionRequired.
+    private func performSend() async {
+        guard let onSend else { return }
+        phase = .sending
+        switch await onSend(draft) {
+        case .sent(let info):
+            phase = .sent(info)
+            try? await Task.sleep(for: .seconds(1))
+            dismiss()
+        case .permissionRequired:
+            phase = .permissionRequired
+        case .failed(let msg):
+            phase = .failed(msg)
         }
     }
 

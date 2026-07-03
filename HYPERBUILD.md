@@ -6,10 +6,11 @@
 
 ```
 Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
-Branch:  polish/dampflok   ·   HEAD b5d062a   ·   GitHub JohannesLeoB/mykilOS-6 (privat)
-Build:   ✅ swift build grün        Tests: ✅ 386 grün (62 Suites)
-Modell:  claude-sonnet-4-6 (App, v6.5.0)   Stand: 2026-06-29 (Roadmap code-komplett, am Hustadt-Gate)
-Fallback: git checkout ui/sidebar-ci-stable
+Branch:  feat/mykilos8-block-d-provisioning   ·   HEAD ad77513   ·   GitHub JohannesLeoB/mykilOS-7 (privat)
+Build:   ✅ swift build grün        Tests: ✅ 748 grün (100 Suites)
+Modell:  Modell-Routing S26 (Haiku Default, Sonnet Tool-Use, Opus Kalkulation)   Stand: 2026-07-01
+Stand:   mykilOS-8-Rolling-Plan Block A–D code-fertig, Konsolidierungs-Session zu 8.0 läuft
+Fallback: git checkout v7.0.0 (Safe State, e629e84) oder ./script/recall_safe_state.sh
 ```
 
 ---
@@ -69,36 +70,58 @@ Drive/Offers/Assistent-Commits brauchen einen Hustadt-Haken im Handoff vor dem M
 
 ## 5 · Wo wir stehen (die Wahrheit)
 
-**Roadmap code-komplett.** Polish L1–L30 ✅ · Core Repair A–G ✅ (im Code verifiziert:
-`LocalDriveRootResolver` löst echt über xattr lokal auf · `ConversationEngine` loggt
-`manifestID(forTool:)` · `DiagnosticsReport` mit echtem Commit · `DocumentViewerView`
-QuickLook/PDFKit · kein `try!` mehr) · Assistenten-Schreibtools S1–S17 ✅
-([Ledger Block 10/11](docs/POLISH_LOOP_LEDGER.md)). S17 = 16-Agenten-Audit, 0 Defekte.
+**mykilOS-8-Rolling-Plan Block A–D code-komplett** ([HANDOFF_MYKILOS8_ROLLING_PLAN.md](docs/handoffs/HANDOFF_MYKILOS8_ROLLING_PLAN.md)):
+A (SoR-Karte+Sicherheit+Audit) · B (lokales Zeit-Subsystem) · C (Identität+Nomenklatur)
+· D (Provisioning-Sandbox: Drive+Airtable, gated, Ledger-Idempotenz, jetzt inkl.
+Sandbox-Test-UI in der Schaltzentrale). Fragebogen-Live-Provisionierung (echte
+Kunden-/Projekt-/Warenkorb-Anlage) ebenfalls code-fertig, inkl. Bestandskontakt-Picker
+(Airtable+Google Kontakte) und PDF-Upload nach `01 INFOS/07 Fragebogen`.
 
-**Der einzige verbleibende Schritt ist LIVE — kein Code:** das Hustadt-Gate (§4) am
-echten Gerät bestätigen. Drei code-fertige Features sind bis dahin inaktiv, weil sie
-neue OAuth-Scopes brauchen → **M2 Google Re-Consent** (siehe §6).
+**2026-07-01: Konsolidierungs-Session zu „mykilOS 8.0".** Ziel: den kompletten
+A–D-Stand von „code-fertig" auf „live bewiesen" heben, alle Doku-Widersprüche
+auflösen, tote Enden entfernen, dann sauber nach `main` — **bevor** Block E/F/G
+(Rolling Plan) als „Version 8.1" weitergebaut wird. Ein zusätzlicher, noch nicht
+integrierter Architektur-Entwurf (generische WorkBasket/Checkout-Pipeline, reine
+Doku, 0 Code) liegt auf einer separaten Branch und wartet auf eine Grundsatz-
+entscheidung vor 8.1 (siehe [docs/IDEEN_UND_BACKLOG.md](docs/IDEEN_UND_BACKLOG.md)).
+
+**Der einzige verbleibende Schritt für A–D ist LIVE — kein Code:** das Hustadt-Gate
+(§4) plus der Block-D-Sandbox-Test (Drive-Ordner+Airtable-Record, Idempotenz) am
+echten Gerät bestätigen. Blockiert durch **M1/M2** (siehe §6).
 
 ---
 
 ## 6 · Die einzige To-do-Liste
 
-**🔴 LIVE-ABNAHME (nur Johannes — der kritische Pfad zu „mykilOS 7.5"):**
-1. **M2 Google Re-Consent** — Settings → Google **Trennen → Verbinden** (echtes Re-Consent,
-   nicht nur Token-Refresh). Holt `drive.readonly` (Datei-Inhalt/Vorschau S3/S5),
-   `contacts` (`create_contact` S9), `gmail.compose` (`create_draft` S14).
-2. **M1 Airtable Base-ID fixen** (Settings → Airtable: `appuVMh3KDfKw4OoQ` statt PAT) 🔴 Sync-Blocker.
-3. **Hustadt-Gate (§4) durchklicken** — die 5 Häkchen am echten Gerät.
-
-**Core Repair A–G ✅ code-komplett** (im Code verifiziert, siehe §5). **Polish L1–L30 ✅.**
+**🔴 LIVE-ABNAHME (nur Johannes — der kritische Pfad zu „mykilOS 8.0"):**
+1. **M1 Airtable Base-ID verifizieren** (Settings → Airtable: `appuVMh3KDfKw4OoQ`) —
+   Status widersprüchlich in älteren Docs, seit Block A–D läuft Airtable aber
+   nachweislich live (Registry-Sync, Fragebogen-Writes) → vermutlich schon korrekt,
+   **kurz gegenchecken statt neu fixen.**
+2. **M2 Google Re-Consent** — Settings → Google **Trennen → Verbinden**. Holt
+   `drive.readonly`/`drive.file` (Vorschau + echter Fragebogen-PDF-Upload),
+   `contacts` (Picker-Schreibfunktion), `gmail.compose` (Drafts).
+3. **Hustadt-Gate (§4) + Block-D-Sandbox-Test** (Drive-Parent-Ordner-ID + Airtable-
+   TEST-Tabelle nennen, `ProvisioningTestView` in der Schaltzentrale nutzen, Idempotenz
+   per zweitem Klick prüfen) durchklicken.
 
 **🟢 Weitere manuelle Daten (Johannes, schalten Features scharf):**
-M3 ClickUp-Listen-IDs (`list_all_clickup_tasks`) · M4 sevdeskRef+Budget · M5 Clockodo-Stundensätze ·
-M6 Alt-PAT revoken · M7 `2026_20`→`2026_020`
+M3 ClickUp-Listen-IDs · M4 sevdeskRef+Budget · M5 Clockodo-Stundensätze · M6 Alt-PAT
+revoken · M7 `2026_20`→`2026_020` · Backup-Base-Tabellenname verifizieren.
 
-**⚪ Optionaler nächster Code-Schritt (nicht M2-blockiert, auf Ansage):**
-Voller Postfach-Sync `GmailSyncService` (über den TTL-Cache hinaus) — einziger größerer
-Folgeschritt im Ledger (S12). Erst auf ausdrückliche Freigabe bauen.
+**⚪ Nach Live-Abnahme (diese Session, vor 8.0-Tag):**
+~~Toter Code raus~~ — geprüft (2026-07-02): `AssistantWidget.swift` existiert nicht mehr,
+Fragebogen-Stub-Kommentare referenzieren bereits gelöschten Code, `ProvisioningTestView`
+ist bewusst noch aktiv für M3 (nicht tot). Nichts zu entfernen. ~~Anthropic Prompt-Caching
+einbauen~~ — bereits aktiv (Härtung 2026-07-01, `cache_control` auf System-Prompt + Tools,
+siehe `ClaudeChatClient.swift`). ~~`GmailCacheStore` verdrahten~~ — erledigt (2026-07-02):
+`MailClientView`/`MailClientStore` nutzen jetzt dieselbe TTL-Cache-Instanz wie der
+Assistent (`AppState.gmailCache`, nicht mehr `private`), 793 Tests grün. **Verbleibend:**
+Test-Sandbox-UI nach Abnahme wieder entfernen, dann PR gegen `main`.
+
+**⚪ Version 8.1 (danach, auf Ansage):** Block E (Clockodo-Write) · Block F
+(Abnahme-/Warenkorb-Widgets, Export) · Block G (Politur+TEST→PROD) · WorkBasket-
+Grundsatzentscheidung · restliche Backlog-Ideen.
 
 ---
 
@@ -120,5 +143,6 @@ Folgeschritt im Ledger (S12). Erst auf ausdrückliche Freigabe bauen.
 - **Team/Collective** → [docs/MYKILOS_6_TEAM_MODELL.md](docs/MYKILOS_6_TEAM_MODELL.md) · [docs/TEAM_CHARTER.md](docs/TEAM_CHARTER.md) · [docs/COLLECTIVE_REGELWERK.md](docs/COLLECTIVE_REGELWERK.md)
 - **Historie komprimiert** → [docs/handoffs/_archiv/INDEX.md](docs/handoffs/_archiv/INDEX.md) · [docs/_archiv/](docs/_archiv/)
 
-_Destilliert 2026-06-29 — der Brühwürfel. Wird mit jedem Meilenstein nachgeschärft, nie aufgebläht._
+_Destilliert 2026-06-29, aktualisiert 2026-07-01 (mykilOS-8.0-Konsolidierung) —
+der Brühwürfel. Wird mit jedem Meilenstein nachgeschärft, nie aufgebläht._
 </content>

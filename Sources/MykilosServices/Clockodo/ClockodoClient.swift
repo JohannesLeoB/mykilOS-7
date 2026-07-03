@@ -26,10 +26,23 @@ public protocol ClockodoFetching: Sendable {
     func todaysEntries() async throws -> [ClockodoTimeEntry]
 }
 
+// MARK: - ClockodoBooking (Block E, Härtung 2026-07-01)
+// Schreibt eine echte Zeitbuchung. NIEMALS raten, welche customers_id/
+// services_id gemeint ist — der Aufrufer (ClockodoBookingResolver) muss beide
+// eindeutig aufgelöst haben, bevor createEntry gerufen wird. Bei Zweifel: gar
+// nicht buchen, statt eine falsche Kostenstelle/Kunde in echten Abrechnungs-
+// daten zu erzeugen.
+public protocol ClockodoBooking: Sendable {
+    func createEntry(
+        customersID: Int, servicesID: Int, timeSince: Date, timeUntil: Date, billable: Bool, text: String?
+    ) async throws -> String
+}
+
 // MARK: - ClockodoClient
 // Liest die heutigen Zeiteinträge des verbundenen Accounts. ZEITEN-Regel:
-// reiner Lese-/Mapping-Layer, niemals zweite Zeit-Wahrheit, keine Buchung.
-public struct ClockodoClient: ClockodoFetching {
+// reiner Lese-/Mapping-Layer, niemals zweite Zeit-Wahrheit, keine Buchung
+// ohne explizite Bestätigung (siehe ClockodoBooking oben).
+public struct ClockodoClient: ClockodoFetching, ClockodoBooking {
     private let credentialsStore: ClockodoCredentialsStoring
     private let session: URLSession
     private let baseURL = "https://my.clockodo.com/api/v2/entries"
@@ -60,6 +73,34 @@ public struct ClockodoClient: ClockodoFetching {
         guard (200...299).contains(http.statusCode) else { throw ClockodoError.httpError(http.statusCode) }
 
         return try Self.parseEntries(from: data)
+    }
+
+    // Härtung 2026-07-01 (Block E): echte Buchung. `customersID`/`servicesID`
+    // müssen vom Aufrufer eindeutig aufgelöst sein (siehe ClockodoBookingResolver).
+    public func createEntry(
+        customersID: Int, servicesID: Int, timeSince: Date, timeUntil: Date, billable: Bool, text: String? = nil
+    ) async throws -> String {
+        guard let credentials = try? credentialsStore.load() else {
+            throw ClockodoError.notConnected
+        }
+        guard let url = URL(string: baseURL) else { throw ClockodoError.invalidResponse }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(credentials.email, forHTTPHeaderField: "X-ClockodoApiUser")
+        request.setValue(credentials.apiKey, forHTTPHeaderField: "X-ClockodoApiKey")
+        request.setValue("mykilOS6;\(credentials.email)", forHTTPHeaderField: "X-Clockodo-External-Application")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Self.buildCreateEntryBody(
+            customersID: customersID, servicesID: servicesID,
+            timeSince: timeSince, timeUntil: timeUntil, billable: billable, text: text
+        )
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw ClockodoError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw ClockodoError.httpError(http.statusCode) }
+
+        return try Self.parseCreateEntryResponse(from: data)
     }
 
     // MARK: - Reine, testbare Bausteine (kein Netzwerk/Keychain)
@@ -93,6 +134,39 @@ public struct ClockodoClient: ClockodoFetching {
         } catch {
             throw ClockodoError.decodingFailed
         }
+    }
+
+    // Gleiches ISO8601-Format wie buildEntriesURL (Konsistenz — beide Richtungen
+    // sprechen dieselbe Zeitdarstellung mit derselben, bereits gegen Clockodo
+    // funktionierenden Formatierung).
+    static func buildCreateEntryBody(
+        customersID: Int, servicesID: Int, timeSince: Date, timeUntil: Date, billable: Bool, text: String?
+    ) -> Data {
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime]
+        var payload: [String: Any] = [
+            "customers_id": customersID,
+            "services_id": servicesID,
+            "billable": billable ? 1 : 0,
+            "time_since": isoFormatter.string(from: timeSince),
+            "time_until": isoFormatter.string(from: timeUntil),
+        ]
+        if let text, text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+            payload["text"] = text
+        }
+        return (try? JSONSerialization.data(withJSONObject: payload)) ?? Data()
+    }
+
+    // Clockodo antwortet auf POST /v2/entries mit {"entry": {"id": ..., ...}} —
+    // analog zur Lese-Antwort {"entries": [...]}. Nicht live gegen den echten
+    // Endpoint verifiziert (siehe BENUTZERHANDBUCH.md-Eintrag).
+    static func parseCreateEntryResponse(from data: Data) throws -> String {
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let entry = obj["entry"] as? [String: Any],
+              let id = entry["id"] else {
+            throw ClockodoError.decodingFailed
+        }
+        return String(describing: id)
     }
 }
 

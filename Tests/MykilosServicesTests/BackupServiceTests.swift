@@ -155,6 +155,37 @@ struct BackupServiceTests {
 
         #expect(remaining.count >= 3)
     }
+
+    @Test func listBackupsGibtAlleZurueckNeuesteZuerst() throws {
+        let tmp = makeTempDir()
+        defer { try? FileManager.default.removeItem(at: tmp.src) }
+        try "db".write(to: tmp.src.appendingPathComponent("db.sqlite"), atomically: true, encoding: .utf8)
+        let service = BackupService(appSupportDir: tmp.src, backupDir: tmp.backups)
+
+        #expect(service.listBackups().isEmpty)
+        #expect(service.latestBackupDate() == nil)
+        for i in 0..<3 { _ = try service.createBackup(tag: "t\(i)", appVersion: "6.0", gitCommit: "abc") }
+
+        let list = service.listBackups()
+        #expect(list.count == 3)
+        // Absteigend nach Datum sortiert (neueste zuerst)
+        #expect(list == list.sorted { $0.createdAt > $1.createdAt })
+        #expect(list.allSatisfy { $0.sizeBytes > 0 })
+        #expect(service.latestBackupDate() != nil)
+    }
+
+    @Test func pruneToCountBehaeltNurNeueste() throws {
+        let tmp = makeTempDir()
+        defer { try? FileManager.default.removeItem(at: tmp.src) }
+        try "db".write(to: tmp.src.appendingPathComponent("db.sqlite"), atomically: true, encoding: .utf8)
+        let service = BackupService(appSupportDir: tmp.src, backupDir: tmp.backups)
+
+        for i in 0..<6 { _ = try service.createBackup(tag: "k\(i)", appVersion: "6.0", gitCommit: "abc") }
+        #expect(service.listBackups().count == 6)
+
+        try service.pruneToCount(keepNewest: 3)
+        #expect(service.listBackups().count == 3)
+    }
 }
 
 // MARK: - Hilfstypen

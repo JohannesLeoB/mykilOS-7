@@ -19,10 +19,28 @@ struct FragebogenView: View {
     @State private var zeigeBestaetigung: Bool = false
     @State private var ergebnis: IntakeErgebnis? = nil
     @State private var schreibPhase: SchreibPhase = .idle
-
-    // Export (echte Verdrahtung: MykPDFRenderer + Drive-Upload)
-    private let pdfRenderer: FragebogenPDFRendering = MykFragebogenPDFRenderer()
-    private let driveUploader: FragebogenDriveUploading = MykFragebogenDriveUploader()
+    // Anlege-Stufe (Johannes, 2026-07-01): am letzten Dialog gewählt, NICHT vorbelegt
+    // mit der vollen Stufe — bewusste Entscheidung statt versehentlicher Volltreffer.
+    @State private var triggerStufe: FragebogenTriggerStufe = .kontakt
+    // Erinnerungsfunktion (Johannes, 2026-07-01): "Ausgefüllte Daten bei Fensterwechsel oder
+    // temporärem Schließen noch bereithalten" + expliziter "Verwerfen"-Button. Das `modell`
+    // selbst wird vom Aufrufer (KatalogeView) NICHT mehr bei jedem Schließen zurückgesetzt —
+    // nur ein bewusstes "Verwerfen" hier oder ein erfolgreiches "Jetzt anlegen" leert es.
+    @State private var zeigeVerwerfenBestaetigung: Bool = false
+    // Härtung (2026-07-01, Audit): `schreibPhase` allein reicht NICHT, um "nach einem
+    // erfolgreichen Anlegen beim Schließen zurücksetzen" zu entscheiden — ein Stufenwechsel
+    // NACH einem Erfolg setzt schreibPhase zurück auf .idle (siehe schrittLeiste-Picker unten),
+    // wodurch der alte, auf schreibPhase gestützte Check beim Schließen silently nicht mehr
+    // feuerte, obwohl in dieser Sitzung bereits echt etwas angelegt wurde. Dieses Flag merkt
+    // sich den Erfolg unabhängig von schreibPhase, für die gesamte Dialog-Lebensdauer.
+    @State private var hatErfolgreichAngelegt: Bool = false
+    // Härtung (2026-07-01, Live-Kollision entdeckt): Vorschau des vorgeschlagenen Drive-
+    // Ordnernamens VOR der echten Anlage, mit Edit-Modus für den beschreibenden Teil. Die
+    // Projektnummer selbst wird NIE editierbar angezeigt — nur die kollisionsgeprüfte Vergabe
+    // (AppState.vorschauProjektOrdnerName/reserviereKollisionsfreieNummer) bestimmt sie.
+    @State private var ordnerVorschau: (nummer: String, vorgeschlagenerName: String)?
+    @State private var ordnerVorschauLaeuft: Bool = false
+    @State private var ordnerEditModus: Bool = false
 
     init(modell: FragebogenModel = FragebogenModel(), onDismiss: @escaping () -> Void) {
         self.modell = modell
@@ -35,6 +53,7 @@ struct FragebogenView: View {
             Divider().overlay(MykColor.line.color)
             schrittLeiste
             Divider().overlay(MykColor.line.color)
+            dublettenWarnung
             Group {
                 if zeigeBestaetigung, let ergebnis {
                     bestaetigungsView(ergebnis: ergebnis)
@@ -48,6 +67,55 @@ struct FragebogenView: View {
         }
         .frame(width: 720, height: 700)
         .background(MykColor.paper.color)
+    }
+
+    // MARK: Dubletten-Warnung (proaktiv, nie Auto-Match)
+    // Prüft die eingegebenen Namen gegen die bestehende Registry und warnt sichtbar,
+    // wenn ein ähnliches Projekt/Kunde existiert — damit nichts dupliziert/vermatscht wird
+    // (Vinahl + Uetersen = EIN Projekt). Reiner Hinweis, keine automatische Zuordnung.
+    private func normName(_ s: String) -> String {
+        s.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var moeglicheDubletten: [String] {
+        let suchbegriffe = [modell.kundeNachname, modell.kundeFirma, modell.projektName]
+            .map { normName($0) }.filter { $0.count >= 3 }
+        guard !suchbegriffe.isEmpty else { return [] }
+        var treffer: [String] = []
+        for p in appState.registry.projects {
+            let kunde = appState.registry.customer(for: p)?.name ?? ""
+            let hay = normName(p.title) + " " + normName(kunde)
+            if suchbegriffe.contains(where: { hay.contains($0) }) {
+                treffer.append("\(p.projectNumber) · \(p.title)" + (kunde.isEmpty ? "" : " · \(kunde)"))
+            }
+        }
+        return Array(Set(treffer)).sorted().prefix(4).map { $0 }
+    }
+
+    @ViewBuilder private var dublettenWarnung: some View {
+        let treffer = moeglicheDubletten
+        if !treffer.isEmpty {
+            VStack(alignment: .leading, spacing: MykSpace.s2) {
+                HStack(spacing: MykSpace.s2) {
+                    Image(systemName: "exclamationmark.triangle.fill").font(.mykCaption)
+                        .foregroundStyle(MykColor.tasks.color)
+                    Text("Mögliche Dublette — ähnliche Projekte existieren bereits:")
+                        .font(.mykSmall).foregroundStyle(MykColor.tasks.color)
+                }
+                ForEach(treffer, id: \.self) { t in
+                    Text("· \(t)").font(.mykMono(10)).foregroundStyle(MykColor.muted.color).lineLimit(1)
+                }
+                Text("Prüfe, ob du ein bestehendes Projekt meinst — kein Auto-Match, du entscheidest.")
+                    .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+            }
+            .padding(MykSpace.s4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.tasks.color.opacity(0.08)))
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.tasks.color.opacity(0.3), lineWidth: 1))
+            .padding(.horizontal, MykSpace.s6)
+            .padding(.vertical, MykSpace.s3)
+        }
     }
 
     // MARK: Header
@@ -71,17 +139,75 @@ struct FragebogenView: View {
                     .foregroundStyle(MykColor.muted.color)
             }
             Spacer()
+            // Erinnerungsfunktion (Johannes, 2026-07-01): expliziter "Verwerfen"-Button, getrennt
+            // vom einfachen Schließen (X) — Schließen bewahrt die Eingaben jetzt auf, nur
+            // "Verwerfen" löscht sie endgültig.
             Button {
+                if modell.hatNennenswerteEingaben {
+                    zeigeVerwerfenBestaetigung = true
+                } else {
+                    verwerfen()
+                }
+            } label: {
+                Text("Verwerfen")
+                    .font(.mykSmall)
+                    .foregroundStyle(schreibPhase == .speichert ? MykColor.faint.color.opacity(0.4) : MykColor.critical.color)
+            }
+            .buttonStyle(.plain)
+            .disabled(schreibPhase == .speichert)
+            .confirmationDialog(
+                "Eingaben wirklich verwerfen?",
+                isPresented: $zeigeVerwerfenBestaetigung,
+                titleVisibility: .visible
+            ) {
+                Button("Verwerfen", role: .destructive) { verwerfen() }
+                Button("Abbrechen", role: .cancel) {}
+            } message: {
+                Text("Alle Eingaben in diesem Fragebogen gehen dabei verloren.")
+            }
+            Button {
+                // Härtung (2026-07-01, Johannes: Erinnerungsfunktion): nach ERFOLGREICHER
+                // Anlage wird das Modell geleert — ein Wiederöffnen soll nicht versehentlich
+                // dieselben, schon angelegten Daten nochmal anbieten. Bei jedem anderen
+                // Zustand (mittendrin, Fehler, noch nicht versucht) bleibt alles erhalten.
+                // Härtung (2026-07-01, Audit): `hatErfolgreichAngelegt` statt `schreibPhase`
+                // geprüft — ein Stufenwechsel nach dem Erfolg hätte sonst schreibPhase schon
+                // wieder auf .idle gesetzt und diesen Reset silently übersprungen.
+                if hatErfolgreichAngelegt {
+                    modell.reset()
+                    schritt = .kontakt
+                    zeigeBestaetigung = false
+                    ergebnis = nil
+                    schreibPhase = .idle
+                    triggerStufe = .kontakt
+                    hatErfolgreichAngelegt = false
+                }
                 onDismiss()
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.mykBody)
-                    .foregroundStyle(MykColor.faint.color)
-            }.buttonStyle(.plain)
+                    .foregroundStyle(schreibPhase == .speichert ? MykColor.faint.color.opacity(0.4) : MykColor.faint.color)
+            }
+            .buttonStyle(.plain)
+            // Härtung (2026-07-01, Audit): während ein Anlegen-Schreibvorgang läuft, würde
+            // Schließen die Airtable-/Drive-Schreibvorgänge unsichtbar im Hintergrund weiterlaufen
+            // lassen — ohne Rückmeldung UND ohne Möglichkeit, sie wirklich abzubrechen.
+            .disabled(schreibPhase == .speichert)
         }
         .padding(.horizontal, MykSpace.s7)
         .padding(.vertical, MykSpace.s5)
         .background(MykColor.card.color)
+    }
+
+    private func verwerfen() {
+        modell.reset()
+        schritt = .kontakt
+        zeigeBestaetigung = false
+        ergebnis = nil
+        schreibPhase = .idle
+        triggerStufe = .kontakt
+        hatErfolgreichAngelegt = false
+        onDismiss()
     }
 
     // MARK: Schritt-Leiste
@@ -108,12 +234,18 @@ struct FragebogenView: View {
                         .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
                     }
                     .buttonStyle(.plain)
+                    // Review-Fix (low): während der Bestätigungsansicht zeigt der Body immer
+                    // bestaetigungsView, unabhängig von `schritt` — ohne diese Sperre konnte ein
+                    // Klick hier Kopfzeile/Tab-Highlight sichtbar umschalten, während der Inhalt
+                    // eingefroren auf der Bestätigung blieb (widersprüchlicher UI-Zustand).
+                    .disabled(zeigeBestaetigung)
                 }
             }
             .padding(.horizontal, MykSpace.s7)
         }
         .frame(height: 36)
         .background(MykColor.paper2.color)
+        .opacity(zeigeBestaetigung ? 0.4 : 1)
     }
 
     // MARK: Scroll-Inhalt (Schritt-Dispatch)
@@ -142,6 +274,14 @@ struct FragebogenView: View {
     private var kontaktSektion: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
             sektionHeader(icon: "person.fill", titel: "Kundenkontakt", farbe: .people)
+
+            BestandskontaktPicker(airtableKontakte: appState.studioContacts) { treffer in
+                modell.kundeVorname = treffer.vorname
+                modell.kundeNachname = treffer.nachname
+                modell.kundeFirma = treffer.organisation ?? modell.kundeFirma
+                modell.kundeEmail = treffer.email ?? modell.kundeEmail
+                modell.kundeTelefon = treffer.telefon ?? modell.kundeTelefon
+            }
 
             HStack(spacing: MykSpace.s4) {
                 IntakeTextFeld(label: "Vorname", icon: "person", text: $modell.kundeVorname)
@@ -201,12 +341,23 @@ struct FragebogenView: View {
                         .font(.mykBody)
                         .textFieldStyle(.plain)
                         .onChange(of: modell.budgetText) { _, v in
-                            modell.budget = Double(v.replacingOccurrences(of: ",", with: "."))
+                            modell.budget = FragebogenModel.parseGermanBudget(v)
                         }
                         .padding(MykSpace.s3)
                         .background(MykColor.card.color)
                         .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
-                        .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(
+                            budgetParseFehlgeschlagen ? MykColor.critical.color : MykColor.line.color,
+                            lineWidth: budgetParseFehlgeschlagen ? 1.5 : 1))
+                    // Härtung (2026-07-01, Audit): parseGermanBudget kann bei mehrdeutigem/
+                    // fehlerhaftem Format (z. B. mehreren Punkten ohne Komma) `nil` liefern —
+                    // bisher verschwand das Budget dann UNSICHTBAR aus dem Airtable-Write. Jetzt
+                    // sichtbarer Hinweis, statt stillschweigend nichts zu schreiben.
+                    if budgetParseFehlgeschlagen {
+                        Text("Format nicht erkannt — z. B. 25000 oder 25.000,50")
+                            .font(.mykMono(9))
+                            .foregroundStyle(MykColor.critical.color)
+                    }
                 }
             }
 
@@ -413,7 +564,49 @@ struct FragebogenView: View {
     private func bestaetigungsView(ergebnis: IntakeErgebnis) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: MykSpace.s5) {
-                // Bestätigungs-Karte
+                // Anlege-Stufe (Johannes, 2026-07-01): erst hier, am letzten Schritt, gewählt.
+                VStack(alignment: .leading, spacing: MykSpace.s3) {
+                    Text("ANLEGE-STUFE")
+                        .font(.mykMono(9))
+                        .foregroundStyle(MykColor.muted.color)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 180))], spacing: MykSpace.s2) {
+                        ForEach(FragebogenTriggerStufe.allCases) { stufe in
+                            pickButton(stufe.rawValue, active: triggerStufe == stufe) {
+                                // Härtung (2026-07-01, Audit): nur bei ECHTEM Stufenwechsel
+                                // zurücksetzen — ein Re-Klick auf die bereits aktive (und ggf.
+                                // bereits erfolgreich gespeicherte) Stufe darf `schreibPhase`
+                                // NICHT auf .idle zurückwerfen, sonst reaktiviert das "Jetzt
+                                // anlegen" für eine exakte Doppel-Anlage (zweiter Google-Kontakt/
+                                // zweite Projektnummer/zweiter Drive-Ordner ohne jeden Grund).
+                                guard stufe != triggerStufe else { return }
+                                triggerStufe = stufe
+                                // Fix (Live-Test, 2026-07-01): ein Fehler/Erfolg einer vorherigen
+                                // Stufe blieb sonst sichtbar stehen, obwohl noch gar kein Versuch
+                                // für die NEU gewählte Stufe unternommen wurde — wirkte wie ein
+                                // Fehlschlag aller Stufen, obwohl nur eine wirklich versucht wurde.
+                                schreibPhase = .idle
+                            }
+                        }
+                    }
+                    // Härtung (2026-07-01, Audit): während eines laufenden Schreibvorgangs darf
+                    // die Stufe nicht wechselbar sein — sonst reaktiviert der obige Reset
+                    // "Jetzt anlegen" mitten im laufenden, noch nicht abgeschlossenen Schreiben
+                    // und ein zweiter Klick spawnt einen zweiten, konkurrierenden Schreib-Task.
+                    .disabled(schreibPhase == .speichert)
+                    if let hinweis = stufeFehlenderHinweis(ergebnis: ergebnis) {
+                        HStack(spacing: MykSpace.s2) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.mykMono(9)).foregroundStyle(MykColor.critical.color)
+                            Text(hinweis).font(.mykMono(9)).foregroundStyle(MykColor.critical.color)
+                        }
+                    }
+                }
+                .padding(MykSpace.s5)
+                .background(MykColor.card.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.md))
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
+
+                // Bestätigungs-Karte — Inhalt passt sich der gewählten Stufe an.
                 VStack(alignment: .leading, spacing: MykSpace.s3) {
                     HStack(spacing: MykSpace.s3) {
                         Image(systemName: "checkmark.seal")
@@ -423,41 +616,56 @@ struct FragebogenView: View {
                             .font(.mykHeadline)
                             .foregroundStyle(MykColor.ink.color)
                     }
-                    Text("Folgende Datensätze werden NEU in Airtable angelegt:")
+                    Text("Folgende Datensätze werden NEU angelegt:")
                         .font(.mykSmall)
                         .foregroundStyle(MykColor.muted.color)
 
                     Divider().overlay(MykColor.line.color)
 
-                    // Kunde
+                    // Kunde — immer.
                     bestaetigunsZeile(icon: "person.fill", farbe: .people,
-                                      titel: "Neuer Kunde",
+                                      titel: triggerStufe == .kontakt ? "Neuer Kontakt" : "Neuer Kunde",
                                       inhalt: modell.vollstaendigerKundeName + (modell.kundeFirma.isEmpty ? "" : " · \(modell.kundeFirma)"))
-                    // Projekt
-                    bestaetigunsZeile(icon: "folder.fill", farbe: .brand,
-                                      titel: "Neues Projekt",
-                                      inhalt: modell.projektName + " · Status: \(modell.projektStatus)")
-                    // Warenkorb
-                    if !ergebnis.warenkorb.items.isEmpty {
-                        bestaetigunsZeile(icon: "cart.fill", farbe: .tasks,
-                                          titel: "Erst-Warenkorb",
-                                          inhalt: "\(ergebnis.warenkorb.items.count) Positionen")
-                        VStack(alignment: .leading, spacing: MykSpace.s2) {
-                            ForEach(ergebnis.warenkorb.items.prefix(5)) { item in
-                                HStack(spacing: MykSpace.s3) {
-                                    Text("·").foregroundStyle(MykColor.faint.color)
-                                    Text("\(item.menge)× \(item.bezeichnung)")
-                                        .font(.mykSmall)
-                                        .foregroundStyle(MykColor.inkSoft.color)
+                    if triggerStufe == .kontakt {
+                        bestaetigunsZeile(icon: "person.crop.circle.badge.plus", farbe: .people,
+                                          titel: "Google-Kontakt",
+                                          inhalt: "wird zusätzlich in Google Kontakte angelegt")
+                    }
+
+                    // Projekt + Ordner + Warenkorb — nur ab Stufe „Lead".
+                    if triggerStufe != .kontakt {
+                        bestaetigunsZeile(icon: "folder.fill", farbe: .brand,
+                                          titel: "Neues Projekt",
+                                          inhalt: modell.projektName + " · Status: \(modell.projektStatus)")
+                        bestaetigunsZeile(
+                            icon: triggerStufe == .lead ? "folder.badge.questionmark" : "folder.fill.badge.gearshape",
+                            farbe: .drive,
+                            titel: triggerStufe == .lead ? "Rumpf-Ordner (Drive)" : "Voller Projekt-Ordner (Drive)",
+                            inhalt: triggerStufe == .lead
+                                ? "nur Wurzelordner in PROJEKTE/_LEADS/"
+                                : "kompletter Ordnerbaum in PROJEKTE/")
+                        ordnerNamensVorschau(ergebnis: ergebnis)
+                        if !ergebnis.warenkorb.items.isEmpty {
+                            bestaetigunsZeile(icon: "cart.fill", farbe: .tasks,
+                                              titel: "Erst-Warenkorb",
+                                              inhalt: "\(ergebnis.warenkorb.items.count) Positionen")
+                            VStack(alignment: .leading, spacing: MykSpace.s2) {
+                                ForEach(ergebnis.warenkorb.items.prefix(5)) { item in
+                                    HStack(spacing: MykSpace.s3) {
+                                        Text("·").foregroundStyle(MykColor.faint.color)
+                                        Text("\(item.menge)× \(item.bezeichnung)")
+                                            .font(.mykSmall)
+                                            .foregroundStyle(MykColor.inkSoft.color)
+                                    }
+                                }
+                                if ergebnis.warenkorb.items.count > 5 {
+                                    Text("… und \(ergebnis.warenkorb.items.count - 5) weitere")
+                                        .font(.mykMono(9))
+                                        .foregroundStyle(MykColor.faint.color)
                                 }
                             }
-                            if ergebnis.warenkorb.items.count > 5 {
-                                Text("… und \(ergebnis.warenkorb.items.count - 5) weitere")
-                                    .font(.mykMono(9))
-                                    .foregroundStyle(MykColor.faint.color)
-                            }
+                            .padding(.leading, MykSpace.s7)
                         }
-                        .padding(.leading, MykSpace.s7)
                     }
 
                     Divider().overlay(MykColor.line.color)
@@ -514,6 +722,59 @@ struct FragebogenView: View {
         }
     }
 
+    // MARK: - Ordnernamens-Vorschau (Härtung 2026-07-01, Live-Kollision entdeckt)
+    // Zeigt VOR der echten Anlage den vorgeschlagenen Drive-Ordnernamen (kollisionsgeprüft
+    // gegen den echten Drive-Inhalt, nicht nur den Registry-Cache) + einen Edit-Modus für
+    // den beschreibenden Teil. Die Projektnummer selbst ist NIE editierbar — nur die
+    // kollisionsgeprüfte Vergabe in AppState bestimmt sie, das war genau der Ursprung des
+    // heutigen Fehlers (zwei Fragebogen-Läufe kollidierten mit real existierenden Ordnern).
+    private func ordnerNamensVorschau(ergebnis: IntakeErgebnis) -> some View {
+        let (strasse, hausnummer, ort) = IntakeAdresse.aufloesen(ergebnis: ergebnis)
+        return VStack(alignment: .leading, spacing: MykSpace.s2) {
+            HStack(alignment: .top, spacing: MykSpace.s4) {
+                Image(systemName: "text.badge.checkmark")
+                    .font(.mykCaption).foregroundStyle(MykColor.drive.color)
+                    .frame(width: MykSpace.s6, alignment: .center)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("VORGESCHLAGENER ORDNERNAME").font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                    if ordnerVorschauLaeuft {
+                        HStack(spacing: MykSpace.s2) {
+                            ProgressView().scaleEffect(0.6)
+                            Text("prüfe gegen echten Drive-Bestand …").font(.mykSmall).foregroundStyle(MykColor.muted.color)
+                        }
+                    } else if let vorschau = ordnerVorschau {
+                        if ordnerEditModus {
+                            HStack(spacing: MykSpace.s2) {
+                                Text(vorschau.nummer + "_").font(.mykBody).foregroundStyle(MykColor.muted.color)
+                                TextField("Beschreibender Teil", text: $modell.ordnerNameSuffixOverride)
+                                    .textFieldStyle(.roundedBorder).font(.mykBody)
+                            }
+                        } else {
+                            Text(modell.ordnerNameSuffixOverride.isEmpty
+                                 ? vorschau.vorgeschlagenerName
+                                 : "\(vorschau.nummer)_\(modell.ordnerNameSuffixOverride)")
+                                .font(.mykBody).foregroundStyle(MykColor.ink.color)
+                        }
+                    } else {
+                        Text("keine Adresse — Ordner kann nicht gebildet werden").font(.mykSmall).foregroundStyle(MykColor.critical.color)
+                    }
+                }
+                Spacer()
+                if ordnerVorschau != nil {
+                    Button(ordnerEditModus ? "Fertig" : "Bearbeiten") { ordnerEditModus.toggle() }
+                        .buttonStyle(.plain).font(.mykMono(9)).foregroundStyle(MykColor.people.color)
+                }
+            }
+        }
+        .task(id: "\(modell.kundeNachname)|\(strasse ?? "")|\(hausnummer ?? "")|\(ort ?? "")|\(triggerStufe.rawValue)") {
+            guard triggerStufe != .kontakt else { ordnerVorschau = nil; return }
+            ordnerVorschauLaeuft = true
+            defer { ordnerVorschauLaeuft = false }
+            ordnerVorschau = await appState.vorschauProjektOrdnerName(
+                kundeNachname: modell.kundeNachname, strasse: strasse, hausnummer: hausnummer, ort: ort)
+        }
+    }
+
     // MARK: - Fußzeile (Navigation + Aktionen)
 
     private var fusszeile: some View {
@@ -542,17 +803,40 @@ struct FragebogenView: View {
                 .font(.mykSmall)
                 .buttonStyle(.plain)
                 .foregroundStyle(MykColor.muted.color)
+                // Härtung (2026-07-01, Audit): "Abbrechen" hat noch nie den laufenden
+                // Schreib-Task abgebrochen (nur lokalen UI-State zurückgesetzt) — die echten
+                // Airtable-/Drive-Schreibvorgänge liefen bisher unsichtbar im Hintergrund weiter.
+                // Da eine echte Task-Abbruchmöglichkeit eine größere Änderung an AppState
+                // bräuchte (kooperative Cancellation über die ganze Schreibkette), wird
+                // stattdessen verhindert, dass der Nutzer während .speichert überhaupt auf
+                // "Abbrechen" klicken kann — kein täuschender Abbruch, der keiner ist.
+                .disabled(schreibPhase == .speichert)
             }
 
             // Weiter / Jetzt anlegen
             if zeigeBestaetigung {
-                // Bestätigt → Anlegen
-                let kannAnlegen = schreibPhase == .idle || {
+                // Bestätigt → Anlegen. Review-Fix (Johannes, 2026-07-01): "es MUSS ein
+                // Minimum an Eingabedaten vorausgesetzt sein" — der Button bleibt gesperrt,
+                // solange die GEWÄHLTE Anlege-Stufe ihr eigenes Minimum nicht erfüllt.
+                let schreibPhaseBereit = schreibPhase == .idle || {
                     if case .fehler = schreibPhase { return true }
                     return false
                 }()
+                let kannAnlegen = schreibPhaseBereit && (ergebnis.map { stufeBereit(ergebnis: $0) } ?? false)
                 Button {
-                    if let e = ergebnis { Task { await anlegenBestaetigt(ergebnis: e) } }
+                    guard let e = ergebnis else { return }
+                    // Härtung (2026-07-01, Audit): synchron VOR dem Task-Start gesetzt, nicht
+                    // erst als erste Zeile im async Task-Body. `Task { }` startet nicht inline
+                    // mit dem Klick, sondern erst auf einem späteren MainActor-Turn — bis dahin
+                    // blieb `schreibPhase` sichtbar `.idle` und `kannAnlegen` damit `true`, was
+                    // ein zweiter, sehr schneller Klick (Doppelklick oder programmatisch) als
+                    // zweiten, konkurrierenden Schreib-Task ausnutzen konnte (TOCTOU).
+                    schreibPhase = .speichert
+                    // Härtung (2026-07-01, Audit): auf AppState gespiegelt, damit KatalogeView
+                    // die Sheet-Ebene selbst gegen Escape-Dismiss sperren kann — `schreibPhase`
+                    // ist reines FragebogenView-@State und für den Aufrufer nicht sichtbar.
+                    appState.fragebogenSchreibtGerade = true
+                    Task { await anlegenBestaetigt(ergebnis: e) }
                 } label: {
                     HStack(spacing: MykSpace.s2) {
                         if case .speichert = schreibPhase { ProgressView().scaleEffect(0.6) }
@@ -620,12 +904,49 @@ struct FragebogenView: View {
     }
 
     private func anlegenBestaetigt(ergebnis: IntakeErgebnis) async {
-        schreibPhase = .speichert
+        // schreibPhase = .speichert wird jetzt synchron im Button-Klick gesetzt (siehe fusszeile),
+        // nicht mehr hier — das schließt das TOCTOU-Doppelklick-Fenster (siehe Kommentar dort).
         do {
-            let outcome = try await appState.erzeugeKundeUndProjekt(ergebnis: ergebnis)
-            schreibPhase = .gespeichert(outcome)
+            let outcome = try await appState.erzeugeAusFragebogen(ergebnis: ergebnis, modell: modell, stufe: triggerStufe)
+            schreibPhase = .gespeichert(outcome.summary)
+            hatErfolgreichAngelegt = true
         } catch {
             schreibPhase = .fehler(error.localizedDescription)
+        }
+        appState.fragebogenSchreibtGerade = false
+    }
+
+    // Härtung (2026-07-01, Audit): true, wenn Text eingegeben wurde, der parseGermanBudget
+    // aber nicht in eine Zahl umwandeln konnte — sonst verschwindet das Budget unsichtbar.
+    private var budgetParseFehlgeschlagen: Bool {
+        !modell.budgetText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && modell.budget == nil
+    }
+
+    // MARK: - Anlege-Stufe-Readiness (Johannes, 2026-07-01: Minimum an Eingabedaten je Stufe)
+
+    private func stufeBereit(ergebnis: IntakeErgebnis) -> Bool {
+        switch triggerStufe {
+        case .kontakt:
+            let email = ergebnis.kundeFelder["Kontakt 1 Email"]?.isEmpty == false
+            let telefon = ergebnis.kundeFelder["Kontakt 1 Telefon"]?.isEmpty == false
+            return email || telefon
+        case .lead:
+            return ergebnis.projektFelder["Projektname"]?.isEmpty == false
+        case .projektMitOrdner:
+            return ergebnis.projektFelder["Projektname"]?.isEmpty == false
+                && IntakeAdresse.strNummerBildbar(ergebnis: ergebnis)
+        }
+    }
+
+    private func stufeFehlenderHinweis(ergebnis: IntakeErgebnis) -> String? {
+        guard stufeBereit(ergebnis: ergebnis) == false else { return nil }
+        switch triggerStufe {
+        case .kontakt:
+            return "Für „Nur Kontakt speichern“ wird E-Mail ODER Telefon benötigt."
+        case .lead:
+            return "Für „Als Lead anlegen“ wird ein Projektname benötigt."
+        case .projektMitOrdner:
+            return "Für „Projekt mit Ordner“ werden Projektname UND eine Straße oder ein Ort (Projekt- oder Kundenadresse) benötigt."
         }
     }
 

@@ -4,6 +4,30 @@ import MykilosKit
 import MykilosDesign
 import MykilosServices
 
+// MARK: - SettingsCategory
+enum SettingsCategory: String, CaseIterable, Identifiable {
+    case profil, darstellung, verbindungen, privat, system
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .profil:       "Profil"
+        case .darstellung:  "Darstellung"
+        case .verbindungen: "Verbindungen"
+        case .privat:       "Privat"
+        case .system:       "System"
+        }
+    }
+    var icon: String {
+        switch self {
+        case .profil:       "person.crop.circle"
+        case .darstellung:  "paintbrush"
+        case .verbindungen: "app.connected.to.app.below.fill"
+        case .privat:       "lock.shield"
+        case .system:       "gearshape.2"
+        }
+    }
+}
+
 // MARK: - SettingsView
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
@@ -28,28 +52,43 @@ struct SettingsView: View {
     @State private var claudeApiKey: String = ""
     @State private var claudeModel: String = ClaudeAuthService.defaultModel
     @State private var claudeError: String?
+    // Backup/Restore-Liste (S2 Stabilitäts-Fundament)
+    @State private var backups: [BackupService.BackupInfo] = []
+    @State private var restoreConfirm: BackupService.BackupInfo? = nil
+    @State private var restoreStagedName: String? = nil
+
+    // Zweispaltige Einstellungsebene (2026-07-02, Johannes: „Benutzer-Menü + Einstellungs-
+    // ebene ausbauen"). Kategorie-Rail links (wie macOS-Systemeinstellungen) statt eines
+    // endlosen Scrolls; die Sektionen selbst bleiben unverändert.
+    // 2026-07-02: Die Kategorie kann EXTERN gesteuert werden — dann lebt die Rail in der
+    // Sidebar (Settings-Sidebar-Modus) und hier bleibt nur der Content. `nil` = eigenständig.
+    var externalCategory: Binding<SettingsCategory>? = nil
+    @State private var internalCategory: SettingsCategory = .profil
+    private var category: SettingsCategory { externalCategory?.wrappedValue ?? internalCategory }
+    private func selectCategory(_ c: SettingsCategory) {
+        if let e = externalCategory { e.wrappedValue = c } else { internalCategory = c }
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: MykSpace.s7) {
-                Text("Einstellungen")
-                    .font(.mykDisplay)
-                    .foregroundStyle(MykColor.ink.color)
-                identitySection
-                mailSignaturSection
-                integrationStatusSection
-                googleSection
-                airtableSection
-                clickUpSection
-                sevdeskSection
-                claudeSection
-                privateAreaSection
-                diagnoseSection
-                SchaltzentrumView()
-                Spacer()
+        HStack(spacing: 0) {
+            // Im Settings-Sidebar-Modus (externalCategory gesetzt) lebt die Kategorie-Rail
+            // in der Sidebar — hier bleibt nur der Content.
+            if externalCategory == nil {
+                categoryRail
+                Divider().overlay(MykColor.line.color)
             }
-            .padding(MykSpace.s9)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            ScrollView {
+                VStack(alignment: .leading, spacing: MykSpace.s7) {
+                    HStack(spacing: MykSpace.s4) {
+                        Image(systemName: category.icon).font(.mykTitle).foregroundStyle(MykColor.brand.color)
+                        Text(category.title).font(.mykDisplay).foregroundStyle(MykColor.ink.color)
+                    }
+                    categoryContent
+                    Spacer()
+                }
+                .padding(MykSpace.s9)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .background(MykColor.paper.color)
         .task {
@@ -81,6 +120,83 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - Kategorie-Rail + Content
+    private var categoryRail: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Einstellungen")
+                .font(.mykMono(10)).tracking(1.2).textCase(.uppercase)
+                .foregroundStyle(MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s4).padding(.bottom, MykSpace.s4).padding(.top, MykSpace.s2)
+            ForEach(SettingsCategory.allCases) { cat in
+                Button { withAnimation(.easeInOut(duration: 0.15)) { selectCategory(cat) } } label: {
+                    HStack(spacing: MykSpace.s4) {
+                        Image(systemName: cat.icon).font(.mykBody).frame(width: 20)
+                        Text(cat.title).font(.mykBody)
+                        Spacer()
+                    }
+                    .padding(.vertical, 9).padding(.horizontal, MykSpace.s4)
+                    .background(
+                        RoundedRectangle(cornerRadius: MykRadius.sm)
+                            .fill(category == cat ? MykColor.ink.color : Color.clear)
+                    )
+                    .foregroundStyle(category == cat ? MykColor.paper.color : MykColor.inkSoft.color)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Einstellungen: \(cat.title)")
+            }
+            Spacer()
+        }
+        .padding(MykSpace.s5)
+        .frame(width: 208)
+        .background(MykColor.paper2.color)
+    }
+
+    @ViewBuilder private var categoryContent: some View {
+        switch category {
+        case .profil:
+            identitySection
+            mailSignaturSection
+        case .darstellung:
+            darstellungSection
+        case .verbindungen:
+            integrationStatusSection
+            googleSection
+            airtableSection
+            clickUpSection
+            sevdeskSection
+            claudeSection
+        case .privat:
+            privateAreaSection
+        case .system:
+            diagnoseSection
+            SchaltzentrumView()
+        }
+    }
+
+    // MARK: - Darstellung (Hell/Dunkel/Auto)
+    // Per-Nutzer-Wahl (AppStorage `ui.appearance`) — dieselbe Quelle wie die Scene
+    // in MykilOS6App. Nicht mehr stur nach System.
+    @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
+
+    private var darstellungSection: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            Text("Darstellung")
+                .font(.mykHeadline)
+                .foregroundStyle(MykColor.ink.color)
+            Picker("", selection: $appearanceRaw) {
+                ForEach(AppAppearance.allCases) { mode in
+                    Label(mode.label, systemImage: mode.symbol).tag(mode.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 360, alignment: .leading)
+            // UI-Polish (2026-07-02, Johannes): Erklärtext entfernt — der Umschalter
+            // erklärt sich selbst, das Verhalten steht im Benutzerhandbuch.
+        }
+    }
+
     // MARK: - Identität
 
     private var identitySection: some View {
@@ -94,7 +210,8 @@ struct SettingsView: View {
                         .fill(MykColor.positive.color.opacity(0.15))
                         .frame(width: 36, height: 36)
                         .overlay(
-                            Text(String(user.displayName.prefix(1)).uppercased())
+                            // Gleiche Initialen-Logik wie der Sidebar-Avatar (Vorname+Nachname).
+                            Text(mykNameInitials(user.displayName))
                                 .font(.mykHeadline)
                                 .foregroundStyle(MykColor.positive.color)
                         )
@@ -129,15 +246,23 @@ struct SettingsView: View {
                 .font(.mykMono(12))
             HStack(spacing: MykSpace.s4) {
                 Button("Speichern") { saveProfile() }
-                if profileSaved {
+                    .disabled(!profileDirty)
+                if profileDirty {
+                    Button("Abbrechen") {
+                        profileName = storedProfileName
+                        profileRole = storedProfileRole
+                    }
+                    .buttonStyle(.plain)
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.muted.color)
+                } else if profileSaved {
                     Text("Gespeichert")
                         .font(.mykMono(10))
                         .foregroundStyle(MykColor.positive.color)
                 }
             }
-            Text("Name und Rolle fließen in den System-Prompt des Assistenten ein.")
-                .font(.mykMono(9.5))
-                .foregroundStyle(MykColor.faint.color)
+            // UI-Polish (2026-07-02, Johannes): Erklärtext („fließen in den System-Prompt…")
+            // entfernt — Mock-up-Überbleibsel, Detail steht im Benutzerhandbuch.
         }
         .padding(MykSpace.s6)
         .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
@@ -160,10 +285,8 @@ struct SettingsView: View {
                     .font(.mykHeadline)
                     .foregroundStyle(MykColor.ink.color)
             }
-            Text("Wird beim Verfassen eines Entwurfs ans Ende des Textes angehängt. Gmail hängt Signaturen bei API-Entwürfen nicht automatisch an.")
-                .font(.mykMono(9.5))
-                .foregroundStyle(MykColor.muted.color)
-                .fixedSize(horizontal: false, vertical: true)
+            // UI-Polish (2026-07-02, Johannes): Erklärtext entfernt (Mock-up-Überbleibsel);
+            // das Gmail-API-Detail steht im Benutzerhandbuch + als Code-Kommentar oben.
             TextEditor(text: $mailSignature)
                 .font(.mykMono(11))
                 .foregroundStyle(MykColor.ink.color)
@@ -178,7 +301,9 @@ struct SettingsView: View {
                     RoundedRectangle(cornerRadius: MykRadius.sm)
                         .stroke(MykColor.line.color, lineWidth: 1)
                 )
-            Text("Wird sofort gespeichert · LOKAL (UserDefaults)")
+            // Quellzeile im Design-System-Stil (SaveState sichtbar = Eiserne Regel) —
+            // das technische „(UserDefaults)"-Detail ist raus (UI-Polish 2026-07-02).
+            Text("LOKAL · SOFORT GESPEICHERT")
                 .font(.mykMono(9))
                 .foregroundStyle(MykColor.faint.color)
         }
@@ -187,16 +312,27 @@ struct SettingsView: View {
         .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
     }
 
+    // Dirty-State fürs Profil: Speichern nur aktiv bei echter Änderung, „Abbrechen"
+    // stellt den gespeicherten Stand wieder her (kein stiller Verlust bei Kategoriewechsel).
+    private var storedProfileName: String { appState.profile.profile?.displayName ?? "" }
+    private var storedProfileRole: String { appState.profile.profile?.role ?? "" }
+    private var profileDirty: Bool {
+        profileName != storedProfileName || profileRole != storedProfileRole
+    }
+
     private func saveProfile() {
         profileSaved = false
         let existing = appState.profile.profile
         do {
+            // V10 Folge-Block A: userID unverändert mitführen — sonst würde
+            // jedes Settings-Save die stabile Keychain-userID auf nil zurücksetzen.
             try appState.profile.save(UserProfile(
                 displayName: profileName,
                 role: profileRole,
                 updatedAt: Date(),
                 clockodoUserID: clockodoUserIDInput.isEmpty ? nil : clockodoUserIDInput,
-                googleDomain: existing?.googleDomain ?? appState.currentGoogleUser?.domain
+                googleDomain: existing?.googleDomain ?? appState.currentGoogleUser?.domain,
+                userID: existing?.userID
             ))
             profileSaved = true
         } catch {}
@@ -649,16 +785,85 @@ struct SettingsView: View {
             }
             Divider()
             HStack(spacing: MykSpace.s4) {
-                Button("Backup jetzt") { Task { await appState.createBackup() } }
+                Button("Backup jetzt") { Task { await appState.createBackup(); backups = appState.listBackups() } }
                     .disabled(appState.backupState == .saving)
                 backupStatusLabel
+                Spacer()
+                Button("Im Finder") { openBackupsFolder() }
+                    .font(.mykMono(10))
             }
-            Text("Erzwingt einen WAL-Checkpoint und legt einen konsistenten, geprüften "
-                 + "Snapshot (db.sqlite + projects/customers.json) lokal im Unterordner backups/ an.")
+            Text("Automatisch höchstens 1×/Tag beim Start; „Backup jetzt“ erzwingt sofort einen "
+                 + "WAL-Checkpoint + geprüften Snapshot (db.sqlite + projects/customers.json). Max. 30 Snapshots.")
                 .font(.mykMono(9.5))
                 .foregroundStyle(MykColor.faint.color)
+
+            backupListView
         }
         .settingsCard()
+        .onAppear { backups = appState.listBackups() }
+        .confirmationDialog(
+            "Dieses Backup beim nächsten Start wiederherstellen?",
+            isPresented: Binding(get: { restoreConfirm != nil }, set: { if !$0 { restoreConfirm = nil } }),
+            titleVisibility: .visible
+        ) {
+            if let info = restoreConfirm {
+                Button("Wiederherstellen", role: .destructive) {
+                    appState.stageRestore(info)
+                    restoreStagedName = info.folderURL.lastPathComponent
+                    restoreConfirm = nil
+                }
+                Button("Abbrechen", role: .cancel) { restoreConfirm = nil }
+            }
+        } message: {
+            Text("Der aktuelle Stand wird vorher automatisch gesichert (Rettungsbackup). "
+                 + "Die Wiederherstellung greift beim nächsten App-Start.")
+        }
+    }
+
+    // Liste vorhandener Backups mit Wiederherstellen-Aktion (staged auf nächsten Start).
+    @ViewBuilder
+    private var backupListView: some View {
+        if let staged = restoreStagedName {
+            HStack(spacing: MykSpace.s2) {
+                Image(systemName: "clock.arrow.circlepath").foregroundStyle(MykColor.tasks.color)
+                Text("Beim nächsten Start wird „\(staged)“ wiederhergestellt — bitte App neu starten.")
+                    .font(.mykMono(9.5)).foregroundStyle(MykColor.tasks.color)
+            }
+            .padding(.top, MykSpace.s2)
+        }
+        if backups.isEmpty {
+            Text("Noch keine Backups vorhanden.")
+                .font(.mykMono(9.5)).foregroundStyle(MykColor.faint.color)
+                .padding(.top, MykSpace.s2)
+        } else {
+            VStack(spacing: 0) {
+                ForEach(backups.prefix(8)) { info in
+                    HStack(spacing: MykSpace.s3) {
+                        Text(info.createdAt.formatted(.dateTime.day().month().hour().minute()))
+                            .font(.mykMono(10)).foregroundStyle(MykColor.ink.color)
+                        Text(info.tag).font(.mykMono(9)).foregroundStyle(MykColor.muted.color)
+                        Text(ByteCountFormatter.string(fromByteCount: Int64(info.sizeBytes), countStyle: .file))
+                            .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                        Spacer()
+                        Button("Wiederherstellen") { restoreConfirm = info }
+                            .font(.mykMono(9.5))
+                            .buttonStyle(.plain)
+                            .foregroundStyle(MykColor.drive.color)
+                    }
+                    .padding(.vertical, MykSpace.s2)
+                    if info.id != backups.prefix(8).last?.id {
+                        Divider().overlay(MykColor.line.color.opacity(0.5))
+                    }
+                }
+            }
+            .padding(.top, MykSpace.s2)
+        }
+    }
+
+    private func openBackupsFolder() {
+        let dir = AppDatabase.productionURL.deletingLastPathComponent().appendingPathComponent("backups", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(dir)
     }
 
     @ViewBuilder

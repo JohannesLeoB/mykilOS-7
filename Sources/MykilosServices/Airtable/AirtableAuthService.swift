@@ -31,30 +31,37 @@ public protocol AirtableCredentialsStoring: Sendable {
 // MARK: - KeychainAirtableCredentialsStore
 public struct KeychainAirtableCredentialsStore: AirtableCredentialsStoring {
     private let keychain: KeychainStore
-    private static let service = "com.mykilos6.airtable"
+    private static let base = "airtable"
     private static let patAccount = "pat"
     private static let baseIDAccount = "baseID"
+    private let userID: String?
 
-    public init(keychain: KeychainStore = KeychainStore()) {
+    // V10 Folge-Block A: per-User-Service `com.mykilos6.airtable.<userID>`.
+    public init(keychain: KeychainStore = KeychainStore(), userID: String? = CurrentUserContext.current) {
         self.keychain = keychain
+        self.userID = userID
     }
 
+    private var service: String { PerUserKeychainService.perUser(Self.base, userID: userID) }
+
     public func store(_ credentials: AirtableCredentials) throws {
-        try keychain.store(credentials.pat, service: Self.service, account: Self.patAccount)
-        try keychain.store(credentials.baseID, service: Self.service, account: Self.baseIDAccount)
+        try keychain.store(credentials.pat, service: service, account: Self.patAccount)
+        try keychain.store(credentials.baseID, service: service, account: Self.baseIDAccount)
     }
 
     public func load() throws -> AirtableCredentials? {
-        guard let pat = try keychain.load(service: Self.service, account: Self.patAccount),
-              let baseID = try keychain.load(service: Self.service, account: Self.baseIDAccount) else {
+        guard let pat = try PerUserKeychainMigrator.loadWithMigration(
+                keychain: keychain, base: Self.base, userID: userID, account: Self.patAccount),
+              let baseID = try PerUserKeychainMigrator.loadWithMigration(
+                keychain: keychain, base: Self.base, userID: userID, account: Self.baseIDAccount) else {
             return nil
         }
         return AirtableCredentials(pat: pat, baseID: baseID)
     }
 
     public func clear() throws {
-        try keychain.delete(service: Self.service, account: Self.patAccount)
-        try keychain.delete(service: Self.service, account: Self.baseIDAccount)
+        try keychain.delete(service: service, account: Self.patAccount)
+        try keychain.delete(service: service, account: Self.baseIDAccount)
     }
 }
 

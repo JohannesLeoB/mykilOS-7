@@ -26,15 +26,23 @@ public enum MykColor {
 
     public var color: Color {
         switch self {
-        case .paper:    Self.adaptive(light: 0xFAF8F3, dark: 0x1A1814)
-        case .paper2:   Self.adaptive(light: 0xF2EFE7, dark: 0x222019)
-        case .card:     Self.adaptive(light: 0xFFFFFF, dark: 0x2A2721)
-        case .bone:     Self.adaptive(light: 0xE8E3D8, dark: 0x3A362E)
-        case .line:     Self.adaptive(light: 0xE0DACE, dark: 0x3E3A32)
-        case .ink:      Self.adaptive(light: 0x1A1814, dark: 0xF0EDE6)
-        case .inkSoft:  Self.adaptive(light: 0x4A463E, dark: 0xC4BFB4)
-        case .muted:    Self.adaptive(light: 0x8C8678, dark: 0x8C8678)
-        case .faint:    Self.adaptive(light: 0xB4AEA0, dark: 0x5A5548)
+        // Design-Hero (2026-07-02, Johannes): Grundfläche an die Website-CI
+        // (mykilos.com) angeglichen — fast-weißes Papier, tiefes Schwarz als Tinte,
+        // neutralere Linien. Die warmen Quellfarben bleiben als Akzent-Sprache.
+        // Alle Kontraste WCAG-geprüft (ink 18.8:1, muted 5.1:1, faint 3.4:1 auf paper).
+        case .paper:    Self.adaptive(light: 0xFCFBF8, dark: 0x131210)
+        case .paper2:   Self.adaptive(light: 0xF4F2EC, dark: 0x1C1A17)
+        case .card:     Self.adaptive(light: 0xFFFFFF, dark: 0x242119)
+        case .bone:     Self.adaptive(light: 0xEBE8E0, dark: 0x3A362E)
+        case .line:     Self.adaptive(light: 0xE4E1D9, dark: 0x3E3A32)
+        case .ink:      Self.adaptive(light: 0x0E0D0B, dark: 0xF6F5F1)
+        case .inkSoft:  Self.adaptive(light: 0x403C35, dark: 0xC8C3B8)
+        // A11y-Härtung (2026-07-02, Design-Kritik): muted/faint fielen im WCAG-Kontrasttest
+        // durch (muted 3.4:1, faint 2.1:1 auf paper). Neu: muted ≥4.5 (AA Normaltext) und
+        // faint ≥3.0 (AA Großtext/UI) auf paper, card UND paper2 — in beiden Appearances.
+        // Die Stufung ink > inkSoft > muted > faint bleibt sichtbar erhalten.
+        case .muted:    Self.adaptive(light: 0x716B5D, dark: 0x9A9486)
+        case .faint:    Self.adaptive(light: 0x8E8879, dark: 0x7A7466)
         case .drive:    Self.adaptive(light: 0xC26B4A, dark: 0xD4815E)
         case .people:   Self.adaptive(light: 0x6E8B6A, dark: 0x82A37E)
         case .tasks:    Self.adaptive(light: 0xC99A3E, dark: 0xDAAE52)
@@ -62,7 +70,9 @@ public enum MykColor {
 }
 
 // MARK: - Maße
-public enum MykRadius { public static let sm: CGFloat = 8, md: CGFloat = 14, lg: CGFloat = 20, xl: CGFloat = 26 }
+// Design-Hero (2026-07-02): Radien reduziert (8/14/20/26 → 6/10/16/20) — die Website-CI
+// ist kantiger/editorialer; Karten und Buttons ziehen App-weit automatisch mit.
+public enum MykRadius { public static let sm: CGFloat = 6, md: CGFloat = 10, lg: CGFloat = 16, xl: CGFloat = 20 }
 public enum MykSpace {
     public static let s2: CGFloat = 6, s3: CGFloat = 9, s4: CGFloat = 13,
                       s5: CGFloat = 17, s6: CGFloat = 22, s7: CGFloat = 28,

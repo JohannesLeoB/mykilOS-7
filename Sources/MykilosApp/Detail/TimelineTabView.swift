@@ -71,6 +71,7 @@ struct TimelineTabView: View {
         }
         .buttonStyle(.plain)
         .help("Aktualisieren")
+        .accessibilityLabel("Aktualisieren")
     }
 
     private var retryButton: some View {

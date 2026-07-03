@@ -35,7 +35,36 @@ struct ProjectGalleryView: View {
     @AppStorage("projekte.sort") private var sortRaw = ProjectSort.nummer.rawValue
     @AppStorage("projekte.kategorie") private var kategorieFilter = ""   // "" = alle
     @AppStorage("projekte.customOrder") private var customOrderRaw = ""  // projectNumbers, komma-getrennt
+    // Gespeicherte Galerie-Ansichten (S5): benannte Filter-/Sortier-Kombinationen.
+    @AppStorage("projekte.savedViews") private var savedViewsRaw = ""
+    @State private var showSaveDialog = false
+    @State private var newViewName = ""
+    // S6: Ansichtsmodus Galerie (Raster) ⇄ Pipeline (Kanban über Lebenszyklus-Stufen).
+    @AppStorage("projekte.viewMode") private var viewModeRaw = "grid"
     private var sort: ProjectSort { ProjectSort(rawValue: sortRaw) ?? .nummer }
+
+    private var savedViews: [SavedGalleryView] {
+        (try? JSONDecoder().decode([SavedGalleryView].self, from: Data(savedViewsRaw.utf8))) ?? []
+    }
+    private func persistViews(_ views: [SavedGalleryView]) {
+        savedViewsRaw = (try? String(data: JSONEncoder().encode(views), encoding: .utf8) ?? "") ?? ""
+    }
+    private func applyView(_ v: SavedGalleryView) {
+        kategorieFilter = v.kategorie
+        sortRaw = v.sortRaw
+        searchText = v.search
+    }
+    private func saveCurrentView(named name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        var views = savedViews.filter { $0.name.caseInsensitiveCompare(trimmed) != .orderedSame }
+        views.append(SavedGalleryView(id: trimmed.lowercased(), name: trimmed,
+                                      kategorie: kategorieFilter, sortRaw: sortRaw, search: searchText))
+        persistViews(views)
+    }
+    private func deleteView(_ v: SavedGalleryView) {
+        persistViews(savedViews.filter { $0.id != v.id })
+    }
 
     private var registry: RegistryStore { appState.registry }
 
@@ -105,6 +134,19 @@ struct ProjectGalleryView: View {
                 loadingView
             } else if filtered.isEmpty {
                 emptyView
+            } else if viewModeRaw == "pipeline" {
+                ProjectPipelineView(
+                    projects: filtered,
+                    stageFor: { appState.projectLifecycle.stage(for: $0.projectNumber) ?? .akquise },
+                    customerFor: { registry.customer(for: $0) },
+                    budgetFor: { $0.links.budget },
+                    onMove: { project, stage in
+                        try? appState.projectLifecycle.setStage(stage, for: project.projectNumber)
+                    },
+                    onOpen: { project in
+                        withAnimation(.easeInOut(duration: 0.22)) { selectedProject = project }
+                    }
+                )
             } else {
                 ScrollView {
                     LazyVGrid(columns: columns, spacing: MykSpace.s5) {
@@ -142,12 +184,19 @@ struct ProjectGalleryView: View {
     }
 
     // MARK: Command-Bar
+    // Fix 2026-07-03 (Live-Fund Johannes): bei wenig Breite (schmaleres Fenster/
+    // Sidebar offen) wickelte SwiftUI Titel + Umschalter-Labels buchstabenweise
+    // um, statt sie zu kürzen. .fixedSize() verweigert das Umbrechen — der
+    // Suchfeld-Bereich (hat bereits minWidth) gibt bei Platznot zuerst nach.
     private var commandBar: some View {
         HStack(spacing: MykSpace.s5) {
             Text("Projekte")
                 .font(.mykDisplay)
                 .foregroundStyle(MykColor.ink.color)
+                .fixedSize(horizontal: true, vertical: false)
             Spacer()
+            modusToggle
+            viewsMenu
             sortMenu
             kategorieMenu
             HStack(spacing: MykSpace.s3) {
@@ -161,10 +210,10 @@ struct ProjectGalleryView: View {
             .padding(.horizontal, MykSpace.s5)
             .padding(.vertical, MykSpace.s3)
             .background(
-                RoundedRectangle(cornerRadius: 11)
+                RoundedRectangle(cornerRadius: MykRadius.md)
                     .fill(MykColor.card.color)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 11)
+                        RoundedRectangle(cornerRadius: MykRadius.md)
                             .stroke(MykColor.line.color, lineWidth: 1)
                     )
             )
@@ -172,6 +221,66 @@ struct ProjectGalleryView: View {
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s5)
+    }
+
+    // Galerie (Raster) ⇄ Pipeline (Kanban) umschalten.
+    private var modusToggle: some View {
+        HStack(spacing: 0) {
+            modusButton(mode: "grid", icon: "square.grid.2x2", label: "Galerie")
+            modusButton(mode: "pipeline", icon: "rectangle.split.3x1", label: "Pipeline")
+        }
+        .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color)
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1)))
+    }
+
+    private func modusButton(mode: String, icon: String, label: String) -> some View {
+        let active = viewModeRaw == mode
+        return Button { viewModeRaw = mode } label: {
+            Label(label, systemImage: icon)
+                .font(.mykSmall)
+                .foregroundStyle(active ? MykColor.paper.color : MykColor.muted.color)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
+                .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(active ? MykColor.ink.color : Color.clear))
+        }
+        .buttonStyle(.plain)
+        .help(label)
+    }
+
+    private var viewsMenu: some View {
+        Menu {
+            if savedViews.isEmpty {
+                Text("Noch keine gespeicherten Ansichten")
+            } else {
+                ForEach(savedViews) { v in
+                    Button { applyView(v) } label: { Label(v.name, systemImage: "rectangle.stack") }
+                }
+                Divider()
+                Menu("Ansicht löschen") {
+                    ForEach(savedViews) { v in
+                        Button(role: .destructive) { deleteView(v) } label: { Text(v.name) }
+                    }
+                }
+                Divider()
+            }
+            Button { newViewName = ""; showSaveDialog = true } label: {
+                Label("Aktuellen Filter sichern …", systemImage: "plus")
+            }
+        } label: {
+            Label("Ansichten", systemImage: "rectangle.stack")
+                .font(.mykSmall).foregroundStyle(MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
+                .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color)
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1)))
+        }
+        .menuStyle(.borderlessButton).fixedSize()
+        .alert("Ansicht sichern", isPresented: $showSaveDialog) {
+            TextField("Name (z. B. Aktive Küchen)", text: $newViewName)
+            Button("Sichern") { saveCurrentView(named: newViewName) }
+            Button("Abbrechen", role: .cancel) { }
+        } message: {
+            Text("Speichert die aktuelle Kombination aus Kategorie, Sortierung und Suche.")
+        }
     }
 
     private var sortMenu: some View {
@@ -185,8 +294,8 @@ struct ProjectGalleryView: View {
             Label("Sortieren: \(sort.label)", systemImage: "arrow.up.arrow.down")
                 .font(.mykSmall).foregroundStyle(MykColor.muted.color)
                 .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
-                .background(RoundedRectangle(cornerRadius: 11).fill(MykColor.card.color)
-                    .overlay(RoundedRectangle(cornerRadius: 11).stroke(MykColor.line.color, lineWidth: 1)))
+                .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color)
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1)))
         }
         .menuStyle(.borderlessButton).fixedSize()
     }
@@ -207,8 +316,8 @@ struct ProjectGalleryView: View {
                 .font(.mykSmall)
                 .foregroundStyle(kategorieFilter.isEmpty ? MykColor.muted.color : MykColor.brand.color)
                 .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
-                .background(RoundedRectangle(cornerRadius: 11).fill(MykColor.card.color)
-                    .overlay(RoundedRectangle(cornerRadius: 11).stroke(MykColor.line.color, lineWidth: 1)))
+                .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color)
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1)))
         }
         .menuStyle(.borderlessButton).fixedSize()
     }
@@ -230,12 +339,37 @@ struct ProjectGalleryView: View {
     private var emptyView: some View {
         VStack(spacing: MykSpace.s5) {
             Spacer()
-            Image(systemName: "square.grid.2x2")
-                .font(.mykDisplay)
-                .foregroundStyle(MykColor.faint.color)
-            Text(searchText.isEmpty ? "Noch keine Projekte." : "Keine Treffer für „\(searchText)“.")
-                .font(.mykBody)
+            ZStack {
+                RoundedRectangle(cornerRadius: MykRadius.lg)
+                    .fill(MykColor.paper2.color)
+                    .frame(width: 96, height: 96)
+                    .overlay(GridTexture().opacity(0.25).clipShape(RoundedRectangle(cornerRadius: MykRadius.lg)))
+                Image(systemName: searchText.isEmpty ? "square.grid.2x2" : "magnifyingglass")
+                    .font(.mykDisplay)
+                    .foregroundStyle(MykColor.brand.color.opacity(0.7))
+            }
+            Text(searchText.isEmpty ? "Noch keine Projekte hier." : "Keine Treffer für „\(searchText)“.")
+                .font(.mykTitle)
+                .foregroundStyle(MykColor.inkSoft.color)
+            Text(searchText.isEmpty
+                 ? "Projekte kommen aus dem Drive-Ordner PROJEKTE und der Airtable-Registry."
+                 : (kategorieFilter.isEmpty ? "Andere Schreibweise probieren?" : "Vielleicht liegt es am Kategorie-Filter?"))
+                .font(.mykSmall)
                 .foregroundStyle(MykColor.muted.color)
+            if searchText.isEmpty == false || kategorieFilter.isEmpty == false {
+                Button {
+                    searchText = ""
+                    kategorieFilter = ""
+                } label: {
+                    Text("Filter zurücksetzen")
+                        .font(.mykMono(10)).tracking(0.5)
+                        .foregroundStyle(MykColor.paper.color)
+                        .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s3)
+                        .background(Capsule().fill(MykColor.ink.color))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, MykSpace.s2)
+            }
             Spacer()
         }
     }
@@ -277,4 +411,15 @@ struct ProjectGalleryView: View {
         customOrderRaw = order.joined(separator: ",")
         sortRaw = ProjectSort.eigene.rawValue              // Drag aktiviert die Eigene-Sortierung
     }
+}
+
+// MARK: - SavedGalleryView
+// Eine benannte, gespeicherte Galerie-Ansicht (Filter-/Sortier-Kombination).
+// Rein lokal (@AppStorage-JSON), keine externen Daten.
+struct SavedGalleryView: Codable, Identifiable, Equatable {
+    var id: String        // stabil = kleingeschriebener Name
+    var name: String
+    var kategorie: String // "" = alle Kategorien
+    var sortRaw: String
+    var search: String
 }

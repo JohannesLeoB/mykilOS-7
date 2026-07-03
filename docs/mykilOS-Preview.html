@@ -1,0 +1,677 @@
+<title>mykilOS — Feature-Preview</title>
+<meta name="description" content="Geführte Vorschau der mykilOS-App für das Wochenende">
+<style>
+  :root{
+    --paper:#FAF8F3; --ink:#1A1814; --brand:#EA5B25;
+    --drive:#C26B4A; --people:#6E8B6A; --tasks:#C99A3E;
+    --cash:#4C6280; --personal:#8A5B73; --positive:#3E7A4E; --critical:#B4503C;
+    --line:#E8E2D6; --panelbg:#FFFFFF; --muted:#8A8478;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px; margin:0 auto; padding:0 32px;}
+
+  /* ---------- Top nav (screen only) ---------- */
+  .topnav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(250,248,243,0.92);
+    backdrop-filter:saturate(160%) blur(8px);
+    border-bottom:1px solid var(--line);
+    padding:14px 32px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px;
+  }
+  .topnav .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:0.01em;}
+  .brand .mark{
+    width:26px; height:26px; border-radius:8px; background:var(--brand);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:800; letter-spacing:-0.02em;
+  }
+  .navctrls{display:flex; align-items:center; gap:10px;}
+  .navctrls button{
+    font:inherit; font-size:13px; font-weight:600; color:var(--ink);
+    background:#fff; border:1px solid var(--line); border-radius:8px;
+    padding:8px 14px; cursor:pointer;
+  }
+  .navctrls button:hover{border-color:var(--brand); color:var(--brand);}
+  .navctrls button:disabled{opacity:0.35; cursor:default; color:var(--ink); border-color:var(--line);}
+  .navctrls .step-indicator{font-size:12px; color:var(--muted); min-width:64px; text-align:center;}
+  .navctrls .printbtn{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .navctrls .printbtn:hover{color:#fff; opacity:0.85; border-color:var(--ink);}
+
+  /* dots */
+  .dots{display:flex; gap:6px; justify-content:center; padding:14px 0 4px;}
+  .dots .dot{
+    width:7px; height:7px; border-radius:50%; background:var(--line);
+    border:none; padding:0; cursor:pointer;
+  }
+  .dots .dot.active{background:var(--brand); width:20px; border-radius:4px;}
+
+  /* ---------- Sections / Stations ---------- */
+  section.station{
+    padding:64px 0 56px;
+    border-bottom:1px solid var(--line);
+  }
+  section.station:last-of-type{border-bottom:none;}
+
+  .kicker{
+    font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 10px;
+  }
+  .kicker .num{color:var(--brand);}
+  h2.title{
+    font-size:30px; font-weight:800; letter-spacing:-0.01em; margin:0 0 14px;
+  }
+  p.lede{font-size:16px; color:#3a352d; margin:0 0 16px; max-width:60ch;}
+  ul.points{margin:0 0 8px; padding-left:20px; color:#3a352d; font-size:14.5px;}
+  ul.points li{margin-bottom:6px;}
+
+  .station-grid{
+    display:grid; grid-template-columns: 1.05fr 0.95fr; gap:40px; align-items:start;
+    margin-top:22px;
+  }
+  @media (max-width:760px){
+    .station-grid{grid-template-columns:1fr;}
+  }
+  .text-col{order:1;}
+  .panel-col{order:2;}
+  section.station.reverse .text-col{order:2;}
+  section.station.reverse .panel-col{order:1;}
+
+  .source-line{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--muted); margin-top:14px;
+  }
+  .source-line .sw{width:8px; height:8px; border-radius:2px; display:inline-block;}
+
+  /* ---------- Stylized Panel base ---------- */
+  .panel{
+    background:var(--panelbg);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:0 1px 2px rgba(26,24,20,0.04), 0 10px 30px -14px rgba(26,24,20,0.14);
+    overflow:hidden;
+  }
+  .panel-chrome{
+    display:flex; align-items:center; gap:6px;
+    padding:10px 14px; border-bottom:1px solid var(--line);
+    background:#FCFAF6;
+  }
+  .panel-chrome .dot3{width:8px; height:8px; border-radius:50%; background:#E3DCCC;}
+  .panel-chrome .label{
+    margin-left:8px; font-size:11px; font-weight:600; color:var(--muted);
+    letter-spacing:0.02em;
+  }
+  .panel-body{padding:18px;}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    padding:76px 0 44px;
+    text-align:center;
+  }
+  .hero .mark-lg{
+    width:56px; height:56px; border-radius:16px; background:var(--brand);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size:22px; font-weight:800; margin:0 auto 22px; letter-spacing:-0.03em;
+    box-shadow:0 12px 28px -10px rgba(234,91,37,0.55);
+  }
+  .hero .eyebrow{
+    font-size:12px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--brand); margin-bottom:14px;
+  }
+  .hero h1{
+    font-size:44px; font-weight:800; letter-spacing:-0.02em; margin:0 0 16px;
+    line-height:1.08;
+  }
+  .hero p{
+    font-size:17px; color:#3a352d; max-width:56ch; margin:0 auto 8px;
+  }
+  .hero .sub{color:var(--muted); font-size:14px; margin-top:18px;}
+  .hero .badges{display:flex; gap:8px; justify-content:center; margin-top:26px; flex-wrap:wrap;}
+  .badge{
+    font-size:12px; font-weight:600; color:var(--ink); background:#fff;
+    border:1px solid var(--line); border-radius:999px; padding:6px 14px;
+  }
+
+  /* ================= PANEL 1: Galerie/Projekte ================= */
+  .gallery-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
+  .proj-card{
+    border:1px solid var(--line); border-radius:10px; padding:10px;
+    background:#FCFAF6;
+  }
+  .proj-card .thumb{
+    height:44px; border-radius:6px; margin-bottom:8px;
+    background:linear-gradient(135deg, var(--tc,#EADFCF), #F2EAD9);
+  }
+  .proj-card .pname{font-size:12px; font-weight:700; margin-bottom:2px;}
+  .proj-card .pmeta{font-size:10.5px; color:var(--muted);}
+  .proj-card .ptag{
+    display:inline-block; margin-top:6px; font-size:9.5px; font-weight:700;
+    letter-spacing:0.04em; text-transform:uppercase; padding:2px 6px; border-radius:5px;
+    color:#fff;
+  }
+
+  /* ================= PANEL 2: Projekt-Detail ================= */
+  .detail-hero{
+    height:64px; border-radius:10px; margin-bottom:12px;
+    background:linear-gradient(120deg, #EFE2D0, #E7D6C4 60%, #E2CDB8);
+    position:relative; display:flex; align-items:flex-end; padding:10px 12px;
+  }
+  .detail-hero .htitle{color:#3a2c1e; font-weight:800; font-size:14px;}
+  .tabbar{display:flex; gap:4px; margin-bottom:14px; flex-wrap:wrap;}
+  .tabchip{
+    font-size:10.5px; font-weight:700; padding:5px 10px; border-radius:7px;
+    background:#F2EEE4; color:var(--muted);
+  }
+  .tabchip.active{background:var(--ink); color:#fff;}
+  .widget-board{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .wtile{
+    border-radius:9px; padding:9px; min-height:52px; border:1px solid var(--line);
+    background:#FCFAF6; display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .wtile .wtag{width:16px; height:5px; border-radius:3px; margin-bottom:8px;}
+  .wtile .wlabel{font-size:9.5px; font-weight:700; color:#4a4438;}
+
+  /* ================= PANEL 3: Heute-Board ================= */
+  .today-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:9px;}
+  .today-tile{
+    border-radius:10px; padding:10px; border:1px solid var(--line); background:#FCFAF6;
+  }
+  .today-tile .thead{display:flex; align-items:center; gap:6px; margin-bottom:7px;}
+  .today-tile .thead .sw{width:7px; height:7px; border-radius:50%;}
+  .today-tile .thead span{font-size:10px; font-weight:700; color:var(--muted); letter-spacing:0.03em; text-transform:uppercase;}
+  .today-tile .tline{height:6px; border-radius:3px; background:#EEE7D9; margin-bottom:5px;}
+  .today-tile .tline:last-child{width:60%; margin-bottom:0;}
+  .signal-strip{
+    margin-top:10px; border-radius:9px; border:1px dashed #D8CDB8; padding:8px 10px;
+    font-size:10.5px; color:#5b5344; background:#FBF7EE; display:flex; gap:8px; align-items:center;
+  }
+  .signal-strip .sdot{width:6px; height:6px; border-radius:50%; background:var(--brand); flex:none;}
+
+  /* ================= PANEL 4: Assistent ================= */
+  .chat-body{display:flex; flex-direction:column; gap:8px;}
+  .bubble{max-width:78%; font-size:11.5px; padding:9px 12px; border-radius:12px; line-height:1.4;}
+  .bubble.user{align-self:flex-end; background:var(--ink); color:#fff; border-bottom-right-radius:4px;}
+  .bubble.bot{align-self:flex-start; background:#F2EEE4; color:#2a2620; border-bottom-left-radius:4px;}
+  .bubble.card{
+    align-self:flex-start; background:#fff; border:1px solid var(--line); color:#2a2620;
+    border-radius:12px; padding:10px 12px; width:82%;
+  }
+  .bubble.card .cardtitle{font-size:10.5px; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:6px;}
+  .bubble.card .cardtitle .sw{width:7px; height:7px; border-radius:50%; background:var(--cash);}
+  .bubble.card .cbtn{
+    display:inline-block; margin-top:8px; font-size:10px; font-weight:700; color:#fff;
+    background:var(--brand); border-radius:6px; padding:5px 10px;
+  }
+
+  /* ================= PANEL 5: Kalkulation ================= */
+  .kalk-figure{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
+  .kalk-figure .mid{font-size:22px; font-weight:800; color:var(--ink);}
+  .kalk-figure .range{font-size:10.5px; color:var(--muted);}
+  .kalk-bar{
+    height:12px; border-radius:6px; background:#EFE7D6; position:relative; overflow:hidden; margin-bottom:12px;
+  }
+  .kalk-bar .fill{
+    position:absolute; inset:0; width:62%;
+    background:linear-gradient(90deg, #DCCB9E, var(--brand) 55%, #C94E22);
+    border-radius:6px;
+  }
+  .kalk-bar .marker{
+    position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--ink); left:62%;
+  }
+  .confidence{display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--muted); margin-bottom:12px;}
+  .confidence .cbadge{
+    font-size:9.5px; font-weight:800; letter-spacing:0.03em; color:#fff; background:var(--positive);
+    padding:2px 7px; border-radius:5px;
+  }
+  .evidence-row{display:flex; justify-content:space-between; font-size:10.5px; padding:5px 0; border-top:1px solid var(--line); color:#4a4438;}
+  .evidence-row:first-of-type{border-top:none;}
+  .evidence-row .ev-src{font-weight:700;}
+
+  /* ================= PANEL 6: Angebote & Dateien ================= */
+  .filetree{font-size:11px; color:#3a352d;}
+  .frow{display:flex; align-items:center; gap:7px; padding:5px 0;}
+  .frow .ficon{width:16px; height:16px; border-radius:4px; flex:none;}
+  .frow.indent{padding-left:20px;}
+  .frow .fname{flex:1;}
+  .frow .fmeta{font-size:9.5px; color:var(--muted);}
+  .pdf-chip{
+    display:inline-flex; align-items:center; gap:5px; font-size:9px; font-weight:800;
+    color:#fff; background:var(--drive); padding:2px 6px; border-radius:4px; letter-spacing:0.03em;
+  }
+
+  /* ================= PANEL 7: Integrationen ================= */
+  .integ-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px;}
+  .integ-tile{
+    border:1px solid var(--line); border-radius:9px; padding:9px; background:#FCFAF6; text-align:center;
+  }
+  .integ-tile .idot{width:9px; height:9px; border-radius:50%; margin:0 auto 6px;}
+  .integ-tile .iname{font-size:9.5px; font-weight:700;}
+  .integ-tile .istatus{font-size:8.5px; color:var(--positive); font-weight:700; margin-top:2px;}
+  .trust-line{
+    display:flex; align-items:center; gap:8px; font-size:10.5px; color:#4a4438;
+    border-top:1px solid var(--line); padding-top:10px; margin-top:4px;
+  }
+  .trust-line .lockicon{
+    width:18px; height:18px; border-radius:5px; background:var(--ink); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:10px; flex:none;
+  }
+
+  /* ================= PANEL 8 (Abschluss): Wohin V10 ================= */
+  .flow-row{display:flex; align-items:center; gap:6px; margin-bottom:16px; flex-wrap:wrap;}
+  .flow-step{
+    flex:1; min-width:78px; text-align:center; border:1px solid var(--line); border-radius:9px;
+    padding:10px 6px; background:#FCFAF6; font-size:10px; font-weight:700; color:#3a352d;
+  }
+  .flow-step .fnum{
+    width:18px; height:18px; border-radius:50%; background:var(--ink); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:9.5px; margin:0 auto 6px;
+  }
+  .flow-step.final .fnum{background:var(--brand);}
+  .flow-step.final{border-color:var(--brand); background:#FDF1EA;}
+  .flow-arrow{color:var(--muted); font-size:13px;}
+  .version-tag{
+    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:800;
+    color:var(--brand); border:1px solid #F3CDB9; background:#FDF1EA; padding:5px 11px; border-radius:999px;
+  }
+
+  /* ---------- Footnote ---------- */
+  .footnote{
+    text-align:center; padding:36px 0 60px; color:var(--muted); font-size:12px;
+  }
+  .footnote strong{color:#5b5344;}
+
+  /* ---------- Screen-only slide behaviour ---------- */
+  @media screen{
+    section.station{ display:none; }
+    section.station.active{ display:block; }
+    section.hero-station{ display:block; }
+  }
+
+  /* ---------- Print ---------- */
+  @media print{
+    .topnav, .dots{ display:none !important; }
+    body{ background:#fff; }
+    section.station{
+      display:block !important;
+      page-break-inside:avoid;
+      break-inside:avoid;
+      padding:28px 0 24px;
+    }
+    .hero{ padding:20px 0 24px; }
+    .wrap{ max-width:100%; padding:0 22px; }
+    .panel{ box-shadow:none; }
+    a{ color:inherit; text-decoration:none; }
+  }
+</style>
+
+<div class="topnav" id="topnav">
+  <div class="brand"><span class="mark">MY</span> mykilOS — Feature-Preview</div>
+  <div class="navctrls">
+    <button id="btnPrev" onclick="mykNav(-1)">← Zurück</button>
+    <span class="step-indicator" id="stepIndicator">1 / 9</span>
+    <button id="btnNext" onclick="mykNav(1)">Weiter →</button>
+    <button class="printbtn" onclick="window.print()">Als PDF</button>
+  </div>
+</div>
+<div class="dots" id="dots"></div>
+
+<div class="wrap">
+
+<!-- HERO -->
+<section class="station hero-station active" data-index="0">
+  <div class="hero">
+    <div class="mark-lg">MY</div>
+    <div class="eyebrow">Version 9.0.0 — Test-Preview fürs Wochenende</div>
+    <h1>Das Cockpit, das alles kann.</h1>
+    <p>mykilOS bündelt Projekte, Kalender, Drive, Aufgaben, Geld und einen Assistenten an einem
+    Ort — lokal auf deinem Mac, mit deinen eigenen Konten, ruhig und ehrlich in der Darstellung.
+    Diese Seite führt dich in acht Stationen durch die App, ohne dass du sie installieren musst.</p>
+    <p class="sub">Nutze „Weiter" oben, um durchzuklicken — oder scroll direkt, wenn du diese Seite
+    als PDF liest: dort stehen alle Stationen sauber untereinander.</p>
+    <div class="badges">
+      <span class="badge">macOS 14+</span>
+      <span class="badge">Local-first</span>
+      <span class="badge">SwiftUI</span>
+      <span class="badge">Eigene Konten, keine Cloud-Datenbank</span>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 1: Galerie & Projekte -->
+<section class="station" data-index="1">
+  <div class="kicker"><span class="num">01</span> · Einstieg</div>
+  <h2 class="title">Galerie &amp; Projekte</h2>
+  <div class="station-grid">
+    <div class="text-col">
+      <p class="lede">Der erste Blick beim Öffnen der App: alle Projekte als Karten, direkt aus dem
+      echten Google-Drive-Ordner und Airtable geroutet — keine Zweitpflege, keine Excel-Liste
+      daneben.</p>
+      <ul class="points">
+        <li>Projektkarten kommen aus dem realen Ordnerschema (<code>JJJJ_lfdNr_Kunde</code>) —
+        was im Drive liegt, taucht in der App auf.</li>
+        <li>Ein Klick öffnet das Projekt direkt in der Detailansicht.</li>
+        <li>Favoriten und zuletzt geöffnete Projekte oben, der Rest chronologisch.</li>
+      </ul>
+      <div class="source-line"><span class="sw" style="background:var(--drive)"></span>Quelle: Google Drive · Airtable</div>
+    </div>
+    <div class="panel-col">
+      <div class="panel">
+        <div class="panel-chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="label">Galerie</span></div>
+        <div class="panel-body">
+          <div class="gallery-grid">
+            <div class="proj-card"><div class="thumb" style="--tc:#EAD9C7"></div><div class="pname">2026-014 · Küche Wagner</div><div class="pmeta">Zuletzt geöffnet · gestern</div><span class="ptag" style="background:var(--drive)">Küche</span></div>
+            <div class="proj-card"><div class="thumb" style="--tc:#E3E7D8"></div><div class="pname">2026-021 · Licht Studio K.</div><div class="pmeta">3 Dateien neu</div><span class="ptag" style="background:var(--people)">Licht</span></div>
+            <div class="proj-card"><div class="thumb" style="--tc:#EFE3C9"></div><div class="pname">2026-009 · Nachtrag Hustadt</div><div class="pmeta">Angebot offen</div><span class="ptag" style="background:var(--tasks)">Nachtrag</span></div>
+            <div class="proj-card"><div class="thumb" style="--tc:#DCE2EA"></div><div class="pname">2026-026 · Anfrage Berger</div><div class="pmeta">Neu diese Woche</div><span class="ptag" style="background:var(--cash)">Lead</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 2: Projekt-Detail -->
+<section class="station reverse" data-index="2">
+  <div class="kicker"><span class="num">02</span> · Projektarbeit</div>
+  <h2 class="title">Projekt-Detail</h2>
+  <div class="station-grid">
+    <div class="panel-col">
+      <div class="panel">
+        <div class="panel-chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="label">Küche Wagner · 2026-014</span></div>
+        <div class="panel-body">
+          <div class="detail-hero"><div class="htitle">Küche Wagner</div></div>
+          <div class="tabbar">
+            <span class="tabchip active">Übersicht</span>
+            <span class="tabchip">Angebote</span>
+            <span class="tabchip">Dateien</span>
+            <span class="tabchip">Assistent</span>
+            <span class="tabchip">Kalkulation</span>
+            <span class="tabchip">Timeline</span>
+          </div>
+          <div class="widget-board">
+            <div class="wtile"><span class="wtag" style="background:var(--drive)"></span><span class="wlabel">Drive · 6 Dateien</span></div>
+            <div class="wtile"><span class="wtag" style="background:var(--people)"></span><span class="wlabel">Termine · 2 diese Woche</span></div>
+            <div class="wtile"><span class="wtag" style="background:var(--tasks)"></span><span class="wlabel">Aufgaben · 3 offen</span></div>
+            <div class="wtile"><span class="wtag" style="background:var(--cash)"></span><span class="wlabel">Angebote · 1 wartet</span></div>
+            <div class="wtile"><span class="wtag" style="background:var(--personal)"></span><span class="wlabel">Notizen · 2</span></div>
+            <div class="wtile"><span class="wtag" style="background:var(--brand)"></span><span class="wlabel">Assistent</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="text-col">
+      <p class="lede">Jedes Projekt hat eine eigene Werkbank: Hero-Bild oben, darunter ein
+      Widget-Board mit „Übersicht" als Startpunkt und Tabs für alles Weitere.</p>
+      <ul class="points">
+        <li>Die Übersicht bündelt Drive, Kalender, Aufgaben, Angebote und Notizen als farbcodierte Kacheln.</li>
+        <li>Tabs führen tiefer: Angebote (PDFs), Dateien (voller Drive-Ordner), Assistent (projektbezogener Chat), Kalkulation, Timeline.</li>
+        <li>Alles read-only aus den echten Quellen — nichts wird in der App zweitgepflegt.</li>
+      </ul>
+      <div class="source-line"><span class="sw" style="background:var(--brand)"></span>Ein Projekt, eine Werkbank — kein Tab-Springen zwischen Tools</div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 3: Heute-Board -->
+<section class="station" data-index="3">
+  <div class="kicker"><span class="num">03</span> · Täglicher Einstieg</div>
+  <h2 class="title">Heute-Board</h2>
+  <div class="station-grid">
+    <div class="text-col">
+      <p class="lede">Das persönliche Cockpit für den Start in den Tag — projektübergreifend,
+      farbcodiert nach Quelle, mit dezenten Hinweisen statt lauten Benachrichtigungen.</p>
+      <ul class="points">
+        <li>Sechs Widget-Arten: Drive, Kalender, Aufgaben, Cash, Notizen, Mail — jedes mit sichtbarer Quellzeile.</li>
+        <li>Signale sind Vorschläge, keine Automatik: „Neues Angebot erkannt" wartet auf deinen Blick, bucht nichts von selbst.</li>
+        <li>Alles was du hier siehst, kommt aus deinem eigenen, angemeldeten Konto.</li>
+      </ul>
+      <div class="source-line"><span class="sw" style="background:var(--people)"></span>Quelle: Google Calendar/Mail · Drive · Clockodo · Sevdesk</div>
+    </div>
+    <div class="panel-col">
+      <div class="panel">
+        <div class="panel-chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="label">Heute · Mittwoch</span></div>
+        <div class="panel-body">
+          <div class="today-grid">
+            <div class="today-tile"><div class="thead"><span class="sw" style="background:var(--drive)"></span><span>Drive</span></div><div class="tline"></div><div class="tline"></div></div>
+            <div class="today-tile"><div class="thead"><span class="sw" style="background:var(--people)"></span><span>Kalender</span></div><div class="tline"></div><div class="tline"></div></div>
+            <div class="today-tile"><div class="thead"><span class="sw" style="background:var(--tasks)"></span><span>Aufgaben</span></div><div class="tline"></div><div class="tline"></div></div>
+            <div class="today-tile"><div class="thead"><span class="sw" style="background:var(--cash)"></span><span>Cash</span></div><div class="tline"></div><div class="tline"></div></div>
+          </div>
+          <div class="signal-strip"><span class="sdot"></span>Neues Angebot im Drive-Ordner „Küche Wagner" erkannt — ansehen?</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 4: Assistent -->
+<section class="station reverse" data-index="4">
+  <div class="kicker"><span class="num">04</span> · Gespräch statt Suche</div>
+  <h2 class="title">Assistent</h2>
+  <div class="station-grid">
+    <div class="panel-col">
+      <div class="panel">
+        <div class="panel-chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="label">Assistent · Küche Wagner</span></div>
+        <div class="panel-body">
+          <div class="chat-body">
+            <div class="bubble user">Wann war nochmal der letzte Termin mit Wagners?</div>
+            <div class="bubble bot">Letzter Kalendereintrag: Dienstag, 14:00 — „Aufmaß vor Ort". Danach kein neuer Termin gefunden.</div>
+            <div class="bubble card">
+              <div class="cardtitle"><span class="sw"></span>Vorschlag: Termin anlegen</div>
+              Soll ich einen Folgetermin „Küche Wagner · Materialabnahme" für nächste Woche vorschlagen?
+              <span class="cbtn">Bestätigen → Kalender</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="text-col">
+      <p class="lede">Ein echtes Sprachmodell (Claude), das deine Projekte kennt und in Mail,
+      Kalender und Drive lesend nachschauen kann — aber nie ohne dich schreibt.</p>
+      <ul class="points">
+        <li>Kontextbewusst: der Assistent weiß, in welchem Projekt du gerade bist.</li>
+        <li>Lesend verbunden mit Mail, Kalender, Drive — nichts wird automatisch verändert.</li>
+        <li>Jede schreibende Aktion läuft über eine Karte mit Bestätigung, danach ins Audit-Protokoll.</li>
+      </ul>
+      <div class="source-line"><span class="sw" style="background:var(--brand)"></span>Claude · read-only Google-Zugriff · Bestätigung vor jeder Schreibaktion</div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 5: Kalkulation -->
+<section class="station" data-index="5">
+  <div class="kicker"><span class="num">05</span> · Kosten einschätzen</div>
+  <h2 class="title">Kalkulation</h2>
+  <div class="station-grid">
+    <div class="text-col">
+      <p class="lede">Eine evidenzbasierte Kostenschätzung statt Bauchgefühl: Min, Mitte, Max —
+      mit sichtbarer Konfidenz und den Belegen, auf denen die Zahl beruht.</p>
+      <ul class="points">
+        <li>Freitext rein („Küche mit Insel, 12 Fronten, Naturstein"), Schätzspanne raus.</li>
+        <li>Konfidenz-Badge zeigt, wie tragfähig die Schätzung ist — abhängig von der Beleglage.</li>
+        <li>Bestätigte Anpassungen fließen zurück in den Lernbestand — die nächste Schätzung wird treffsicherer.</li>
+      </ul>
+      <div class="source-line"><span class="sw" style="background:var(--cash)"></span>Quelle: Preis-Beobachtungen · Gerätekatalog · gelernte Kalibrierung</div>
+    </div>
+    <div class="panel-col">
+      <div class="panel">
+        <div class="panel-chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="label">Kalkulation</span></div>
+        <div class="panel-body">
+          <div class="kalk-figure"><span class="mid">38.400 €</span><span class="range">Min 31.200 € · Max 46.800 €</span></div>
+          <div class="kalk-bar"><div class="fill"></div><div class="marker"></div></div>
+          <div class="confidence"><span class="cbadge">Konfidenz Hoch</span>basierend auf 24 vergleichbaren Belegen</div>
+          <div class="evidence-row"><span class="ev-src">Zulieferer A · Naturstein</span><span>9.800 €</span></div>
+          <div class="evidence-row"><span class="ev-src">Gerätekatalog · Einbau</span><span>6.200 €</span></div>
+          <div class="evidence-row"><span class="ev-src">Vergleichsprojekt 2025-031</span><span>22.400 €</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 6: Angebote & Dateien -->
+<section class="station reverse" data-index="6">
+  <div class="kicker"><span class="num">06</span> · Belege &amp; Ablage</div>
+  <h2 class="title">Angebote &amp; Dateien</h2>
+  <div class="station-grid">
+    <div class="panel-col">
+      <div class="panel">
+        <div class="panel-chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="label">Dateien · Küche Wagner</span></div>
+        <div class="panel-body">
+          <div class="filetree">
+            <div class="frow"><span class="ficon" style="background:var(--drive)"></span><span class="fname">01 Angebote</span></div>
+            <div class="frow indent"><span class="ficon" style="background:#EFE7DC"></span><span class="fname">Angebot_Wagner_v2.pdf</span><span class="pdf-chip">PDF</span></div>
+            <div class="frow indent"><span class="ficon" style="background:#EFE7DC"></span><span class="fname">Kostenvoranschlag_Naturstein.pdf</span><span class="fmeta">240 KB</span></div>
+            <div class="frow"><span class="ficon" style="background:var(--drive)"></span><span class="fname">02 Aufmaß</span></div>
+            <div class="frow indent"><span class="ficon" style="background:#EFE7DC"></span><span class="fname">Aufmaß_2026-06-24.pdf</span><span class="fmeta">1,1 MB</span></div>
+            <div class="frow"><span class="ficon" style="background:var(--drive)"></span><span class="fname">03 Renderings</span><span class="fmeta">4 Dateien</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="text-col">
+      <p class="lede">Angebots- und Rechnungs-PDFs auf einen Blick, der komplette Projektordner
+      als Finder-Baum daneben — beides read-only direkt aus Drive.</p>
+      <ul class="points">
+        <li>Angebote-Tab erkennt Belege automatisch am Dateinamen (Angebot/Rechnung/Kostenvoranschlag).</li>
+        <li>Dateien-Tab zeigt den vollen Ordnerbaum, Unterordner laden bei Bedarf nach.</li>
+        <li>Ein Klick öffnet die Datei im Original-Ordner im Browser — kein Download, kein Duplikat.</li>
+      </ul>
+      <div class="source-line"><span class="sw" style="background:var(--drive)"></span>Quelle: Google Drive, read-only</div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 7: Integrationen & Vertrauen -->
+<section class="station" data-index="7">
+  <div class="kicker"><span class="num">07</span> · Vertrauen als Fundament</div>
+  <h2 class="title">Integrationen &amp; Vertrauen</h2>
+  <div class="station-grid">
+    <div class="text-col">
+      <p class="lede">Sechs Verbindungen an einem Ort — jede einzeln steuerbar, nichts läuft
+      im Hintergrund unsichtbar mit.</p>
+      <ul class="points">
+        <li>Google, Airtable, Clockodo, ClickUp, Sevdesk, Claude — Status auf einen Blick, verbinden/trennen selbst in der Hand.</li>
+        <li>Local-first: die App läuft auf deinem Mac, nicht in einer fremden Cloud-Datenbank.</li>
+        <li>Jeder mit eigenem Konto. Geheimnisse ausschließlich im macOS-Schlüsselbund, nie im Code oder Log.</li>
+        <li>Team-Daten sind sauber getrennt — Kolleg:innen können deine privaten Zeiten/Chats nie kreuzlesen.</li>
+      </ul>
+    </div>
+    <div class="panel-col">
+      <div class="panel">
+        <div class="panel-chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="label">Integrationen</span></div>
+        <div class="panel-body">
+          <div class="integ-grid">
+            <div class="integ-tile"><div class="idot" style="background:var(--people)"></div><div class="iname">Google</div><div class="istatus">Verbunden</div></div>
+            <div class="integ-tile"><div class="idot" style="background:var(--tasks)"></div><div class="iname">Airtable</div><div class="istatus">Verbunden</div></div>
+            <div class="integ-tile"><div class="idot" style="background:var(--personal)"></div><div class="iname">Clockodo</div><div class="istatus">Verbunden</div></div>
+            <div class="integ-tile"><div class="idot" style="background:var(--tasks)"></div><div class="iname">ClickUp</div><div class="istatus">Verbunden</div></div>
+            <div class="integ-tile"><div class="idot" style="background:var(--cash)"></div><div class="iname">Sevdesk</div><div class="istatus">Verbunden</div></div>
+            <div class="integ-tile"><div class="idot" style="background:var(--brand)"></div><div class="iname">Claude</div><div class="istatus">Verbunden</div></div>
+          </div>
+          <div class="trust-line"><span class="lockicon">🔒</span>Geheimnisse nur im macOS-Schlüsselbund · nie im Code, Log oder Repo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABSCHLUSS: Wohin V10 -->
+<section class="station" data-index="8">
+  <div class="kicker"><span class="num">08</span> · Ausblick</div>
+  <h2 class="title">Wohin: Version 10</h2>
+  <div class="station-grid">
+    <div class="text-col">
+      <p class="lede">Der Moment, auf den alles hinausläuft: ein echter Auftrag läuft komplett
+      durch die App — vom ersten Fragebogen bis zur fertigen Rechnungszeile.</p>
+      <ul class="points">
+        <li>Fragebogen wird automatisch zu Kunde und Projekt.</li>
+        <li>Ein Warenkorb sammelt Positionen, während das Projekt wächst.</li>
+        <li>Ein Klick „Zum Angebot" erzeugt das fertige PDF — kein Copy-Paste in ein anderes Tool.</li>
+        <li>Nach Bestätigung landet die Zeile direkt im Cash-Widget.</li>
+      </ul>
+      <p style="margin-top:16px;"><span class="version-tag">Diese Preview: 9.0.0 · Ziel: V10</span></p>
+    </div>
+    <div class="panel-col">
+      <div class="panel">
+        <div class="panel-chrome"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="label">Auftrag, einmal durch</span></div>
+        <div class="panel-body">
+          <div class="flow-row">
+            <div class="flow-step"><div class="fnum">1</div>Fragebogen</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step"><div class="fnum">2</div>Projekt</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step"><div class="fnum">3</div>Warenkorb</div>
+          </div>
+          <div class="flow-row">
+            <div class="flow-step final"><div class="fnum">4</div>Zum Angebot → PDF</div>
+            <span class="flow-arrow">→</span>
+            <div class="flow-step"><div class="fnum">5</div>Cash-Zeile</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="footnote">
+  Stilisierte Darstellung — die echten Bildschirme siehst du in der App.<br>
+  <strong>mykilOS</strong> · Version 9.0.0 · Test-Preview
+</div>
+
+</div>
+
+<script>
+(function(){
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.station'));
+  var total = sections.length;
+  var current = 0;
+  var dotsEl = document.getElementById('dots');
+  var indicator = document.getElementById('stepIndicator');
+  var btnPrev = document.getElementById('btnPrev');
+  var btnNext = document.getElementById('btnNext');
+
+  sections.forEach(function(s, i){
+    var d = document.createElement('button');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.setAttribute('aria-label', 'Station ' + (i+1));
+    d.onclick = function(){ goTo(i); };
+    dotsEl.appendChild(d);
+  });
+
+  function render(){
+    sections.forEach(function(s, i){
+      s.classList.toggle('active', i === current);
+    });
+    var dots = dotsEl.querySelectorAll('.dot');
+    dots.forEach(function(d, i){ d.classList.toggle('active', i === current); });
+    indicator.textContent = (current+1) + ' / ' + total;
+    btnPrev.disabled = current === 0;
+    btnNext.disabled = current === total - 1;
+    window.scrollTo({top:0, behavior:'instant'});
+  }
+
+  function goTo(i){
+    current = Math.max(0, Math.min(total-1, i));
+    render();
+  }
+
+  window.mykNav = function(delta){ goTo(current + delta); };
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight') goTo(current+1);
+    if(e.key === 'ArrowLeft') goTo(current-1);
+  });
+
+  render();
+})();
+</script>

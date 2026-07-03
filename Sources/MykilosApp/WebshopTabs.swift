@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import MykilosDesign
 import MykilosServices
 import MykilosKit
@@ -26,6 +27,9 @@ struct ArtikelShopTab: View {
     @State private var anzahlProSeite: Int = 50
     @State private var seite: Int = 0           // 0-basiert
     @State private var zeigeKacheln: Bool = false
+    // Preislisten-Detailvorschau: Klick auf einen Artikel öffnet ein Detail-Sheet
+    // (großes Bild, alle Felder, EK/VK/Marge, „In den Warenkorb"). Nil = kein Sheet.
+    @State private var detailArtikel: ArtikelItem? = nil
 
     private static let preisFormatter: NumberFormatter = {
         let f = NumberFormatter()
@@ -122,6 +126,19 @@ struct ArtikelShopTab: View {
         .onChange(of: filterKategorie) { seite = 0 }
         .onChange(of: filterHersteller) { seite = 0 }
         .onChange(of: anzahlProSeite) { seite = 0 }
+        .sheet(item: $detailArtikel) { artikel in
+            ArtikelDetailSheet(
+                artikel: artikel,
+                lagerTreffer: lagerTreffenFuer(artikel),
+                preisFormatter: Self.preisFormatter,
+                onAddToCart: {
+                    warenkorb.addArtikel(artikel)
+                    warenkorb.showPanel = true
+                    detailArtikel = nil
+                },
+                onClose: { detailArtikel = nil }
+            )
+        }
     }
 
     // MARK: - Toolbar
@@ -193,6 +210,7 @@ struct ArtikelShopTab: View {
                 }
                 .buttonStyle(.plain)
                 .help("Listenansicht")
+                .accessibilityLabel("Listenansicht")
 
                 Button {
                     zeigeKacheln = true
@@ -206,6 +224,7 @@ struct ArtikelShopTab: View {
                 }
                 .buttonStyle(.plain)
                 .help("Kachelansicht")
+                .accessibilityLabel("Kachelansicht")
             }
             .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
             .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
@@ -220,6 +239,7 @@ struct ArtikelShopTab: View {
             }
             .buttonStyle(.plain)
             .help("Katalog neu laden")
+            .accessibilityLabel("Katalog neu laden")
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s4)
@@ -263,7 +283,8 @@ struct ArtikelShopTab: View {
                                 ergebnis: ergebnis,
                                 lagerTreffer: lagerTreffenFuer(ergebnis.artikel),
                                 preisFormatter: Self.preisFormatter,
-                                onAddToCart: { warenkorb.addArtikel($0); warenkorb.showPanel = true }
+                                onAddToCart: { warenkorb.addArtikel($0); warenkorb.showPanel = true },
+                                onOpenDetail: { detailArtikel = $0 }
                             )
                             Divider().overlay(MykColor.line.color)
                         }
@@ -295,7 +316,8 @@ struct ArtikelShopTab: View {
                                 ergebnis: ergebnis,
                                 lagerTreffer: lagerTreffenFuer(ergebnis.artikel),
                                 preisFormatter: Self.preisFormatter,
-                                onAddToCart: { warenkorb.addArtikel($0); warenkorb.showPanel = true }
+                                onAddToCart: { warenkorb.addArtikel($0); warenkorb.showPanel = true },
+                                onOpenDetail: { detailArtikel = $0 }
                             )
                         }
                     }
@@ -422,6 +444,7 @@ private struct ArtikelZeile: View {
     let lagerTreffer: AufLagerMatcherResult
     let preisFormatter: NumberFormatter
     let onAddToCart: (ArtikelItem) -> Void
+    let onOpenDetail: (ArtikelItem) -> Void
 
     @State private var isHovered = false
 
@@ -496,6 +519,9 @@ private struct ArtikelZeile: View {
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s2)
         .background(isHovered ? MykColor.paper2.color : Color.clear)
+        // Klick auf die Zeile (außerhalb des +Korb-Buttons) → Detail-Vorschau.
+        .contentShape(Rectangle())
+        .onTapGesture { onOpenDetail(ergebnis.artikel) }
         .onHover { isHovered = $0 }
         .animation(.easeInOut(duration: 0.12), value: isHovered)
     }
@@ -569,6 +595,215 @@ private struct ArtikelMiniaturBild: View {
     }
 }
 
+// MARK: - ArtikelDetailSheet (Preislisten-Detailvorschau)
+// Klick auf einen Artikel (Zeile oder Kachel) öffnet dieses Sheet: großes Produktbild,
+// alle Stammdaten, EK/VK/Marge und „In den Warenkorb". Read-only auf die Artikel-Daten —
+// kein Schreiben in die Airtable-Artikel-Tabelle (die ist Daniels Hoheit, read-only).
+@MainActor
+private struct ArtikelDetailSheet: View {
+    let artikel: ArtikelItem
+    let lagerTreffer: AufLagerMatcherResult
+    let preisFormatter: NumberFormatter
+    let onAddToCart: () -> Void
+    let onClose: () -> Void
+
+    /// Marge in % = (VK − EK) / VK · 100 — nur wenn beide Preise > 0.
+    private var margeProzent: Double? {
+        guard let ek = artikel.ekNetto, let vk = artikel.vkNetto, vk > 0 else { return nil }
+        return (vk - ek) / vk * 100
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            kopfzeile
+            produktbild
+            titelBlock
+            preisBlock
+            lagerZeile
+            Spacer(minLength: 0)
+            aktionen
+        }
+        .padding(MykSpace.s7)
+        .frame(width: 480, height: 640)
+        .background(MykColor.paper.color)
+    }
+
+    // MARK: Kopfzeile (Hersteller + Schließen)
+    private var kopfzeile: some View {
+        HStack {
+            Text((artikel.hersteller ?? "Artikel").uppercased())
+                .font(.mykMono(11))
+                .foregroundStyle(MykColor.muted.color)
+                .tracking(1.5)
+            Spacer()
+            Button { onClose() } label: {
+                Image(systemName: "xmark")
+                    .font(.mykCaption)
+                    .foregroundStyle(MykColor.faint.color)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Detailvorschau schließen")
+        }
+    }
+
+    // MARK: Produktbild (groß, klickbar → Browser)
+    @ViewBuilder
+    private var produktbild: some View {
+        Group {
+            if let urlStr = artikel.produktbildURL, let url = URL(string: urlStr) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().aspectRatio(contentMode: .fit)
+                    case .failure: bildPlatzhalter
+                    case .empty: ProgressView()
+                    @unknown default: bildPlatzhalter
+                    }
+                }
+                .onTapGesture { NSWorkspace.shared.open(url) }
+                .help("Produktbild im Browser öffnen")
+            } else {
+                bildPlatzhalter
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 220)
+        .background(MykColor.paper2.color)
+        .clipShape(RoundedRectangle(cornerRadius: MykRadius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: MykRadius.md)
+                .stroke(MykColor.line.color, lineWidth: 1)
+        )
+    }
+
+    private var bildPlatzhalter: some View {
+        Image(systemName: "photo")
+            .font(.mykDisplay)
+            .foregroundStyle(MykColor.faint.color)
+    }
+
+    // MARK: Titel + Meta-Chips
+    private var titelBlock: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s3) {
+            Text(artikel.artikelbeschreibung ?? artikel.artikelnummer)
+                .font(.mykHeadline)
+                .foregroundStyle(MykColor.ink.color)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: MykSpace.s2) {
+                metaChip(icon: "number", text: artikel.artikelnummer)
+                if let kat = artikel.kategorie, !kat.isEmpty {
+                    metaChip(icon: "tag", text: kat)
+                }
+            }
+        }
+    }
+
+    private func metaChip(icon: String, text: String) -> some View {
+        HStack(spacing: MykSpace.s2) {
+            Image(systemName: icon).font(.mykMono(9))
+            Text(text).font(.mykMono(10)).lineLimit(1)
+        }
+        .foregroundStyle(MykColor.muted.color)
+        .padding(.horizontal, MykSpace.s3)
+        .padding(.vertical, MykSpace.s2)
+        .background(MykColor.card.color)
+        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+        .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+    }
+
+    // MARK: Preis-Block (EK / VK / Marge)
+    private var preisBlock: some View {
+        HStack(spacing: MykSpace.s3) {
+            preisFeld(titel: "EK NETTO", wert: artikel.ekNetto, farbe: MykColor.muted)
+            preisFeld(titel: "VK MYKILOS", wert: artikel.vkNetto, farbe: MykColor.tasks)
+            margeFeld
+        }
+    }
+
+    private func preisFeld(titel: String, wert: Double?, farbe: MykColor) -> some View {
+        VStack(alignment: .leading, spacing: MykSpace.s2) {
+            Text(titel).font(.mykMono(9)).foregroundStyle(MykColor.faint.color).tracking(1)
+            Text(wert.flatMap { preisFormatter.string(from: NSNumber(value: $0)) } ?? "–")
+                .font(.mykHeadline)
+                .foregroundStyle(wert == nil ? MykColor.faint.color : farbe.color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(MykSpace.s4)
+        .background(MykColor.card.color)
+        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+    }
+
+    private var margeFeld: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s2) {
+            Text("MARGE").font(.mykMono(9)).foregroundStyle(MykColor.faint.color).tracking(1)
+            Text(margeProzent.map { String(format: "%.0f %%", $0) } ?? "–")
+                .font(.mykHeadline)
+                .foregroundStyle(margeProzent == nil ? MykColor.faint.color : MykColor.positive.color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(MykSpace.s4)
+        .background(MykColor.card.color)
+        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+    }
+
+    // MARK: Lager-Hinweis
+    @ViewBuilder
+    private var lagerZeile: some View {
+        if !lagerTreffer.exakt.isEmpty {
+            let bestand = lagerTreffer.exakt.first?.bestand
+            lagerHinweis(icon: "checkmark.circle.fill",
+                         text: bestand.map { "Auf Lager (\($0) Stück)" } ?? "Auf Lager",
+                         farbe: MykColor.positive)
+        } else if !lagerTreffer.aehnlich.isEmpty {
+            lagerHinweis(icon: "circle.dotted",
+                         text: "Ähnlicher Artikel im Lager",
+                         farbe: MykColor.people)
+        } else {
+            lagerHinweis(icon: "shippingbox",
+                         text: "Nicht am Lager — Bestellartikel",
+                         farbe: MykColor.muted)
+        }
+    }
+
+    private func lagerHinweis(icon: String, text: String, farbe: MykColor) -> some View {
+        HStack(spacing: MykSpace.s2) {
+            Image(systemName: icon).font(.mykCaption)
+            Text(text).font(.mykSmall)
+        }
+        .foregroundStyle(farbe.color)
+    }
+
+    // MARK: Aktionen
+    private var aktionen: some View {
+        HStack(spacing: MykSpace.s3) {
+            Button { onClose() } label: {
+                Text("Schließen")
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.muted.color)
+                    .padding(.horizontal, MykSpace.s5)
+                    .padding(.vertical, MykSpace.s3)
+                    .background(MykColor.card.color)
+                    .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+
+            Button { onAddToCart() } label: {
+                HStack(spacing: MykSpace.s2) {
+                    Image(systemName: "cart.badge.plus").font(.mykCaption)
+                    Text("In den Warenkorb").font(.mykSmall)
+                }
+                .foregroundStyle(MykColor.paper.color)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, MykSpace.s3)
+                .background(MykColor.tasks.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
 // MARK: - ArtikelKachel (Kachelansicht)
 
 @MainActor
@@ -577,6 +812,7 @@ private struct ArtikelKachel: View {
     let lagerTreffer: AufLagerMatcherResult
     let preisFormatter: NumberFormatter
     let onAddToCart: (ArtikelItem) -> Void
+    let onOpenDetail: (ArtikelItem) -> Void
 
     @State private var isHovered = false
 
@@ -656,6 +892,9 @@ private struct ArtikelKachel: View {
             RoundedRectangle(cornerRadius: MykRadius.md)
                 .stroke(isHovered ? MykColor.tasks.color.opacity(0.5) : MykColor.line.color, lineWidth: 1)
         )
+        // Klick auf die Kachel (außerhalb des Buttons) → Detail-Vorschau.
+        .contentShape(Rectangle())
+        .onTapGesture { onOpenDetail(ergebnis.artikel) }
         .onHover { isHovered = $0 }
         .animation(.easeInOut(duration: 0.12), value: isHovered)
     }
@@ -780,6 +1019,7 @@ struct LagerTab: View {
             }
             .buttonStyle(.plain)
             .help("Lagerliste neu laden")
+            .accessibilityLabel("Lagerliste neu laden")
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s4)
@@ -958,8 +1198,17 @@ struct WarenkorbListeTab: View {
 
     @State private var query: String = ""
     @State private var filterStatus: String? = nil   // nil = alle, "Aktuell", "Archiviert"
-    @State private var ausgewahlterEintrag: WarenkorbEintrag? = nil
-    @State private var zeigeWiederherstellungsBestaetigung = false
+    // Fix (2026-07-02, Johannes/Screenshot 17.48/17.49): „Vorschau"/„Wiederherstellen"
+    // öffneten ein LEERES weißes Sheet. Ursache waren ZWEI `.sheet(isPresented:)`-Modifier
+    // am selben View (bekannter SwiftUI-Konflikt → eines präsentiert leer) plus die Race,
+    // dass `ausgewahlterEintrag` beim Aufbau des Sheet-Inhalts noch nil sein konnte
+    // (`if let` schlug fehl → EmptyView). Jetzt EIN einziges `.sheet(item:)`, das den
+    // Eintrag samt Modus (Vorschau/Wiederherstellen) garantiert gebunden mitführt.
+    @State private var sheetKontext: WarenkorbSheetKontext? = nil
+    // Repeatable Dev-Checkout: unabhängig vom Vorschau/Wiederherstellen-Sheet, damit ein
+    // gespeicherter Warenkorb beliebig oft (erneut) lokal exportiert werden kann, ohne den
+    // bestehenden Airtable-Versand-Pfad zu berühren.
+    @State private var devCheckoutEintrag: WarenkorbEintrag? = nil
 
     private static let datumsFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -1019,19 +1268,32 @@ struct WarenkorbListeTab: View {
             }
         }
         .task { await store.load() }
-        .sheet(isPresented: $zeigeWiederherstellungsBestaetigung) {
-            if let eintrag = ausgewahlterEintrag {
-                WarenkorbWiederherstellungsSheet(
-                    eintrag: eintrag,
-                    warenkorb: warenkorb,
-                    datumsFormatter: Self.datumsFormatter,
-                    preisFormatter: Self.preisFormatter,
-                    onDismiss: {
-                        zeigeWiederherstellungsBestaetigung = false
-                        ausgewahlterEintrag = nil
-                    }
-                )
-            }
+        // EIN einziges item-getriebenes Sheet für Vorschau UND Wiederherstellen.
+        // Der `previewOnly`-Modus steckt im Kontext, damit ein Klick auf „Vorschau"
+        // nie versehentlich den aktiven Warenkorb ersetzt. Weil `.sheet(item:)` erst
+        // präsentiert, sobald der Kontext gesetzt ist, ist der Eintrag garantiert da —
+        // kein leeres weißes Sheet mehr.
+        .sheet(item: $sheetKontext) { kontext in
+            WarenkorbWiederherstellungsSheet(
+                eintrag: kontext.eintrag,
+                warenkorb: warenkorb,
+                datumsFormatter: Self.datumsFormatter,
+                preisFormatter: Self.preisFormatter,
+                previewOnly: kontext.previewOnly,
+                onDismiss: { sheetKontext = nil }
+            )
+        }
+        .sheet(item: $devCheckoutEintrag) { eintrag in
+            let items = eintrag.decodedItems() ?? []
+            DevCheckoutSheet(
+                quelle: "gespeicherter-warenkorb:\(eintrag.id)",
+                bezeichnung: eintrag.bezeichnung,
+                projekt: eintrag.projekt,
+                positionen: items.map { $0.devExportPosition },
+                summeEKNetto: eintrag.gesamtEK,
+                summeVKNetto: eintrag.gesamtVK,
+                onDismiss: { devCheckoutEintrag = nil }
+            )
         }
     }
 
@@ -1081,6 +1343,7 @@ struct WarenkorbListeTab: View {
             }
             .buttonStyle(.plain)
             .help("Warenkörbe neu laden")
+            .accessibilityLabel("Warenkörbe neu laden")
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s4)
@@ -1101,7 +1364,7 @@ struct WarenkorbListeTab: View {
                 Text("Pos.").frame(width: 40, alignment: .trailing)
                 Text("EK netto").frame(width: 90, alignment: .trailing)
                 Text("VK netto").frame(width: 90, alignment: .trailing)
-                Text("").frame(width: 110) // Wiederherstellen
+                Text("").frame(width: 210) // Vorschau + Wiederherstellen + Checkout (Dev)
             }
             .font(.mykMono(9))
             .foregroundStyle(MykColor.muted.color)
@@ -1125,9 +1388,14 @@ struct WarenkorbListeTab: View {
                                 eintrag: eintrag,
                                 datumsFormatter: Self.datumsFormatter,
                                 preisFormatter: Self.preisFormatter,
+                                onVorschau: {
+                                    sheetKontext = WarenkorbSheetKontext(eintrag: eintrag, previewOnly: true)
+                                },
                                 onWiederherstellen: {
-                                    ausgewahlterEintrag = eintrag
-                                    zeigeWiederherstellungsBestaetigung = true
+                                    sheetKontext = WarenkorbSheetKontext(eintrag: eintrag, previewOnly: false)
+                                },
+                                onCheckout: {
+                                    devCheckoutEintrag = eintrag
                                 }
                             )
                             Divider().overlay(MykColor.line.color)
@@ -1160,7 +1428,9 @@ private struct WarenkorbZeile: View {
     let eintrag: WarenkorbEintrag
     let datumsFormatter: DateFormatter
     let preisFormatter: NumberFormatter
+    let onVorschau: () -> Void
     let onWiederherstellen: () -> Void
+    let onCheckout: () -> Void
 
     @State private var isHovered = false
 
@@ -1227,29 +1497,47 @@ private struct WarenkorbZeile: View {
             .frame(width: 90, alignment: .trailing)
 
             if eintrag.positionenJSON != nil {
-                Button {
-                    onWiederherstellen()
-                } label: {
-                    HStack(spacing: MykSpace.s2) {
-                        Image(systemName: "arrow.clockwise.circle")
-                            .font(.mykCaption)
-                        Text("Wiederherstellen")
-                            .font(.mykMono(9))
+                HStack(spacing: MykSpace.s2) {
+                    // Neutrale Vorschau — öffnet dieselben Positionen read-only,
+                    // ändert den aktiven Warenkorb NIE (Härtung 2026-07-02).
+                    // Erster Nutzer des neuen MykIconButton (A11y: Pflicht-Label).
+                    MykIconButton("eye", label: "Vorschau — lädt nichts in den aktiven Warenkorb",
+                                  style: .bordered) {
+                        onVorschau()
                     }
-                    .foregroundStyle(MykColor.paper.color)
-                    .padding(.horizontal, MykSpace.s3)
-                    .padding(.vertical, MykSpace.s2)
-                    .background(MykColor.cash.color)
-                    .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+
+                    Button {
+                        onWiederherstellen()
+                    } label: {
+                        HStack(spacing: MykSpace.s2) {
+                            Image(systemName: "arrow.clockwise.circle")
+                                .font(.mykCaption)
+                            Text("Wiederherstellen")
+                                .font(.mykMono(9))
+                        }
+                        .foregroundStyle(MykColor.paper.color)
+                        .padding(.horizontal, MykSpace.s3)
+                        .padding(.vertical, MykSpace.s2)
+                        .background(MykColor.cash.color)
+                        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                    }
+                    .buttonStyle(.plain)
+                    .opacity(isHovered ? 1.0 : 0.7)
+
+                    // Wiederholbarer lokaler Dev-Export — funktioniert auch ohne
+                    // positionenJSON nicht (Positionen kommen aus decodedItems()),
+                    // daher nur sichtbar, wenn positionenJSON vorhanden ist.
+                    MykIconButton("shippingbox", label: "Checkout (Dev) — lokaler Export, kein Airtable-Schreiben",
+                                  style: .bordered) {
+                        onCheckout()
+                    }
                 }
-                .buttonStyle(.plain)
-                .frame(width: 110, alignment: .center)
-                .opacity(isHovered ? 1.0 : 0.7)
+                .frame(width: 210, alignment: .center)
             } else {
                 Text("–")
                     .font(.mykMono(9))
                     .foregroundStyle(MykColor.faint.color)
-                    .frame(width: 110, alignment: .center)
+                    .frame(width: 210, alignment: .center)
             }
         }
         .font(.mykMono(10))
@@ -1261,6 +1549,16 @@ private struct WarenkorbZeile: View {
     }
 }
 
+// MARK: - WarenkorbSheetKontext
+// Identifiable-Kontext, der Eintrag + Modus (Vorschau/Wiederherstellen) bündelt und
+// so das item-getriebene Sheet speist. Bewusst pro Modus eine eigene `id`, damit ein
+// direkter Wechsel Vorschau→Wiederherstellen (oder umgekehrt) das Sheet neu aufbaut.
+private struct WarenkorbSheetKontext: Identifiable {
+    let eintrag: WarenkorbEintrag
+    let previewOnly: Bool
+    var id: String { "\(previewOnly ? "preview" : "restore")-\(eintrag.id)" }
+}
+
 // MARK: - WarenkorbWiederherstellungsSheet
 @MainActor
 private struct WarenkorbWiederherstellungsSheet: View {
@@ -1268,12 +1566,16 @@ private struct WarenkorbWiederherstellungsSheet: View {
     @Bindable var warenkorb: WarenkorbState
     let datumsFormatter: DateFormatter
     let preisFormatter: NumberFormatter
+    /// Härtung (2026-07-02): true = reine Ansicht, „In Warenkorb laden" entfällt komplett —
+    /// der aktive Warenkorb wird nie angefasst. Deckt die fehlende Vorschau-Funktion ab,
+    /// ohne den bestehenden, funktionierenden Wiederherstellungs-Pfad zu verändern.
+    var previewOnly: Bool = false
     let onDismiss: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
             VStack(alignment: .leading, spacing: MykSpace.s2) {
-                Text("Warenkorb wiederherstellen")
+                Text(previewOnly ? "Warenkorb — Vorschau" : "Warenkorb wiederherstellen")
                     .font(.mykHeadline)
                     .foregroundStyle(MykColor.ink.color)
                 Text(eintrag.bezeichnung)
@@ -1314,45 +1616,69 @@ private struct WarenkorbWiederherstellungsSheet: View {
 
                 Divider().overlay(MykColor.line.color)
             } else {
-                Text("Positionen konnten nicht geladen werden (kein JSON).")
-                    .font(.mykSmall)
-                    .foregroundStyle(MykColor.muted.color)
+                // Kein leeres Nichts: klarer Hinweis, wenn dieser Warenkorb keine
+                // (dekodierbaren) Positionen mitbringt — statt eines weißen Sheets.
+                VStack(alignment: .leading, spacing: MykSpace.s2) {
+                    Label("Keine Positionen hinterlegt", systemImage: "tray")
+                        .font(.mykSmall)
+                        .foregroundStyle(MykColor.ink.color)
+                    Text("Für diesen Warenkorb liegen keine (lesbaren) Positionen vor. "
+                         + "Er wurde vermutlich ohne Positionen-JSON gespeichert.")
+                        .font(.mykMono(9))
+                        .foregroundStyle(MykColor.muted.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, MykSpace.s4)
+
+                Divider().overlay(MykColor.line.color)
             }
 
-            Text("Dieser Warenkorb wird in deinen aktiven Warenkorb geladen. Danach kannst du Artikel ergänzen und einen neuen Warenkorb speichern (append-only — der alte bleibt erhalten).")
-                .font(.mykSmall)
-                .foregroundStyle(MykColor.muted.color)
-                .fixedSize(horizontal: false, vertical: true)
+            if previewOnly {
+                Text("Reine Vorschau — der aktive Warenkorb wird NICHT verändert.")
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.muted.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text("Dieser Warenkorb wird in deinen aktiven Warenkorb geladen. Danach kannst du Artikel ergänzen und einen neuen Warenkorb speichern (append-only — der alte bleibt erhalten).")
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.muted.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             HStack(spacing: MykSpace.s4) {
                 Spacer()
-                Button("Abbrechen") { onDismiss() }
+                Button(previewOnly ? "Schließen" : "Abbrechen") { onDismiss() }
                     .buttonStyle(.plain)
                     .font(.mykSmall)
                     .foregroundStyle(MykColor.muted.color)
 
-                Button("In Warenkorb laden") {
-                    if let items = eintrag.decodedItems() {
-                        warenkorb.leeren()
-                        for item in items {
-                            warenkorb.addWarenkorbItem(item)
+                if previewOnly == false {
+                    Button("In Warenkorb laden") {
+                        if let items = eintrag.decodedItems() {
+                            warenkorb.leeren()
+                            for item in items {
+                                warenkorb.addWarenkorbItem(item)
+                            }
+                            warenkorb.showPanel = true
                         }
-                        warenkorb.showPanel = true
+                        onDismiss()
                     }
-                    onDismiss()
+                    .buttonStyle(.plain)
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.paper.color)
+                    .padding(.horizontal, MykSpace.s5)
+                    .padding(.vertical, MykSpace.s3)
+                    .background(MykColor.cash.color)
+                    .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                    .disabled(eintrag.positionenJSON == nil)
                 }
-                .buttonStyle(.plain)
-                .font(.mykSmall)
-                .foregroundStyle(MykColor.paper.color)
-                .padding(.horizontal, MykSpace.s5)
-                .padding(.vertical, MykSpace.s3)
-                .background(MykColor.cash.color)
-                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
-                .disabled(eintrag.positionenJSON == nil)
             }
         }
         .padding(MykSpace.s9)
-        .frame(minWidth: 480, maxWidth: 560)
+        // Feste Mindestgröße, damit das Sheet auf macOS nie auf einen leeren
+        // weißen Kasten kollabiert (auch bei leeren Positionen).
+        .frame(minWidth: 480, idealWidth: 520, maxWidth: 560, minHeight: 360)
         .background(MykColor.paper.color)
     }
 }

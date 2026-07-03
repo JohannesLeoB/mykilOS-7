@@ -11,6 +11,7 @@ import MykilosWidgets
 struct TodayView: View {
     @Environment(AppState.self) private var appState
     @Environment(StudioContext.self) private var context
+    @State private var showWidgetSelector = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -26,6 +27,7 @@ struct TodayView: View {
                         if context.signals.isEmpty == false {
                             signalStrip
                         }
+                        HeuteAnstehendView()
                         HomeBoardView(
                             boardStore: appState.homeBoard,
                             noteStore:  appState.homeNotes
@@ -64,6 +66,25 @@ struct TodayView: View {
                     .tracking(0.5)
             }
             Spacer()
+            // Widget-Selektor für das Heute-Board (frei ein-/ausblenden + Größe).
+            Button { showWidgetSelector.toggle() } label: {
+                HStack(spacing: MykSpace.s2) {
+                    Image(systemName: "square.grid.2x2").font(.mykMono(11))
+                    Text("Widgets").font(.mykMono(11))
+                }
+                .foregroundStyle(MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s3)
+                .padding(.vertical, MykSpace.s2)
+                .background(MykColor.card.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .help("Widgets der Heute-Ansicht ein-/ausblenden und Größe wählen")
+            .accessibilityLabel("Widgets konfigurieren")
+            .popover(isPresented: $showWidgetSelector, arrowEdge: .bottom) {
+                WidgetSelectorView(boardStore: appState.homeBoard, kinds: WidgetBoardDefault.homeSelectableKinds)
+            }
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s5)

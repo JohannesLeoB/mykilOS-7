@@ -61,8 +61,20 @@ public struct ClaudeToolDefinition: Encodable, Equatable {
     public let name: String
     public let description: String
     public let inputSchema: InputSchema
+    // Härtung (2026-07-01, API-Effizienz-Audit): Prompt-Caching-Breakpoint. Wird nur
+    // von `ClaudeChatClient.buildRequest` auf dem letzten Tool der Liste gesetzt —
+    // hier als optionales, mutierbares Feld mit `nil`-Default, damit alle bestehenden
+    // Konstruktor-Aufrufe (Tool-Registry, Tests) unverändert bleiben.
+    public var cacheControl: ClaudeCacheControl?
 
-    enum CodingKeys: String, CodingKey { case name, description, inputSchema = "input_schema" }
+    public init(name: String, description: String, inputSchema: InputSchema, cacheControl: ClaudeCacheControl? = nil) {
+        self.name = name
+        self.description = description
+        self.inputSchema = inputSchema
+        self.cacheControl = cacheControl
+    }
+
+    enum CodingKeys: String, CodingKey { case name, description, inputSchema = "input_schema", cacheControl = "cache_control" }
 
     public struct InputSchema: Encodable, Equatable {
         public let type = "object"
@@ -110,9 +122,20 @@ public struct SearchGmailTool: AssistantTool {
     }
 
     public let name = "search_gmail"
+    // Härtung (2026-07-02): reale Beobachtung — bei unklaren Absendernamen (z. B. Umlaut-
+    // Varianten "häfele"/"haefele"/"hafele") baute das Modell wiederholt unklammerte,
+    // mehrteilige OR-Ketten ("from:x OR y freitext OR z"), die Gmail falsch parst (OR muss
+    // großgeschrieben UND bei gemischten Bedingungen geklammert sein) — jeder Versuch lief
+    // ins Leere, bis die Runde ohne Ergebnis aufgab. Der Client/das Encoding war nie das
+    // Problem (URLComponents kodiert Umlaute korrekt), nur die fehlende Anleitung hier.
     public let description =
         "Durchsucht die E-Mails des Nutzers (nur lesen). Verwende Gmail-Suchsyntax im query, "
         + "z. B. 'from:gesa', 'to:gesa subject:Angebot', 'newer_than:30d', 'after:2025/01/01'. "
+        + "WICHTIG bei Alternativen: 'OR' IMMER großgeschrieben und bei gemischten Bedingungen "
+        + "klammern, z. B. 'from:(häfele OR haefele OR hafele) (Angebot OR Besteckeinsatz)' — "
+        + "NIEMALS unklammertes 'from:x OR y freitext OR z' (wird falsch geparst). Bei Namen "
+        + "mit Umlaut/Schreibvarianten zuerst eine EINFACHE Suche ohne OR probieren (z. B. nur "
+        + "'from:häfele'), bevor komplexere OR-Ketten versucht werden. "
         + "Gibt Treffer mit Betreff, Absender und Datum zurück. Für einen Rückblick über mehr "
         + "Mails 'anzahl' erhöhen (Standard 25, max 100)."
     public var parameters: [ToolParameter] {
@@ -1315,7 +1338,10 @@ struct CreateAirtableKontaktTool: AssistantTool {
          ToolParameter(name: "email",        description: "E-Mail (optional)", required: false),
          ToolParameter(name: "telefon",      description: "Telefon (optional)", required: false),
          ToolParameter(name: "adresse",      description: "Adresse (optional)", required: false),
-         ToolParameter(name: "kategorie",    description: "Kategorie: Projektkunde / Lieferant / Handwerker / Architekt-Planer / MYKILOS-Team / Sonstige",
+         // Härtung (2026-07-01, Audit): "Architekt/Planer" (Schrägstrich) ist die echte, live
+         // über die Mastermind-Base bestätigte Select-Option — "Architekt-Planer" (Bindestrich)
+         // hätte hier (kein typecast auf diesem Schreibpfad) einen HTTP 422 ausgelöst.
+         ToolParameter(name: "kategorie",    description: "Kategorie: Projektkunde / Lieferant / Handwerker / Architekt/Planer / MYKILOS-Team / Sonstige",
                        required: false)]
     }
 

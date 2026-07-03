@@ -64,6 +64,20 @@ struct AssistantGroundingTests {
         #expect(prompt.contains("Design & Projektleitung"))
     }
 
+    // V10 Folge-Block B: Anti-Impersonation-Minimalguard. Der Assistent muss
+    // den aktiven Nutzer-Kontext klar benennen und darf nie im Namen anderer
+    // Teammitglieder sprechen — Per-User-Datenisolation gilt auch für den
+    // System-Prompt selbst, nicht nur für die Daten, die er sieht.
+    @Test func promptVerankertAntiImpersonationMitProfilnamen() {
+        let profile = UserProfile(displayName: "Jilliana", role: "Innenarchitektur", updatedAt: Date())
+        let prompt = AssistantGrounding.systemPrompt(
+            profile: profile,
+            focusedProjectID: nil, signals: [], projects: [], now: montag29Juni2026()
+        )
+        #expect(prompt.contains("Du handelst ausschließlich für Jilliana"))
+        #expect(prompt.contains("Sprich nie im Namen anderer Teammitglieder"))
+    }
+
     @Test func promptOhneProfilNenntKeinenNamen() {
         let prompt = AssistantGrounding.systemPrompt(
             profile: nil,

@@ -2,12 +2,59 @@ import Foundation
 import MykilosKit
 
 // MARK: - AirtableError
-public enum AirtableError: Error, Sendable, Equatable {
+// Fix (2026-07-01, Live-Untersuchung Warenkorb-Versand): ohne LocalizedError-
+// Konformität bridged Swift jeden AirtableError generisch zu NSError mit
+// domain=Typname + code=0 — die UI zeigte deshalb "AirtableError error 0" statt
+// der echten Ursache (z. B. HTTP 422). Jetzt zeigt jeder Call-Site dieselbe
+// aussagekräftige Meldung wie der bereits korrekte Fragebogen-Pfad (IntakeSchreibFehler).
+public enum AirtableError: Error, LocalizedError, Sendable, Equatable {
     case notConnected
     case invalidResponse
     case httpError(Int)
+    /// Härtung (2026-07-01, dritter unerklärter 422 in Folge): `httpError` trug bisher NUR
+    /// den HTTP-Status — Airtables Antwort-Body (der das konkrete Feld + den Grund nennt,
+    /// z. B. "Field \"Projektart\" cannot accept the provided value") wurde stillschweigend
+    /// verworfen. Jede weitere 422-Ursache musste deshalb blind erraten werden. Jetzt wird der
+    /// Body, wo vorhanden, mitgetragen — der Fehler diagnostiziert sich selbst.
+    case validationFailed(Int, String)
     case decodingFailed
     case invalidBaseID(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .notConnected:
+            return "Airtable nicht verbunden — Personal Access Token in den Einstellungen eintragen."
+        case .invalidResponse:
+            return "Airtable-Antwort ungültig (keine HTTP-Antwort erhalten)."
+        case .httpError(let code):
+            return "Airtable-Fehler HTTP \(code)"
+        case .validationFailed(let code, let message):
+            return "Airtable-Fehler HTTP \(code): \(message)"
+        case .decodingFailed:
+            return "Airtable-Antwort konnte nicht gelesen werden (Decoding fehlgeschlagen)."
+        case .invalidBaseID(let msg):
+            return "Schreibschutz verletzt: \(msg)"
+        }
+    }
+
+    /// Wirft `.validationFailed` mit dem aus dem Airtable-Fehler-Body extrahierten Text,
+    /// falls vorhanden (Format `{"error":{"type":...,"message":...}}`), sonst `.httpError`
+    /// mit nur dem Status-Code (z. B. wenn der Body leer/kein JSON ist).
+    static func throwForFailedResponse(statusCode: Int, body: Data) throws -> Never {
+        if let message = Self.extractErrorMessage(from: body) {
+            throw AirtableError.validationFailed(statusCode, message)
+        }
+        throw AirtableError.httpError(statusCode)
+    }
+
+    /// `internal` statt `private` — pur/testbar (siehe AirtableClientTests).
+    static func extractErrorMessage(from body: Data) -> String? {
+        struct ErrorBody: Decodable { struct Inner: Decodable { let type: String?; let message: String? }; let error: Inner? }
+        guard let decoded = try? JSONDecoder().decode(ErrorBody.self, from: body) else { return nil }
+        if let message = decoded.error?.message, message.isEmpty == false { return message }
+        if let type = decoded.error?.type, type.isEmpty == false { return type }
+        return nil
+    }
 }
 
 // MARK: - AirtableFetching
@@ -27,6 +74,17 @@ public protocol AirtableRecordCreating: Sendable {
 // KEIN DELETE. Wirft `invalidBaseID`, wenn Base/Tabelle nicht auf der Whitelist.
 public protocol AirtableRecordUpdating: Sendable {
     func updateRecord(baseID: String, table: String, recordID: String, fields: [String: AirtableFieldValue]) async throws
+}
+
+// MARK: - AirtableRecordDeleting
+// mykilOS 8, Block A: NUR für TEST-Sandbox-Cleanup (HANDOFF_TEST_SANDBOX.md §2/§5).
+// Bewusst ein EIGENES, von `AirtableRecordCreating`/`-Updating` getrenntes Protokoll
+// — kein Aufrufer „stolpert versehentlich" über eine Delete-Fähigkeit. Geprüft gegen
+// `AirtableClient.testDeletableMap`, eine eigene, von `writableMap` UNABHÄNGIGE und
+// absichtlich winzige Whitelist (Stand 2026-06-30: LEER — es gibt noch keine echte
+// TEST-Tabelle; Block D befüllt sie, wenn S4-Provisioning TEST-Artefakte erzeugt).
+public protocol AirtableRecordDeleting: Sendable {
+    func deleteRecord(baseID: String, table: String, recordID: String) async throws
 }
 
 // MARK: - AirtableFieldValue
@@ -87,14 +145,16 @@ public enum AirtableFieldValue: Sendable, Equatable, Decodable {
 }
 
 // MARK: - AirtableClient
-public struct AirtableClient: AirtableFetching, AirtableRecordCreating, AirtableRecordUpdating {
+public struct AirtableClient: AirtableFetching, AirtableRecordCreating, AirtableRecordUpdating, AirtableRecordDeleting {
     private let credentialsStore: AirtableCredentialsStoring
     private let session: URLSession
     private let apiBase = "https://api.airtable.com/v0"
 
     // MARK: NO-GO-Schreibgrenzen (unverhandelbar)
     // Geschrieben wird AUSSCHLIESSLICH in explizit freigegebene Bases und Tabellen.
-    // Nie die geteilte Base (appkPzoEiI5eSMkNK), nie fremde Bases, kein DELETE.
+    // appkPzoEiI5eSMkNK ist freigegeben (nicht mehr tabu), aber noch nicht in
+    // writableMap aufgenommen — reine Implementierungs-Entscheidung, keine Sperre.
+    // Nie fremde, nicht in writableMap gelistete Bases, kein DELETE.
     //
     // Freigegebene Bases + Tabellen (Stand 2026-06-30):
     //   appuVMh3KDfKw4OoQ  — Mastermind (eigene Schaltzentrale)
@@ -114,6 +174,11 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
         "appuVMh3KDfKw4OoQ": [
             "Datenstrom-Handbuch", "Datenstrom-Log",
             "Kontakte",            // S19: Kontakt anlegen/aktualisieren
+            "TEST-Projekte",       // Block D (S4): ProjektProvisioningService-Live-Test-Sandbox
+                                   // (tblj1OXFt0nOqgq0P, angelegt 2026-07-01, NUR TEST_-Records)
+            "Projekte",            // Fragebogen-Live-Provisionierung (2026-07-01, Johannes freigegeben):
+                                   // echter Routing-Eintrag für ein neu angelegtes Projekt (tblGJR13OliFt6Ewi,
+                                   // bisher NUR aus Drive-Scan befüllt). Quelle="Fragebogen" (neue Select-Option).
         ],
         // Artikel & Einkauf (Webshop-Phase 1, gated, von Johannes freigegeben 2026-06-30)
         // Intake-Fragebogen legt neue Kunden- + Projekt-Records an (append-only, gated, Record-Link gültig).
@@ -125,11 +190,24 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
             "Projekte",        // Intake: neues Projekt anlegen (tblOXF9Cv8Jze6595, gated)
             "Kunden",          // Intake: neuen Kunden anlegen (tblImZ3fKYBXBT7Wb, gated)
         ],
+        // mykilOS-Backup (Write-Shadow-Spiegel, von Johannes 2026-06-30 live angelegt).
+        // AUSSCHLIESSLICH append-only über WriteShadowRecorder — niemals PATCH (kein
+        // updateRecord-Aufrufer nutzt diese Base), niemals DELETE (kein Pfad existiert).
+        "app56DTbSoqPvZhom": [
+            "Write-Shadow-Log",   // tblYQVdeHP2Zvgt8m — Tabellenname unverifiziert, MCP sieht die Base nicht
+        ],
+        // mykilOS-Adapter Clockodo (Multi-Base-Architektur v2, appuQDCFGLmjo2L6T,
+        // 2026-07-01 von Johannes freigegeben). NUR Zeitbuchungen (append-only, "vorgebuchte"
+        // Timer-Segmente) — Clockodo-Leistungen/Kostenstellen sind Stammdaten, nur direkt in
+        // Airtable editierbar, kein App-Schreibpfad dafür.
+        "appuQDCFGLmjo2L6T": [
+            "Zeitbuchungen",   // tbllYkxcHzI2YMUqn
+        ],
     ]
 
     /// Prüft, ob Base + Tabelle auf der Schreib-Whitelist stehen.
     /// Wird von createRecord und updateRecord verwendet.
-    static func isWritable(baseID: String, table: String) -> Bool {
+    public static func isWritable(baseID: String, table: String) -> Bool {
         writableMap[baseID]?.contains(table) == true
     }
 
@@ -159,7 +237,7 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
 
             let (data, response) = try await session.data(for: request)
             guard let http = response as? HTTPURLResponse else { throw AirtableError.invalidResponse }
-            guard (200...299).contains(http.statusCode) else { throw AirtableError.httpError(http.statusCode) }
+            guard (200...299).contains(http.statusCode) else { try AirtableError.throwForFailedResponse(statusCode: http.statusCode, body: data) }
 
             let page = try Self.parsePage(from: data)
             allRecords.append(contentsOf: page.records)
@@ -176,6 +254,13 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
     /// kein Schreiben in Projekt-/Kunden-/Kalkulationsdaten, kein Schreiben in
     /// fremde Basen. Gibt die neue Record-ID zurück.
     public func createRecord(baseID: String, table: String, fields: [String: AirtableFieldValue]) async throws -> String {
+        try await createRecord(baseID: baseID, table: table, fields: fields, typecast: false)
+    }
+
+    /// `typecast: true` lässt Airtable eine fehlende Single-Select-Option automatisch anlegen
+    /// (z. B. ein neuer, bewusst mit Johannes abgestimmter „Quelle"-Wert), statt mit 422
+    /// abzulehnen. NUR für vorab abgestimmte, bewusst neue Werte nutzen — sonst Default `false`.
+    public func createRecord(baseID: String, table: String, fields: [String: AirtableFieldValue], typecast: Bool) async throws -> String {
         guard Self.isWritable(baseID: baseID, table: table) else {
             throw AirtableError.invalidBaseID("Schreiben in \(table)@\(baseID) nicht erlaubt — Whitelist: \(Self.writableMap)")
         }
@@ -191,12 +276,13 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
         request.httpMethod = "POST"
         request.setValue("Bearer \(credentials.pat)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let payload: [String: Any] = ["records": [["fields": fields.mapValues(\.jsonValue)]]]
+        var payload: [String: Any] = ["records": [["fields": fields.mapValues(\.jsonValue)]]]
+        if typecast { payload["typecast"] = true }
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
 
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw AirtableError.invalidResponse }
-        guard (200...299).contains(http.statusCode) else { throw AirtableError.httpError(http.statusCode) }
+        guard (200...299).contains(http.statusCode) else { try AirtableError.throwForFailedResponse(statusCode: http.statusCode, body: data) }
         let decoded = try? JSONDecoder().decode(CreateRecordResponse.self, from: data)
         return decoded?.records.first?.id ?? ""
     }
@@ -207,6 +293,16 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
     /// wenn Base oder Tabelle nicht auf der Whitelist — kein Schreiben in fremde Bases.
     /// Gibt nur geänderte Felder mit — Felder, die nicht im Dict stehen, bleiben unverändert.
     public func updateRecord(baseID: String, table: String, recordID: String, fields: [String: AirtableFieldValue]) async throws {
+        try await updateRecord(baseID: baseID, table: table, recordID: recordID, fields: fields, typecast: false)
+    }
+
+    /// Härtung (2026-07-01, Audit): eigene Überladung NUR auf dem konkreten Typ (nicht Teil
+    /// von `AirtableRecordUpdating`, daher keine Änderung an bestehenden Protokoll-Aufrufern/
+    /// Test-Fakes nötig) — für den Fall, dass ein PATCH einen NEUEN Select-Optionswert setzt
+    /// (z. B. Phase="Lead"/Quelle="Fragebogen" beim Vervollständigen eines unvollständigen
+    /// Routing-Eintrags). Ohne dies würde ein PATCH mit einem noch nicht existierenden
+    /// Optionswert denselben HTTP-422-Fehler werfen wie ein CREATE ohne typecast.
+    public func updateRecord(baseID: String, table: String, recordID: String, fields: [String: AirtableFieldValue], typecast: Bool) async throws {
         guard Self.isWritable(baseID: baseID, table: table) else {
             throw AirtableError.invalidBaseID("Schreiben in \(table)@\(baseID) nicht erlaubt — Whitelist: \(Self.writableMap)")
         }
@@ -221,12 +317,47 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
         request.httpMethod = "PATCH"
         request.setValue("Bearer \(credentials.pat)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let payload: [String: Any] = ["fields": fields.mapValues(\.jsonValue)]
+        var payload: [String: Any] = ["fields": fields.mapValues(\.jsonValue)]
+        if typecast { payload["typecast"] = true }
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
 
-        let (_, response) = try await session.data(for: request)
+        let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw AirtableError.invalidResponse }
-        guard (200...299).contains(http.statusCode) else { throw AirtableError.httpError(http.statusCode) }
+        guard (200...299).contains(http.statusCode) else { try AirtableError.throwForFailedResponse(statusCode: http.statusCode, body: data) }
+    }
+
+    // MARK: - Löschpfad (NUR TEST-Sandbox-Cleanup, Block A)
+    // Eigene, winzige Whitelist — VÖLLIG unabhängig von `writableMap`. Stand
+    // 2026-06-30 bewusst LEER: es gibt noch keine echte TEST-Tabelle (S4-Provisioning
+    // kommt erst in Block D). Erst wenn eine konkrete TEST-Tabelle hier eingetragen
+    // wird, kann überhaupt irgendetwas gelöscht werden — auch über `TestSandboxCleaner`.
+    public static let testDeletableMap: [String: Set<String>] = [:]
+
+    static func isTestDeletable(baseID: String, table: String) -> Bool {
+        testDeletableMap[baseID]?.contains(table) == true
+    }
+
+    /// Löscht EINEN Record. Wirft `invalidBaseID`, wenn Base/Tabelle nicht auf der
+    /// TEST-Delete-Whitelist stehen — das ist die einzige Stelle im gesamten Code,
+    /// die überhaupt einen Airtable-DELETE-Request absetzen kann.
+    public func deleteRecord(baseID: String, table: String, recordID: String) async throws {
+        guard Self.isTestDeletable(baseID: baseID, table: table) else {
+            throw AirtableError.invalidBaseID("Löschen in \(table)@\(baseID) nicht erlaubt — TEST-Delete-Whitelist: \(Self.testDeletableMap)")
+        }
+        guard let credentials = try? credentialsStore.load() else {
+            throw AirtableError.notConnected
+        }
+        let encoded = table.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? table
+        guard let url = URL(string: "\(apiBase)/\(baseID)/\(encoded)/\(recordID)") else {
+            throw AirtableError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(credentials.pat)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw AirtableError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { try AirtableError.throwForFailedResponse(statusCode: http.statusCode, body: data) }
     }
 
     // MARK: - Testbare Bausteine für updateRecord
@@ -267,7 +398,11 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
             guard let number = fields["Kundennummer"]?.stringValue,
                   let name = fields["Name"]?.stringValue else { return nil }
             let recordID = fields["_airtableRecordID"]?.stringValue
-            return Customer(customerNumber: number, name: name, airtableRecordID: recordID)
+            // Clockodo-Kunden-ID (Zahlenfeld, Block E): nur ~1/3 der Kunden gemappt.
+            // Fehlt/leer → nil → der Buchungspfad überspringt diesen Kunden sicher.
+            let clockodoID = fields["Clockodo-Kunden-ID"]?.numberValue.map { Int($0) }
+            return Customer(customerNumber: number, name: name,
+                            airtableRecordID: recordID, clockodoCustomerID: clockodoID)
         }
     }
 
@@ -289,7 +424,9 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
                 telefon: nonEmpty("Telefon"),
                 adresse: nonEmpty("Adresse"),
                 projekt: nonEmpty("Projekt") ?? fields["Projekt"]?.firstArrayValue,
-                kategorie: nonEmpty("Kategorie"))
+                kategorie: nonEmpty("Kategorie"),
+                vorname: nonEmpty("Vorname"),
+                nachname: nonEmpty("Nachname"))
         }
     }
 
@@ -327,6 +464,53 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
                 links: links,
                 phase: fields["Phase"]?.stringValue,
                 airtableRecordID: recordID
+            )
+        }
+    }
+
+    // MARK: - Geschäfts-Mapping (Artikel-Base appdxTeT6bhSBmwx5, Block A)
+    // Feldnamen sind code-verifiziert aus `IntakeResultBuilder.mapKundeFelder`/
+    // `mapProjektFelder` — der einzige real schreibende Pfad in diese Tabellen
+    // (Stand 2026-06-30). Bewusst tolerant: ein fehlendes Feld verwirft NIE den
+    // ganzen Record (Fallstrick „Records verschwinden still", siehe ROLLING_PLAN §3b).
+    public static func mapBusinessCustomers(from records: [[String: AirtableFieldValue]]) -> [BusinessCustomer] {
+        records.compactMap { fields in
+            guard let recordID = fields["_airtableRecordID"]?.stringValue, !recordID.isEmpty else { return nil }
+            let nachname = fields["Nachname"]?.stringValue
+            let vorname  = fields["Vorname"]?.stringValue
+            let firma    = fields["Firma"]?.stringValue
+            // Mindestens ein Namens-/Firmenfeld muss da sein, sonst ist der Record kein
+            // brauchbarer Kunde (z. B. eine leere Vorlagenzeile).
+            guard (nachname?.isEmpty == false) || (firma?.isEmpty == false) else { return nil }
+            return BusinessCustomer(
+                airtableRecordID: recordID,
+                nachname: nachname,
+                vorname: vorname,
+                firma: firma,
+                email: fields["Kontakt 1 Email"]?.stringValue,
+                telefon: fields["Kontakt 1 Telefon"]?.stringValue
+            )
+        }
+    }
+
+    public static func mapBusinessProjects(from records: [[String: AirtableFieldValue]]) -> [BusinessProject] {
+        records.compactMap { fields in
+            guard let recordID = fields["_airtableRecordID"]?.stringValue, !recordID.isEmpty,
+                  let name = fields["Projektname"]?.stringValue, !name.isEmpty else { return nil }
+            let kundeIDs: [String]
+            if case .array(let arr)? = fields["Kunde"] { kundeIDs = arr }
+            else if let single = fields["Kunde"]?.stringValue { kundeIDs = [single] }
+            else { kundeIDs = [] }
+            // Existiert heute nicht im Artikel-Schema (Stand 2026-06-30) — bleibt nil,
+            // bis das Feld ergänzt wird. Lookup per Feld-NAME, nicht erraten.
+            let projectNumber = fields["Projektnummer"]?.stringValue
+            return BusinessProject(
+                airtableRecordID: recordID,
+                projektname: name,
+                projektstatus: fields["Projektstatus"]?.stringValue,
+                budget: fields["Budget"]?.numberValue ?? fields["Budget"]?.anyStringValue.flatMap(Double.init),
+                kundeRecordIDs: kundeIDs,
+                projectNumber: (projectNumber?.isEmpty == false) ? projectNumber : nil
             )
         }
     }

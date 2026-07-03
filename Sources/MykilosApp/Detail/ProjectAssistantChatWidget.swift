@@ -53,6 +53,7 @@ struct ProjectAssistantChatWidget: View {
             }
             .buttonStyle(.plain)
             .help("Assistent maximieren")
+            .accessibilityLabel("Assistent maximieren")
         }
         .padding(.horizontal, MykSpace.s5)
         .padding(.vertical, MykSpace.s4)
@@ -104,13 +105,15 @@ struct ProjectAssistantChatWidget: View {
             profile: appState.profile.profile,
             onCreateContact: { await appState.createContact($0) },
             onCreateDraft: { await appState.createDraft($0) },
-            onUploadFileToDrive: { [folderID = driveFolderID] file in
-                guard let folderID, !folderID.isEmpty else {
+            onWriteAirtableContact: { await appState.writeAirtableContact($0) },
+            onUploadFileToDrive: { file, targetFolderID in
+                guard !targetFolderID.isEmpty else {
                     return .failed("Kein Drive-Ordner für dieses Projekt konfiguriert.")
                 }
-                return await appState.uploadFileToDrive(file, parentFolderID: folderID)
+                return await appState.uploadFileToDrive(file, parentFolderID: targetFolderID)
             },
-            onAttachFileToMailDraft: { await appState.createDraftWithAttachment($0) }
+            onLoadTargetFolders: { await appState.listDriveSubfolders(parentFolderID: $0) },
+            onAttachFilesToMailDraft: { await appState.createDraftWithAttachments($0) }
         )
     }
 }

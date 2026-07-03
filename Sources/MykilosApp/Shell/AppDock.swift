@@ -56,8 +56,12 @@ struct AppDockStrip: View {
         }
         .padding(.vertical, MykSpace.s2)
         .frame(maxWidth: .infinity, alignment: compact ? .center : .leading)
-        .background(RoundedRectangle(cornerRadius: 12).fill(MykColor.paper2.color.opacity(0.5)))
-        .padding(.bottom, MykSpace.s4)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(MykColor.paper2.color.opacity(0.6))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(MykColor.line.color.opacity(0.6), lineWidth: 1))
+        )
+        .padding(.bottom, MykSpace.s2)
         .animation(.spring(response: 0.35, dampingFraction: 0.72), value: store.paths)
         .onReceive(heartbeat) { _ in tick &+= 1 }
         .dropDestination(for: URL.self) { urls, _ in
@@ -72,12 +76,13 @@ struct AppDockStrip: View {
         Button { if let new = Self.pickApp() { store.add(new) } } label: { plusLabel }
             .buttonStyle(.plain)
             .help("App hinzufügen")
+            .accessibilityLabel("App hinzufügen")
     }
 
     @ViewBuilder private var plusLabel: some View {
         let box = Image(systemName: "plus")
             .font(.mykSmall).foregroundStyle(MykColor.faint.color)
-            .frame(width: 31, height: 31)
+            .frame(width: 28, height: 28)
             .background(RoundedRectangle(cornerRadius: 8)
                 .strokeBorder(MykColor.line.color, style: StrokeStyle(lineWidth: 1, dash: [3])))
         if compact {
@@ -124,6 +129,7 @@ private struct AppDockIcon: View {
             .buttonStyle(.plain)
             .onHover { hover in withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) { hovered = hover } }
             .help(FileManager.default.displayName(atPath: path))
+            .accessibilityLabel(FileManager.default.displayName(atPath: path))
             .contextMenu {
                 Button("Ersetzen …", action: onReplace)
                 Button("Entfernen", role: .destructive, action: onRemove)
@@ -155,7 +161,7 @@ private struct AppDockIcon: View {
     private var icon: some View {
         Image(nsImage: NSWorkspace.shared.icon(forFile: path))
             .resizable().interpolation(.high)
-            .frame(width: 31, height: 31)
+            .frame(width: 28, height: 28)
             .scaleEffect(hovered ? 1.12 : 1.0)
     }
 

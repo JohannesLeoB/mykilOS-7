@@ -44,6 +44,20 @@ public struct CartStore: Sendable {
     public static let feldArtikelLink      = "fldVRLsdUGZTtOaIA"
     public static let feldMenge            = "fldOiXJbWKt0Xxt5m"
 
+    // Härtung (2026-07-01, Audit): NUR für Read-Matching gegen bereits geladene Records.
+    // `AirtableClient.fetchRecords` liefert Felder standardmäßig NAME-keyed (die Airtable-API
+    // schlüsselt nur ID-basiert, wenn `returnFieldsByFieldId=true` gesetzt wird — das tut kein
+    // Aufrufer). Ein Read-Match über die Feld-IDs oben traf deshalb NIE — Archivierung und
+    // Versionsnummer liefen seit jeher ins Leere (jeder Warenkorb wurde faktisch immer als
+    // "Version 1" angelegt, alte Versionen nie archiviert). Live bestätigte echte Namen
+    // (gleiche Technik wie die Kunden/Projekte-Schema-Diagnose): Anzahl Positionen,
+    // Bezeichnung, Erstellt-am, Gesamt EK (€), Gesamt VK (€), Positionen (JSON), Projekt,
+    // Prüfsumme, Status, Version. Die IDs oben bleiben für CREATE/UPDATE korrekt (Airtable
+    // akzeptiert dort sowohl Namen als auch IDs als Feld-Schlüssel).
+    static let feldPruefsummeName = "Prüfsumme"
+    static let feldStatusName     = "Status"
+    static let feldVersionName    = "Version"
+
     // Status-Werte
     public static let statusAktuell     = "Aktuell"
     public static let statusArchiviert  = "Archiviert"
@@ -98,9 +112,11 @@ public struct CartStore: Sendable {
         )
 
         // 2. Records mit gleicher Prüfsumme filtern → Aktuell → Archivieren
+        // Härtung (2026-07-01, Audit): über die echten NAMEN gelesen, nicht die Feld-IDs
+        // (siehe Kommentar bei feldPruefsummeName oben) — sonst matcht dieser Filter nie.
         let zuArchivieren = bestehend.filter { record in
-            record[Self.feldPruefsumme]?.stringValue == pruefsumme
-            && record[Self.feldStatus]?.stringValue == Self.statusAktuell
+            record[Self.feldPruefsummeName]?.stringValue == pruefsumme
+            && record[Self.feldStatusName]?.stringValue == Self.statusAktuell
         }
 
         for record in zuArchivieren {
@@ -115,8 +131,8 @@ public struct CartStore: Sendable {
 
         // 3. Maximale Versionsnummer bestimmen (über alle Records mit dieser Prüfsumme)
         let letzteVersion: Int = bestehend
-            .filter { $0[Self.feldPruefsumme]?.stringValue == pruefsumme }
-            .compactMap { $0[Self.feldVersion]?.numberValue }
+            .filter { $0[Self.feldPruefsummeName]?.stringValue == pruefsumme }
+            .compactMap { $0[Self.feldVersionName]?.numberValue }
             .map { Int($0) }
             .max() ?? 0
         let neueVersion = letzteVersion + 1
@@ -149,11 +165,12 @@ public struct CartStore: Sendable {
             Self.feldErstelltAm:       .string(iso8601),
         ]
 
-        // Projekt-Record-ID-Link (Array-Feld in Airtable)
+        // Projekt-Record-ID-Link: `feldProjekt` ist ein Link-to-record-Feld in Airtable
+        // und verlangt IMMER ein Array echter Record-IDs. Ein roher Projektname-String
+        // (ohne Record-ID) führte hier bisher zu HTTP 422 — Fix: Feld bleibt einfach leer,
+        // wenn keine Record-ID vorliegt, statt einen ungültigen Freitext-Fallback zu senden.
         if let projektRecordID = wk.projektRecordID {
             felder[Self.feldProjekt] = .array([projektRecordID])
-        } else if let projektName = wk.projektName, !projektName.isEmpty {
-            felder[Self.feldProjekt] = .string(projektName)
         }
 
         // 8. Neuen Warenkorb-Record anlegen

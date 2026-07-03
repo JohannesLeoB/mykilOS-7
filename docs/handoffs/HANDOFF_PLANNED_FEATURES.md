@@ -55,9 +55,17 @@ voll funktional, mykilOS-Stil (MykColor/MykSpace/Font.myk…), alle Felder der Z
 1. In Kataloge einen Warenkorb zusammenstellen (existiert ab 7.7.0) → **„In Projekt schreiben"**:
    schreibt den Warenkorb als `Warenkörbe`-Record (append-only, versioniert) **und** als verknüpfte
    `Projektartikel` ins gewählte Projekt.
-2. **Warenkorb-Widget** auf der **Projekt-Detail-/Übersichtsseite** (`ProjectDetailView`): zeigt die
-   aus Airtable geführten Warenkörbe/Projektartikel des Projekts — **klickbar, mit Vorschau** (Positionen,
-   Mengen, Summen EK/VK).
+2. **Warenkorb-Widget (Einkaufswagen-Icon)** auf der **Projekt-Detailseite im Tab „Übersicht"**
+   (`ProjectDetailView` / Übersicht-Board): kompakte Kachel mit **Einkaufswagen-Icon** + Kurzinfo des
+   **aktuellsten** Warenkorbs (Bezeichnung, Positionsanzahl, Summen EK/VK, Datum/Version). Alle Renderstates.
+   - **Klick → öffnet den aktuellsten Warenkorb als Tabelle**, klickbar: je Zeile Artikelnummer · Bezeichnung ·
+     Hersteller · Menge · EK · VK · Zeilensumme; Fuß = Summen. Zeilen klickbar → Artikeldetail/Vorschau.
+   - **Versions-Auswahl:** mehrere **vergangene Warenkörbe** des Projekts wählbar (Liste/Dropdown nach
+     Version/Datum — aus den `Warenkörbe`-Records desselben Projekts/derselben Prüfsumme).
+   - **Differenz-Markierung (rot):** in der Vorschau einer Version werden **Unterschiede zur vorherigen
+     Version ROT markiert** — **neue** Positionen, **entfernte** Positionen, **geänderte** Menge/Preis.
+     Vergleich über den vollständigen `Positionen (JSON)`-Snapshot je Version (Diff-Schlüssel: Artikelnummer;
+     verglichen werden Vorhandensein + Menge + VK). Read-only — der Diff ändert nie Records.
 3. **Editieren am Widget** → führt **zurück nach Kataloge**, wo der Warenkorb bearbeitet/geändert/gelöscht
    und **wieder gespeichert** werden kann.
    - **WICHTIG:** „löschen/ändern" im UI heißt **NIE** echtes Editieren/Löschen der Airtable-Warenkorb-

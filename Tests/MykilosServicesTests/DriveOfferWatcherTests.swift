@@ -20,6 +20,41 @@ struct DriveOfferWatcherTests {
         #expect(Set(offers.map(\.id)) == ["1", "2", "5"])
     }
 
+    // MARK: - Typ-Whitelist (EINE Quelle der Wahrheit — Filter-Regel)
+
+    @Test func typWhitelistLaesstNurBelegTypenDurch() {
+        // Angebote sind NIE ZIP/.numbers — meist PDF, manchmal Bild, selten Mail.
+        #expect(DriveOfferWatcher.isAcceptedOfferFileType(
+            file(id: "pdf",  name: "Angebot.pdf",           mime: "application/pdf")))
+        #expect(DriveOfferWatcher.isAcceptedOfferFileType(
+            file(id: "img",  name: "Scan_Angebot.jpg",      mime: "image/jpeg")))
+        #expect(DriveOfferWatcher.isAcceptedOfferFileType(
+            file(id: "png",  name: "Beleg.PNG",             mime: "image/png")))
+        #expect(DriveOfferWatcher.isAcceptedOfferFileType(
+            file(id: "mail", name: "Anfrage.eml",           mime: "message/rfc822")))
+        // Raus: ZIP, .numbers, Ordner, Office-Sonstiges.
+        #expect(DriveOfferWatcher.isAcceptedOfferFileType(
+            file(id: "zip",  name: "Produktdatenblätter.zip",     mime: "application/zip")) == false)
+        #expect(DriveOfferWatcher.isAcceptedOfferFileType(
+            file(id: "num",  name: "Geräteübersicht.numbers",     mime: "application/x-iwork-numbers-sffnumbers")) == false)
+        #expect(DriveOfferWatcher.isAcceptedOfferFileType(
+            file(id: "xls",  name: "Kalkulation.xlsx",            mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) == false)
+        #expect(DriveOfferWatcher.isAcceptedOfferFileType(
+            file(id: "dir",  name: "05 eingehende Angebote",      mime: "application/vnd.google-apps.folder")) == false)
+    }
+
+    @Test func detectOffersFiltertZipTrotzSchluesselwort() {
+        // „Angebot_Paket.zip" hat ein Schlüsselwort, ist aber ein ZIP → kein Angebot.
+        let files = [
+            file(id: "1", name: "Angebot Naturstein.pdf",  mime: "application/pdf"),
+            file(id: "2", name: "Angebot_Paket.zip",       mime: "application/zip"),
+            file(id: "3", name: "Rechnung_Scan.jpg",       mime: "image/jpeg"),
+            file(id: "4", name: "Übersicht.numbers",       mime: "application/x-iwork-numbers-sffnumbers"),
+        ]
+        let offers = DriveOfferWatcher.detectOffers(in: files)
+        #expect(Set(offers.map(\.id)) == ["1", "3"])   // PDF + Bild mit Schlüsselwort; ZIP/.numbers raus
+    }
+
     // MARK: - Poll-Semantik
 
     @Test func ersterPollLegtNurBaselineAnUndMeldetNichts() async {

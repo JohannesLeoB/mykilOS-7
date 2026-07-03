@@ -1,7 +1,37 @@
 import SwiftUI
+import AppKit
 import MykilosKit
 import MykilosDesign
 import MykilosServices
+
+// MARK: - CopyButton (2026-07-02, Johannes: "Texte im Assistentenchat copy-paste-bar machen")
+// Kleiner, unaufdringlicher Kopieren-Knopf. Kopiert reinen Text ins System-Clipboard
+// (NSPasteboard) und zeigt kurz „Kopiert". Für Assistenten-Bubbles (per Hover) und die
+// Mail-Entwurf-Karte (der eigentlich wertvolle, kopierenswerte Inhalt).
+struct CopyButton: View {
+    let text: String
+    var compact: Bool = false
+    @State private var copied = false
+
+    var body: some View {
+        Button {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+            copied = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { copied = false }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                if compact == false { Text(copied ? "Kopiert" : "Kopieren") }
+            }
+            .font(.mykMono(9)).tracking(0.3)
+            .foregroundStyle(copied ? MykColor.positive.color : MykColor.muted.color)
+        }
+        .buttonStyle(.plain)
+        .help("In die Zwischenablage kopieren")
+        .accessibilityLabel(copied ? "Kopiert" : "Text kopieren")
+    }
+}
 
 // MARK: - AssistantChatView (Phase 1 — konversationeller Assistent)
 // Messenger-Chat über die Claude-API. Verlauf aus dem ChatStore (persistent),
@@ -28,15 +58,20 @@ public struct AssistantChatView: View {
     let onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)?
     // feat/assistant-file-drop: Upload-Callback (App-Layer: GoogleDriveClient + Audit).
     // Nil wenn Drive-Upload nicht verfügbar (z. B. kein fokussierter Ordner).
-    let onUploadFileToDrive: ((DroppedFile) async -> DriveUploadOutcome)?
+    // 2026-07-02: 2. Parameter = gewählte Ziel-Ordner-ID (Ziel-Ordner-Auswahl in der Drop-Card).
+    let onUploadFileToDrive: ((DroppedFile, String) async -> DriveUploadOutcome)?
+    // feat/assistant-file-drop (2026-07-02): lädt die Unterordner eines Drive-Ordners für die
+    // Ziel-Ordner-Auswahl. Nil = keine Unterordner-Auswahl (nur Projektordner-Wurzel).
+    let onLoadTargetFolders: ((String) async -> [DriveFolderChoice])?
     // feat/assistant-file-drop: Mail-Anhang-Callback (App-Layer: Gmail createDraft + Audit).
-    let onAttachFileToMailDraft: ((DroppedFile) async -> DraftCreateOutcome)?
+    // 2026-07-02: nimmt ALLE gesammelten Dateien als EINE Mail mit N Anhängen.
+    let onAttachFilesToMailDraft: (([DroppedFile]) async -> DraftCreateOutcome)?
 
     @Environment(StudioContext.self) private var context
     @State private var draft = ""
     @State private var showClearConfirm = false
     // feat/assistant-file-drop: aktuell gedropte Datei (nil = keine Drop-Karte sichtbar).
-    @State private var droppedFile: DroppedFile? = nil
+    @State private var droppedFiles: [DroppedFile] = []
     // feat/assistant-file-drop: vorgeschlagener Drive-Ordner (wird beim Drop aufgelöst).
     @State private var driveFolder: (id: String, name: String)? = nil
     // feat/assistant-file-drop: Highlight wenn Datei über dem Chat schwebt.
@@ -59,8 +94,9 @@ public struct AssistantChatView: View {
         onCreateContact: ((ContactDraft) async -> ContactCreateOutcome)? = nil,
         onCreateDraft: ((EmailDraft) async -> DraftCreateOutcome)? = nil,
         onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)? = nil,
-        onUploadFileToDrive: ((DroppedFile) async -> DriveUploadOutcome)? = nil,
-        onAttachFileToMailDraft: ((DroppedFile) async -> DraftCreateOutcome)? = nil
+        onUploadFileToDrive: ((DroppedFile, String) async -> DriveUploadOutcome)? = nil,
+        onLoadTargetFolders: ((String) async -> [DriveFolderChoice])? = nil,
+        onAttachFilesToMailDraft: (([DroppedFile]) async -> DraftCreateOutcome)? = nil
     ) {
         self.scope = scope
         self.chatStore = chatStore
@@ -76,7 +112,8 @@ public struct AssistantChatView: View {
         self.onCreateDraft = onCreateDraft
         self.onWriteAirtableContact = onWriteAirtableContact
         self.onUploadFileToDrive = onUploadFileToDrive
-        self.onAttachFileToMailDraft = onAttachFileToMailDraft
+        self.onLoadTargetFolders = onLoadTargetFolders
+        self.onAttachFilesToMailDraft = onAttachFilesToMailDraft
     }
 
     private var messages: [ChatMessage] { chatStore.messages(for: scope) }
@@ -86,14 +123,15 @@ public struct AssistantChatView: View {
             if isConnected {
                 conversation
                 // feat/assistant-file-drop: Drop-Karte zwischen Verlauf und Composer.
-                if let file = droppedFile {
+                if droppedFiles.isEmpty == false {
                     FileDropCardView(
-                        file: file,
-                        suggestedFolderID: driveFolder?.id,
-                        suggestedFolderName: driveFolder?.name,
+                        files: droppedFiles,
+                        rootFolder: driveFolder.map { DriveFolderChoice(id: $0.id, name: $0.name) },
+                        loadSubfolders: onLoadTargetFolders,
                         onUploadToDrive: onUploadFileToDrive,
-                        onAttachToMailDraft: onAttachFileToMailDraft,
-                        onDismiss: { droppedFile = nil; driveFolder = nil }
+                        onAttachToMailDraft: onAttachFilesToMailDraft,
+                        onRemove: { file in droppedFiles.removeAll { $0.id == file.id } },
+                        onDismiss: { droppedFiles = []; driveFolder = nil }
                     )
                     .padding(.horizontal, MykSpace.s9)
                     .padding(.top, MykSpace.s3)
@@ -114,8 +152,8 @@ public struct AssistantChatView: View {
         }
         // feat/assistant-file-drop: Dateien per Drag-and-Drop in den Chat
         .dropDestination(for: URL.self) { urls, _ in
-            guard let url = urls.first else { return false }
-            handleDrop(url: url)
+            guard urls.isEmpty == false else { return false }
+            handleDrop(urls: urls)
             return true
         } isTargeted: { targeted in
             withAnimation(.easeInOut(duration: 0.15)) { isDropTargeted = targeted }
@@ -127,25 +165,39 @@ public struct AssistantChatView: View {
                 .animation(.easeInOut(duration: 0.15), value: isDropTargeted)
                 .allowsHitTesting(false)
         )
-        .animation(.easeOut(duration: 0.2), value: droppedFile != nil)
+        .animation(.easeOut(duration: 0.2), value: droppedFiles.isEmpty)
     }
 
-    // MARK: - Drop-Handler
-    // Liest die URL, mappt sie auf DroppedFile (Bytes im RAM), löst den Drive-Ordner auf.
-    private func handleDrop(url: URL) {
-        // Zugriff starten (Security-Scoped oder normal)
-        let securityScoped = url.startAccessingSecurityScopedResource()
-        defer { if securityScoped { url.stopAccessingSecurityScopedResource() } }
-
-        guard let data = try? Data(contentsOf: url) else { return }
-        let fileName = url.lastPathComponent
-        let mimeType = Self.mimeType(for: url)
-        let file = DroppedFile(fileName: fileName, mimeType: mimeType, data: data)
-
-        droppedFile = file
+    // MARK: - Drop-Handler (2026-07-02: mehrere Dateien, Ordner-Expansion, ZIP-as-is)
+    // Sammelt ALLE gedropten URLs (append, nicht ersetzen). Ordner werden flach in ihre
+    // Dateien aufgelöst; ZIPs/Archive bleiben als eine Datei (bewusst nicht entpackt).
+    private func handleDrop(urls: [URL]) {
+        var neu: [DroppedFile] = []
+        for url in urls {
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
+                // Ordner: flach alle enthaltenen Dateien mitnehmen (keine Unterordner).
+                let kinder = (try? FileManager.default.contentsOfDirectory(
+                    at: url, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])) ?? []
+                for kind in kinder where (try? kind.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true {
+                    if let f = Self.readFile(kind) { neu.append(f) }
+                }
+            } else if let f = Self.readFile(url) {
+                neu.append(f)
+            }
+        }
+        guard neu.isEmpty == false else { return }
+        // Dedupe nach Name+Größe, damit ein Doppel-Drop nicht dupliziert.
+        for f in neu where droppedFiles.contains(where: { $0.fileName == f.fileName && $0.data.count == f.data.count }) == false {
+            droppedFiles.append(f)
+        }
         driveFolder = nil   // zurücksetzen — wird asynchron aufgelöst
 
-        // Drive-Ordner für fokussiertes Projekt vorschlagen (best-effort, kein Fehler)
+        // Drive-Ordner für fokussiertes Projekt vorschlagen (best-effort, kein Fehler).
+        // Keyword aus dem ersten neuen Element.
+        let mimeType = neu.first?.mimeType ?? "application/octet-stream"
         if let driveFolderID = focusedDriveFolderID {
             Task {
                 let resolver = DriveFolderSuggestionResolver(driveClient: GoogleDriveClient())
@@ -159,6 +211,12 @@ public struct AssistantChatView: View {
                 }
             }
         }
+    }
+
+    /// Liest eine Datei-URL in ein DroppedFile (Bytes im RAM). nil, wenn nicht lesbar.
+    private static func readFile(_ url: URL) -> DroppedFile? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return DroppedFile(fileName: url.lastPathComponent, mimeType: mimeType(for: url), data: data)
     }
 
     /// MIME-Typ aus URL-Extension (UTType.preferredMIMEType, Fallback application/octet-stream).
@@ -211,6 +269,7 @@ public struct AssistantChatView: View {
                     .padding(.top, MykSpace.s5)
                     .padding(.trailing, MykSpace.s9)
                     .help("Verlauf löschen")
+                    .accessibilityLabel("Verlauf löschen")
                 }
             }
             .onChange(of: messages.last?.id) { _, last in
@@ -218,6 +277,15 @@ public struct AssistantChatView: View {
                 withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(last, anchor: .bottom) }
             }
             .onChange(of: messages.last?.text) { _, _ in
+                guard let last = messages.last?.id else { return }
+                proxy.scrollTo(last, anchor: .bottom)
+            }
+            // Härtung (2026-07-01, Johannes): der Verlauf scrollte bisher NUR bei neuen/
+            // gestreamten Nachrichten nach unten — beim erneuten Öffnen mit bereits
+            // vorhandenem Verlauf (z. B. Tab-Wechsel zurück zum Assistenten) blieb die
+            // ScrollView beim SwiftUI-Standard oben stehen, man sah die ältesten statt der
+            // neuesten Nachrichten. Ohne Animation, damit das Öffnen nicht sichtbar "springt".
+            .onAppear {
                 guard let last = messages.last?.id else { return }
                 proxy.scrollTo(last, anchor: .bottom)
             }
@@ -230,13 +298,7 @@ public struct AssistantChatView: View {
             Text("Er kennt deine Projekte und offenen Signale. Beispiele:")
                 .font(.mykSmall).foregroundStyle(MykColor.muted.color)
             ForEach(exampleQuestions, id: \.self) { q in
-                Button { send(q) } label: {
-                    Text("„\(q)")
-                        .font(.mykSmall).foregroundStyle(MykColor.ink.color)
-                        .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s3)
-                        .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.card.color))
-                }
-                .buttonStyle(.plain)
+                ExampleQuestionChip(text: q) { send(q) }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -292,13 +354,21 @@ public struct AssistantChatView: View {
                         .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
                 )
                 .onSubmit { send(draft) }
-            Button { send(draft) } label: {
-                Image(systemName: engine.isResponding ? "ellipsis" : "arrow.up.circle.fill")
+            // Härtung (2026-07-01, Loop-Effizienz): während einer laufenden Antwort
+            // bricht derselbe Button-Slot sie über engine.cancel() wirklich ab, statt
+            // nur deaktiviert dazustehen — der Nutzer muss nicht auf maxToolRounds/
+            // die Turn-Deadline warten, wenn er merkt, dass die Frage feststeckt.
+            Button {
+                if engine.isResponding { engine.cancel() } else { send(draft) }
+            } label: {
+                Image(systemName: engine.isResponding ? "stop.circle.fill" : "arrow.up.circle.fill")
                     .font(.mykHeadline)
-                    .foregroundStyle(canSend ? MykColor.ink.color : MykColor.faint.color)
+                    .foregroundStyle(engine.isResponding ? MykColor.critical.color : (canSend ? MykColor.ink.color : MykColor.faint.color))
             }
             .buttonStyle(.plain)
-            .disabled(canSend == false)
+            .disabled(engine.isResponding == false && canSend == false)
+            .help(engine.isResponding ? "Antwort abbrechen" : "Senden")
+            .accessibilityLabel(engine.isResponding ? "Antwort abbrechen" : "Senden")
         }
         .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s5)
         .overlay(alignment: .top) { Divider().overlay(MykColor.line.color) }
@@ -308,9 +378,44 @@ public struct AssistantChatView: View {
         engine.isResponding == false && draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
+    // Bestätigung per Wort: der GANZE getrimmte Text muss ein Bestätigungswort sein.
+    private static let confirmWords: Set<String> = [
+        "ist bestätigt", "bestätigt", "bestätige", "bestätige das", "bestätigen",
+        "mach", "mach das", "machs", "mach's", "mach es", "go", "go go", "los",
+        "los geht's", "los gehts", "ja", "ja bitte", "jap", "jup", "ok", "okay", "passt"
+    ]
+
+    private enum PendingChatAction {
+        case contact(ContactDraft)
+        case draft(EmailDraft)
+        case airtableContact(AirtableContactDraft)
+    }
+
+    // Genau EINE offene Action-Card im letzten Assistenten-Zug (sonst nil → normal an den LLM).
+    private var pendingSingleAction: PendingChatAction? {
+        guard let last = messages.last(where: { $0.role == .assistant }) else { return nil }
+        var found: [PendingChatAction] = []
+        for block in last.blocks {
+            switch block {
+            case .contactAction(let d):         found.append(.contact(d))
+            case .draftAction(let d):           found.append(.draft(d))
+            case .airtableContactAction(let d): found.append(.airtableContact(d))
+            default: break
+            }
+        }
+        return found.count == 1 ? found.first : nil
+    }
+
     private func send(_ text: String) {
         let toSend = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard toSend.isEmpty == false, engine.isResponding == false else { return }
+        // Bestätigung per Befehlswort: „mach/go/los/ist bestätigt …" führt die EINE offene
+        // Action-Card aus (statt Klick) — läuft über dieselben gated Handler + Audit.
+        if let action = pendingSingleAction, Self.confirmWords.contains(toSend.lowercased()) {
+            draft = ""
+            confirmPending(action, userText: toSend)
+            return
+        }
         draft = ""
         let signals = focusedProjectID.map { context.signals(for: $0) } ?? []
         Task {
@@ -322,6 +427,39 @@ public struct AssistantChatView: View {
                 schaetzModusEnabled: false,
                 profile: profile
             )
+        }
+    }
+
+    // Führt die per Wort bestätigte Action-Card aus und protokolliert das Ergebnis im Chat.
+    private func confirmPending(_ action: PendingChatAction, userText: String) {
+        try? chatStore.append(.text(userText, role: .user), to: scope)
+        Task {
+            let resultText: String
+            switch action {
+            case .contact(let d):
+                if let handler = onCreateContact {
+                    switch await handler(d) {
+                    case .created(let name): resultText = "✓ Kontakt angelegt: \(name)"
+                    case .failed(let m):     resultText = "⚠️ Kontakt konnte nicht angelegt werden: \(m)"
+                    }
+                } else { resultText = "Kontakt-Anlage hier nicht verfügbar." }
+            case .draft(let d):
+                if let handler = onCreateDraft {
+                    switch await handler(d) {
+                    case .created(let info): resultText = "✓ \(info)"
+                    case .failed(let m):     resultText = "⚠️ Entwurf fehlgeschlagen: \(m)"
+                    }
+                } else { resultText = "Entwurf hier nicht verfügbar." }
+            case .airtableContact(let d):
+                if let handler = onWriteAirtableContact {
+                    switch await handler(d) {
+                    case .created(let name): resultText = "✓ Airtable-Kontakt angelegt: \(name)"
+                    case .updated(let name): resultText = "✓ Airtable-Kontakt aktualisiert: \(name)"
+                    case .failed(let m):     resultText = "⚠️ \(m)"
+                    }
+                } else { resultText = "Airtable-Kontakt hier nicht verfügbar." }
+            }
+            try? chatStore.append(.text(resultText, role: .assistant), to: scope)
         }
     }
 
@@ -359,6 +497,7 @@ struct ChatMessageBubble: View {
     var onWriteAirtableContact: ((AirtableContactDraft) async -> AirtableContactWriteOutcome)? = nil
     @State private var cursorVisible = true
     @State private var previewFile: DriveFileRef?
+    @State private var isHovered = false
 
     var body: some View {
         HStack {
@@ -369,6 +508,10 @@ struct ChatMessageBubble: View {
                     ToolCallRow(label: activity.label, isError: activity.isError, timestamp: message.createdAt)
                 }
                 bubble
+                // Kopieren-Knopf unter fertigen Assistenten-Antworten (per Hover).
+                if message.role == .assistant, message.status == .complete, message.text.isEmpty == false, isHovered {
+                    CopyButton(text: message.text)
+                }
                 // Kalender-Aktionskarten nach der Antwort.
                 ForEach(Array(calendarActions.enumerated()), id: \.offset) { _, action in
                     CalendarActionCard(url: action.url, label: action.label)
@@ -404,6 +547,7 @@ struct ChatMessageBubble: View {
             }
             if message.role == .assistant { Spacer(minLength: 40) }
         }
+        .onHover { isHovered = $0 }
         .sheet(item: $previewFile) { ref in
             DocumentViewerView(
                 file: GoogleDriveFile(id: ref.id, name: ref.name, mimeType: ref.mimeType,
@@ -626,21 +770,35 @@ struct DraftActionCard: View {
     private enum CardPhase: Equatable { case idle, saving, done(String), failed(String) }
     @State private var phase: CardPhase = .idle
 
+    // Vollständiger Entwurf als reiner Text fürs Clipboard (An/Betreff/Text).
+    private var copyText: String {
+        var lines: [String] = []
+        if let to = draft.to, to.isEmpty == false { lines.append("An: \(to)") }
+        if draft.subject.isEmpty == false { lines.append("Betreff: \(draft.subject)") }
+        lines.append("")
+        lines.append(draft.body)
+        return lines.joined(separator: "\n")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s3) {
             HStack(spacing: MykSpace.s3) {
                 Image(systemName: "envelope.badge")
                     .font(.mykCaption).foregroundStyle(MykColor.drive.color)
                 Text("Mail-Entwurf").font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
+                Spacer()
+                CopyButton(text: copyText)
             }
             if let to = draft.to, to.isEmpty == false {
                 Text("An: \(to)").font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
+                    .textSelection(.enabled)
             }
             Text(draft.subject.isEmpty ? "(kein Betreff)" : draft.subject)
                 .font(.mykBody).foregroundStyle(MykColor.ink.color)
+                .textSelection(.enabled)
             Text(draft.body)
                 .font(.mykSmall).foregroundStyle(MykColor.muted.color)
-                .lineLimit(6)
+                .textSelection(.enabled)
             actionRow
         }
         .padding(.horizontal, MykSpace.s5)
@@ -795,6 +953,36 @@ enum AssistantCapability: CaseIterable {
         case .studio:      .brand
         case .kalkulation: .tasks
         }
+    }
+}
+
+// Beispiel-Frage-Chip im leeren Chat — mit Hover, damit klar klickbar (erster Eindruck).
+private struct ExampleQuestionChip: View {
+    let text: String
+    let action: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: MykSpace.s3) {
+                Text("„\(text)")
+                    .font(.mykSmall).foregroundStyle(hovered ? MykColor.ink.color : MykColor.inkSoft.color)
+                Spacer(minLength: 0)
+                if hovered {
+                    Image(systemName: "arrow.up.right").font(.mykMono(9)).foregroundStyle(MykColor.brand.color)
+                }
+            }
+            .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s3)
+            .background(
+                RoundedRectangle(cornerRadius: MykRadius.sm)
+                    .fill(hovered ? MykColor.paper2.color : MykColor.card.color)
+                    .overlay(RoundedRectangle(cornerRadius: MykRadius.sm)
+                        .stroke(hovered ? MykColor.brand.color.opacity(0.4) : MykColor.line.color, lineWidth: 1))
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { h in withAnimation(.easeInOut(duration: 0.12)) { hovered = h } }
     }
 }
 

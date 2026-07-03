@@ -32,6 +32,8 @@ struct ProjectDetailView: View {
                     isFavorite: appState.favorites.isFavorite(project.projectNumber),
                     onToggleFavorite: { try? appState.favorites.toggle(projectNumber: project.projectNumber) }
                 )
+                ProjectLifecycleBar(project: project)
+                Divider().overlay(MykColor.line.color)
                 tabBar
                 Divider().overlay(MykColor.line.color)
                 // Chat braucht volle Höhe; alle anderen Tabs scrollen.
@@ -120,6 +122,7 @@ struct ProjectDetailView: View {
                 auditStore: appState.audit,
                 llmProvider: appState.claudeAuth.status == .connected ? appState.assistantLLM : nil,
                 projectID: project.projectNumber,
+                projektName: project.title,
                 driveFolderID: project.links.driveFolderID,
                 clickUpListID: project.links.clickUpListID,
                 calendarQuery: project.links.calendarQuery,
@@ -148,15 +151,17 @@ struct ProjectDetailView: View {
                 profile: appState.profile.profile,
                 onCreateContact: { await appState.createContact($0) },
                 onCreateDraft: { await appState.createDraft($0) },
-                onUploadFileToDrive: { [driveFolderID = project.links.driveFolderID] file in
-                    // Ordner-ID zum Zeitpunkt des Drops aufgelöst (via FileDropCardView /
-                    // DriveFolderSuggestionResolver). Hier kennen wir ihn direkt.
-                    guard let folderID = driveFolderID, !folderID.isEmpty else {
+                onWriteAirtableContact: { await appState.writeAirtableContact($0) },
+                onUploadFileToDrive: { file, targetFolderID in
+                    // targetFolderID = in der Drop-Card gewählter Ziel-Ordner (Projektordner
+                    // oder ein Unterordner). Leerer Wert wird schon in der Card abgefangen.
+                    guard !targetFolderID.isEmpty else {
                         return .failed("Kein Drive-Ordner für dieses Projekt konfiguriert.")
                     }
-                    return await appState.uploadFileToDrive(file, parentFolderID: folderID)
+                    return await appState.uploadFileToDrive(file, parentFolderID: targetFolderID)
                 },
-                onAttachFileToMailDraft: { await appState.createDraftWithAttachment($0) }
+                onLoadTargetFolders: { await appState.listDriveSubfolders(parentFolderID: $0) },
+                onAttachFilesToMailDraft: { await appState.createDraftWithAttachments($0) }
             )
         case .files:
             FilesTabView(
@@ -168,8 +173,13 @@ struct ProjectDetailView: View {
             OffersTabView(
                 projectID: project.projectNumber,
                 driveFolderID: project.links.driveFolderID,
-                driveFolderPath: project.links.driveFolderPath
+                driveFolderPath: project.links.driveFolderPath,
+                workBasketStore: appState.workBaskets,
+                kundeName: appState.registry.customer(for: project)?.name ?? project.title,
+                projektTitel: project.title
             )
+        case .zeit:
+            ProjektTimerView(projektNummer: project.projectNumber, projektTitel: project.title)
         case .material:
             MaterialTabView(
                 projectID: project.projectNumber,
@@ -182,8 +192,6 @@ struct ProjectDetailView: View {
                 calendarQuery: project.links.calendarQuery,
                 auditStore: appState.audit
             )
-        default:
-            ComingTabView(tab: activeTab)
         }
     }
 }
@@ -195,6 +203,7 @@ private struct ProjectWidgetBoardView: View {
     let auditStore: AuditStore
     let llmProvider: (any AssistantLLMProviding)?
     let projectID:  String
+    let projektName: String?
     let driveFolderID: String?
     let clickUpListID: String?
     let calendarQuery: String?
@@ -205,29 +214,74 @@ private struct ProjectWidgetBoardView: View {
 
     @Environment(AppState.self) private var appState
     @State private var dropTargetID: UUID?
+    // Fix Kontakte-Abschneidung (2026-07-02): das Grid hatte keine festen Spaltenbreiten
+    // und seit dem P0-Fix keine Füllzelle — eine kurze Zeile (nur 2 von 3 Spalten belegt)
+    // ließ die verbleibende Zelle über den Fensterrand dehnen (reproduzierbar contacts).
+    // Jetzt: harte Drittelspalten aus der gemessenen Board-Breite, kurze Zeilen lassen den
+    // Rest LEER (Spacer) statt zu dehnen. Kein Grid mehr → kein "unlimited"-Regressionsrisiko.
+    @State private var boardWidth: CGFloat = 0
+    @State private var showWidgetSelector = false
 
     var body: some View {
-        // frame(maxWidth: .infinity) bindet den Grid explizit an die vom ScrollView
-        // vorgeschlagene Breite. Color.clear als Füllzelle ist entfernt: eine
-        // flexible Zelle trieb die ideale Grid-Breite auf "unlimited", was via
-        // ZStack-Zentrierung den Inhalt in den Sidebar-Bereich schob.
-        Grid(alignment: .topLeading,
-             horizontalSpacing: MykSpace.s5,
-             verticalSpacing: MykSpace.s5) {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            widgetToolbar
             ForEach(rows, id: \.id) { row in
-                GridRow {
+                HStack(alignment: .top, spacing: MykSpace.s5) {
                     ForEach(row.items) { instance in
                         draggableCell(for: instance)
+                            .frame(width: cellWidth(span: instance.size.columnSpan), alignment: .leading)
                     }
+                    if row.usedSpan < 3 { Spacer(minLength: 0) }   // kurze Zeile: Rest leer lassen
                 }
             }
         }
-        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            GeometryReader { geo in
+                Color.clear
+                    .onAppear { boardWidth = geo.size.width }
+                    .onChange(of: geo.size.width) { _, w in boardWidth = w }
+            }
+        )
+        .opacity(boardWidth > 0 ? 1 : 0)   // ein Frame unsichtbar, bis die Breite gemessen ist
+    }
+
+    // Schlanke Leiste über dem Board: Widget-Selektor öffnen (selbst-konfigurierbar).
+    private var widgetToolbar: some View {
+        HStack(spacing: MykSpace.s2) {
+            Spacer()
+            Button { showWidgetSelector.toggle() } label: {
+                HStack(spacing: MykSpace.s2) {
+                    Image(systemName: "square.grid.2x2")
+                        .font(.mykMono(10))
+                    Text("Widgets")
+                        .font(.mykMono(10))
+                }
+                .foregroundStyle(MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s3)
+                .padding(.vertical, MykSpace.s2)
+                .background(MykColor.card.color)
+                .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .help("Widgets der Übersicht ein-/ausblenden und Größe wählen")
+            .accessibilityLabel("Widgets konfigurieren")
+            .popover(isPresented: $showWidgetSelector, arrowEdge: .top) {
+                WidgetSelectorView(boardStore: boardStore)
+            }
+        }
+    }
+
+    // Drittelbreite (mit Spacing) für eine Zelle mit `span` Spalten.
+    private func cellWidth(span: Int) -> CGFloat {
+        let spacing = MykSpace.s5
+        let col = max(0, (boardWidth - spacing * 2) / 3)
+        return col * CGFloat(span) + spacing * CGFloat(max(0, span - 1))
     }
 
     private func draggableCell(for instance: WidgetInstance) -> some View {
         projectWidgetView(for: instance)
-            .gridCellColumns(instance.size.columnSpan)
             .overlay(dropHighlight(for: instance.id))
             .draggable(instance.id.uuidString)
             .dropDestination(for: String.self) { items, _ in
@@ -261,11 +315,12 @@ private struct ProjectWidgetBoardView: View {
         case .drive:     DriveWidget(projectID: projectID, driveFolderID: driveFolderID)
         case .tasks:     TasksWidget(projectID: projectID, clickUpListID: clickUpListID)
         case .contacts:  ContactsWidget(projectID: projectID, contactsQuery: contactsQuery)
-        case .cash:      CashWidget(projectID: projectID, sevdeskRef: sevdeskRef, budget: budget, auditStore: auditStore)
+        case .cash:      CashWidget(projectID: projectID, sevdeskRef: sevdeskRef, budget: budget, auditStore: auditStore, workBasketStore: appState.workBaskets)
         case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: calendarQuery)
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)
         case .assistant: ProjectAssistantChatWidget(projectID: projectID, driveFolderID: driveFolderID, clickUpListID: clickUpListID)
         case .mail:      MailWidget(projectID: projectID, mailQuery: mailQuery)
+        case .warenkorb: WarenkorbWidget(store: appState.workBaskets, projectID: projectID, projektName: projektName)
         default:         EmptyView()
         }
     }
@@ -294,13 +349,14 @@ private struct RowLayout: Identifiable {
     var id: UUID { items.first?.id ?? Self.emptyRowID }
     private static let emptyRowID = UUID()
     var usedSpan: Int { items.reduce(0) { $0 + $1.size.columnSpan } }
-    var fillerSpan: Int { totalColumns - usedSpan }
-    var needsFiller: Bool { fillerSpan > 0 }
+    // fillerSpan/needsFiller entfernt (2026-07-02): toter Code seit dem P0-Füllzellen-
+    // Ausbau; die kurze Zeile lässt jetzt via Spacer den Rest leer (siehe body).
 }
 
 // MARK: - Tab-Helfer
 enum ProjectTab: String, CaseIterable, Identifiable {
     case overview = "Übersicht"; case chat = "Assistent"
+    case zeit = "Zeit"
     case files = "Dateien"; case offers = "Angebote"
     case timeline = "Timeline"; case material = "Material"
     var id: String { rawValue }
@@ -315,21 +371,17 @@ private struct TabButton: View {
     var body: some View {
         Button(action: action) {
             Text(tab.rawValue).font(.mykSmall)
-                .foregroundStyle(isActive ? MykColor.ink.color : MykColor.muted.color)
+                .foregroundStyle(isActive ? MykColor.ink.color : (isHovered ? MykColor.inkSoft.color : MykColor.muted.color))
                 .padding(.horizontal, MykSpace.s5).padding(.bottom, MykSpace.s4)
                 .overlay(alignment: .bottom) {
-                    if isActive { Rectangle().fill(MykColor.ink.color).frame(height: 2) }
+                    if isActive {
+                        Rectangle().fill(MykColor.ink.color).frame(height: 2)
+                    } else if isHovered {
+                        Rectangle().fill(MykColor.line.color).frame(height: 2)
+                    }
                 }
         }
-        .buttonStyle(.plain).onHover { isHovered = $0 }
-    }
-}
-
-private struct ComingTabView: View {
-    let tab: ProjectTab
-    var body: some View {
-        VStack { Spacer().frame(height: 80)
-            Text("\(tab.rawValue) — in Vorbereitung").font(.mykBody).foregroundStyle(MykColor.muted.color)
-        }.frame(maxWidth: .infinity).padding(MykSpace.s9)
+        .buttonStyle(.plain)
+        .onHover { hovering in withAnimation(.easeInOut(duration: 0.12)) { isHovered = hovering } }
     }
 }

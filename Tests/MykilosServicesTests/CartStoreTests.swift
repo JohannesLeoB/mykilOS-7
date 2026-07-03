@@ -134,11 +134,13 @@ struct CartStoreTests {
         let wk = Warenkorb(items: [item], projektName: "Küche Test")
         let pruefsumme = wk.pruefsumme
 
+        // Härtung (2026-07-01, Audit): NAME-keyed, wie Airtables echte List-Records-Antwort
+        // (nicht die Feld-IDs, die CartStore nur beim Schreiben nutzt).
         fake.existingRecords = [[
             "_airtableRecordID": .string("recALT"),
-            CartStore.feldPruefsumme: .string(pruefsumme),
-            CartStore.feldStatus: .string(CartStore.statusAktuell),
-            CartStore.feldVersion: .number(1.0),
+            CartStore.feldPruefsummeName: .string(pruefsumme),
+            CartStore.feldStatusName: .string(CartStore.statusAktuell),
+            CartStore.feldVersionName: .number(1.0),
         ]]
 
         let store = CartStore(fetcher: fake, creator: fake, updater: fake)
@@ -191,24 +193,25 @@ struct CartStoreTests {
         let pruefsumme = wk.pruefsumme
 
         // Ein Aktuell + Ein bereits Archiviert + Ein anderer Warenkorb
+        // Härtung (2026-07-01, Audit): NAME-keyed, wie Airtables echte List-Records-Antwort.
         fake.existingRecords = [
             [
                 "_airtableRecordID": .string("recAKTUELL"),
-                CartStore.feldPruefsumme: .string(pruefsumme),
-                CartStore.feldStatus: .string(CartStore.statusAktuell),
-                CartStore.feldVersion: .number(2.0),
+                CartStore.feldPruefsummeName: .string(pruefsumme),
+                CartStore.feldStatusName: .string(CartStore.statusAktuell),
+                CartStore.feldVersionName: .number(2.0),
             ],
             [
                 "_airtableRecordID": .string("recALTARCHIV"),
-                CartStore.feldPruefsumme: .string(pruefsumme),
-                CartStore.feldStatus: .string(CartStore.statusArchiviert),
-                CartStore.feldVersion: .number(1.0),
+                CartStore.feldPruefsummeName: .string(pruefsumme),
+                CartStore.feldStatusName: .string(CartStore.statusArchiviert),
+                CartStore.feldVersionName: .number(1.0),
             ],
             [
                 "_airtableRecordID": .string("recANDERER"),
-                CartStore.feldPruefsumme: .string("anderepruefsumme"),
-                CartStore.feldStatus: .string(CartStore.statusAktuell),
-                CartStore.feldVersion: .number(1.0),
+                CartStore.feldPruefsummeName: .string("anderepruefsumme"),
+                CartStore.feldStatusName: .string(CartStore.statusAktuell),
+                CartStore.feldVersionName: .number(1.0),
             ],
         ]
 
@@ -223,6 +226,33 @@ struct CartStoreTests {
         // Neue Version muss max(2)+1 = 3 sein
         guard case .success(_, let version) = fake.successVersion else { return }
         #expect(version == 3)
+    }
+
+    // Review-Fix (2026-07-01, Live-HTTP-422): `feldProjekt` ist ein Link-to-record-Feld —
+    // ohne `projektRecordID` darf NIE ein roher Projektname als `.string` gesendet werden
+    // (Airtable lehnt das mit 422 ab). Das Feld muss dann einfach fehlen.
+    @Test func ohneProjektRecordIDBleibtFeldProjektLeer() async throws {
+        let fake = FakeAirtableRW()
+        let item = WarenkorbItem(bezeichnung: "Spüle", artikelnummer: "SPL-003", menge: 1, quelle: "test")
+        let wk = Warenkorb(items: [item], projektRecordID: nil, projektName: "Küche ohne Record-ID")
+
+        let store = CartStore(fetcher: fake, creator: fake, updater: fake)
+        _ = try await store.sendWarenkorbToAirtable(wk)
+
+        let createdFields = fake.createdRecords.first(where: { $0.table == CartStore.warenkorbTable })?.fields
+        #expect(createdFields?[CartStore.feldProjekt] == nil)
+    }
+
+    @Test func mitProjektRecordIDWirdArrayGesendet() async throws {
+        let fake = FakeAirtableRW()
+        let item = WarenkorbItem(bezeichnung: "Spüle", artikelnummer: "SPL-004", menge: 1, quelle: "test")
+        let wk = Warenkorb(items: [item], projektRecordID: "recPROJEKT", projektName: "Küche Meyer")
+
+        let store = CartStore(fetcher: fake, creator: fake, updater: fake)
+        _ = try await store.sendWarenkorbToAirtable(wk)
+
+        let createdFields = fake.createdRecords.first(where: { $0.table == CartStore.warenkorbTable })?.fields
+        #expect(createdFields?[CartStore.feldProjekt] == .array(["recPROJEKT"]))
     }
 
     @Test func positioenenJSONIstImCreatedRecord() async throws {

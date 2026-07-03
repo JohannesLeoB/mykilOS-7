@@ -1,0 +1,122 @@
+import Testing
+import Foundation
+@testable import MykilosServices
+
+// MARK: - FakeKeychain
+// In-Memory-Fake für KeychainAccessing — kein echtes Keychain, kein Netzwerk
+// im Testlauf (harte Test-Regel dieses Repos). Schlüssel = service+account.
+final class FakeKeychain: KeychainAccessing, @unchecked Sendable {
+    private(set) var storage: [String: String] = [:]
+    private(set) var storeCallCount = 0
+
+    private func key(_ service: String, _ account: String) -> String { "\(service)::\(account)" }
+
+    func load(service: String, account: String) throws -> String? {
+        storage[key(service, account)]
+    }
+
+    @discardableResult
+    func store(_ value: String, service: String, account: String) throws -> Bool {
+        storeCallCount += 1
+        let isNew = storage[key(service, account)] == nil
+        storage[key(service, account)] = value
+        return isNew
+    }
+}
+
+struct PerUserKeychainServiceTests {
+
+    // MARK: - Namens-Ableitung
+
+    @Test func perUserErzeugtVerschiedeneServicesFuerVerschiedeneUser() {
+        let serviceA = PerUserKeychainService.perUser("google", userID: "user-a-uuid")
+        let serviceB = PerUserKeychainService.perUser("google", userID: "user-b-uuid")
+        #expect(serviceA != serviceB)
+        #expect(serviceA == "com.mykilos6.google.user-a-uuid")
+        #expect(serviceB == "com.mykilos6.google.user-b-uuid")
+    }
+
+    @Test func perUserMitNilFaelltAufLocalZurueck() {
+        #expect(PerUserKeychainService.perUser("clockodo", userID: nil) == "com.mykilos6.clockodo.local")
+    }
+
+    @Test func perUserMitLeeremOderWhitespaceUserIDFaelltAufLocalZurueck() {
+        #expect(PerUserKeychainService.perUser("clockodo", userID: "") == "com.mykilos6.clockodo.local")
+        #expect(PerUserKeychainService.perUser("clockodo", userID: "   ") == "com.mykilos6.clockodo.local")
+    }
+
+    @Test func legacyLiefertTeamweitenServiceOhneUserID() {
+        #expect(PerUserKeychainService.legacy("airtable") == "com.mykilos6.airtable")
+    }
+
+    @Test func alleSechsBasesErzeugenEindeutigeServices() {
+        let bases = ["google", "clockodo", "claude", "clickup", "sevdesk", "airtable"]
+        let services = Set(bases.map { PerUserKeychainService.perUser($0, userID: "shared-uuid") })
+        #expect(services.count == bases.count)
+    }
+
+    // MARK: - Sanfte Migration
+
+    @Test func migrationLiestAltenWertWennNeuerServiceLeerIst() throws {
+        let keychain = FakeKeychain()
+        // Alter, teamweiter Eintrag existiert bereits (Vor-V10-Zustand).
+        try keychain.store("legacy-token", service: PerUserKeychainService.legacy("clockodo"), account: "apiKey")
+
+        let migrated = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "clockodo", userID: "user-1", account: "apiKey")
+
+        #expect(migrated == "legacy-token")
+        // Nachgezogen: liegt jetzt AUCH unter dem neuen per-User-Service.
+        let newValue = try keychain.load(service: "com.mykilos6.clockodo.user-1", account: "apiKey")
+        #expect(newValue == "legacy-token")
+        // Alter Eintrag bleibt bestehen (Rückwärtskompatibilität — nicht gelöscht).
+        let oldValue = try keychain.load(service: PerUserKeychainService.legacy("clockodo"), account: "apiKey")
+        #expect(oldValue == "legacy-token")
+    }
+
+    @Test func migrationBevorzugtNeuenServiceWennBeideExistieren() throws {
+        let keychain = FakeKeychain()
+        try keychain.store("legacy-token", service: PerUserKeychainService.legacy("clockodo"), account: "apiKey")
+        try keychain.store("fresh-token", service: "com.mykilos6.clockodo.user-1", account: "apiKey")
+        let storeCallsBeforeMigration = keychain.storeCallCount
+
+        let value = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "clockodo", userID: "user-1", account: "apiKey")
+
+        #expect(value == "fresh-token")
+        // Kein unnötiger Nachzieh-Write, wenn der neue Service schon einen Wert hat.
+        #expect(keychain.storeCallCount == storeCallsBeforeMigration)
+    }
+
+    @Test func migrationLiefertNilWennBeideServicesLeerSind() throws {
+        let keychain = FakeKeychain()
+        let value = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "airtable", userID: "user-1", account: "pat")
+        #expect(value == nil)
+        #expect(keychain.storeCallCount == 0)
+    }
+
+    @Test func userBLiestNichtsVonUserA() throws {
+        let keychain = FakeKeychain()
+        try keychain.store("user-a-secret", service: "com.mykilos6.airtable.user-a", account: "pat")
+
+        let userBValue = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "airtable", userID: "user-b", account: "pat")
+
+        #expect(userBValue == nil)
+    }
+
+    @Test func migrationIstIsoliertJeAccount() throws {
+        // E-Mail migriert, apiKey (noch) nicht gesetzt — beide Accounts unabhängig.
+        let keychain = FakeKeychain()
+        try keychain.store("a@b.de", service: PerUserKeychainService.legacy("clockodo"), account: "email")
+
+        let email = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "clockodo", userID: "user-1", account: "email")
+        let apiKey = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "clockodo", userID: "user-1", account: "apiKey")
+
+        #expect(email == "a@b.de")
+        #expect(apiKey == nil)
+    }
+}

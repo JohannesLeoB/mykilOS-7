@@ -126,11 +126,17 @@ public enum OffersCollector {
         async let outgoingFiles = collect(in: outgoingFolder, client: client, depth: 0, maxDepth: maxDepth)
         let (rawIncoming, rawOutgoing) = try await (incomingFiles, outgoingFiles)
 
+        // Typ-Whitelist (EINE Quelle der Wahrheit, `DriveOfferWatcher`): Angebote sind
+        // NIE ZIP/.numbers — nur PDF/Bild/Mail zählen als Beleg. Genau hier gefiltert,
+        // damit Projekt-Tab UND „Alle Angebote" denselben sauberen Bestand sehen.
+        let cleanIncoming = rawIncoming.filter { DriveOfferWatcher.isAcceptedOfferFileType($0.file) }
+        let cleanOutgoing = rawOutgoing.filter { DriveOfferWatcher.isAcceptedOfferFileType($0.file) }
+
         return Result(
-            incoming: rawIncoming.map {
+            incoming: cleanIncoming.map {
                 OfferDocumentClassifier.classify($0.file, isIncoming: true, folderName: $0.parentName)
             },
-            outgoing: rawOutgoing.map {
+            outgoing: cleanOutgoing.map {
                 OfferDocumentClassifier.classify($0.file, isIncoming: false, folderName: $0.parentName)
             },
             incomingFolderFound: incomingFolder != nil,

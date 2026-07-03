@@ -180,7 +180,57 @@ public struct BackupService: Sendable {
         return manifest
     }
 
+    // MARK: - Auflisten
+
+    /// Metadaten eines vorhandenen Backups (für die Restore-Liste in den Einstellungen).
+    public struct BackupInfo: Sendable, Identifiable, Equatable {
+        public let folderURL: URL
+        public let createdAt: Date
+        public let tag: String
+        public let sizeBytes: Int
+        public var id: String { folderURL.lastPathComponent }
+    }
+
+    /// Alle vorhandenen Backups, neueste zuerst. Tag aus dem Ordnernamen
+    /// (`backup_<tag>_<zeitstempel>`), Datum aus dem Datei-Erstelldatum.
+    public func listBackups() -> [BackupInfo] {
+        guard let items = try? fm.contentsOfDirectory(
+            at: backupDir, includingPropertiesForKeys: [.creationDateKey], options: .skipsHiddenFiles
+        ) else { return [] }
+        return items
+            .filter { $0.lastPathComponent.hasPrefix("backup_") }
+            .compactMap { url -> BackupInfo? in
+                let attrs = try? fm.attributesOfItem(atPath: url.path)
+                let date = (attrs?[.creationDate] as? Date) ?? Date(timeIntervalSince1970: 0)
+                let parts = url.lastPathComponent.components(separatedBy: "_")
+                let tag = parts.count >= 2 ? parts[1] : "?"
+                return BackupInfo(folderURL: url, createdAt: date, tag: tag, sizeBytes: folderSize(url))
+            }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    /// Datum des jüngsten Backups (für die „höchstens 1×/Tag"-Auto-Backup-Entscheidung).
+    public func latestBackupDate() -> Date? { listBackups().first?.createdAt }
+
+    private func folderSize(_ url: URL) -> Int {
+        guard let files = try? fm.contentsOfDirectory(at: url, includingPropertiesForKeys: [.fileSizeKey]) else { return 0 }
+        return files.reduce(0) { acc, f in
+            acc + (((try? fm.attributesOfItem(atPath: f.path))?[.size] as? Int) ?? 0)
+        }
+    }
+
     // MARK: - Retention
+
+    /// Behält die `keepNewest` jüngsten Backups, löscht den Rest (Anzahl-Grenze,
+    /// ergänzend zur Zeit-Retention). Rettungsbackups (pre-restore) zählen mit,
+    /// sind aber jung genug, um nicht vorzeitig gelöscht zu werden.
+    public func pruneToCount(keepNewest keep: Int) throws {
+        let all = listBackups()
+        guard all.count > keep else { return }
+        for info in all.dropFirst(keep) {
+            try? fm.removeItem(at: info.folderURL)
+        }
+    }
 
     /// Löscht Backups, die älter als `days` Tage sind. Behält mind. `keepMin` Backups.
     public func pruneOldBackups(olderThanDays days: Int, keepMin: Int = 3) throws {

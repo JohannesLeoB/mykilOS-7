@@ -103,6 +103,41 @@ struct KalkulationsLearningStoreTests {
         #expect(abs((adjustmentsB.first?.percentDelta ?? 0) - (-10)) < 0.5)
     }
 
+    // MARK: importPDF (Härtung 2026-07-01) überlebt Neustart
+    // Stärkster Beweis für den PDF-Import-Dedup-Log: nach einem Neustart (frische
+    // LearningDatabase-Instanz, dieselbe learning.sqlite) ist sowohl der importierte
+    // Record als auch der Duplikat-Status korrekt lesbar.
+    private struct FakeDrivePDF: GoogleDriveFetching {
+        func listFolder(folderID: String) async throws -> [GoogleDriveFile] { [] }
+        func getFileName(folderID: String) async throws -> String { "Angebot_Cold_Start.pdf" }
+        func downloadContent(fileID: String) async throws -> Data { Data("cold-start-inhalt".utf8) }
+    }
+    private final class FakeAirtableCreate: AirtableRecordCreating, @unchecked Sendable {
+        func createRecord(baseID: String, table: String, fields: [String: AirtableFieldValue]) async throws -> String {
+            "rec_cold_start"
+        }
+    }
+
+    @Test func importPDFUeberlebtNeustart() async throws {
+        let dir = try tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let storeA = LearningStore(directory: dir)
+        let engine = KalkulationsEngine(
+            provider: StubAnchorProvider(), learningStore: storeA,
+            drive: FakeDrivePDF(), airtable: FakeAirtableCreate()
+        )
+        try await engine.importPDF(driveFileID: "file-cold-start", projektID: "2026-099")
+
+        // "App neu gestartet": frische Store-Instanz auf derselben learning.sqlite.
+        let storeB = LearningStore(directory: dir)
+        let importsB = try storeB.database().documentImports()
+        #expect(importsB.count == 1)
+        #expect(importsB.first?.recordID == "rec_cold_start")
+        #expect(importsB.first?.fileName == "Angebot_Cold_Start.pdf")
+        #expect(importsB.first?.isDuplicate == false)
+    }
+
     // MARK: Lern-Loop schließt sich und überlebt Neustart (Schritt 8)
     // Stärkster Beweis für den Lern-Loop: drei Anpassungen mit `lernen: true` über
     // die Engine erzeugen einen Kandidaten; `promote` macht daraus einen aktiven

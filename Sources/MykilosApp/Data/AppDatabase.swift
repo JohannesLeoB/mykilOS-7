@@ -30,8 +30,38 @@ public enum AppDatabase {
         case failed(message: String, dbPath: String)
     }
 
+    /// Marker-Datei für eine vom Nutzer vorgemerkte Wiederherstellung. Enthält den
+    /// Ordnerpfad des gewählten Backups. Wird beim nächsten Start angewandt — sicher,
+    /// weil die DB dann noch NICHT geöffnet ist (kein Überschreiben offener Handles).
+    public static var restoreMarkerURL: URL {
+        productionURL.deletingLastPathComponent().appendingPathComponent("restore-pending.txt")
+    }
+
+    /// Merkt ein Backup zur Wiederherstellung beim nächsten Start vor (schreibt den Marker).
+    public static func stageRestore(from folderURL: URL) {
+        try? folderURL.path.write(to: restoreMarkerURL, atomically: true, encoding: .utf8)
+    }
+
+    /// Wendet eine vorgemerkte Wiederherstellung an, falls vorhanden. Der Marker wird
+    /// VOR dem Versuch gelöscht — ein fehlgeschlagenes Restore darf keinen Start-Loop erzeugen.
+    private static func applyPendingRestoreIfAny() {
+        let marker = restoreMarkerURL
+        guard let folderPath = try? String(contentsOf: marker, encoding: .utf8),
+              !folderPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        try? FileManager.default.removeItem(at: marker)
+        let folderURL = URL(fileURLWithPath: folderPath.trimmingCharacters(in: .whitespacesAndNewlines))
+        let service = BackupService(appSupportDir: productionURL.deletingLastPathComponent())
+        do {
+            try service.restore(from: folderURL, appVersion: AppIdentity.version, gitCommit: AppIdentity.gitCommit)
+            MykLog.backup.notice("Vorgemerkte Wiederherstellung angewandt: \(folderURL.lastPathComponent, privacy: .public)")
+        } catch {
+            MykLog.backup.error("Vorgemerkte Wiederherstellung fehlgeschlagen: \(String(describing: error), privacy: .public)")
+        }
+    }
+
     /// Öffnet die Produktions-DB wiederherstellbar — wirft nie, crasht nie.
     public static func boot() -> Boot {
+        applyPendingRestoreIfAny()   // vor dem Öffnen: ausstehendes Restore anwenden
         let dbURL = productionURL
         do {
             try FileManager.default.createDirectory(

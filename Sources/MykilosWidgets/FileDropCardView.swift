@@ -1,74 +1,107 @@
 import SwiftUI
+import AppKit
 import MykilosKit
 import MykilosDesign
 import MykilosServices
 
 // MARK: - FileDropCardView
-// Wird in AssistantChatView als Kontext-Karte unterhalb des Composers gezeigt,
-// sobald der Nutzer eine Datei in den Chat gedroppt hat.
-// Bietet zwei Aktionen:
-//   1. „In Drive ablegen" — schlägt einen Ordner vor, lädt nach Bestätigung hoch.
-//   2. „Per Mail senden" — hängt die Datei an einen Gmail-ENTWURF an (kein Senden!).
-// Beide Pfade sind Bestätigungs-Gates — kein Auto-Write.
+// Kontext-Karte unterhalb des Composers, sobald Dateien in den Chat gedroppt wurden.
+// 2026-07-02: sammelt MEHRERE Dateien (auch aus gedropten Ordnern; ZIPs bleiben als
+// eine Datei). Zwei Sammelaktionen:
+//   1. „Alle in Drive ablegen" — lädt jede Datei in den vorgeschlagenen Ordner hoch.
+//   2. „Alle an Mail-Entwurf" — hängt ALLE Dateien an EINEN Gmail-ENTWURF an (kein Senden).
+// Beide sind Bestätigungs-Gates — kein Auto-Write.
 public struct FileDropCardView: View {
-    let file: DroppedFile
-    let suggestedFolderID: String?
-    let suggestedFolderName: String?
-    let onUploadToDrive: ((DroppedFile) async -> DriveUploadOutcome)?
-    let onAttachToMailDraft: ((DroppedFile) async -> DraftCreateOutcome)?
+    let files: [DroppedFile]
+    let rootFolder: DriveFolderChoice?
+    let loadSubfolders: ((String) async -> [DriveFolderChoice])?
+    let onUploadToDrive: ((DroppedFile, String) async -> DriveUploadOutcome)?
+    let onAttachToMailDraft: (([DroppedFile]) async -> DraftCreateOutcome)?
+    let onRemove: (DroppedFile) -> Void
     let onDismiss: () -> Void
 
+    // Ziel-Ordner-Auswahl: default = Projektordner-Wurzel; Unterordner werden lazy geladen.
+    @State private var target: DriveFolderChoice?
+    @State private var subfolders: [DriveFolderChoice] = []
+
     public init(
-        file: DroppedFile,
-        suggestedFolderID: String? = nil,
-        suggestedFolderName: String? = nil,
-        onUploadToDrive: ((DroppedFile) async -> DriveUploadOutcome)? = nil,
-        onAttachToMailDraft: ((DroppedFile) async -> DraftCreateOutcome)? = nil,
+        files: [DroppedFile],
+        rootFolder: DriveFolderChoice? = nil,
+        loadSubfolders: ((String) async -> [DriveFolderChoice])? = nil,
+        onUploadToDrive: ((DroppedFile, String) async -> DriveUploadOutcome)? = nil,
+        onAttachToMailDraft: (([DroppedFile]) async -> DraftCreateOutcome)? = nil,
+        onRemove: @escaping (DroppedFile) -> Void = { _ in },
         onDismiss: @escaping () -> Void
     ) {
-        self.file = file
-        self.suggestedFolderID = suggestedFolderID
-        self.suggestedFolderName = suggestedFolderName
+        self.files = files
+        self.rootFolder = rootFolder
+        self.loadSubfolders = loadSubfolders
         self.onUploadToDrive = onUploadToDrive
         self.onAttachToMailDraft = onAttachToMailDraft
+        self.onRemove = onRemove
         self.onDismiss = onDismiss
+        _target = State(initialValue: rootFolder)
+    }
+
+    private var gesamtBytes: Int { files.reduce(0) { $0 + $1.data.count } }
+    private var gesamtGroesse: String {
+        ByteCountFormatter.string(fromByteCount: Int64(gesamtBytes), countStyle: .file)
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s4) {
-            // Header
             HStack(spacing: MykSpace.s3) {
                 Image(systemName: "arrow.down.doc")
-                    .font(.mykCaption)
-                    .foregroundStyle(MykColor.drive.color)
-                Text("DATEI ABGELEGT")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.drive.color)
+                    .font(.mykCaption).foregroundStyle(MykColor.drive.color)
+                Text(files.count == 1 ? "DATEI ABGELEGT" : "\(files.count) DATEIEN · \(gesamtGroesse)")
+                    .font(.mykMono(10)).foregroundStyle(MykColor.drive.color)
                 Spacer()
                 Button { onDismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.mykMono(9.5))
-                        .foregroundStyle(MykColor.faint.color)
+                    Image(systemName: "xmark").font(.mykMono(9.5)).foregroundStyle(MykColor.faint.color)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Alle abgelegten Dateien verwerfen")
             }
 
-            // Datei-Preview
-            FileDropPreviewRow(file: file)
+            // Datei-Liste mit Einzel-Entfernen (bei mehr als einer Datei).
+            VStack(spacing: MykSpace.s2) {
+                ForEach(files) { file in
+                    HStack(spacing: MykSpace.s3) {
+                        FileDropPreviewRow(file: file)
+                        Spacer(minLength: 0)
+                        if files.count > 1 {
+                            Button { onRemove(file) } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.mykMono(11)).foregroundStyle(MykColor.faint.color)
+                            }
+                            .buttonStyle(.plain)
+                            .help("Diese Datei entfernen")
+                            .accessibilityLabel("\(file.fileName) entfernen")
+                        }
+                    }
+                }
+            }
+
+            // Ziel-Ordner-Auswahl (nur wenn ein Projektordner bekannt ist).
+            if rootFolder != nil {
+                zielOrdnerPicker
+            }
 
             Divider().overlay(MykColor.line.color)
 
-            // Aktionen
             HStack(spacing: MykSpace.s4) {
-                DriveUploadButton(
-                    file: file,
-                    folderName: suggestedFolderName,
+                DriveUploadAllButton(
+                    files: files,
+                    folderName: target?.name,
+                    targetFolderID: target?.id ?? rootFolder?.id,
                     onUpload: onUploadToDrive
                 )
-                MailAttachButton(
-                    file: file,
-                    onAttach: onAttachToMailDraft
-                )
+                // Mail-Entwurf-Aktion nur zeigen, wenn ein Callback existiert. So kann die
+                // Karte auch dort wiederverwendet werden, wo NUR die Drive-Ablage sinnvoll
+                // ist (z. B. Mail-Anhang → Drive-Projektordner) — ohne toten Button.
+                if onAttachToMailDraft != nil {
+                    MailAttachAllButton(files: files, onAttach: onAttachToMailDraft)
+                }
             }
         }
         .padding(.horizontal, MykSpace.s5)
@@ -82,28 +115,75 @@ public struct FileDropCardView: View {
                 )
         )
         .frame(maxWidth: 460)
+        .task {
+            // Unterordner des Projektordners für die Ziel-Auswahl laden (read-only).
+            guard subfolders.isEmpty, let root = rootFolder, let loader = loadSubfolders else { return }
+            subfolders = await loader(root.id)
+        }
+    }
+
+    // Ziel-Ordner-Menü: Projektordner (Wurzel) + geladene Unterordner.
+    private var zielOrdnerPicker: some View {
+        HStack(spacing: MykSpace.s2) {
+            Image(systemName: "folder")
+                .font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
+            Text("Ziel").font(.mykMono(9.5)).foregroundStyle(MykColor.faint.color)
+            Menu {
+                if let root = rootFolder {
+                    Button {
+                        target = root
+                    } label: {
+                        if target?.id == root.id {
+                            Label("\(root.name) (Projektordner)", systemImage: "checkmark")
+                        } else {
+                            Text("\(root.name) (Projektordner)")
+                        }
+                    }
+                }
+                if !subfolders.isEmpty {
+                    Divider()
+                    ForEach(subfolders) { folder in
+                        Button {
+                            target = folder
+                        } label: {
+                            if target?.id == folder.id {
+                                Label(folder.name, systemImage: "checkmark")
+                            } else {
+                                Text(folder.name)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: MykSpace.s2) {
+                    Text(target?.name ?? rootFolder?.name ?? "Projektordner")
+                        .font(.mykMono(10)).foregroundStyle(MykColor.drive.color).lineLimit(1)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.mykMono(8)).foregroundStyle(MykColor.muted.color)
+                }
+                .padding(.horizontal, MykSpace.s3)
+                .padding(.vertical, MykSpace.s2)
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            Spacer()
+        }
     }
 }
 
-// MARK: - FileDropPreviewRow
-// Zeigt Dateiname, Typ und Größe — reine Anzeige.
+// MARK: - FileDropPreviewRow (Anzeige einer Datei)
 struct FileDropPreviewRow: View {
     let file: DroppedFile
 
     var body: some View {
         HStack(spacing: MykSpace.s3) {
             Image(systemName: file.iconName)
-                .font(.mykHeadline)
-                .foregroundStyle(MykColor.drive.color)
-                .frame(width: 28)
+                .font(.mykHeadline).foregroundStyle(MykColor.drive.color).frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
-                Text(file.fileName)
-                    .font(.mykBody)
-                    .foregroundStyle(MykColor.ink.color)
-                    .lineLimit(1)
+                Text(file.fileName).font(.mykBody).foregroundStyle(MykColor.ink.color).lineLimit(1)
                 Text("\(mimeLabel(file.mimeType)) · \(file.humanSize)")
-                    .font(.mykMono(9.5))
-                    .foregroundStyle(MykColor.muted.color)
+                    .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
             }
         }
     }
@@ -114,6 +194,7 @@ struct FileDropPreviewRow: View {
         case "image/jpeg": return "JPEG"
         case "image/png": return "PNG"
         case "image/heic": return "HEIC"
+        case "application/zip", "application/x-zip-compressed": return "ZIP"
         default:
             if mime.hasPrefix("image/") { return "Bild" }
             if mime.hasPrefix("text/") { return "Text" }
@@ -122,149 +203,112 @@ struct FileDropPreviewRow: View {
     }
 }
 
-// MARK: - DriveUploadButton
-// Inline-Button (nicht eigene Karte) mit Phasen: idle → uploading → done / error / permissionRequired.
-private struct DriveUploadButton: View {
-    let file: DroppedFile
+// MARK: - DriveUploadAllButton
+// Lädt alle Dateien nacheinander in den vorgeschlagenen Ordner (loopt den Einzel-Callback).
+private struct DriveUploadAllButton: View {
+    let files: [DroppedFile]
     let folderName: String?
-    let onUpload: ((DroppedFile) async -> DriveUploadOutcome)?
+    let targetFolderID: String?
+    let onUpload: ((DroppedFile, String) async -> DriveUploadOutcome)?
 
-    private enum Phase: Equatable {
-        case idle, uploading, done(String?), failed(String), permissionRequired
-    }
+    private enum Phase: Equatable { case idle, uploading(Int, Int), done(Int), failed(String), permissionRequired }
     @State private var phase: Phase = .idle
 
     var body: some View {
-        phaseView
-            .frame(maxWidth: .infinity, alignment: .leading)
+        phaseView.frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    @ViewBuilder
-    private var phaseView: some View {
+    @ViewBuilder private var phaseView: some View {
         switch phase {
         case .idle:
             Button {
-                guard let onUpload else {
-                    phase = .failed("Drive-Ablage hier nicht verfügbar.")
-                    return
+                guard let onUpload else { phase = .failed("Drive-Ablage hier nicht verfügbar."); return }
+                guard let targetFolderID, !targetFolderID.isEmpty else {
+                    phase = .failed("Kein Ziel-Ordner gewählt."); return
                 }
-                phase = .uploading
                 Task {
-                    let outcome = await onUpload(file)
-                    switch outcome {
-                    case .uploaded(let link):    phase = .done(link)
-                    case .failed(let msg):       phase = .failed(msg)
-                    case .permissionRequired:    phase = .permissionRequired
+                    var ok = 0
+                    for (i, file) in files.enumerated() {
+                        phase = .uploading(i + 1, files.count)
+                        switch await onUpload(file, targetFolderID) {
+                        case .uploaded:           ok += 1
+                        case .permissionRequired: phase = .permissionRequired; return
+                        case .failed(let msg):    phase = .failed(msg); return
+                        }
                     }
+                    phase = .done(ok)
                 }
             } label: {
                 Label(folderLabel, systemImage: "folder.badge.plus")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.paper.color)
-                    .padding(.horizontal, MykSpace.s4)
-                    .padding(.vertical, MykSpace.s3)
+                    .font(.mykMono(10)).foregroundStyle(MykColor.paper.color)
+                    .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
                     .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.drive.color))
             }
-            .buttonStyle(.plain)
-            .disabled(onUpload == nil)
+            .buttonStyle(.plain).disabled(onUpload == nil)
 
-        case .uploading:
+        case .uploading(let i, let n):
             HStack(spacing: MykSpace.s2) {
                 ProgressView().controlSize(.small)
-                Text("Lade hoch …").font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+                Text("Lade hoch … \(i)/\(n)").font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
             }
 
-        case .done(let link):
-            HStack(spacing: MykSpace.s2) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(MykColor.positive.color)
-                if let link, let url = URL(string: link) {
-                    Button {
-                        NSWorkspace.shared.open(url)
-                    } label: {
-                        Text("In Drive ansehen")
-                            .font(.mykMono(9.5))
-                            .foregroundStyle(MykColor.drive.color)
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Text("In Drive abgelegt")
-                        .font(.mykMono(9.5))
-                        .foregroundStyle(MykColor.positive.color)
-                }
-            }
+        case .done(let n):
+            Label(n == 1 ? "In Drive abgelegt" : "\(n) in Drive abgelegt", systemImage: "checkmark.circle.fill")
+                .font(.mykMono(9.5)).foregroundStyle(MykColor.positive.color)
 
         case .failed(let msg):
             Label(msg, systemImage: "exclamationmark.triangle")
-                .font(.mykMono(9.5))
-                .foregroundStyle(MykColor.critical.color)
-                .lineLimit(3)
+                .font(.mykMono(9.5)).foregroundStyle(MykColor.critical.color).lineLimit(3)
 
         case .permissionRequired:
             VStack(alignment: .leading, spacing: MykSpace.s2) {
                 Label("Drive-Schreibzugriff nötig", systemImage: "lock")
-                    .font(.mykMono(9.5))
-                    .foregroundStyle(MykColor.tasks.color)
-                Text("In Einstellungen → Google → neu verbinden (drive.file-Scope).")
-                    .font(.mykMono(9))
-                    .foregroundStyle(MykColor.muted.color)
+                    .font(.mykMono(9.5)).foregroundStyle(MykColor.tasks.color)
+                Text("In Einstellungen → Verbindungen → Google neu verbinden (drive.file-Scope).")
+                    .font(.mykMono(9)).foregroundStyle(MykColor.muted.color)
             }
         }
     }
 
     private var folderLabel: String {
-        if let name = folderName { return "→ \(name)" }
-        return "In Drive ablegen"
+        let prefix = files.count > 1 ? "Alle" : "In Drive"
+        if let name = folderName { return "\(prefix) → \(name)" }
+        return files.count > 1 ? "Alle in Drive ablegen" : "In Drive ablegen"
     }
 }
 
-// MARK: - MailAttachButton
-// Inline-Button: hängt die Datei an einen Gmail-ENTWURF ohne Betreff/Empfänger an.
-// Der App-Layer öffnet dann den Gmail-Entwurf — Versenden ist ein hartes NO-GO.
-private struct MailAttachButton: View {
-    let file: DroppedFile
-    let onAttach: ((DroppedFile) async -> DraftCreateOutcome)?
+// MARK: - MailAttachAllButton
+// Hängt ALLE Dateien an EINEN Gmail-ENTWURF an (kein Senden). Array-Callback.
+private struct MailAttachAllButton: View {
+    let files: [DroppedFile]
+    let onAttach: (([DroppedFile]) async -> DraftCreateOutcome)?
 
-    private enum Phase: Equatable {
-        case idle, attaching, done(String), failed(String)
-    }
+    private enum Phase: Equatable { case idle, attaching, done(String), failed(String) }
     @State private var phase: Phase = .idle
 
     var body: some View {
-        phaseView
-            .frame(maxWidth: .infinity, alignment: .leading)
+        phaseView.frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    @ViewBuilder
-    private var phaseView: some View {
+    @ViewBuilder private var phaseView: some View {
         switch phase {
         case .idle:
             Button {
-                guard let onAttach else {
-                    phase = .failed("Mail-Ablage hier nicht verfügbar.")
-                    return
-                }
+                guard let onAttach else { phase = .failed("Mail-Ablage hier nicht verfügbar."); return }
                 phase = .attaching
                 Task {
-                    let outcome = await onAttach(file)
-                    switch outcome {
+                    switch await onAttach(files) {
                     case .created(let info): phase = .done(info)
                     case .failed(let msg):   phase = .failed(msg)
                     }
                 }
             } label: {
-                Label("Per Mail senden", systemImage: "envelope.badge.plus")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.drive.color)
-                    .padding(.horizontal, MykSpace.s4)
-                    .padding(.vertical, MykSpace.s3)
-                    .background(
-                        RoundedRectangle(cornerRadius: MykRadius.sm)
-                            .stroke(MykColor.drive.color, lineWidth: 1)
-                    )
+                Label(files.count > 1 ? "Alle an Mail-Entwurf" : "Per Mail senden", systemImage: "envelope.badge.plus")
+                    .font(.mykMono(10)).foregroundStyle(MykColor.drive.color)
+                    .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
+                    .background(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.drive.color, lineWidth: 1))
             }
-            .buttonStyle(.plain)
-            .disabled(onAttach == nil)
+            .buttonStyle(.plain).disabled(onAttach == nil)
 
         case .attaching:
             HStack(spacing: MykSpace.s2) {
@@ -274,14 +318,11 @@ private struct MailAttachButton: View {
 
         case .done(let info):
             Label(info, systemImage: "checkmark.circle.fill")
-                .font(.mykMono(9.5))
-                .foregroundStyle(MykColor.positive.color)
+                .font(.mykMono(9.5)).foregroundStyle(MykColor.positive.color)
 
         case .failed(let msg):
             Label(msg, systemImage: "exclamationmark.triangle")
-                .font(.mykMono(9.5))
-                .foregroundStyle(MykColor.critical.color)
-                .lineLimit(3)
+                .font(.mykMono(9.5)).foregroundStyle(MykColor.critical.color).lineLimit(3)
         }
     }
 }

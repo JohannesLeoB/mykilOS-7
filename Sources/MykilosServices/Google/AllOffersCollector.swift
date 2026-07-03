@@ -149,6 +149,13 @@ public enum AllOffersSort: String, CaseIterable, Sendable {
 public enum AllOffersSorter {
     public typealias Offer = AllOffersCollector.AggregatedOffer
 
+    /// Kategorie-Filter über den Dokumenttyp (Angebote / Bestellungen / …).
+    /// `nil` = keine Einschränkung.
+    public static func filtered(_ offers: [Offer], category: OfferDocumentType?) -> [Offer] {
+        guard let category else { return offers }
+        return offers.filter { $0.offer.type == category }
+    }
+
     /// Volltext-Filter über Dateiname, Projekt-Titel/-Nummer und Belegnummer.
     public static func filtered(_ offers: [Offer], query: String) -> [Offer] {
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)

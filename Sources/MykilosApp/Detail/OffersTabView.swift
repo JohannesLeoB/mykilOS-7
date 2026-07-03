@@ -20,11 +20,36 @@ struct OffersTabView: View {
     /// Optionaler expliziter lokaler Pfad-Hinweis (Airtable `driveFolderPath`).
     var driveFolderPath: String? = nil
 
+    // Block G („Zum Angebot"): nur im Projekt-Kontext gesetzt. Fehlt der Store,
+    // bleibt die Vorschau-Sektion aus (z. B. im globalen Angebote-Modul).
+    var workBasketStore: WorkBasketStore? = nil
+    var kundeName: String? = nil
+    var projektTitel: String? = nil
+
     @State private var loader = OffersLoader()
     @State private var searchText = ""
     @State private var sortByDate = true   // true = neueste zuerst, false = Name A–Z
 
+    @State private var vorschauStore = AngebotsVorschauStore()
+    @State private var vorschauMeldung: String?
+
     var body: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s7) {
+            if workBasketStore != nil { vorschauSektion }
+            driveBelege
+        }
+        .task(id: driveFolderID) {
+            await loader.load(rootFolderID: driveFolderID)
+        }
+        .task(id: projectID) {
+            if workBasketStore != nil { vorschauStore.lade(projektNummer: projectID) }
+        }
+        .padding(.horizontal, MykSpace.s9)
+        .padding(.top, MykSpace.s7)
+        .padding(.bottom, 64)   // Platz für SaveStateBar
+    }
+
+    private var driveBelege: some View {
         WidgetContainer(
             kind: .drive,
             sourceLabel: sourceLabel,
@@ -37,18 +62,91 @@ struct OffersTabView: View {
                 columns
             }
         }
-        .task(id: driveFolderID) {
-            await loader.load(rootFolderID: driveFolderID)
-        }
-        .padding(.horizontal, MykSpace.s9)
-        .padding(.top, MykSpace.s7)
-        .padding(.bottom, 64)   // Platz für SaveStateBar
     }
 
     private var sourceLabel: String {
         switch loader.renderState {
         case .content: "GOOGLE DRIVE  ·  \(loader.incoming.count + loader.outgoing.count) BELEGE"
         default:       "GOOGLE DRIVE"
+        }
+    }
+
+    // MARK: - Block G: Kalkulations-Vorschau aus dem Warenkorb (lokal, kein Drive/sevDesk)
+
+    private var vorschauSektion: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s4) {
+            HStack {
+                SourceChip(kind: .cash)
+                Text("Angebots-Vorschau").mykWidgetTitle()
+                Spacer()
+                Button {
+                    erzeugeVorschau()
+                } label: {
+                    Label("Zum Angebot", systemImage: "doc.badge.plus")
+                        .font(.mykSmall)
+                        .foregroundStyle(MykColor.paper.color)
+                        .padding(.horizontal, MykSpace.s5)
+                        .padding(.vertical, MykSpace.s3)
+                        .background(MykColor.cash.color)
+                        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                }
+                .buttonStyle(.plain)
+                .help("Erzeugt eine lokale Kalkulations-Vorschau (PDF) aus dem persistierten Warenkorb")
+                .accessibilityLabel("Angebots-Vorschau aus Warenkorb erzeugen")
+            }
+
+            Text(AngebotsRenderMapper.vorschauFussnote)
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.drive.color)
+
+            if let vorschauMeldung {
+                HStack(spacing: MykSpace.s2) {
+                    Image(systemName: "info.circle").font(.mykCaption).foregroundStyle(MykColor.muted.color)
+                    Text(vorschauMeldung).font(.mykSmall).foregroundStyle(MykColor.muted.color)
+                }
+            }
+
+            if vorschauStore.dateien.isEmpty {
+                Text("Noch keine Vorschau erzeugt.")
+                    .font(.mykSmall)
+                    .foregroundStyle(MykColor.faint.color)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(vorschauStore.dateien) { datei in
+                        VorschauZeile(datei: datei, istNeu: datei.url == vorschauStore.zuletztErzeugt)
+                        if datei.id != vorschauStore.dateien.last?.id {
+                            Divider().overlay(MykColor.line.color.opacity(0.6))
+                        }
+                    }
+                }
+            }
+        }
+        .padding(MykSpace.s6)
+        .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
+        .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
+    }
+
+    private func erzeugeVorschau() {
+        vorschauMeldung = nil
+        guard let workBasketStore else { return }
+        do {
+            let baskets = try workBasketStore.alle(projektNummer: projectID)
+            guard let basket = baskets.max(by: { $0.erstellt < $1.erstellt }),
+                  basket.picks.isEmpty == false else {
+                vorschauMeldung = "Kein Warenkorb mit Positionen für dieses Projekt — erst im Warenkorb-Widget/Intake anlegen."
+                return
+            }
+            let url = vorschauStore.erzeuge(
+                basket: basket,
+                kunde: kundeName ?? "—",
+                projektTitel: projektTitel ?? projectID,
+                projektNummer: projectID
+            )
+            if url == nil {
+                vorschauMeldung = vorschauStore.letzterFehler ?? "Vorschau konnte nicht erstellt werden."
+            }
+        } catch {
+            vorschauMeldung = error.localizedDescription
         }
     }
 
@@ -82,6 +180,7 @@ struct OffersTabView: View {
             }
             .buttonStyle(.plain)
             .help(sortByDate ? "Sortierung: Neueste zuerst — klicken für Name A–Z" : "Sortierung: Name A–Z — klicken für Datum")
+            .accessibilityLabel(sortByDate ? "Sortierung: Neueste zuerst — klicken für Name A–Z" : "Sortierung: Name A–Z — klicken für Datum")
         }
         .padding(.horizontal, MykSpace.s4)
         .padding(.vertical, MykSpace.s2)
@@ -106,6 +205,7 @@ struct OffersTabView: View {
         }
         .buttonStyle(.plain)
         .help("Aktualisieren")
+        .accessibilityLabel("Aktualisieren")
     }
 
     private var retryButton: some View {
@@ -192,6 +292,54 @@ private struct OfferColumn: View {
                         Divider().overlay(MykColor.line.color.opacity(0.6))
                     }
                 }
+            }
+        }
+    }
+}
+
+// MARK: - VorschauZeile (Block G — lokale Vorschau-PDF)
+private struct VorschauZeile: View {
+    let datei: AngebotsVorschauStore.VorschauDatei
+    let istNeu: Bool
+
+    var body: some View {
+        Button {
+            NSWorkspace.shared.open(datei.url)
+        } label: {
+            HStack(spacing: MykSpace.s4) {
+                Image(systemName: "doc.richtext")
+                    .font(.mykCaption)
+                    .foregroundStyle(MykColor.cash.color)
+                    .frame(width: 20)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(datei.name)
+                        .font(.mykSmall)
+                        .foregroundStyle(MykColor.ink.color)
+                        .lineLimit(1)
+                    Text(datei.erstellt.formatted(.relative(presentation: .named)))
+                        .font(.mykMono(9.5))
+                        .foregroundStyle(MykColor.muted.color)
+                }
+                if istNeu {
+                    Text("NEU")
+                        .font(.mykMono(8))
+                        .foregroundStyle(MykColor.paper.color)
+                        .padding(.horizontal, MykSpace.s2)
+                        .padding(.vertical, 1)
+                        .background(MykColor.positive.color)
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
+                Spacer()
+                Image(systemName: "arrow.up.right.square")
+                    .font(.mykMono(10))
+                    .foregroundStyle(MykColor.faint.color)
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.vertical, MykSpace.s3)
+        .contextMenu {
+            Button("Im Finder zeigen") {
+                NSWorkspace.shared.activateFileViewerSelecting([datei.url])
             }
         }
     }

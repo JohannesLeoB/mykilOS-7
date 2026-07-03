@@ -1,0 +1,5293 @@
+{
+  "_meta": {
+    "source": "Slack export MYKILOS Jan 1 2025 - Jun 18 2026",
+    "generated": "2026-06-27 21:10",
+    "purpose": "Read-once historical port for mykilOS Bibliothekarin / mapping layer",
+    "totals": {
+      "channels": 229,
+      "messages": 12465,
+      "project_channels": 96,
+      "offer_channels": 73,
+      "price_observations": 467,
+      "issue_signals": 443,
+      "contacts_indexed": 10
+    }
+  },
+  "suppliers": [
+    {
+      "name": "Weichsel78 (Tischlerei)",
+      "mentions": 176,
+      "top_channels": [
+        [
+          "p_ma_pohl_dk",
+          55
+        ],
+        [
+          "p_hh_fuerste_jo",
+          38
+        ],
+        [
+          "p_hh_pyke_jo",
+          17
+        ],
+        [
+          "p_schw_schneider_dk",
+          17
+        ],
+        [
+          "a_hh_baron-voght-strasse_dk",
+          6
+        ]
+      ]
+    },
+    {
+      "name": "Quooker (Armaturen)",
+      "mentions": 96,
+      "top_channels": [
+        [
+          "verkauf",
+          14
+        ],
+        [
+          "p_b_zeisberg_jj",
+          13
+        ],
+        [
+          "p_ma_pohl_dk",
+          10
+        ],
+        [
+          "p_schw_schneider_dk",
+          7
+        ],
+        [
+          "p_hh_neuhaus_dk",
+          6
+        ]
+      ]
+    },
+    {
+      "name": "Pelle (Holz)",
+      "mentions": 78,
+      "top_channels": [
+        [
+          "p_b_zeisberg_jj",
+          49
+        ],
+        [
+          "p_l_benjamin_jb",
+          22
+        ],
+        [
+          "service_reparatur",
+          3
+        ],
+        [
+          "a_anfragen_projekte",
+          1
+        ],
+        [
+          "a_hh_schmid_dkjlb",
+          1
+        ]
+      ]
+    },
+    {
+      "name": "Gaggenau (Geräte)",
+      "mentions": 69,
+      "top_channels": [
+        [
+          "p_ma_pohl_dk",
+          15
+        ],
+        [
+          "p_hh_fuckner_huetter_se",
+          13
+        ],
+        [
+          "p_fl_issel_dk",
+          9
+        ],
+        [
+          "verkauf",
+          8
+        ],
+        [
+          "p_b_vahedi_ps",
+          3
+        ]
+      ]
+    },
+    {
+      "name": "Bartels",
+      "mentions": 61,
+      "top_channels": [
+        [
+          "p_ma_pohl_dk",
+          21
+        ],
+        [
+          "p_hh_amoulong_jj",
+          21
+        ],
+        [
+          "p_hh_may_heimhuder64",
+          6
+        ],
+        [
+          "p_hh_doehle_dk",
+          4
+        ],
+        [
+          "p_schw_schneider_dk",
+          3
+        ]
+      ]
+    },
+    {
+      "name": "Miele (Geräte)",
+      "mentions": 52,
+      "top_channels": [
+        [
+          "p_l_benjamin_jb",
+          5
+        ],
+        [
+          "p_hh_amoulong_jj",
+          4
+        ],
+        [
+          "accounting",
+          4
+        ],
+        [
+          "p_hh_kötter_dk",
+          3
+        ],
+        [
+          "p_lb_janka_öljeschlager_joh",
+          3
+        ]
+      ]
+    },
+    {
+      "name": "Meylahn",
+      "mentions": 51,
+      "top_channels": [
+        [
+          "p_hh_fuerste_jo",
+          15
+        ],
+        [
+          "p_hh_damann_meyer_dk",
+          9
+        ],
+        [
+          "p_hh_neuhaus_dk",
+          8
+        ],
+        [
+          "p_hh_fuckner_huetter_se",
+          4
+        ],
+        [
+          "p_hh_amoulong_jj",
+          3
+        ]
+      ]
+    },
+    {
+      "name": "HKT",
+      "mentions": 36,
+      "top_channels": [
+        [
+          "p_schw_schneider_dk",
+          8
+        ],
+        [
+          "p_hh_amoulong_jj",
+          7
+        ],
+        [
+          "p_hh_fuerste_jo",
+          6
+        ],
+        [
+          "tischler",
+          3
+        ],
+        [
+          "a_hh_baron-voght-strasse_dk",
+          3
+        ]
+      ]
+    },
+    {
+      "name": "Dornbracht (Armaturen)",
+      "mentions": 35,
+      "top_channels": [
+        [
+          "p_ma_pohl_dk",
+          9
+        ],
+        [
+          "p_hh_neuhaus_dk",
+          7
+        ],
+        [
+          "a_b_vola_nord_dk",
+          2
+        ],
+        [
+          "p_l_benjamin_jb",
+          2
+        ],
+        [
+          "p_hh_plass",
+          2
+        ]
+      ]
+    },
+    {
+      "name": "V-ZUG (Geräte)",
+      "mentions": 33,
+      "top_channels": [
+        [
+          "p_hh_neuhaus_dk",
+          11
+        ],
+        [
+          "service_reparatur",
+          4
+        ],
+        [
+          "p_b_zeisberg_jj",
+          3
+        ],
+        [
+          "hamburg",
+          3
+        ],
+        [
+          "a_hh_schmid_dkjlb",
+          2
+        ]
+      ]
+    },
+    {
+      "name": "Vola (Armaturen)",
+      "mentions": 31,
+      "top_channels": [
+        [
+          "verkauf",
+          7
+        ],
+        [
+          "a_b_vola_nord_dk",
+          6
+        ],
+        [
+          "p_ma_pohl_dk",
+          5
+        ],
+        [
+          "p_hh_studioausbau_dk",
+          2
+        ],
+        [
+          "p_hh_natalie-delhaes_jlb_dk",
+          2
+        ]
+      ]
+    },
+    {
+      "name": "BORA (Geräte)",
+      "mentions": 26,
+      "top_channels": [
+        [
+          "a_hh_saga_jlb",
+          3
+        ],
+        [
+          "p_lb_janka_öljeschlager_joh",
+          3
+        ],
+        [
+          "p_b_koch_dk",
+          2
+        ],
+        [
+          "a_hh_heinz_joh",
+          2
+        ],
+        [
+          "p_hh_neuhaus_dk",
+          2
+        ]
+      ]
+    },
+    {
+      "name": "Gessi (Armaturen, IT)",
+      "mentions": 26,
+      "top_channels": [
+        [
+          "service_reparatur",
+          8
+        ],
+        [
+          "p_hh_damann_meyer_dk",
+          4
+        ],
+        [
+          "p_hh_doehle_dk",
+          3
+        ],
+        [
+          "p_hh_amoulong_jj",
+          2
+        ],
+        [
+          "p_b_vahedi_ps",
+          1
+        ]
+      ]
+    },
+    {
+      "name": "Speedmaster",
+      "mentions": 21,
+      "top_channels": [
+        [
+          "p_lb_janka_öljeschlager_joh",
+          8
+        ],
+        [
+          "p_b_koch_dk",
+          4
+        ],
+        [
+          "a_hh_cirnavuk",
+          2
+        ],
+        [
+          "p_hh_studioausbau_dk",
+          2
+        ],
+        [
+          "tischler",
+          1
+        ]
+      ]
+    },
+    {
+      "name": "Horatec (Produktion)",
+      "mentions": 15,
+      "top_channels": [
+        [
+          "p_hh_neurologie_vinahl_jlb",
+          6
+        ],
+        [
+          "a_hh_cirnavuk",
+          2
+        ],
+        [
+          "p_schw_schneider_dk",
+          2
+        ],
+        [
+          "tischler",
+          1
+        ],
+        [
+          "a_hh_saga_jlb",
+          1
+        ]
+      ]
+    },
+    {
+      "name": "Neff (Geräte)",
+      "mentions": 14,
+      "top_channels": [
+        [
+          "a_hh_saga_jlb",
+          2
+        ],
+        [
+          "verkauf",
+          2
+        ],
+        [
+          "p_hh_studioausbau_dk",
+          2
+        ],
+        [
+          "p_lb_janka_öljeschlager_joh",
+          2
+        ],
+        [
+          "a_hh_schmid_dkjlb",
+          1
+        ]
+      ]
+    },
+    {
+      "name": "Gemtec",
+      "mentions": 10,
+      "top_channels": [
+        [
+          "p_ebs_stahl_entwicklung",
+          3
+        ],
+        [
+          "a_anfragen_produkte",
+          2
+        ],
+        [
+          "a_b_loidl-bank_lb",
+          2
+        ],
+        [
+          "verkauf",
+          1
+        ],
+        [
+          "website",
+          1
+        ]
+      ]
+    },
+    {
+      "name": "Mattiazzi (Möbel)",
+      "mentions": 9,
+      "top_channels": [
+        [
+          "p_hh_heinemann",
+          3
+        ],
+        [
+          "verkauf_mattiazzi",
+          2
+        ],
+        [
+          "p_hh_amoulong_jj",
+          1
+        ],
+        [
+          "accounting",
+          1
+        ],
+        [
+          "p_hh_junge_dk_jlb_jb",
+          1
+        ]
+      ]
+    },
+    {
+      "name": "Blum (Beschläge)",
+      "mentions": 8,
+      "top_channels": [
+        [
+          "a_hh_leif-müller_jlb",
+          2
+        ],
+        [
+          "a_hh_wißmeyer_dk",
+          1
+        ],
+        [
+          "tischler",
+          1
+        ],
+        [
+          "p_l_benjamin_jb",
+          1
+        ],
+        [
+          "p_hh_fuerste_jo",
+          1
+        ]
+      ]
+    },
+    {
+      "name": "Jandali",
+      "mentions": 5,
+      "top_channels": [
+        [
+          "p_fl_issel_dk",
+          4
+        ],
+        [
+          "p_hh_niemann2_dk",
+          1
+        ]
+      ]
+    },
+    {
+      "name": "Hailo",
+      "mentions": 2,
+      "top_channels": [
+        [
+          "bibliothek",
+          1
+        ],
+        [
+          "a_hh_knauss_jj",
+          1
+        ]
+      ]
+    },
+    {
+      "name": "Siemens (Geräte)",
+      "mentions": 2,
+      "top_channels": [
+        [
+          "a_b_pfahlert",
+          1
+        ],
+        [
+          "a_hh_cirnavuk",
+          1
+        ]
+      ]
+    }
+  ],
+  "team": [
+    {
+      "name": "Daniel",
+      "messages": 2733
+    },
+    {
+      "name": "Jasper",
+      "messages": 2288
+    },
+    {
+      "name": "Frauke Fudickar",
+      "messages": 2097
+    },
+    {
+      "name": "Jilliana",
+      "messages": 1735
+    },
+    {
+      "name": "Johannes Leo Berger",
+      "messages": 859
+    },
+    {
+      "name": "philipp",
+      "messages": 173
+    },
+    {
+      "name": "Georgie",
+      "messages": 132
+    },
+    {
+      "name": "Accounting",
+      "messages": 107
+    },
+    {
+      "name": "Sebastian",
+      "messages": 71
+    },
+    {
+      "name": "Nele",
+      "messages": 1
+    }
+  ],
+  "projects": [
+    {
+      "channel": "a_b_amklubhaus",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Amklubhaus",
+      "client_key": "amklubhaus",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-05-13",
+      "last": "2025-05-13",
+      "days_since_last": 400,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_behr",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Behr",
+      "client_key": "behr",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-05-23",
+      "last": "2025-05-23",
+      "days_since_last": 390,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_chialo",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Chialo",
+      "client_key": "chialo",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-03-03",
+      "last": "2026-05-21",
+      "days_since_last": 27,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_faerber_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Faerber",
+      "client_key": "faerber",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 10,
+      "first": "2025-01-02",
+      "last": "2025-05-23",
+      "days_since_last": 390,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "leider nicht"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-02",
+        "philipp",
+        "ich habe leider keine Rückmeldungen erhalten - Telefonnummer habe ich keine :/"
+      ]
+    },
+    {
+      "channel": "a_b_falko_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Falko",
+      "client_key": "falko",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-01-06",
+      "days_since_last": 527,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_greyswan_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Greyswan",
+      "client_key": "greyswan",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-05-13",
+      "last": "2025-05-13",
+      "days_since_last": 400,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_lieberberg_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Lieberberg",
+      "client_key": "lieberberg",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-03-03",
+      "last": "2025-03-03",
+      "days_since_last": 471,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_lindskrog",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Lindskrog",
+      "client_key": "lindskrog",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 1,
+      "first": "2025-01-06",
+      "last": "2025-03-20",
+      "days_since_last": 454,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "philipp",
+        "sind leider abgesprungen, bevor wir angefangen haben, habe gerade nochmal mit ihr telefoniert"
+      ]
+    },
+    {
+      "channel": "a_b_loidl-bank_lb",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Loidl Bank Lb",
+      "client_key": "loidl-bank_lb",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 40,
+      "first": "2025-01-06",
+      "last": "2026-06-08",
+      "days_since_last": 9,
+      "max_amount_eur": 259680,
+      "price_mentions": 18,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "fehler "
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-04-20",
+        "Daniel",
+        "Willkomnmen in diesem alten Loidl-W-Bank Channel. Hier findet man sicher noch ein paar wertvolle Infos :slightly_smiling_face:"
+      ]
+    },
+    {
+      "channel": "a_b_loidl_bank_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Loidl Bank",
+      "client_key": "loidl_bank",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-01-06",
+      "days_since_last": 527,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_masuhr-jonas",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Masuhr Jonas",
+      "client_key": "masuhr-jonas",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 44,
+      "first": "2026-03-26",
+      "last": "2026-06-15",
+      "days_since_last": 2,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 3,
+      "issue_keywords": [
+        "unzufrieden",
+        "fehler ",
+        "abgesagt"
+      ],
+      "matched_contacts": [
+        {
+          "name": "Jonas",
+          "confidence": 80,
+          "via": "name token",
+          "email": null,
+          "phone": "+4915774163367",
+          "city": null,
+          "org": "Werkstätten Weißensee",
+          "role": "Kunde"
+        },
+        {
+          "name": "Jonas Nussbaum",
+          "confidence": 80,
+          "via": "name token",
+          "email": null,
+          "phone": "01782633874",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        },
+        {
+          "name": "Jonas Cordes",
+          "confidence": 80,
+          "via": "name token",
+          "email": "jonascordes.jc@gmail.com",
+          "phone": null,
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2026-03-26",
+        "Frauke Fudickar",
+        "Lichtplanung/ Leuchtenangebot für Katharina Jonas und Julian Mazuhr. Haben Haus gekauft in Berlin und sind unzufrieden mit ihrem aktuellen Händler. Beratung ist wohl nicht gut. Habe ein paar Telefonate mit Julian geführt und er hat mir Bild"
+      ]
+    },
+    {
+      "channel": "a_b_müller-spreer_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Müller Spreer",
+      "client_key": "müller-spreer",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-03-03",
+      "days_since_last": 471,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Peter Müller Müller",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "ausbauberlin@gmx.de",
+          "phone": "+4915901643581",
+          "city": null,
+          "org": "Ausbau Berlin",
+          "role": "Kunde"
+        },
+        {
+          "name": "Steffi Müller",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "0151 42379018",
+          "city": null,
+          "org": "Tagesmutter",
+          "role": "Kunde"
+        },
+        {
+          "name": "Uwe Müller",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "mueller-ukl-bau@t-online.de",
+          "phone": "0172 4308265",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_obermueller_mg",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Obermueller",
+      "client_key": "obermueller",
+      "location": "Berlin",
+      "leads": [
+        "Marie Gehrhardt"
+      ],
+      "messages": 0,
+      "first": "2025-05-30",
+      "last": "2025-05-30",
+      "days_since_last": 383,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_pasztori_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Pasztori",
+      "client_key": "pasztori",
+      "location": "Berlin",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 2,
+      "first": "2025-06-02",
+      "last": "2026-03-10",
+      "days_since_last": 99,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-06-16",
+        "Daniel",
+        "die lieg ein wenig rum, sind auch nur Geräte"
+      ]
+    },
+    {
+      "channel": "a_b_patricio_farrell",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Patricio Farrell",
+      "client_key": "patricio_farrell",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-03-03",
+      "days_since_last": 471,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_pfahlert",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Pfahlert",
+      "client_key": "pfahlert",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 5,
+      "first": "2025-02-14",
+      "last": "2025-04-01",
+      "days_since_last": 442,
+      "max_amount_eur": 7800,
+      "price_mentions": 5,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-02-14",
+        "Frauke Fudickar",
+        "Guten Tag, ich möchte gerne mit euch meine neue Küche planen und habe bereits einige Skizzen sowie eine grobe Vorstellung der gewünschten Geräte vorbereitet. Es wäre großartig, wenn ihr mir eure verfügbaren Materialien zeigen und Feedback z"
+      ]
+    },
+    {
+      "channel": "a_b_richards",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Richards",
+      "client_key": "richards",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 2,
+      "first": "2025-09-11",
+      "last": "2026-01-21",
+      "days_since_last": 147,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-09-11",
+        "Jilliana",
+        "_Hi Lauren,_ _I hope you’re doing well and that you received my last email. In the meantime, I’ve received feedback from our carpenter: the unit you requested, including a stainless steel countertop with integrated sink, measurement, delive"
+      ]
+    },
+    {
+      "channel": "a_b_san-vicente_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "San Vicente",
+      "client_key": "san-vicente",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 2,
+      "first": "2025-01-06",
+      "last": "2025-03-03",
+      "days_since_last": 471,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "philipp",
+        "habe letzte Woche nochmal nachgehakt, wie es aussieht"
+      ]
+    },
+    {
+      "channel": "a_b_schwaier_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Schwaier",
+      "client_key": "schwaier",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-02-18",
+      "last": "2025-05-27",
+      "days_since_last": 386,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_seifert_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Seifert",
+      "client_key": "seifert",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-01-13",
+      "days_since_last": 520,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_sparschuh_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Sparschuh",
+      "client_key": "sparschuh",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-01-06",
+      "days_since_last": 527,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_strothjohann_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Strothjohann",
+      "client_key": "strothjohann",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-05-27",
+      "last": "2025-05-27",
+      "days_since_last": 386,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_b_vola_nord_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Vola Nord",
+      "client_key": "vola_nord",
+      "location": "Berlin",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 41,
+      "first": "2025-02-25",
+      "last": "2025-08-18",
+      "days_since_last": 303,
+      "max_amount_eur": 9982,
+      "price_mentions": 1,
+      "issue_signals": 5,
+      "issue_keywords": [
+        "fehler ",
+        "verzug",
+        "kritisch"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-03-03",
+        "Daniel",
+        "@Frauke Fudickar hier die Alternative für die Quadro Brause:"
+      ]
+    },
+    {
+      "channel": "a_ber_sylvain_dkjlb",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Sylvain",
+      "client_key": "sylvain",
+      "location": "Berlin",
+      "leads": [
+        "Johannes Leo Berger",
+        "Daniel Klapsing"
+      ],
+      "messages": 7,
+      "first": "2026-03-02",
+      "last": "2026-04-17",
+      "days_since_last": 61,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "abgesagt"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-03-02",
+        "Johannes Leo Berger",
+        "Projektordner angelegt unter https://drive.google.com/drive/folders/1_6hGB-kPsg1MTzhl-l18N6KhpL0iLfys?usp=share_link Bilder von Bestand sind im Projektordner abgelegt"
+      ]
+    },
+    {
+      "channel": "a_h_von_stromberg",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Von Stromberg",
+      "client_key": "von_stromberg",
+      "location": "Hannover",
+      "leads": [],
+      "messages": 5,
+      "first": "2025-07-04",
+      "last": "2025-08-04",
+      "days_since_last": 317,
+      "max_amount_eur": 20000,
+      "price_mentions": 2,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-07-04",
+        "Frauke Fudickar",
+        "Gestern Abend hatte Amélie von Stromberg angerufen und nun ihre Anfrage geschickt. ich sagte ihr, dass wir uns dann mit einem Erstberatungstermin zurück melden. Sie selbst wohnt in Hamburg, das Bau-Objekt ist in der Nähe von Hannover"
+      ]
+    },
+    {
+      "channel": "a_hb_düringer_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Düringer",
+      "client_key": "düringer",
+      "location": "Bremen",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-05-15",
+      "days_since_last": 398,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_26014_mehringer",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "26014 Mehringer",
+      "client_key": "26014_mehringer",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 15,
+      "first": "2026-05-21",
+      "last": "2026-06-15",
+      "days_since_last": 2,
+      "max_amount_eur": 80,
+      "price_mentions": 1,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "riss ",
+        "abgelehnt"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-05-21",
+        "Frauke Fudickar",
+        "Anour Leuchte; Konfiguration sowie Lichtplanung-Vorschlag"
+      ]
+    },
+    {
+      "channel": "a_hh_26_14_mehringer_bre22",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "26 14 Mehringer",
+      "client_key": "26_14_mehringer",
+      "location": "Hamburg",
+      "leads": [
+        "bre22"
+      ],
+      "messages": 0,
+      "first": "2026-05-26",
+      "last": "2026-06-02",
+      "days_since_last": 15,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_baron-voght-strasse_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Baron Voght Strasse",
+      "client_key": "baron-voght-strasse",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 97,
+      "first": "2026-01-06",
+      "last": "2026-05-05",
+      "days_since_last": 43,
+      "max_amount_eur": 1468,
+      "price_mentions": 2,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "dringend!!"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-01-15",
+        "Frauke Fudickar",
+        "Übersicht Leuchten IP44 verkaufsübersicht mit VK und EK netto preisen @Daniel für HS Architekten. Modellnamen sollten nochmal geprüft werden, ebenso Zubehör. Da fehlten teile und manche Modellangaben waren nicht konkret, deswegen habe ich a"
+      ]
+    },
+    {
+      "channel": "a_hh_brunn_mg",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Brunn",
+      "client_key": "brunn",
+      "location": "Hamburg",
+      "leads": [
+        "Marie Gehrhardt"
+      ],
+      "messages": 0,
+      "first": "2025-05-13",
+      "last": "2025-05-13",
+      "days_since_last": 400,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_cirnavuk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Cirnavuk",
+      "client_key": "cirnavuk",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 28,
+      "first": "2026-05-06",
+      "last": "2026-06-17",
+      "days_since_last": 0,
+      "max_amount_eur": 23000,
+      "price_mentions": 8,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "riss "
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-05-06",
+        "Johannes Leo Berger",
+        "to do´s : • Frontenmaterial noch nicht geklärt, Kundin beschrieb irgendwas, was wie Metalliclack klang - Kundin schickt Bilder/Moods/Beispiele • Layout rough verifizieren, Volumenüberschlag und Grundriss • Grundriss Küche/Bunker/Terrasse no"
+      ]
+    },
+    {
+      "channel": "a_hh_corbelin_jo",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Corbelin",
+      "client_key": "corbelin",
+      "location": "Hamburg",
+      "leads": [
+        "Jasper"
+      ],
+      "messages": 25,
+      "first": "2025-05-07",
+      "last": "2025-05-28",
+      "days_since_last": 385,
+      "max_amount_eur": 7500,
+      "price_mentions": 4,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-05-07",
+        "Daniel",
+        "- Höhe Fußleisten: ca 15 cm - Höhe Türzarge: 2,415 m - Höhe Fenstersturz: 3,08 m - Abstand Fenster zur Wand: 25 cm (Fensterbank 23 cm) - Tiefe Heizung: 26,5 cm - Maß x (Wand zu Wand): 4,57 m - Maße Drucker: Tiefe 45 cm (inkl. Kabel), Breite"
+      ]
+    },
+    {
+      "channel": "a_hh_dietz_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Dietz",
+      "client_key": "dietz",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 18,
+      "first": "2025-01-06",
+      "last": "2025-05-23",
+      "days_since_last": 390,
+      "max_amount_eur": 50000,
+      "price_mentions": 4,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-13",
+        "Daniel",
+        "@Jasper kannst du bitte die besprechung noch protokollieren? Chance = 50.000"
+      ]
+    },
+    {
+      "channel": "a_hh_dornebusch",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Dornebusch",
+      "client_key": "dornebusch",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 13,
+      "first": "2025-10-22",
+      "last": "2025-11-20",
+      "days_since_last": 209,
+      "max_amount_eur": 1100,
+      "price_mentions": 1,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "riss ",
+        "abgesagt"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-10-22",
+        "Frauke Fudickar",
+        "Hi Daniel, Danke nochmal für deinen Anruf. Wie besprochen vorab der Grundriss und ein Foto, wie wir uns die Optik und den Aufbau für unsere Küche wünschen. Freue mich auf morgen 11 Uhr :)"
+      ]
+    },
+    {
+      "channel": "a_hh_edenharder",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Edenharder",
+      "client_key": "edenharder",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 16,
+      "first": "2025-06-04",
+      "last": "2025-11-24",
+      "days_since_last": 205,
+      "max_amount_eur": 150,
+      "price_mentions": 1,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-06-04",
+        "Frauke Fudickar",
+        "Anruf am 4.6.25 - hat Wohnung gekauft und saniert gerade (Altbau). Möchte noch Einbauschränke und evtl Küche. Design soll eher neutraler sein und sie will sich da nicht ausleben, da es gut sein kann, dass sie die Wohnung weiterverkaufen. :w"
+      ]
+    },
+    {
+      "channel": "a_hh_frankenheim_meckpom",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Frankenheim Meckpom",
+      "client_key": "frankenheim_meckpom",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 5,
+      "first": "2025-01-06",
+      "last": "2025-03-10",
+      "days_since_last": 464,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "Frauke Fudickar",
+        "wollen sich melden, bzw. die Mutter meldet sich direkt"
+      ]
+    },
+    {
+      "channel": "a_hh_gaedechensweg15_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Gaedechensweg15",
+      "client_key": "gaedechensweg15",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 0,
+      "first": "2025-05-24",
+      "last": "2025-05-24",
+      "days_since_last": 389,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_griese_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Griese",
+      "client_key": "griese",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 5,
+      "first": "2025-02-17",
+      "last": "2025-04-10",
+      "days_since_last": 433,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "abgesagt"
+      ],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_griese_k27_dk_jlb",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Griese K27",
+      "client_key": "griese_k27",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing",
+        "Johannes Leo Berger"
+      ],
+      "messages": 8,
+      "first": "2026-04-16",
+      "last": "2026-06-08",
+      "days_since_last": 9,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-04-20",
+        "Johannes Leo Berger",
+        "Angebot verfassen zu Stunden, 8 Std Vorbereitung 4 Std Besprechung mit Fr.Griese 12 Std. Nachbereitung etc. 4 Std. 2D Möblierung andere Räumigkeiten 6 Std. 3D Modell von 2D in 3D = > 32 Std"
+      ]
+    },
+    {
+      "channel": "a_hh_hahn_godeffroy",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Hahn Godeffroy",
+      "client_key": "hahn_godeffroy",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-03-03",
+      "last": "2025-05-23",
+      "days_since_last": 390,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Hahn",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+4917642868666",
+          "city": null,
+          "org": "Denkmalamt",
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_hausschildt_pitch",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Hausschildt Pitch",
+      "client_key": "hausschildt_pitch",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 3,
+      "first": "2025-01-13",
+      "last": "2025-05-19",
+      "days_since_last": 394,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_heinz_joh",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Heinz",
+      "client_key": "heinz",
+      "location": "Hamburg",
+      "leads": [
+        "Johannes (joh)"
+      ],
+      "messages": 78,
+      "first": "2025-11-28",
+      "last": "2026-03-09",
+      "days_since_last": 100,
+      "max_amount_eur": 25000,
+      "price_mentions": 9,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-12-01",
+        "Daniel",
+        "Carsten Heinz <<mailto:Carsten.Heinz@wartenberg-vv.de|Carsten.Heinz@wartenberg-vv.de>>; Stefanie Heinz <<mailto:stefanie.heinz@wartenberg-vv.de|stefanie.heinz@wartenberg-vv.de>>"
+      ]
+    },
+    {
+      "channel": "a_hh_hoppe_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Hoppe",
+      "client_key": "hoppe",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 26,
+      "first": "2025-01-27",
+      "last": "2025-07-28",
+      "days_since_last": 324,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 4,
+      "issue_keywords": [
+        "riss ",
+        "absage",
+        "abgesagt"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-27",
+        "Daniel",
+        "Sanierung, Kontakt über Holger, Begehung heute"
+      ]
+    },
+    {
+      "channel": "a_hh_johnsallee_ff",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Johnsallee",
+      "client_key": "johnsallee",
+      "location": "Hamburg",
+      "leads": [
+        "Frauke Fudickar"
+      ],
+      "messages": 1,
+      "first": "2025-05-22",
+      "last": "2025-08-18",
+      "days_since_last": 303,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-05-22",
+        "Daniel",
+        "@Frauke Fudickar wenn wir hier leuchten liefern, dann können wir das fehlende Portfolio über diesen Großhandel lieferanten ausgleichen:"
+      ]
+    },
+    {
+      "channel": "a_hh_knauss_jj",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Knauss",
+      "client_key": "knauss",
+      "location": "Hamburg",
+      "leads": [
+        "jj"
+      ],
+      "messages": 21,
+      "first": "2025-01-28",
+      "last": "2025-04-28",
+      "days_since_last": 415,
+      "max_amount_eur": 3580,
+      "price_mentions": 5,
+      "issue_signals": 5,
+      "issue_keywords": [
+        "absage",
+        "abgesagt",
+        "riss "
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-28",
+        "Jasper",
+        "Neue Küchenanfrage von Judith Stromski. Kannte irgendwen der schon ne Küche über uns gemacht hat in Rotherbaum (war nicht Hommerich Ropohl) und Janina aus dem Lehmweg"
+      ]
+    },
+    {
+      "channel": "a_hh_koehler_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Koehler",
+      "client_key": "koehler",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 4,
+      "first": "2026-02-17",
+      "last": "2026-06-16",
+      "days_since_last": 1,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "abgesagt"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-02-17",
+        "Daniel",
+        "Anfrage für Küche in Harvestehude, mit Novy Undercover (Dekton) meldet sich mit Terminvorschlag für Erstberatung"
+      ]
+    },
+    {
+      "channel": "a_hh_koriath_se",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Koriath",
+      "client_key": "koriath",
+      "location": "Hamburg",
+      "leads": [
+        "Sam Ellenrieder"
+      ],
+      "messages": 0,
+      "first": "2025-05-17",
+      "last": "2025-05-17",
+      "days_since_last": 396,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_leif-müller_jlb",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Leif Müller",
+      "client_key": "leif-müller",
+      "location": "Hamburg",
+      "leads": [
+        "Johannes Leo Berger"
+      ],
+      "messages": 29,
+      "first": "2026-03-25",
+      "last": "2026-06-15",
+      "days_since_last": 2,
+      "max_amount_eur": 15000,
+      "price_mentions": 2,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "leider nicht"
+      ],
+      "matched_contacts": [
+        {
+          "name": "Peter Müller Müller",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "ausbauberlin@gmx.de",
+          "phone": "+4915901643581",
+          "city": null,
+          "org": "Ausbau Berlin",
+          "role": "Kunde"
+        },
+        {
+          "name": "Steffi Müller",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "0151 42379018",
+          "city": null,
+          "org": "Tagesmutter",
+          "role": "Kunde"
+        },
+        {
+          "name": "Uwe Müller",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "mueller-ukl-bau@t-online.de",
+          "phone": "0172 4308265",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2026-03-25",
+        "Johannes Leo Berger",
+        "@Johannes Leo Berger Termin vor Ort zum Aufmaß und Besprechung am Montag, 30.3. um 9:00 Uhr"
+      ]
+    },
+    {
+      "channel": "a_hh_lorenz_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Lorenz",
+      "client_key": "lorenz",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 0,
+      "first": "2025-05-30",
+      "last": "2025-05-30",
+      "days_since_last": 383,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Lorenz  Kiepke",
+          "confidence": 80,
+          "via": "name token",
+          "email": "lkiepke@horatec.de",
+          "phone": "05257 9825279 ::: 01512 2062882",
+          "city": null,
+          "org": "Horatec",
+          "role": "Lieferant/Partner"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_mengers_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Mengers",
+      "client_key": "mengers",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 0,
+      "first": "2025-02-10",
+      "last": "2025-02-25",
+      "days_since_last": 477,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_moerickestrasse_jb",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Moerickestrasse",
+      "client_key": "moerickestrasse",
+      "location": "Hamburg",
+      "leads": [
+        "Jilliana Bahr"
+      ],
+      "messages": 37,
+      "first": "2026-03-23",
+      "last": "2026-06-16",
+      "days_since_last": 1,
+      "max_amount_eur": 17900,
+      "price_mentions": 6,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-04-20",
+        "Johannes Leo Berger",
+        "Warten auf denkmalschutzrechtliche Genehmigung, kein to do"
+      ]
+    },
+    {
+      "channel": "a_hh_pahmeier_sen",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Pahmeier",
+      "client_key": "pahmeier",
+      "location": "Hamburg",
+      "leads": [
+        "Sebastian Enders"
+      ],
+      "messages": 44,
+      "first": "2026-03-17",
+      "last": "2026-06-10",
+      "days_since_last": 7,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Christoph Pahmeier",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "040 429 38 242 ::: 01775440544",
+          "city": "Halstenbek",
+          "org": "Tischlerei Pahmeier",
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2026-03-17",
+        "Sebastian",
+        "Die Skizze ging an Christoph Pahmeier raus."
+      ]
+    },
+    {
+      "channel": "a_hh_pässler-wilde",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Pässler Wilde",
+      "client_key": "pässler-wilde",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 11,
+      "first": "2025-03-05",
+      "last": "2025-05-19",
+      "days_since_last": 394,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Joni Wilde",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491717582822",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        },
+        {
+          "name": "Laura Wilde",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "laura_wilde@gmx.net",
+          "phone": "+49 172 4082134",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2025-03-06",
+        "Daniel",
+        "@Jilliana hier ist das Angebot/Schätzpreis für Päßler. Demnach darf der Tischler 18K netto kosten. Die APL 4,5 K netto. Kannst Du bitte Simon entsprechend mit dem Zielpreis anfragen? Das gleiche für den Stein bei Meylahn, gern auch hier mit"
+      ]
+    },
+    {
+      "channel": "a_hh_rehder_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Rehder",
+      "client_key": "rehder",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 41,
+      "first": "2025-11-24",
+      "last": "2026-06-15",
+      "days_since_last": 2,
+      "max_amount_eur": 10000,
+      "price_mentions": 4,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "verspätet",
+        "gerissen"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-11-24",
+        "Daniel",
+        "Herr Rehder, der Reeder, Besuch in Anfang DEZ geplant."
+      ]
+    },
+    {
+      "channel": "a_hh_saga_jlb",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Saga",
+      "client_key": "saga",
+      "location": "Hamburg",
+      "leads": [
+        "Johannes Leo Berger"
+      ],
+      "messages": 35,
+      "first": "2026-01-19",
+      "last": "2026-02-23",
+      "days_since_last": 114,
+      "max_amount_eur": 57715,
+      "price_mentions": 9,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "riss ",
+        "abgesagt"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-01-19",
+        "Frauke Fudickar",
+        "Anfrage von Christian Saga <mailto:mail@christiansaga.de|mail@christiansaga.de> , mit welchem ich am Dienstag kurz telefoniert hatte: _Guten Tag zusammen,_ _wie telefonisch angesprochen, bin ich im Moment auf der Suche nach Möglichkeiten ei"
+      ]
+    },
+    {
+      "channel": "a_hh_schmid_dkjlb",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Schmid",
+      "client_key": "schmid",
+      "location": "Hamburg",
+      "leads": [
+        "Johannes Leo Berger",
+        "Daniel Klapsing"
+      ],
+      "messages": 63,
+      "first": "2026-03-05",
+      "last": "2026-06-15",
+      "days_since_last": 2,
+      "max_amount_eur": 4600,
+      "price_mentions": 9,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "riss "
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-03-05",
+        "Johannes Leo Berger",
+        "Notizen Termin 5.3. : • Spritzschutz keine einzelnen Fliesen - möglichst vollflächiges Material. • Farbiges Glas ( rückseitig lackiert ) fand Anklang • Stein würde ich klar Taj Mahal empfehlen da sehr gefälliger und bekannter Stein der auch"
+      ]
+    },
+    {
+      "channel": "a_hh_schultzendorff_gl",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Schultzendorff",
+      "client_key": "schultzendorff",
+      "location": "Hamburg",
+      "leads": [
+        "Georgia von le Fort"
+      ],
+      "messages": 6,
+      "first": "2025-12-01",
+      "last": "2026-03-05",
+      "days_since_last": 104,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-12-12",
+        "Daniel",
+        "good news, wir haben eine mündliche Vorbeauftragung für die Planung und Sanierung des Objekts. Das Ding soll bis Weihnachten 2026 fertig sein. Eine der Hauptaufgaben für 2026! Vollumfängliche Planung und Baustellenbetreuung!!"
+      ]
+    },
+    {
+      "channel": "a_hh_seydel",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Seydel",
+      "client_key": "seydel",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-02-10",
+      "last": "2025-04-15",
+      "days_since_last": 428,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_stange_sen",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Stange",
+      "client_key": "stange",
+      "location": "Hamburg",
+      "leads": [
+        "Sebastian Enders"
+      ],
+      "messages": 20,
+      "first": "2025-10-01",
+      "last": "2025-11-06",
+      "days_since_last": 223,
+      "max_amount_eur": 24000,
+      "price_mentions": 3,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "riss ",
+        "absage"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-10-01",
+        "Daniel",
+        "neue Küchenanfrage, Empfehlung über Monique Amoulong, Termin nächster Donnerstag 9:00!"
+      ]
+    },
+    {
+      "channel": "a_hh_theuerkauf_jb",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Theuerkauf",
+      "client_key": "theuerkauf",
+      "location": "Hamburg",
+      "leads": [
+        "Jilliana Bahr"
+      ],
+      "messages": 0,
+      "first": "2025-09-01",
+      "last": "2025-11-03",
+      "days_since_last": 226,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_tommi_koenig_jlb",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Tommi Koenig",
+      "client_key": "tommi_koenig",
+      "location": "Hamburg",
+      "leads": [
+        "Johannes Leo Berger"
+      ],
+      "messages": 9,
+      "first": "2026-06-15",
+      "last": "2026-06-17",
+      "days_since_last": 0,
+      "max_amount_eur": 4047,
+      "price_mentions": 1,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-06-15",
+        "Frauke Fudickar",
+        "A-N-D // Bei 'der neue Beckmann' angefragt Pipeline Pendant CM1-3 (AND) https://a-n-d.com/PIPELINE-PENDANT-CM1-3"
+      ]
+    },
+    {
+      "channel": "a_hh_trautwein",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Trautwein",
+      "client_key": "trautwein",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 12,
+      "first": "2025-11-10",
+      "last": "2026-03-11",
+      "days_since_last": 98,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-11-10",
+        "Jasper",
+        "@Daniel bitte Projektübersicht erstellen"
+      ]
+    },
+    {
+      "channel": "a_hh_ujeyl",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Ujeyl",
+      "client_key": "ujeyl",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-02-10",
+      "last": "2025-02-14",
+      "days_since_last": 488,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_vonboch_jb",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Vonboch",
+      "client_key": "vonboch",
+      "location": "Hamburg",
+      "leads": [
+        "Jilliana Bahr"
+      ],
+      "messages": 12,
+      "first": "2026-06-08",
+      "last": "2026-06-12",
+      "days_since_last": 5,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "leider nicht"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-06-08",
+        "Jilliana",
+        "<!channel> Habe mal einen Channel erstellt. Morgen Aufmass. @Daniel Wenn die Pläne kommen, bitte hier slacken."
+      ]
+    },
+    {
+      "channel": "a_hh_wackerhagen_jb",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Wackerhagen",
+      "client_key": "wackerhagen",
+      "location": "Hamburg",
+      "leads": [
+        "Jilliana Bahr"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-01-06",
+      "days_since_last": 527,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_hh_wißmeyer_dk",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Wißmeyer",
+      "client_key": "wißmeyer",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 37,
+      "first": "2025-09-08",
+      "last": "2025-12-17",
+      "days_since_last": 182,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "absage"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-09-08",
+        "Daniel",
+        "@Jilliana bitte Marike Dörwaldt antworten"
+      ]
+    },
+    {
+      "channel": "a_hh_zitscher_jo",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Zitscher",
+      "client_key": "zitscher",
+      "location": "Hamburg",
+      "leads": [
+        "Jasper"
+      ],
+      "messages": 42,
+      "first": "2025-09-01",
+      "last": "2026-06-15",
+      "days_since_last": 2,
+      "max_amount_eur": 5000,
+      "price_mentions": 2,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-09-08",
+        "Frauke Fudickar",
+        "Quooker muss umgebaut werden. bis zum 30.9. mit Bahadir - Termin ausmachen, cross check ob neuer Quooker mit Kunde und cross check Einbau Müllsystem mit Bahadir. @Frauke Fudickar"
+      ]
+    },
+    {
+      "channel": "a_modular_rsp_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Modular Rsp",
+      "client_key": "modular_rsp",
+      "location": null,
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-02-17",
+      "last": "2025-02-17",
+      "days_since_last": 485,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Thomas Mehls",
+          "confidence": 55,
+          "via": "organisation",
+          "email": "thomas.mehls@supermodular.com",
+          "phone": "015257936417",
+          "city": null,
+          "org": "Super Modular",
+          "role": "Lieferant/Partner"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "a_ol_fechner_jo",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Fechner",
+      "client_key": "fechner",
+      "location": "Oldenburg",
+      "leads": [
+        "Jasper"
+      ],
+      "messages": 22,
+      "first": "2025-01-27",
+      "last": "2026-02-16",
+      "days_since_last": 121,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-27",
+        "Daniel",
+        "2 Küchen in Oldenburg, Erstberatung am 10.02. um 14:00, Kontakt über Robin von HS Architekten"
+      ]
+    },
+    {
+      "channel": "a_p_wernicke_ps",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Wernicke",
+      "client_key": "wernicke",
+      "location": "?",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-05-16",
+      "last": "2025-05-16",
+      "days_since_last": 397,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "a_paysen_vzug",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Paysen Vzug",
+      "client_key": "paysen_vzug",
+      "location": null,
+      "leads": [],
+      "messages": 2,
+      "first": "2026-01-21",
+      "last": "2026-06-15",
+      "days_since_last": 2,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "riss "
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-01-21",
+        "Frauke Fudickar",
+        "Liebe Frau Paysen, Danke für das nette Telefonat und Ihre Anfrage. Hier schicke ich Ihnen meine Kontaktdaten und setze direkt Daniel Klapsing in cc. Folgende Themen könnten wir bei uns im Studio bei einem Beratungsgespräch vor Ort bespreche"
+      ]
+    },
+    {
+      "channel": "a_sa_hustadt_jo",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Hustadt",
+      "client_key": "hustadt",
+      "location": "Saarland",
+      "leads": [
+        "Jasper"
+      ],
+      "messages": 37,
+      "first": "2026-03-31",
+      "last": "2026-06-15",
+      "days_since_last": 2,
+      "max_amount_eur": 10535,
+      "price_mentions": 15,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-04-20",
+        "Johannes Leo Berger",
+        "@Jilliana Musterpaket zusammenstellen, nach Moodboard, für Daniel zu Donnerstag"
+      ]
+    },
+    {
+      "channel": "a_siz_bellavance_jo",
+      "phase": "a",
+      "phase_label": "Angebot/Anfrage",
+      "client_display": "Bellavance",
+      "client_key": "bellavance",
+      "location": "Sizilien",
+      "leads": [
+        "Jasper"
+      ],
+      "messages": 29,
+      "first": "2026-01-13",
+      "last": "2026-02-23",
+      "days_since_last": 114,
+      "max_amount_eur": 51100,
+      "price_mentions": 3,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-01-14",
+        "Daniel",
+        "Kontakt Architekten: <mailto:openstudioarchitetti@gmail.com|openstudioarchitetti@gmail.com>"
+      ]
+    },
+    {
+      "channel": "p_b_albayrak_dk_mg",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Albayrak",
+      "client_key": "albayrak",
+      "location": "Berlin",
+      "leads": [
+        "Daniel Klapsing",
+        "Marie Gehrhardt"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-05-13",
+      "days_since_last": 400,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Özgür Albayrak",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "a@albayrak-photography.com",
+          "phone": "0171 3065653",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_bauhaus_dessau",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Bauhaus Dessau",
+      "client_key": "bauhaus_dessau",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-05-13",
+      "last": "2025-05-13",
+      "days_since_last": 400,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_billen_ps",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Billen",
+      "client_key": "billen",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-05-29",
+      "last": "2025-05-29",
+      "days_since_last": 384,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_butters_cf_ps_kw49",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Butters Cf Ps Kw49",
+      "client_key": "butters_cf_ps_kw49",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-01-20",
+      "last": "2025-05-21",
+      "days_since_last": 392,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_claudius_mg_ps",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Claudius",
+      "client_key": "claudius",
+      "location": "Berlin",
+      "leads": [
+        "Marie Gehrhardt",
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-05-23",
+      "days_since_last": 390,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Paul Claudius",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491725118683",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_claudius_schränke",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Claudius Schränke",
+      "client_key": "claudius_schränke",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-01-20",
+      "last": "2025-03-24",
+      "days_since_last": 450,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Paul Claudius",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491725118683",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_damv_weihnachtsbasar",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Damv Weihnachtsbasar",
+      "client_key": "damv_weihnachtsbasar",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-05-23",
+      "last": "2025-05-23",
+      "days_since_last": 390,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_gerlach",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Gerlach",
+      "client_key": "gerlach",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-05-28",
+      "last": "2025-05-28",
+      "days_since_last": 385,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_habermann_mg",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Habermann",
+      "client_key": "habermann",
+      "location": "Berlin",
+      "leads": [
+        "Marie Gehrhardt"
+      ],
+      "messages": 0,
+      "first": "2025-03-24",
+      "last": "2025-05-20",
+      "days_since_last": 393,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_hamilton_affin_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Hamilton Affin",
+      "client_key": "hamilton_affin",
+      "location": "Berlin",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 21,
+      "first": "2025-01-06",
+      "last": "2025-06-02",
+      "days_since_last": 380,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "stornier"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-07",
+        "Frauke Fudickar",
+        "Info: Hallo Frauke, Das Angebot ist für unser Projekt in der Reichenberger Straße in Kreuzberg, für welches im Moment noch die Ausschreibung läuft. Wir sammeln alle Angebote der verschiedenen Gewerke und spezifischen Baumaterialien, bevor w"
+      ]
+    },
+    {
+      "channel": "p_b_itzen",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Itzen",
+      "client_key": "itzen",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-05-17",
+      "last": "2025-05-17",
+      "days_since_last": 396,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_kaiser_novitch_cf",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Kaiser Novitch",
+      "client_key": "kaiser_novitch",
+      "location": "Berlin",
+      "leads": [
+        "Clara"
+      ],
+      "messages": 0,
+      "first": "2025-04-07",
+      "last": "2025-04-12",
+      "days_since_last": 431,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_ketteler_bad_cf_ps_kw2023",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Ketteler Bad Cf Ps Kw2023",
+      "client_key": "ketteler_bad_cf_ps_kw2023",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-05-19",
+      "days_since_last": 394,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_ketteler_cf_ps_kw2023",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Ketteler Cf Ps Kw2023",
+      "client_key": "ketteler_cf_ps_kw2023",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-05-20",
+      "days_since_last": 393,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_koch_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Koch",
+      "client_key": "koch",
+      "location": "Berlin",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 113,
+      "first": "2025-09-26",
+      "last": "2026-06-10",
+      "days_since_last": 7,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "problem"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-09-26",
+        "Daniel",
+        "@Frauke Fudickar kleines Projekt für Freunde. Gerätebestellung plus Speedmaster. Dieses Angebot wurde eben freigegeben:"
+      ]
+    },
+    {
+      "channel": "p_b_langner_group_ff",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Langner Group",
+      "client_key": "langner_group",
+      "location": "Berlin",
+      "leads": [
+        "Frauke Fudickar"
+      ],
+      "messages": 33,
+      "first": "2025-11-24",
+      "last": "2026-06-05",
+      "days_since_last": 12,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "beschädigt"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-11-24",
+        "Frauke Fudickar",
+        "Sehr geehrter Herr Klapsing, wie gestern telefonisch besprochen, sanieren wir gerade in der Greifswalder Str ein Townhouse. Wir würden uns freuen, wenn Sie uns die ausgesuchten Lampen anbieten könnten. Die Innenarchitekten habe Lampen Light"
+      ]
+    },
+    {
+      "channel": "p_b_marschner_ps",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Marschner",
+      "client_key": "marschner",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-05-13",
+      "last": "2025-05-13",
+      "days_since_last": 400,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_myty_ps_mg",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Myty",
+      "client_key": "myty",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer",
+        "Marie Gehrhardt"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-05-13",
+      "days_since_last": 400,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_niemetzstr_mg_ps",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Niemetzstr",
+      "client_key": "niemetzstr",
+      "location": "Berlin",
+      "leads": [
+        "Marie Gehrhardt",
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-03-10",
+      "last": "2026-05-21",
+      "days_since_last": 27,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_oppenheim_cf",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Oppenheim",
+      "client_key": "oppenheim",
+      "location": "Berlin",
+      "leads": [
+        "Clara"
+      ],
+      "messages": 0,
+      "first": "2025-05-27",
+      "last": "2025-05-27",
+      "days_since_last": 386,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_schäferbad_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Schäferbad",
+      "client_key": "schäferbad",
+      "location": "Berlin",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 77,
+      "first": "2025-01-06",
+      "last": "2025-05-23",
+      "days_since_last": 390,
+      "max_amount_eur": 120,
+      "price_mentions": 1,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "problem"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "Frauke Fudickar",
+        "@Frauke Fudickar Kunden ändern zu Kunde netto statt brutto"
+      ]
+    },
+    {
+      "channel": "p_b_schwesig_ps_cf",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Schwesig",
+      "client_key": "schwesig",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer",
+        "Clara"
+      ],
+      "messages": 0,
+      "first": "2025-05-26",
+      "last": "2025-05-26",
+      "days_since_last": 387,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_scott3",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Scott3",
+      "client_key": "scott3",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-05-27",
+      "last": "2025-05-27",
+      "days_since_last": 386,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_taktonika_woo",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Taktonika",
+      "client_key": "taktonika",
+      "location": "Berlin",
+      "leads": [
+        "woo"
+      ],
+      "messages": 6,
+      "first": "2025-02-17",
+      "last": "2025-05-21",
+      "days_since_last": 392,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-02-17",
+        "Daniel",
+        "habe das Angebot auf Björns Wunsch noch mal angepasst. 80/20 und 3% Skonto. Beraterhonorar kommt noch hinzu"
+      ]
+    },
+    {
+      "channel": "p_b_vahedi_ps",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Vahedi",
+      "client_key": "vahedi",
+      "location": "Berlin",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 169,
+      "first": "2025-01-07",
+      "last": "2025-11-24",
+      "days_since_last": 205,
+      "max_amount_eur": 8090,
+      "price_mentions": 5,
+      "issue_signals": 21,
+      "issue_keywords": [
+        "mängel",
+        "problem",
+        "beschädigt",
+        "absage",
+        "abgesagt"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-08",
+        "Daniel",
+        "findet uns da ein sani gut? oder ein elektriker?"
+      ]
+    },
+    {
+      "channel": "p_b_viaphysio_licht",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Viaphysio Licht",
+      "client_key": "viaphysio_licht",
+      "location": "Berlin",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-01-20",
+      "last": "2025-05-24",
+      "days_since_last": 389,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "David Einsiedler",
+          "confidence": 55,
+          "via": "organisation",
+          "email": "david@midgard.com",
+          "phone": "+49 175 2011 004",
+          "city": "Hamburg",
+          "org": "Midgard Licht GmbH",
+          "role": "Lieferant/Partner"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_b_zeisberg_jj",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Zeisberg",
+      "client_key": "zeisberg",
+      "location": "Berlin",
+      "leads": [
+        "jj"
+      ],
+      "messages": 422,
+      "first": "2025-01-06",
+      "last": "2026-04-14",
+      "days_since_last": 64,
+      "max_amount_eur": 22700,
+      "price_mentions": 23,
+      "issue_signals": 17,
+      "issue_keywords": [
+        "leider nicht",
+        "absage",
+        "reklamier",
+        "fehler ",
+        "abgesagt"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-13",
+        "Daniel",
+        "• @philipp was fehlt uns hier noch um ein verbindliches angebot erstellen zu können?"
+      ]
+    },
+    {
+      "channel": "p_ebs_stahl_entwicklung",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Stahl Entwicklung",
+      "client_key": "stahl_entwicklung",
+      "location": "EBS",
+      "leads": [],
+      "messages": 37,
+      "first": "2025-08-04",
+      "last": "2026-01-22",
+      "days_since_last": 146,
+      "max_amount_eur": 1464,
+      "price_mentions": 10,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-08-04",
+        "Frauke Fudickar",
+        "@Jasper Herr Schütze bittet um RR wegen der Anfrage zur Fertigung vom EBS. Er sagt, er bekommt das wahrscheinlich alles gut hin bis auf die polierte Oberfläche. Da wird man wohl Abdrücke vom Werkzeug sehen, da er vorpoliertes Stahl nehmen w"
+      ]
+    },
+    {
+      "channel": "p_fi_geräte_jochen_ps",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Geräte Jochen",
+      "client_key": "geräte_jochen",
+      "location": "Finnland?",
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 0,
+      "first": "2025-01-20",
+      "last": "2025-05-14",
+      "days_since_last": 399,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_fl_barre_nn",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Barre",
+      "client_key": "barre",
+      "location": "Flensburg",
+      "leads": [
+        "Nicole Nowak"
+      ],
+      "messages": 0,
+      "first": "2025-11-05",
+      "last": "2025-11-20",
+      "days_since_last": 209,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Jörg Barre",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "01755693160",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_fl_issel_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Issel",
+      "client_key": "issel",
+      "location": "Flensburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 179,
+      "first": "2025-07-10",
+      "last": "2026-06-15",
+      "days_since_last": 2,
+      "max_amount_eur": 57263,
+      "price_mentions": 15,
+      "issue_signals": 6,
+      "issue_keywords": [
+        "mangel",
+        "verzöger",
+        "nacharbeit"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-07-10",
+        "Daniel",
+        "walk-in von gestern. Gaggenau Geräte und leichtes Küchenmakeover."
+      ]
+    },
+    {
+      "channel": "p_hh_ammer_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Ammer",
+      "client_key": "ammer",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 19,
+      "first": "2025-03-31",
+      "last": "2025-05-09",
+      "days_since_last": 404,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 4,
+      "issue_keywords": [
+        "riss ",
+        "abgesagt"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-03-31",
+        "Daniel",
+        "Projekt in Blankenese: 3x Küche und einiges an Planung"
+      ]
+    },
+    {
+      "channel": "p_hh_amoulong_jj",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Amoulong",
+      "client_key": "amoulong",
+      "location": "Hamburg",
+      "leads": [
+        "jj"
+      ],
+      "messages": 812,
+      "first": "2025-01-27",
+      "last": "2026-06-16",
+      "days_since_last": 1,
+      "max_amount_eur": 59993,
+      "price_mentions": 34,
+      "issue_signals": 22,
+      "issue_keywords": [
+        "riss ",
+        "leider nicht",
+        "fehler ",
+        "absage",
+        "problem"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-27",
+        "Daniel",
+        "Lieber Daniel, Wie besprochen vor unserem Termin folgende Anhänge: • Plan für das Erdgeschoss von unseren Architekten • drei Links mit Kollagen auf Pinterest für Küche und Bad ◦ Küche: https://pin.it/7sARefJWx ◦ Schlecht: https://pin.it/3Uk"
+      ]
+    },
+    {
+      "channel": "p_hh_arntzen_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Arntzen",
+      "client_key": "arntzen",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 6,
+      "first": "2025-01-02",
+      "last": "2025-06-02",
+      "days_since_last": 380,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "problem"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-02",
+        "Jasper",
+        "Habe ne Rechnung für den Boden von Michael erhalten. Ging auch an dich @Daniel Ist die schon bezahlt? Lege Sie im Ordner eingehende Angebote ab"
+      ]
+    },
+    {
+      "channel": "p_hh_bailey_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Bailey",
+      "client_key": "bailey",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 0,
+      "first": "2025-01-20",
+      "last": "2025-01-20",
+      "days_since_last": 513,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Nick Bailey",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+65 8138 7050",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_baum_jj",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Baum",
+      "client_key": "baum",
+      "location": "Hamburg",
+      "leads": [
+        "jj"
+      ],
+      "messages": 86,
+      "first": "2025-01-20",
+      "last": "2025-09-16",
+      "days_since_last": 274,
+      "max_amount_eur": 120000,
+      "price_mentions": 4,
+      "issue_signals": 5,
+      "issue_keywords": [
+        "riss ",
+        "abgesagt",
+        "leider nicht"
+      ],
+      "matched_contacts": [
+        {
+          "name": "Daniel Baum",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "01632663301",
+          "city": "Hamburg",
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2025-01-20",
+        "Daniel",
+        "Neue Anfrage vom langjährigem Kunden (hat schon eine Mykilos Küche). Nun neue Immobilie. Anfrage nur für Küchenplanung zunächst."
+      ]
+    },
+    {
+      "channel": "p_hh_both_dk_jo",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Both",
+      "client_key": "both",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing",
+        "Jasper"
+      ],
+      "messages": 0,
+      "first": "2025-05-13",
+      "last": "2025-05-13",
+      "days_since_last": 400,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Katja Both",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "01719983912",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_both_jb",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Both",
+      "client_key": "both",
+      "location": "Hamburg",
+      "leads": [
+        "Jilliana Bahr"
+      ],
+      "messages": 0,
+      "first": "2025-02-18",
+      "last": "2025-06-01",
+      "days_since_last": 381,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Katja Both",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "01719983912",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_claussen_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Claussen",
+      "client_key": "claussen",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 109,
+      "first": "2025-01-06",
+      "last": "2026-04-20",
+      "days_since_last": 58,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "sehr dringend"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "Frauke Fudickar",
+        "Rechnung für Lampen stellen, Rechnung für QuadroDesign stellen @Frauke Fudickar"
+      ]
+    },
+    {
+      "channel": "p_hh_cramer_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Cramer",
+      "client_key": "cramer",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 0,
+      "first": "2026-03-10",
+      "last": "2026-06-05",
+      "days_since_last": 12,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Alina Cramer",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491772301828",
+          "city": "Hamburg",
+          "org": null,
+          "role": "Kunde"
+        },
+        {
+          "name": "Johannes Cramer",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+49 179 5973831",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_damann_meyer_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Damann Meyer",
+      "client_key": "damann_meyer",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 86,
+      "first": "2025-01-13",
+      "last": "2026-06-10",
+      "days_since_last": 7,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 10,
+      "issue_keywords": [
+        "mängel",
+        "fehler ",
+        "reklamation",
+        "mangel",
+        "abgesagt"
+      ],
+      "matched_contacts": [
+        {
+          "name": "",
+          "confidence": 55,
+          "via": "organisation",
+          "email": "info@wafmeyer.de",
+          "phone": "04030060161",
+          "city": "Hamburg",
+          "org": "Wilhelm A.F. Meyer GmbH",
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2025-01-13",
+        "Jilliana",
+        "Rami teilt heute oder morgen mit, ob Montage am Do (16.01.) oder Mo (20.01.) erfolgt"
+      ]
+    },
+    {
+      "channel": "p_hh_doehle_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Doehle",
+      "client_key": "doehle",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 169,
+      "first": "2025-01-02",
+      "last": "2026-04-20",
+      "days_since_last": 58,
+      "max_amount_eur": 1000,
+      "price_mentions": 5,
+      "issue_signals": 24,
+      "issue_keywords": [
+        "mängel",
+        "problem",
+        "absage",
+        "nachbesserung",
+        "verzögerung"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-02",
+        "Jasper",
+        "Abschlagsrechnung von Bato @Daniel @Frauke Fudickar"
+      ]
+    },
+    {
+      "channel": "p_hh_engelken2_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Engelken2",
+      "client_key": "engelken2",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 4,
+      "first": "2025-01-06",
+      "last": "2025-05-30",
+      "days_since_last": 383,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "Frauke Fudickar",
+        "@Daniel reflektoren bringen und toaster ausbauen"
+      ]
+    },
+    {
+      "channel": "p_hh_eurogate_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Eurogate",
+      "client_key": "eurogate",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 9,
+      "first": "2025-01-14",
+      "last": "2025-05-21",
+      "days_since_last": 392,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Carmen Kresse",
+          "confidence": 55,
+          "via": "organisation",
+          "email": null,
+          "phone": "+494074052003",
+          "city": null,
+          "org": "EUROGATE",
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2025-01-14",
+        "Daniel",
+        "mit Gerken den Nachlass zum Tresen besprechen + Versetzen des Lederaufsatzes."
+      ]
+    },
+    {
+      "channel": "p_hh_fassbender_dk_kw49-50",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Fassbender Dk Kw49 50",
+      "client_key": "fassbender_dk_kw49-50",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 5,
+      "first": "2025-12-16",
+      "last": "2026-03-06",
+      "days_since_last": 103,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Christina Fassbender",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491712131465",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2026-01-05",
+        "Johannes Leo Berger",
+        "Farbe Silicon laut NCS Farbfächer: NCS S6020-G10Y"
+      ]
+    },
+    {
+      "channel": "p_hh_fuckner_huetter_se",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Fuckner Huetter",
+      "client_key": "fuckner_huetter",
+      "location": "Hamburg",
+      "leads": [
+        "Sam Ellenrieder"
+      ],
+      "messages": 443,
+      "first": "2025-01-03",
+      "last": "2026-06-17",
+      "days_since_last": 0,
+      "max_amount_eur": 185812,
+      "price_mentions": 19,
+      "issue_signals": 14,
+      "issue_keywords": [
+        "leider nicht",
+        "ärger",
+        "problem",
+        "fehler ",
+        "riss "
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-03",
+        "Jasper",
+        "Handtuchstange hinter Insel ergänzen @Jasper"
+      ]
+    },
+    {
+      "channel": "p_hh_fuerste_jo",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Fuerste",
+      "client_key": "fuerste",
+      "location": "Hamburg",
+      "leads": [
+        "Jasper"
+      ],
+      "messages": 508,
+      "first": "2025-01-06",
+      "last": "2025-11-24",
+      "days_since_last": 205,
+      "max_amount_eur": 25803,
+      "price_mentions": 30,
+      "issue_signals": 16,
+      "issue_keywords": [
+        "riss ",
+        "mängel",
+        "problem",
+        "kratzer",
+        "leider nicht"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-07",
+        "Jasper",
+        "_Lieber Jasper ,_ _frohes neues Jahr erstmal für euch und einen guten Start in 2025._ _Ich wollte mich endlich mal wieder melden._ _Ich habe es leider aktuell noch nicht geschafft mich um ein weiteres Vergleichsangebot zu kümmern, das wir ü"
+      ]
+    },
+    {
+      "channel": "p_hh_grau_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Grau",
+      "client_key": "grau",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-03-24",
+      "days_since_last": 450,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_harnack_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Harnack",
+      "client_key": "harnack",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-05-18",
+      "days_since_last": 395,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_hass_dk_se",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Hass",
+      "client_key": "hass",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing",
+        "Sam Ellenrieder"
+      ],
+      "messages": 0,
+      "first": "2025-05-13",
+      "last": "2025-05-13",
+      "days_since_last": 400,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Henrik Hass",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491724067612",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        },
+        {
+          "name": "Julia Hass",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491716006320",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_heimhuder8_jb",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Heimhuder8",
+      "client_key": "heimhuder8",
+      "location": "Hamburg",
+      "leads": [
+        "Jilliana Bahr"
+      ],
+      "messages": 216,
+      "first": "2025-01-21",
+      "last": "2026-05-11",
+      "days_since_last": 37,
+      "max_amount_eur": 6410,
+      "price_mentions": 4,
+      "issue_signals": 3,
+      "issue_keywords": [
+        "riss ",
+        "schaden",
+        "kritisch"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-27",
+        "Frauke Fudickar",
+        "@Jilliana Maßnahmenkatalog aufstellen, Zuständigkeiten mit Denkmalschutzamt festlegen"
+      ]
+    },
+    {
+      "channel": "p_hh_heinemann",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Heinemann",
+      "client_key": "heinemann",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 19,
+      "first": "2025-02-17",
+      "last": "2025-10-10",
+      "days_since_last": 250,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-02-21",
+        "Frauke Fudickar",
+        "38 Stühle heute ausgeliefert . Alle fehlerfrei."
+      ]
+    },
+    {
+      "channel": "p_hh_hommerich_ropohl_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Hommerich Ropohl",
+      "client_key": "hommerich_ropohl",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 8,
+      "first": "2025-01-06",
+      "last": "2025-05-17",
+      "days_since_last": 396,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "storniert"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-02-03",
+        "Jasper",
+        "Leuchte kann direkt zu Nils Baumbach geschickt werden"
+      ]
+    },
+    {
+      "channel": "p_hh_insel_showroom",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Insel Showroom",
+      "client_key": "insel_showroom",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 2,
+      "first": "2025-04-22",
+      "last": "2025-10-06",
+      "days_since_last": 254,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-04-22",
+        "Jasper",
+        "@Jilliana @Jasper Perspektive von Eingangstür mit Insel darstellen. Lavastien Arbeitsplatte, Edelstahl Fronten, Rundungen an der Ecke (groß), Fronten mit abgekantetem Blech (Gastrostyle)"
+      ]
+    },
+    {
+      "channel": "p_hh_jagalla_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Jagalla",
+      "client_key": "jagalla",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 105,
+      "first": "2025-05-12",
+      "last": "2025-08-28",
+      "days_since_last": 293,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 6,
+      "issue_keywords": [
+        "riss ",
+        "leider nicht",
+        "verspätet"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-05-19",
+        "Jasper",
+        "@Daniel Haben wir hier einen Termin zur Erstberatung?"
+      ]
+    },
+    {
+      "channel": "p_hh_junge_dk_jlb_jb",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Junge",
+      "client_key": "junge",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing",
+        "Johannes Leo Berger",
+        "Jilliana Bahr"
+      ],
+      "messages": 131,
+      "first": "2026-01-15",
+      "last": "2026-06-02",
+      "days_since_last": 15,
+      "max_amount_eur": 125,
+      "price_mentions": 1,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "dringend!!"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-01-15",
+        "Johannes Leo Berger",
+        "Kundenmoodbilder Isabelle Junge: _...Anbei sende ich dir unsere gesammelten Bilder. Das erste hab ich mal gesehen, fand ich ganz cool. Das andere sind Bilder von uns im Haus aufgenommen wie es aussehen könnte mit der Farbwelt._"
+      ]
+    },
+    {
+      "channel": "p_hh_katz_dk_",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Katz Dk",
+      "client_key": "katz_dk_",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-03-10",
+      "days_since_last": 464,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Susanne Katz",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "01627883243",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_klippgen_dk_se",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Klippgen",
+      "client_key": "klippgen",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing",
+        "Sam Ellenrieder"
+      ],
+      "messages": 5,
+      "first": "2025-01-13",
+      "last": "2025-03-10",
+      "days_since_last": 464,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "kratzer"
+      ],
+      "matched_contacts": [
+        {
+          "name": "Arndt Klippgen",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491703388002",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        },
+        {
+          "name": "Dr. Julie Klippgen",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "01703388400",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        },
+        {
+          "name": "Pia Marie Klippgen",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "piaklippgen@gmail.com",
+          "phone": "+491723779081",
+          "city": "Berlin",
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2025-01-20",
+        "Daniel",
+        "• fahrradstellplätze auf Straße oder auf Grundriss • Strom für eröder • Pflastersteine unterbrochen Gehweg"
+      ]
+    },
+    {
+      "channel": "p_hh_kötter_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Kötter",
+      "client_key": "kötter",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 21,
+      "first": "2025-01-13",
+      "last": "2025-05-21",
+      "days_since_last": 392,
+      "max_amount_eur": 100,
+      "price_mentions": 1,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "problem",
+        "leider nicht"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-14",
+        "Frauke Fudickar",
+        "Die Rechnung hatte ich am 05.12. erstellt. Ich konnte nicht nachvollziehen, ob Du sie verschickt hast, deswegen habe ich sie jetzt noch mal gesendet."
+      ]
+    },
+    {
+      "channel": "p_hh_lorenz_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Lorenz",
+      "client_key": "lorenz",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 0,
+      "first": "2025-05-20",
+      "last": "2025-05-20",
+      "days_since_last": 393,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Lorenz  Kiepke",
+          "confidence": 80,
+          "via": "name token",
+          "email": "lkiepke@horatec.de",
+          "phone": "05257 9825279 ::: 01512 2062882",
+          "city": null,
+          "org": "Horatec",
+          "role": "Lieferant/Partner"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_lürßenbasti_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Lürßenbasti",
+      "client_key": "lürßenbasti",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 61,
+      "first": "2025-05-19",
+      "last": "2026-02-23",
+      "days_since_last": 114,
+      "max_amount_eur": 790,
+      "price_mentions": 1,
+      "issue_signals": 6,
+      "issue_keywords": [
+        "schaden",
+        "beschädigt",
+        "mängel"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-05-19",
+        "Frauke Fudickar",
+        "To Do: Termin am 12.6. mit Parkettverleger Michael Lach um 14h, @Jasper ordentliche Fotos von Fronten machen, so dass man sehen kann, welche Teile aus der Originalküche noch mal hergestellt werden müssen"
+      ]
+    },
+    {
+      "channel": "p_hh_may_heimhuder64",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "May Heimhuder64",
+      "client_key": "may_heimhuder64",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 59,
+      "first": "2025-11-10",
+      "last": "2026-06-09",
+      "days_since_last": 8,
+      "max_amount_eur": 1100,
+      "price_mentions": 4,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-11-17",
+        "Daniel",
+        "@Frauke Fudickar bitte Preis bei Reinecke Perner anfragen (Alex)"
+      ]
+    },
+    {
+      "channel": "p_hh_möller_se",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Möller",
+      "client_key": "möller",
+      "location": "Hamburg",
+      "leads": [
+        "Sam Ellenrieder"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-05-16",
+      "days_since_last": 397,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "David Möller",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+4915157630931",
+          "city": null,
+          "org": "AMS architekten",
+          "role": "Kunde"
+        },
+        {
+          "name": "Marcel Möller",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "mmoller@kpnplanet.nl",
+          "phone": null,
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_nandoluerssen_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Nandoluerssen",
+      "client_key": "nandoluerssen",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 69,
+      "first": "2025-01-06",
+      "last": "2026-01-09",
+      "days_since_last": 159,
+      "max_amount_eur": 258,
+      "price_mentions": 1,
+      "issue_signals": 4,
+      "issue_keywords": [
+        "abgelehnt",
+        "fehler ",
+        "falsch geliefert",
+        "verloren"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "Frauke Fudickar",
+        "Bestellungen (Gaggenau) getätigt und Rechnung geschickt"
+      ]
+    },
+    {
+      "channel": "p_hh_natalie-delhaes_jlb_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Natalie Delhaes",
+      "client_key": "natalie-delhaes",
+      "location": "Hamburg",
+      "leads": [
+        "Johannes Leo Berger",
+        "Daniel Klapsing"
+      ],
+      "messages": 32,
+      "first": "2026-05-11",
+      "last": "2026-06-16",
+      "days_since_last": 1,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Nathali Delhaes",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491724524921",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2026-05-11",
+        "Johannes Leo Berger",
+        "Aufmaß erledigt, Zeichnung angelegt WARTEN auf: Modellangabe Ikea Kochfeld wegen Ausschnitt APL, Angabe zu Armatur ( Bohrung )"
+      ]
+    },
+    {
+      "channel": "p_hh_nathalie_mohadjer",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Nathalie Mohadjer",
+      "client_key": "nathalie_mohadjer",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 7,
+      "first": "2026-05-20",
+      "last": "2026-06-01",
+      "days_since_last": 16,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Nathalie Braasch",
+          "confidence": 80,
+          "via": "name token",
+          "email": "n.braasch@schock.de",
+          "phone": "01721421837",
+          "city": null,
+          "org": "Schock",
+          "role": "Lieferant/Partner"
+        }
+      ],
+      "kickoff": [
+        "2026-05-20",
+        "Frauke Fudickar",
+        "ja, aber da musste die AB noch mal geändert werden, weil Liebherr die falsche Lieferadresse genommen hat"
+      ]
+    },
+    {
+      "channel": "p_hh_neuhaus_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Neuhaus",
+      "client_key": "neuhaus",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 295,
+      "first": "2025-01-03",
+      "last": "2026-06-08",
+      "days_since_last": 9,
+      "max_amount_eur": 3000,
+      "price_mentions": 5,
+      "issue_signals": 4,
+      "issue_keywords": [
+        "riss ",
+        "problem",
+        "fehlerhaft"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "Jasper",
+        "_Am 20.1.2025 beginnen die TGA Planer mit Phase 5. Es wäre schön, wenn wir bis dahin die Pläne finalisieren._ _Zu Ihrem Entwurf Badezimmer habe ich folgende Anmerkungen:_ _1. Wir brauchen einen Rasierspiegel, der von innen beleuchtet sein s"
+      ]
+    },
+    {
+      "channel": "p_hh_neurologie_vinahl_jlb",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Neurologie Vinahl",
+      "client_key": "neurologie_vinahl",
+      "location": "Hamburg",
+      "leads": [
+        "Johannes Leo Berger"
+      ],
+      "messages": 121,
+      "first": "2026-01-22",
+      "last": "2026-06-15",
+      "days_since_last": 2,
+      "max_amount_eur": 16761,
+      "price_mentions": 24,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "gerissen",
+        "verzögerung"
+      ],
+      "matched_contacts": [
+        {
+          "name": "Christiane Vinahl",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491792388104",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        },
+        {
+          "name": "Michael Vinahl",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491781335372",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2026-01-22",
+        "Sebastian",
+        "@Daniel hab das mal grob aufgerissen, wie ich das verstanden habe."
+      ]
+    },
+    {
+      "channel": "p_hh_nicklin_nn",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Nicklin",
+      "client_key": "nicklin",
+      "location": "Hamburg",
+      "leads": [
+        "Nicole Nowak"
+      ],
+      "messages": 4,
+      "first": "2026-01-12",
+      "last": "2026-02-12",
+      "days_since_last": 125,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2026-01-12",
+        "Johannes Leo Berger",
+        "@Daniel Herr Nicklin rief heute an um seiner Nachfrage wegen des Farbtones der Wand nachzugehen - habe ihm den Farbton aus Nicole´s alter Nachricht hier geschickt, ist das noch korrekt? https://mykilos.slack.com/archives/C02K60YD0CD/p164751"
+      ]
+    },
+    {
+      "channel": "p_hh_niemann2_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Niemann2",
+      "client_key": "niemann2",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 170,
+      "first": "2025-01-09",
+      "last": "2025-05-31",
+      "days_since_last": 382,
+      "max_amount_eur": 350,
+      "price_mentions": 7,
+      "issue_signals": 5,
+      "issue_keywords": [
+        "problem",
+        "beschädigt",
+        "defekt",
+        "reklamier"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-16",
+        "Daniel",
+        "@Jilliana wurde das Birkholz-Angebot von Renée freigegeben? falls nein, hak bitte noch mal nach. @Frauke Fudickar du brauchst damit nichts weiter machen"
+      ]
+    },
+    {
+      "channel": "p_hh_peragine",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Peragine",
+      "client_key": "peragine",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 0,
+      "first": "2025-01-13",
+      "last": "2025-05-14",
+      "days_since_last": 399,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_plass",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Plass",
+      "client_key": "plass",
+      "location": "Hamburg",
+      "leads": [],
+      "messages": 144,
+      "first": "2025-07-14",
+      "last": "2026-02-23",
+      "days_since_last": 114,
+      "max_amount_eur": 940,
+      "price_mentions": 1,
+      "issue_signals": 5,
+      "issue_keywords": [
+        "riss ",
+        "kaputt",
+        "fehler ",
+        "verloren"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-07-30",
+        "Daniel",
+        "Termin mit Bahadir in Aumühle auf nächste Woche verschoben, potentiell im Anschluss an Fürste. @Jasper du könntest das Cabrio nehmen und vom studio aus nach Aumühle fahren. Themen Badsanierungen und ggf. Fußbodenheizung"
+      ]
+    },
+    {
+      "channel": "p_hh_pyke_jo",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Pyke",
+      "client_key": "pyke",
+      "location": "Hamburg",
+      "leads": [
+        "Jasper"
+      ],
+      "messages": 113,
+      "first": "2025-04-14",
+      "last": "2025-12-16",
+      "days_since_last": 183,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "mängel"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-05-07",
+        "Daniel",
+        "Jasper magst Du morgen mit zu dem Laden kommen um 9:00?"
+      ]
+    },
+    {
+      "channel": "p_hh_ritz_jl",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Ritz",
+      "client_key": "ritz",
+      "location": "Hamburg",
+      "leads": [
+        "Johannes Lorz"
+      ],
+      "messages": 43,
+      "first": "2025-01-06",
+      "last": "2025-05-19",
+      "days_since_last": 394,
+      "max_amount_eur": 1500,
+      "price_mentions": 1,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "leider nicht"
+      ],
+      "matched_contacts": [
+        {
+          "name": "Marc Ritz",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "017670498457",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        },
+        {
+          "name": "Sigrid Ritz",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "0176 93108125",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2025-01-06",
+        "Jasper",
+        "_ich hoffe, es geht euch gut und ihr hattet entspannte Feiertage sowie einen guten Start ins neue Jahr._ _Über die Feiertage sind mir ein paar Punkte aufgefallen, die noch nicht vollständig geklärt oder bearbeitet sind. Ich wollte sicherste"
+      ]
+    },
+    {
+      "channel": "p_hh_rodewyk_jb",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Rodewyk",
+      "client_key": "rodewyk",
+      "location": "Hamburg",
+      "leads": [
+        "Jilliana Bahr"
+      ],
+      "messages": 100,
+      "first": "2025-11-21",
+      "last": "2026-06-17",
+      "days_since_last": 0,
+      "max_amount_eur": 17000,
+      "price_mentions": 2,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "mängel"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-11-21",
+        "Daniel",
+        "Hallo lieber Daniel, sorry, dass es so lange gedauert hat und vielen Dank noch einmal für unser gestriges Telefonat. Anbei bekommst Du nun, wie am Telefon besprochen, die aktuellen Elektropläne auf dessen Basis unserer Elektriker bereits ei"
+      ]
+    },
+    {
+      "channel": "p_hh_roots_yoga_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Roots Yoga",
+      "client_key": "roots_yoga",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 16,
+      "first": "2025-12-02",
+      "last": "2026-04-14",
+      "days_since_last": 64,
+      "max_amount_eur": 665,
+      "price_mentions": 2,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "abgesagt"
+      ],
+      "matched_contacts": [
+        {
+          "name": "Nils Roots",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491738444396",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2025-12-02",
+        "Johannes Leo Berger",
+        "Eben mit Marie telefoniert, sie bittet um folgende Änderungen: • Tresen insgesamt max. 2500 mm Breite • Tresen kann /soll als ein zusammenhängendes Möbelstück geplant werden - Tresen wird realistisch eh nie in seinen einzelnen Elementen and"
+      ]
+    },
+    {
+      "channel": "p_hh_schimmel_jo_se",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Schimmel",
+      "client_key": "schimmel",
+      "location": "Hamburg",
+      "leads": [
+        "Jasper",
+        "Sam Ellenrieder"
+      ],
+      "messages": 0,
+      "first": "2025-05-23",
+      "last": "2025-05-23",
+      "days_since_last": 390,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_schneider_jo",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Schneider",
+      "client_key": "schneider",
+      "location": "Hamburg",
+      "leads": [
+        "Jasper"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-05-24",
+      "days_since_last": 389,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Katrin Schneider",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "kschneider@gessi.de",
+          "phone": "0049 (0) 2234 240730",
+          "city": null,
+          "org": "Gessi Germany",
+          "role": "Lieferant/Partner"
+        },
+        {
+          "name": "Torben Schneider",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "040 809030415",
+          "phone": "01784807618",
+          "city": "Hamburg ::: Hamburg",
+          "org": "Härtner Haustechnik GmbH",
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_scholz_jb",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Scholz",
+      "client_key": "scholz",
+      "location": "Hamburg",
+      "leads": [
+        "Jilliana Bahr"
+      ],
+      "messages": 0,
+      "first": "2025-01-06",
+      "last": "2025-05-31",
+      "days_since_last": 382,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Pamela Scholz",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": null,
+          "phone": "+491723033699",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_schwab_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Schwab",
+      "client_key": "schwab",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 85,
+      "first": "2025-01-06",
+      "last": "2025-05-19",
+      "days_since_last": 394,
+      "max_amount_eur": 4000,
+      "price_mentions": 4,
+      "issue_signals": 4,
+      "issue_keywords": [
+        "mängel",
+        "verzug",
+        "kratzer"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "Jasper",
+        "@Daniel funktioniert das Baustellen Klo schon wiederß"
+      ]
+    },
+    {
+      "channel": "p_hh_stilcken_ausbau_jo_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Stilcken Ausbau",
+      "client_key": "stilcken_ausbau",
+      "location": "Hamburg",
+      "leads": [
+        "Jasper",
+        "Daniel Klapsing"
+      ],
+      "messages": 18,
+      "first": "2025-01-06",
+      "last": "2025-05-19",
+      "days_since_last": 394,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "Jasper",
+        "Mitte nächster Woche LCX Möbel anschauen und absegenen damit der Rest zu Kontec kann @Daniel @Jasper"
+      ]
+    },
+    {
+      "channel": "p_hh_stilcken_nn_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Stilcken",
+      "client_key": "stilcken",
+      "location": "Hamburg",
+      "leads": [
+        "Nicole Nowak",
+        "Daniel Klapsing"
+      ],
+      "messages": 0,
+      "first": "2025-05-18",
+      "last": "2025-05-18",
+      "days_since_last": 395,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_studioausbau_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Studioausbau",
+      "client_key": "studioausbau",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 58,
+      "first": "2025-01-06",
+      "last": "2026-06-09",
+      "days_since_last": 8,
+      "max_amount_eur": 1705,
+      "price_mentions": 7,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "riss "
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "Jasper",
+        "Maße der Messinggriffe der alten Fronten: 300x60x20mm (lxbxt) @Jilliana"
+      ]
+    },
+    {
+      "channel": "p_hh_wald_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Wald",
+      "client_key": "wald",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 0,
+      "first": "2026-06-04",
+      "last": "2026-06-10",
+      "days_since_last": 7,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Tania Wald",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "mail@taniawald.de",
+          "phone": "+49016097999277",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": null
+    },
+    {
+      "channel": "p_hh_waldenfels_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Waldenfels",
+      "client_key": "waldenfels",
+      "location": "Hamburg",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 16,
+      "first": "2025-02-05",
+      "last": "2025-08-18",
+      "days_since_last": 303,
+      "max_amount_eur": 220,
+      "price_mentions": 1,
+      "issue_signals": 3,
+      "issue_keywords": [
+        "unzufrieden",
+        "nachbesserung",
+        "problem"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-02-05",
+        "Jasper",
+        "Habe gerade mit Michel telefoniert der war heute vor Ort um den Deckel des Mülls umzubauen. Punkte die ihm nochmals genannt wurden und uns ja auch schon per Video geschickt wurden: • Julie ist unzufrieden mit der Qualität der Vollholzschubk"
+      ]
+    },
+    {
+      "channel": "p_hh_wartenberg_joh",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Wartenberg",
+      "client_key": "wartenberg",
+      "location": "Hamburg",
+      "leads": [
+        "Johannes (joh)"
+      ],
+      "messages": 79,
+      "first": "2025-11-04",
+      "last": "2026-06-17",
+      "days_since_last": 0,
+      "max_amount_eur": 2500,
+      "price_mentions": 4,
+      "issue_signals": 1,
+      "issue_keywords": [
+        "leider nicht"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-11-05",
+        "Jasper",
+        "3x 60er Korpus --- 1x GS - 1x SB + Quooker + Müll 1x Schubladen (2 innenliegende - durchgehende Front)"
+      ]
+    },
+    {
+      "channel": "p_hh_wawrzinek_jo_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Wawrzinek",
+      "client_key": "wawrzinek",
+      "location": "Hamburg",
+      "leads": [
+        "Jasper",
+        "Daniel Klapsing"
+      ],
+      "messages": 1,
+      "first": "2025-01-02",
+      "last": "2025-03-03",
+      "days_since_last": 471,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Christian Wawrzinek",
+          "confidence": 80,
+          "via": "name token",
+          "email": null,
+          "phone": "+491788586960",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2025-01-02",
+        "Jasper",
+        "Rechnung vom Bora Service @Frauke Fudickar @Daniel"
+      ]
+    },
+    {
+      "channel": "p_hh_woldsenweg6_bad_se_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Woldsenweg6 Bad",
+      "client_key": "woldsenweg6_bad",
+      "location": "Hamburg",
+      "leads": [
+        "Sam Ellenrieder",
+        "Daniel Klapsing"
+      ],
+      "messages": 24,
+      "first": "2025-03-18",
+      "last": "2025-06-02",
+      "days_since_last": 380,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-03-18",
+        "Jasper",
+        "@Jasper Caspar am Freitag an Schlüsseltresor erinnern falls noch keine Nachricht von ihm kam"
+      ]
+    },
+    {
+      "channel": "p_l_benjamin_jb",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Benjamin",
+      "client_key": "benjamin",
+      "location": "?L",
+      "leads": [
+        "Jilliana Bahr"
+      ],
+      "messages": 382,
+      "first": "2025-11-03",
+      "last": "2026-06-18",
+      "days_since_last": -1,
+      "max_amount_eur": 16000,
+      "price_mentions": 15,
+      "issue_signals": 17,
+      "issue_keywords": [
+        "riss ",
+        "ärger",
+        "leider nicht",
+        "nacharbeit",
+        "schaden"
+      ],
+      "matched_contacts": [
+        {
+          "name": "Benjamin Gropler",
+          "confidence": 80,
+          "via": "name token",
+          "email": "gropler@immvestica.com",
+          "phone": "+491728111122",
+          "city": null,
+          "org": null,
+          "role": "Kunde"
+        },
+        {
+          "name": "Benjamin Mattenklott",
+          "confidence": 80,
+          "via": "name token",
+          "email": "0308028965",
+          "phone": "017‬78028989",
+          "city": "Berlin",
+          "org": "Sanitär",
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2025-11-03",
+        "Daniel",
+        "Anfrage über Insta: Projekt Küche und Bad in Leipzig: Hallo Daniel, Danke für das Gespräch letze Woche. Anbei sende ich dir ein PDF zur Vorbereitung mit Bestand und Ideen. Und noch extra Bilder von der ganzen Wohnung. Wir hatten letze Woche"
+      ]
+    },
+    {
+      "channel": "p_lb_janka_öljeschlager_joh",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Janka Öljeschlager",
+      "client_key": "janka_öljeschlager",
+      "location": "Lübeck",
+      "leads": [
+        "Johannes (joh)"
+      ],
+      "messages": 86,
+      "first": "2025-11-28",
+      "last": "2026-04-14",
+      "days_since_last": 64,
+      "max_amount_eur": 1500,
+      "price_mentions": 3,
+      "issue_signals": 2,
+      "issue_keywords": [
+        "problem"
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-11-28",
+        "Frauke Fudickar",
+        "furnipart bestellt, bora bestellt, miele server ist down- bestelle ich montag @Daniel"
+      ]
+    },
+    {
+      "channel": "p_le_oberhaus_nn",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Oberhaus",
+      "client_key": "oberhaus",
+      "location": "Leipzig",
+      "leads": [
+        "Nicole Nowak"
+      ],
+      "messages": 0,
+      "first": "2026-01-30",
+      "last": "2026-02-12",
+      "days_since_last": 125,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": null
+    },
+    {
+      "channel": "p_ma_pohl_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Pohl",
+      "client_key": "pohl",
+      "location": "Mannheim",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 615,
+      "first": "2025-01-08",
+      "last": "2026-04-20",
+      "days_since_last": 58,
+      "max_amount_eur": 16965,
+      "price_mentions": 23,
+      "issue_signals": 21,
+      "issue_keywords": [
+        "mängel",
+        "problem",
+        "leider nicht",
+        "verzug",
+        "fehler "
+      ],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-08",
+        "Jasper",
+        "Dem Innendienst liegen noch keine Informationen bezüglich der Expressive Backöfen vor.. er konnte mir nicht sagen ob es sowas wie eine \"Notfallöffnung\" gibt.. er meldet sich bei mir zurück wenn er das in Erfahrung bringen konnte. @Daniel"
+      ]
+    },
+    {
+      "channel": "p_mykilos_serienküche_joh",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Mykilos Serienküche",
+      "client_key": "mykilos_serienküche",
+      "location": null,
+      "leads": [
+        "Johannes (joh)"
+      ],
+      "messages": 2,
+      "first": "2026-01-06",
+      "last": "2026-01-06",
+      "days_since_last": 162,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [
+        {
+          "name": "Accounting Mykilos",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "accounting@mykilos.com",
+          "phone": null,
+          "city": null,
+          "org": "MYKILOS | ACCOUNTING",
+          "role": "Intern"
+        },
+        {
+          "name": "Order Mykilos",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "order@mykilos.com",
+          "phone": null,
+          "city": null,
+          "org": "MYKILOS | ORDER",
+          "role": "Intern"
+        },
+        {
+          "name": "Press Mykilos",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "press@mykilos.com",
+          "phone": null,
+          "city": null,
+          "org": "MYKILOS | PRESS",
+          "role": "Intern"
+        }
+      ],
+      "kickoff": [
+        "2026-01-06",
+        "Johannes Leo Berger",
+        "@Johannes Leo Berger #todo Marktforschung zu Kostenrahmen"
+      ]
+    },
+    {
+      "channel": "p_schw_schneider_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Schneider",
+      "client_key": "schneider",
+      "location": "Schwerin?",
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 160,
+      "first": "2025-12-01",
+      "last": "2026-06-09",
+      "days_since_last": 8,
+      "max_amount_eur": 2828,
+      "price_mentions": 9,
+      "issue_signals": 4,
+      "issue_keywords": [
+        "retoure",
+        "riss ",
+        "abgesagt"
+      ],
+      "matched_contacts": [
+        {
+          "name": "Katrin Schneider",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "kschneider@gessi.de",
+          "phone": "0049 (0) 2234 240730",
+          "city": null,
+          "org": "Gessi Germany",
+          "role": "Lieferant/Partner"
+        },
+        {
+          "name": "Torben Schneider",
+          "confidence": 100,
+          "via": "last-name exact",
+          "email": "040 809030415",
+          "phone": "01784807618",
+          "city": "Hamburg ::: Hamburg",
+          "org": "Härtner Haustechnik GmbH",
+          "role": "Kunde"
+        }
+      ],
+      "kickoff": [
+        "2025-12-01",
+        "Daniel",
+        "@Daniel angebot 450 € netto angebot + grundriss anfordern + adresse"
+      ]
+    },
+    {
+      "channel": "p_semjon_geräte_ps",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Semjon Geräte",
+      "client_key": "semjon_geräte",
+      "location": null,
+      "leads": [
+        "Philipp Schöpfer"
+      ],
+      "messages": 6,
+      "first": "2025-01-15",
+      "last": "2025-03-31",
+      "days_since_last": 443,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-15",
+        "Frauke Fudickar",
+        "@philipp sind die trone toilette und waschbecken eigentlich angekommen oder noch offen?"
+      ]
+    },
+    {
+      "channel": "p_speakerdesign_dk",
+      "phase": "p",
+      "phase_label": "Projekt (aktiv/gewonnen)",
+      "client_display": "Speakerdesign",
+      "client_key": "speakerdesign",
+      "location": null,
+      "leads": [
+        "Daniel Klapsing"
+      ],
+      "messages": 39,
+      "first": "2025-01-06",
+      "last": "2025-12-15",
+      "days_since_last": 184,
+      "max_amount_eur": null,
+      "price_mentions": 0,
+      "issue_signals": 0,
+      "issue_keywords": [],
+      "matched_contacts": [],
+      "kickoff": [
+        "2025-01-06",
+        "Jasper",
+        "@Frauke Fudickar Tonleute nach Expertise fragen • Dämmung richtig? • Bassreflexrohr richtig? • Durchmessen der Lautsprecher • Test hören"
+      ]
+    }
+  ]
+}

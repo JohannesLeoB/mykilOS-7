@@ -13,10 +13,15 @@ public struct StudioContact: Codable, Identifiable, Equatable, Sendable {
     public var adresse: String?
     public var projekt: String?
     public var kategorie: String?
+    // Härtung (2026-07-01, Johannes: Bestandskunden-Auswahl im Fragebogen): die Kontakte-
+    // Tabelle hat echte, getrennte Vorname-/Nachname-Felder (nicht nur die kombinierte
+    // "Name"-Spalte) — für ein sauberes Prefill in Formulare mit getrennten Feldern.
+    public var vorname: String?
+    public var nachname: String?
 
     public init(id: String, name: String, organisation: String? = nil, email: String? = nil,
                 telefon: String? = nil, adresse: String? = nil, projekt: String? = nil,
-                kategorie: String? = nil) {
+                kategorie: String? = nil, vorname: String? = nil, nachname: String? = nil) {
         self.id = id
         self.name = name
         self.organisation = organisation
@@ -25,6 +30,8 @@ public struct StudioContact: Codable, Identifiable, Equatable, Sendable {
         self.adresse = adresse
         self.projekt = projekt
         self.kategorie = kategorie
+        self.vorname = vorname
+        self.nachname = nachname
     }
 
     /// Freitext-Treffer auf Name/Organisation/Projekt (case-insensitive).

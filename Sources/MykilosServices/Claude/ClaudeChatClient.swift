@@ -45,10 +45,28 @@ struct ClaudeWireMessage: Encodable, Equatable {
     var content: [ClaudeWireBlock]
 }
 
+// Härtung (2026-07-01, API-Effizienz-Audit): Anthropic Prompt-Caching. Ohne
+// `cache_control` wird der System-Prompt (Grounding-Kontext + Tool-Beschreibungen,
+// mehrere tausend Tokens) bei JEDER einzelnen Chat-Nachricht neu und voll abgerechnet.
+// Ein `cache_control: {type: "ephemeral"}`-Breakpoint auf dem System-Block lässt
+// Anthropic diesen Teil bei Wiederholung stark rabattiert abrechnen (kein Verhaltens-
+// unterschied für den Nutzer, nur Kosten).
+public struct ClaudeCacheControl: Encodable, Equatable {
+    let type = "ephemeral"
+    public init() {}
+}
+
+struct ClaudeSystemBlock: Encodable, Equatable {
+    let type = "text"
+    let text: String
+    var cacheControl: ClaudeCacheControl?
+    enum CodingKeys: String, CodingKey { case type, text, cacheControl = "cache_control" }
+}
+
 struct ClaudeChatRequestPayload: Encodable {
     var model: String
     var maxTokens: Int
-    var system: String
+    var system: [ClaudeSystemBlock]
     var messages: [ClaudeWireMessage]
     var tools: [ClaudeToolDefinition]?
     var stream: Bool?   // nil → omitted (non-streaming); true → SSE-Stream
@@ -112,10 +130,20 @@ public struct ClaudeChatClient: AssistantConversing {
         system: String, tools: [ClaudeToolDefinition], maxTokens: Int,
         stream: Bool = false, modelOverride: String? = nil
     ) throws -> URLRequest {
+        // Cache-Breakpoint 1: System-Prompt (Grounding + Tool-Beschreibungen im Text).
+        let systemBlocks = [ClaudeSystemBlock(text: system, cacheControl: ClaudeCacheControl())]
+        // Cache-Breakpoint 2: letztes Tool in der Liste — Anthropic cacht alles bis
+        // einschließlich des markierten Blocks, ein Breakpoint auf dem letzten Tool
+        // deckt also die komplette (stabile) Tool-Definitionsliste ab.
+        var wireTools = tools
+        if var last = wireTools.popLast() {
+            last.cacheControl = ClaudeCacheControl()
+            wireTools.append(last)
+        }
         let payload = ClaudeChatRequestPayload(
-            model: modelOverride ?? credentials.model, maxTokens: maxTokens, system: system,
+            model: modelOverride ?? credentials.model, maxTokens: maxTokens, system: systemBlocks,
             messages: sanitize(messages.map(wire(from:))),
-            tools: tools.isEmpty ? nil : tools,
+            tools: wireTools.isEmpty ? nil : wireTools,
             stream: stream ? true : nil
         )
         var request = URLRequest(url: url)
@@ -124,6 +152,11 @@ public struct ClaudeChatClient: AssistantConversing {
         request.setValue(credentials.apiKey, forHTTPHeaderField: "x-api-key")
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.httpBody = try JSONEncoder().encode(payload)
+        // Härtung (2026-07-01, Loop-Effizienz): ohne explizites Timeout gilt Apples
+        // Default (~60s) — hier bewusst verkürzt. Gilt bei URLSession als "keine neuen
+        // Daten seit N Sekunden", nicht als harte Gesamtdauer — läuft beim SSE-Stream
+        // also NICHT während aktiv Text eintrifft ab, sondern nur bei echtem Hänger.
+        request.timeoutInterval = 30
         return request
     }
 
