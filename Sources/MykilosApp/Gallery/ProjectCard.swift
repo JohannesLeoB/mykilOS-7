@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import MykilosKit
 import MykilosDesign
 import MykilosServices
@@ -14,6 +15,11 @@ struct ProjectCard: View {
     @Environment(StudioContext.self) private var context
     @Environment(AppState.self) private var appState
     @State private var isHovered = false
+    // Fix 2026-07-03 (Live-Fund Johannes): Hero-Bild-Upload lebte bisher nur auf der
+    // Detailseite (ProjectHeroView) — die Galerie-Karte zeigte immer nur den Standard-
+    // Gradient. Gleicher Store, gleiche Fokus-Offset-Logik wie dort, nur kleiner.
+    @State private var heroImage: NSImage?
+    @State private var focalPoint = CGPoint(x: 0.5, y: 0.5)
 
     private var isFavorite: Bool { appState.favorites.isFavorite(project.projectNumber) }
 
@@ -48,23 +54,34 @@ struct ProjectCard: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+        .task(id: project.projectNumber) {
+            heroImage = ProjectHeroImageStore.image(for: project.projectNumber)
+            focalPoint = ProjectHeroImageStore.focalPoint(for: project.projectNumber)
+        }
     }
 
     // MARK: Hero-Bereich (image-led)
     private var heroArea: some View {
         ZStack(alignment: .bottomLeading) {
-            // Gradient aus Projekt-Archetyp
-            LinearGradient(
-                colors: heroGradient,
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            // Eigenes Hero-Bild (falls hochgeladen) — sonst Gradient aus Projekt-Archetyp.
+            // Gleiche Fokus-Fill-Logik wie ProjectHeroView, nur in Kartengröße.
+            GeometryReader { geo in
+                Group {
+                    if let heroImage {
+                        focalImage(heroImage, in: geo.size)
+                    } else {
+                        LinearGradient(
+                            colors: heroGradient,
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .overlay(GridTexture().opacity(0.35))
+                    }
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+                .clipped()
+            }
             .frame(height: 140)
-            // Feine Raster-Textur
-            .overlay(
-                GridTexture()
-                    .opacity(0.35)
-            )
             // Projekt-Kürzel oben rechts + Signal-Badge oben links
             VStack {
                 HStack {
@@ -195,6 +212,26 @@ struct ProjectCard: View {
             .background(
                 Capsule().fill(kindColor.opacity(0.12))
             )
+    }
+
+    // Fokus-zentrierter Fill-Zuschnitt — identische Logik wie ProjectHeroView.focalImage,
+    // nur für die kleine Kartengröße. Fixer Rahmen, keine Layout-Rückwirkung.
+    private func focalImage(_ image: NSImage, in frame: CGSize) -> some View {
+        let iw = max(image.size.width, 1)
+        let ih = max(image.size.height, 1)
+        let scale = max(frame.width / iw, frame.height / ih)
+        let sw = iw * scale
+        let sh = ih * scale
+        let offsetX = min(0, max(frame.width - sw, frame.width / 2 - focalPoint.x * sw))
+        let offsetY = min(0, max(frame.height - sh, frame.height / 2 - focalPoint.y * sh))
+        return Color.clear
+            .overlay(alignment: .topLeading) {
+                Image(nsImage: image)
+                    .resizable()
+                    .frame(width: sw, height: sh)
+                    .offset(x: offsetX, y: offsetY)
+            }
+            .frame(width: frame.width, height: frame.height)
     }
 
     private var heroGradient: [Color] { project.kind.heroGradient }

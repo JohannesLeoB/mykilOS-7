@@ -184,11 +184,16 @@ struct ProjectGalleryView: View {
     }
 
     // MARK: Command-Bar
+    // Fix 2026-07-03 (Live-Fund Johannes): bei wenig Breite (schmaleres Fenster/
+    // Sidebar offen) wickelte SwiftUI Titel + Umschalter-Labels buchstabenweise
+    // um, statt sie zu kürzen. .fixedSize() verweigert das Umbrechen — der
+    // Suchfeld-Bereich (hat bereits minWidth) gibt bei Platznot zuerst nach.
     private var commandBar: some View {
         HStack(spacing: MykSpace.s5) {
             Text("Projekte")
                 .font(.mykDisplay)
                 .foregroundStyle(MykColor.ink.color)
+                .fixedSize(horizontal: true, vertical: false)
             Spacer()
             modusToggle
             viewsMenu
@@ -234,6 +239,7 @@ struct ProjectGalleryView: View {
             Label(label, systemImage: icon)
                 .font(.mykSmall)
                 .foregroundStyle(active ? MykColor.paper.color : MykColor.muted.color)
+                .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
                 .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(active ? MykColor.ink.color : Color.clear))
         }
