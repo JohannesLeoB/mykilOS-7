@@ -91,6 +91,30 @@ final class OfferPositionExtractorTests: XCTestCase {
         XCTAssertEqual(p.netPrice, Decimal(string: "1850.00"))
     }
 
+    // MARK: - Pass 1: Blocking (synthetisch — echte PDFs zum Nachjustieren offen)
+
+    func testBlockingZerlegtMehrerePositionen() {
+        // Drei Positionen, je an einem Anker (Nummer + Menge/Titel) startend.
+        let page = """
+        Angebot Nr. 4711 vom 01.02.2026
+        1 1 Stck. Küchenarbeitsplatte Granit 1.234,56 1.234,56 nach Aufmaß
+        2 5 Stk Griffleiste Alu 12,00 60,00
+        3 1 Pauschale Lieferung und Montage 350,00 350,00
+        Nettobetrag 1.644,56
+        """
+        let positions = X.extractPositions(fromPageText: page)
+        XCTAssertEqual(positions.count, 3)
+        XCTAssertEqual(positions[0].netPrice, Decimal(string: "1234.56"))
+        XCTAssertEqual(positions[1].netPrice, Decimal(string: "12.00"))
+        XCTAssertEqual(positions[2].netPrice, Decimal(string: "350.00"))
+    }
+
+    func testBlockingOhneAnkerGibtGanzenTextAlsEinenBlock() {
+        let positions = X.extractPositions(fromPageText: "Sonderposten 1.850,00 pauschal")
+        XCTAssertEqual(positions.count, 1)
+        XCTAssertEqual(positions[0].netPrice, Decimal(string: "1850.00"))
+    }
+
     // MARK: - selfProof direkt
 
     func testSelfProofBrauchtMindestensZweiBetraege() {

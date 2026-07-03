@@ -60,6 +60,49 @@ public enum OfferPositionExtractor {
 
     // MARK: Öffentliche API
 
+    /// Pass 1 (Blocking) + Pass 2 (Feld-Extraktion): aus dem VOLLEN Text einer
+    /// Seite die einzelnen Positionsblöcke herauslösen und jeden Block extrahieren.
+    ///
+    /// ⚠️ PROVISORISCH: Die Blocking-Heuristik ist bislang nur gegen synthetische
+    /// Fixtures geprüft — die echten EK-PDFs waren nicht lokal. Sie wird gegen echte
+    /// Seiten nachjustiert (Layout-Varianz ist die eigentliche Hürde). Pass 2
+    /// (`extract(fromBlock:)`) ist dagegen an 815 echten Blöcken validiert (97,7 %).
+    ///
+    /// Nur Blöcke mit verwertbarem Preis (netPrice != nil) werden zurückgegeben.
+    public static func extractPositions(fromPageText text: String) -> [ExtractedPosition] {
+        blocks(inPageText: text)
+            .map { extract(fromBlock: $0) }
+            .filter { $0.netPrice != nil }
+    }
+
+    /// Zerlegt Seitentext in Positionsblöcke an Positions-Ankern. Ein Anker ist eine
+    /// Positionsnummer (optional „Pos"), gefolgt von einer Menge+Einheit ODER einem
+    /// großgeschriebenen Titelwort — das Muster echter Positionszeilen
+    /// („2. 1,00 Stk. …", „1 1 Stck. …", „5 Inselarbeitsplatten …", „01 1,00 Stück …").
+    static func blocks(inPageText text: String) -> [String] {
+        let ns = text as NSString
+        let anchors = anchorRegex.matches(in: text, range: NSRange(location: 0, length: ns.length))
+        guard anchors.isEmpty == false else {
+            let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return t.isEmpty ? [] : [t]
+        }
+        var blocks: [String] = []
+        for (i, m) in anchors.enumerated() {
+            let start = m.range.location
+            let end = (i + 1 < anchors.count) ? anchors[i + 1].range.location : ns.length
+            let block = ns.substring(with: NSRange(location: start, length: end - start))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if block.isEmpty == false { blocks.append(block) }
+        }
+        return blocks
+    }
+
+    // Positions-Anker: Zeilen-/Segmentanfang, Positionsnummer (evtl. "1.2" oder "Pos 3"),
+    // dann Whitespace, dann Menge+Einheit ODER ein Großbuchstaben-Titelwort.
+    private static let anchorRegex = try! NSRegularExpression(
+        pattern: #"(?:^|[\n\r])\s*(?:Pos\.?\s*)?\d{1,3}(?:\.\d{1,3})?\s+(?=(?:\d+(?:,\d+)?\s+)*(?:\d+(?:,\d+)?\s*(?:Stk|Stck|Stück|Stueck|St|m²|m2|lfm)\b|[A-ZÄÖÜ]))"#,
+        options: [])
+
     /// Extrahiert die Felder EINES Positionsblocks aus seinem Text.
     public static func extract(fromBlock text: String) -> ExtractedPosition {
         let deGlued = deGlue(text)
