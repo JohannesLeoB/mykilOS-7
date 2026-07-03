@@ -128,3 +128,24 @@ ClickUp-Writes bis Go-Live-Grün nur Testspace · keine Assignees durch die App 
 · keine Belege (Belegführung extern).
 
 Der Faden durch alles: **die Projektnummer.** Ein Schlüssel, sechs Systeme, null Doppel-Wahrheit.
+
+## 9. Warenkörbe → ClickUp-Postbox (Johannes' Frage 2026-07-03: „geht das, und wofür?")
+
+**Ja — als weiteres PortZiel der Wirbelsäule** (`CheckoutPort`, gleiche Postbox-Semantik wie
+sevDesk: einmalige Checkout-ID, append-only, nie überschreiben, Task = Snapshot).
+
+**Wofür (sinnvoll):**
+1. **Beschaffung:** bestätigter Geräte-/Material-Korb → Task „Bestellen: N Positionen" mit
+   Checkliste in der Projektliste — das Team hakt die Bestellung Position für Position ab.
+2. **Nachträge:** Nachtrags-Korb → Task mit `change_order_relevant=true` (Feld existiert) —
+   schließt den Kreis zum Warenkorb-Lebenszyklus (§5j).
+3. **Montage-/Lieferumfang:** Positionen als Checkliste am Ausführungs-Task.
+
+**Wofür NICHT (hart):** keine Preis-Wahrheit in ClickUp (keine dritte Doppel-Wahrheit neben
+Airtable/sevDesk — Task trägt Bezeichnung+Menge+Drive-Link zur Vorschau, nicht die Kalkulation) ·
+**NIE EK/Marge** (ClickUp ist team-sichtbar, Einkaufsdaten sind sensibel) · kein Beleg-Ersatz
+(Belegführung extern).
+
+**Regeln:** Mensch drückt Checkout = menschlicher Absender · Tasks ohne Assignee (Zuweisung machen
+Menschen) · Testspace bis Go-Live-Grün · Opt-in + rechte-gated wie jeder Port (S10 §Rechte).
+**Slot:** eigener Port nach V10-Kern — natürlicher Nachbar von M6 (Template-Provisionierung).
