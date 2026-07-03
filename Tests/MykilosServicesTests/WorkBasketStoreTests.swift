@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import GRDB
 @testable import MykilosServices
 @testable import MykilosKit
 
@@ -262,5 +263,144 @@ struct WorkBasketSortierenFilternTests {
         let nurArtikel = picks.gefiltert(nachMatrix: .artikel)
         #expect(nurArtikel.count == 1)
         #expect(nurArtikel.first?.matrix == .artikel)
+    }
+}
+
+// MARK: - v21_workbasket gegen eine ALTE Bestands-DB (V10-Plan, Phase 1, Block C, Risiko #1)
+//
+// Der Plan benennt das reale Risiko präzise: die Migration `v21_workbasket` läuft längst bei
+// jedem App-Start (GRDBDatabase.runMigrations() hängt sie unbedingt an) — tot war nur der
+// Swift-Store, nicht das DDL. Das Cold-Start-Gate hier beweist deshalb NICHT "Migration
+// zündet zum ersten Mal", sondern: eine Datenbank, die schon bis v20 gewachsen ist (reale
+// Bestandsdaten in älteren Tabellen), verträgt den v21-Anhang klaglos UND der WorkBasketStore
+// kann direkt danach schreiben/lesen — kein Bruch beim Übergang alt→neu.
+@MainActor
+struct WorkBasketMigrationGateTests {
+
+    /// Öffnet eine Datei-DB, migriert sie NUR bis v20 (mit `GRDBDatabase.buildMigrator()` —
+    /// derselbe Migrator wie im Produktivpfad, nur an einem älteren Punkt gestoppt), schreibt
+    /// eine reale Zeile in eine v20-Tabelle hinein (Beleg: "das ist eine echte alte Bestands-DB,
+    /// kein leeres Schema"), und gibt den Dateipfad zurück.
+    private func macheAlteBestandsDB() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("workbasket-migration-gate-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("alt.sqlite")
+
+        let queue = try DatabaseQueue(path: dbURL.path)
+        let migrator = GRDBDatabase.buildMigrator()
+        // Stoppt exakt VOR v21 — die DB kennt noch keine workBaskets/workBasketPicks-Tabellen,
+        // hat aber jede frühere Migration (inkl. v20_project_lifecycle_stage) bereits gefahren.
+        try migrator.migrate(queue, upTo: "v20_project_lifecycle_stage")
+
+        // Reale Bestandsdaten in einer v20-Tabelle — kein leeres, frisch migriertes Schema.
+        try queue.write { db in
+            try db.execute(
+                sql: """
+                INSERT INTO projectLifecycleStage (projectNumber, stageIndex, setAt)
+                VALUES (?, ?, ?)
+                """,
+                arguments: ["2026-015", 2, Date().timeIntervalSince1970]
+            )
+        }
+
+        // workBaskets/workBasketPicks existieren zu diesem Zeitpunkt nachweislich noch nicht.
+        let tabellenVorher = try queue.read { db in
+            try Bool.fetchOne(db, sql: """
+                SELECT EXISTS (
+                    SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'workBaskets'
+                )
+                """) ?? false
+        }
+        #expect(tabellenVorher == false, "Testaufbau ungültig: workBaskets sollte vor v21 nicht existieren")
+
+        return dbURL
+    }
+
+    @Test func v21LaeuftGegenAlteBestandsDBUndStoreSchreibtLiestDanachSofort() async throws {
+        let dbURL = try macheAlteBestandsDB()
+
+        // Der ECHTE Produktivpfad: GRDBDatabase(url:) fährt runMigrations() unbedingt,
+        // also auch v21_workbasket — auf einer Datei, die schon reale v20-Daten trägt.
+        let db = try GRDBDatabase(url: dbURL)
+
+        // Alte Bestandsdaten bleiben unangetastet.
+        let stufe = try db.read { conn in
+            try Int.fetchOne(conn, sql: "SELECT stageIndex FROM projectLifecycleStage WHERE projectNumber = ?",
+                              arguments: ["2026-015"])
+        }
+        #expect(stufe == 2)
+
+        // Und der WorkBasketStore funktioniert direkt danach — kein Sonderfall für
+        // "DB kam gerade erst von v20 auf v21".
+        let store = WorkBasketStore(db: db)
+        let basket = WorkBasket(
+            id: WorkBasketID("WK-2026-015-migrationsgate"),
+            projektNummer: "2026-015",
+            inhaltsArt: .artikel,
+            picks: [
+                BasicPick(
+                    matrix: .artikel,
+                    objektID: CatalogObjectID("art-migrationsgate"),
+                    snapshot: PickSnapshot(bezeichnung: "Testposition", menge: 1, ekEinzel: 10, vkEinzel: 20),
+                    inhalt: .text("Testinhalt")
+                )
+            ],
+            status: .kalkulation
+        )
+        try await store.speichere(basket)
+
+        let geladen = try store.lade(id: basket.id)
+        #expect(geladen != nil)
+        #expect(geladen?.projektNummer == "2026-015")
+        #expect(geladen?.picks.count == 1)
+        #expect(geladen?.picks.first?.snapshot.bezeichnung == "Testposition")
+    }
+}
+
+// MARK: - Warenkorb→WorkBasket-Bridge, Cold-Start (V10-Plan, Phase 1, Block D)
+// Beweist: ein per `WarenkorbWorkBasketBridge` gemappter Intake-Warenkorb überlebt den
+// App-Neustart über denselben `WorkBasketStore` wie jeder andere WorkBasket — kein
+// Sonderfall für den Bridge-Pfad.
+@MainActor
+struct WarenkorbWorkBasketBridgeColdStartTests {
+
+    @Test func gemappterSchneiderWarenkorbUeberlebtNeustart() async throws {
+        let db = try GRDBDatabase.inMemory()
+
+        let schneiderPositionen = [
+            WarenkorbItem(
+                artikelRecordID: "recSpuele01",
+                bezeichnung: "Spüle Schock Typos D-150S",
+                artikelnummer: "SCH-TYPOS-D150S",
+                menge: 1, ekNetto: 380.0, vkNetto: 620.0, quelle: "katalog"),
+            WarenkorbItem(
+                bezeichnung: "Elektroanschluss Herd + Spüle",
+                artikelnummer: "MONT-ELEK-01",
+                menge: 1, ekNetto: nil, vkNetto: 180.0, quelle: "manuell"),
+        ]
+        let warenkorb = Warenkorb(items: schneiderPositionen, projektRecordID: "recSchneider", projektName: "Küche Schneider")
+        let basket = WarenkorbWorkBasketBridge.workBasket(
+            aus: warenkorb, projektNummer: "2026-015", id: WorkBasketID("WK-2026-015-schneider-coldstart"))
+
+        let storeA = WorkBasketStore(db: db)
+        try await storeA.speichere(basket)
+
+        // "App neu gestartet": neue Store-Instanz, selbe DB.
+        let storeB = WorkBasketStore(db: db)
+        let geladen = try storeB.lade(id: basket.id)
+
+        #expect(geladen != nil)
+        #expect(geladen?.projektNummer == "2026-015")
+        #expect(geladen?.status == .kalkulation)
+        #expect(geladen?.picks.count == 2)
+        #expect(geladen?.picks.first?.snapshot.bezeichnung == "Spüle Schock Typos D-150S")
+        #expect(geladen?.picks.first?.snapshot.ekEinzel == 380.0)
+        #expect(geladen?.picks.first?.snapshot.vkEinzel == 620.0)
+
+        // Auch über `alle(projektNummer:)` auffindbar (der Pfad, den Block E im Projekt nutzt).
+        let alleFuerProjekt = try storeB.alle(projektNummer: "2026-015")
+        #expect(alleFuerProjekt.count == 1)
+        #expect(alleFuerProjekt.first?.id == basket.id)
     }
 }

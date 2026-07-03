@@ -54,6 +54,17 @@ public final class GRDBDatabase: Sendable {
 
     // MARK: - Migrations (niemals ändern, nur anhängen)
     private func runMigrations() throws {
+        try Self.buildMigrator().migrate(queue)
+    }
+
+    /// Baut den vollständigen Migrator (v1…aktuell). `internal` statt `private`, damit
+    /// Cold-Start-Tests (`@testable import MykilosServices`) eine ALTE Bestands-DB
+    /// simulieren können: Migrator bis zu einer älteren Version laufen lassen
+    /// (`migrator.migrate(queue, upTo:)`), Testdaten schreiben, dann eine echte
+    /// `GRDBDatabase(url:)` auf derselben Datei öffnen — beweist, dass neue Migrationen
+    /// gegen Bestandsdaten laufen (Wirbelsäule, Welle C, Block C — v21_workbasket-Gate).
+    /// Reine Konstruktion, kein Seiteneffekt — sicher mehrfach aufrufbar.
+    static func buildMigrator() -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
 
         // v1 — Widget-Boards + Notes
@@ -428,7 +439,7 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
-        try migrator.migrate(queue)
+        return migrator
     }
 
     // Interner init für Tests (ohne Migrations-Fehler)

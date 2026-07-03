@@ -322,6 +322,13 @@
     "link": "mykilos://datastream/AIRTABLE_WARENKORB_SENDEN"
   },
   {
+    "integrationID": "WORKBASKET_INTAKE_PERSIST",
+    "name": "Fragebogen-Warenkorb als WorkBasket lokal persistieren (V10 Block D)",
+    "system": "Lokal (GRDB)",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/WORKBASKET_INTAKE_PERSIST"
+  },
+  {
     "integrationID": "DRIVE_ALL_OFFERS",
     "name": "Alle Angebote (global)",
     "system": "Google Drive",
