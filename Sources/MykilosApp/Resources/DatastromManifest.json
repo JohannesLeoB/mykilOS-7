@@ -64,10 +64,17 @@
   },
   {
     "integrationID": "DRIVE_MATERIAL_TAB",
-    "name": "Drive Material-Tab",
+    "name": "Drive Material-Tab (Schema-Ordner: Pläne bis Präsentation)",
     "system": "Google Drive",
     "direction": "READ",
     "link": "mykilos://datastream/DRIVE_MATERIAL_TAB"
+  },
+  {
+    "integrationID": "DRIVE_ALL_PLANS",
+    "name": "Zeichnungen & Pläne (global, alle Projekte)",
+    "system": "Google Drive",
+    "direction": "READ",
+    "link": "mykilos://datastream/DRIVE_ALL_PLANS"
   },
   {
     "integrationID": "GMAIL_SEARCH",

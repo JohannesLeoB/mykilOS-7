@@ -286,8 +286,21 @@ Ebenfalls hier: verbundene Dienste (Google, Airtable, ClickUp, Clockodo, Sevdesk
 
 ### Kataloge (⌘8)
 **Umsortierbare Unter-Tabs** (Tab mit der Maus ziehen → Reihenfolge wird gemerkt,
-`@AppStorage`): Artikel/Shop, Lager, Warenkörbe, Angebote, Kontakte, Notizen, Aufgaben.
+`@AppStorage`): Artikel/Shop, Lager, Warenkörbe, Angebote, Zeichnungen & Pläne, Kontakte,
+Notizen, Aufgaben.
 Oben rechts: **+ Neues Projekt** (Fragebogen) und der **Warenkorb-Badge** (Positionszahl).
+
+- **Zeichnungen & Pläne** (neu 2026-07-03) — die gesammelte Planungs- und Zeichnungs-
+  Bibliothek über **alle** Projekte mit Drive-Ordner. Sammelt automatisch die PDFs/Bilder
+  aus den Schema-Unterordnern jedes Projekts: `01 Pläne` (unter `01 INFOS`),
+  `08 Werkszeichnung`, `Renderings`, `Vorplanung | Screenshots`, `Layouts` — Ordnernamen
+  werden tolerant erkannt (Groß-/Kleinschreibung, Umlaut-Schreibweisen). **Links** die
+  Projektliste ("Alle Zeichnungen" oder ein Projekt), **rechts** entweder die globale Liste
+  mit Kategorie-Sektionen (Kategorie-Filter, Sortierung Datum/Projekt/Kategorie/Name,
+  Volltextsuche) oder die Schema-Ordner-Ansicht des gewählten Projekts (identisch zum
+  Material-Tab). Read-only — Klick öffnet die Datei im Browser, nichts wird geschrieben.
+  Voraussetzung: Google Drive verbunden. Präsentationsmaterial (03 PRÄSENTATION) erscheint
+  bewusst NUR im Material-Tab des Projekts, nicht im globalen Katalog.
 
 - **Artikel / Shop** — der Live-Artikelkatalog (Airtable-Base `appdxTeT6bhSBmwx5`, ~13.419
   Records), clientseitig durch-/filterbar (Bezeichnung/Hersteller/Art.-Nr., Kategorie- und
@@ -574,7 +587,8 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `DRIVE_POLL_OFFERS` | Angebots-PDF-Watcher | READ | Intervall (60s) + manuell | read-only | Baseline-Semantik: erster Poll meldet nichts. Handshake nur bei echtem Treffer. `isOffer` = Typ-Whitelist (PDF/Bild/Mail, kein ZIP/.numbers) **plus** Angebots-/Rechnungs-Schlüsselwort. |
 | `DRIVE_FILES_TAB` | Dateien-Tab (Finder-Baum) | READ | onDemand (Tab öffnen) | read-only | Nur Metadaten (Name/Typ/Datum/Größe). `drive.metadata.readonly` Scope. |
 | `DRIVE_OFFERS_TAB` | Angebote-Tab | READ | onDemand (Tab öffnen) | read-only | Gleiche Erkennungslogik wie `DriveOfferWatcher.detectOffers`. Typ-Whitelist (`isAcceptedOfferFileType`, EINE Quelle der Wahrheit): nur PDF/Bild/Mail, ZIP/.numbers werden ausgefiltert. |
-| `DRIVE_MATERIAL_TAB` | Material-Tab | READ | onDemand (Tab öffnen) | read-only | Tolerant per Ordnername gematcht (`05 Material` o.ä.). |
+| `DRIVE_MATERIAL_TAB` | Material-Tab (Schema-Ordner) | READ | onDemand (Tab öffnen) | read-only | Seit 2026-07-03 verallgemeinert: zeigt alle 6 Schema-Ordner (Pläne/Werkszeichnung/Renderings/Vorplanung/Layouts/Präsentation) gruppiert, `PlanCollector` (tolerantes Diakritik-Matching, BFS bis Tiefe 3). Vorher nur `03 PRÄSENTATION`. |
+| `DRIVE_ALL_PLANS` | Zeichnungen & Pläne (global) | READ | onDemand (Kataloge-Tab) | read-only | Aggregiert die Schema-Ordner-Dateien ALLER Projekte mit Drive-Ordner (`AllPlansCollector`, begrenzt nebenläufig, gleiche `PlanCollector`-Logik wie der Material-Tab). Eigene Typ-Whitelist: nur PDF+Bilder (keine Mail-Formate). Kategorie-Sektionen + Filter/Sortierung/Suche. Präsentation bleibt draußen. Neu 2026-07-03. |
 | `DRIVE_ASSISTANT_LIST` | Drive-Ordner-Listing (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `list_drive_folder`. Nur Metadaten, nie Dateiinhalte. Eigene Weiche (Mandate E). |
 | `DRIVE_OFFERS_FIND` | Angebote-Suche (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `find_offers` über `OffersCollector` (rekursiv, klassifiziert). Findet 04/05 auch verschachtelt in „01 INFOS"; global per Projektname auflösbar (S2). Ergebnisse erscheinen als **anklickbare** Karte mit In-App-Vorschau (S22, reine UI — keine eigene Weiche). |
 | `DRIVE_ALL_OFFERS` | Alle Angebote (global) | READ | onDemand (Button „Alle Angebote") | read-only | Aggregiert die 04/05-Belege ALLER Projekte mit Drive-Ordner (`AllOffersCollector`, begrenzt nebenläufig). **Zweispaltig** nach Richtung (Eingehend/Ausgehend), pro Typ gruppiert, **Kategorie-Filter** + Suche (Name/Projekt/Belegnummer). Jede Zeile trägt ihre echte Projektzuordnung. Gleiche `OffersCollector`-Logik + Typ-Whitelist (PDF/Bild/Mail; ZIP/.numbers raus) wie der Projekt-Tab. Klick → In-App-Vorschau. S23 (MYKILOS 7), Ausbau 2026-07-02. |
