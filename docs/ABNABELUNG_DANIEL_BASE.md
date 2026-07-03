@@ -134,3 +134,33 @@ eigentliche Wert der Abnabelung — die verwachsene Make/sevDesk-Kopplung entwir
 **Offen fürs Bauen:** welche Formeln als Airtable-Formel vs. App-berechnet; wie die sevDesk-Postbox
 konkret die alte Make-„Angebot senden"-Checkbox ablöst (= der C4/§5i-Bau, eigener Schritt);
 aiText-Auto-Felder in den Ziel-Bases löschen (Kosten, siehe Backlog).
+
+---
+
+## 7. Phase 1 GEBAUT (2026-07-03) — angelegte Tabellen + Field-IDs
+
+Schema in allen 3 Ziel-Bases live angelegt (delegierter Worker, verifiziert, keine Records, keine
+Schreibvorgänge auf Daniels/verbotene Bases, `Intake — Daniel-DB Zuordnung` unberührt). **Diese IDs
+werden in Phase 3 in die Store-Konstanten verdrahtet.**
+
+### `mykilOS_Handelswaren` (`appDj4wH4WDQfziDZ`)
+- **`Artikel`** = `tblaIgE0qt4uGUuyT`: Artikelnummer `fld2vmc8y2H4Uel0D` · Hersteller `fldvM5yja0MgJzr0N` · Kategorie `fld23qLpLrZm6JbLd` · Beschreibung `fldT5RAS8QAq7gKrV` · VK-Liste `fldWOFXgSuIUfyPQp` · EK `fldWiTQrbPoETlWyy` · VK-MYKILOS `fldT7VB5XfouuIpXQ` (App-berechnet) · Marge `fldUyOR7mG0qowhuQ` (App-berechnet) · Produktlink `fldhRAbxrgCzfsztu` · Lieferant `fldB8QvlGGVWW4gkm` · Preisstand `fldDuYfQJaWhLHUvm`
+- **`Lagerliste`** = `tbliQ4ArjUhpcAyqd`: Bezeichnung `fldaotKN76dkL65Fb` · Menge `fldfLmZIQsuotgtnQ` · Notiz `fldfLQGfhf5OaoSph`
+
+### `mykilOS_Projekte` (`appWI2qj9cc6Muu3b`)
+- **`Projekte`** = `tbljXw0CLNhUAH27b`: mykilOS-Projektnummer `fldwHGpWgSER6Rw89` · Projektname `fldBnaNAgqyk9XMZm` · Status `fldDigEHX6WyARR9C` · Budget `fldIiAtngyJoY2Z0t` · Adresse `fldZTM1UzekN4UGz1` · Daniel-Nummer-Referenz `fldrHVVolus8Jw5So`
+- **`Kunden`** = `tblj1eOVEsH5nGooD`: Name `fldqaBljXVnZ4fYVT` · Firma `fldBwgbytMMGB4dD8` · E-Mail `fldZRDjyA3Zw9XCn2` · Telefon `fldnxEoGIILHUTCfd` · Adresse `fld7pqLeq9iliC8qd` · Quelle `fldwF9t7erLkacbm8`
+- Unberührt: `Intake — Daniel-DB Zuordnung` (`tblTieGBBgrubylRt`, DEPRECATED).
+
+### `mykilOS_checkouts` (`appytOWS4wrxqtpkp`)
+- **`Checkouts`** = `tblQvY6PCw113mjCT`: Checkout-ID `fldd7Y76x83RS0Nvf` · Typ `fldQANpMK4UMXbzsA` · Projekt `flddsST3E82ZtQVbo` · Kunde `fldzJKlbzKTnRnhU6` · Zeitstempel `fldRFBBjY1TcieZer` · Drive-Link `fldzNrZ2cuRac7bcp` · Dateiname `fldDAsD8BTIKyIRva` · Summe-EK `fld0wETTogb9nFjtQ` · Summe-VK `fldlURhWNk6u5RuP3` · Status `fldQwZ7Uss9lDZhzH` · Metadaten `fldGSl64DiZ9olE4d`
+
+### ⚠️ Manuell in der Airtable-UI löschen (Template-Reste, per MCP nicht löschbar)
+Je Base kam die Default-Tabelle mit Template-Rumpf. **Kostenfalle** = die `Attachment Summary` (aiText). Auch die toten `Notes`/`Assignee`/`Attachments`/`Status (ALT, unbenutzt)`-Felder entfernen:
+- Artikel (`tblaIgE0qt4uGUuyT`): `Attachment Summary` `fldoPYiLs8twJn6gj` (aiText) + Notes `fldxvmJ3lr343VWOZ` · Assignee `fldNbPVCa7yS8Ov33` · Status `fldwmU1vaGOPkcwhF` · Attachments `fld2PXosunwu2g1kX`
+- Projekte (`tbljXw0CLNhUAH27b`): `Attachment Summary` `fldBD8pzN3xDnSKri` (aiText) + Notes `fldkUldUbopNBk9qw` · Assignee `fldqeqOOBVjZWFiKq` · Status (ALT) `fldrVEcTRywT0VDv1` · Attachments `fldFChtCx6uea7V3A`
+- Checkouts (`tblQvY6PCw113mjCT`): `Attachment Summary` `fld0QcmsVjP9RywBS` (aiText) + Notes `fldMRNYrHd39Gjbe7` · Assignee `fldpRAqRQyfcqG6Xv` · Status (ALT) `fldhqt89hHlOeHpRz` · Attachments `fld3INll1io0kjqjy`
+
+**Nebenprodukt:** In `Projekte`/`Checkouts` je ein totes `Status (ALT, unbenutzt)`-Zwillingsfeld (das Default-Template belegte `Status` mit falschen Choices Todo/In progress/Done, und `update_field` kann singleSelect-Choices nicht ändern → neues echtes Status-Feld angelegt, altes umbenannt). Beim manuellen aiText-Löschen gleich mit weg.
+
+**Phase 2 (nächster Schritt):** Read-Mirror Daniels Artikel `tbl3dAbQtbF51wb4a` → `mykilOS_Handelswaren.Artikel` (read-only Batch). Dann Phase 3 (App-Umverdrahtung auf obige IDs) + Phase 4 (Verifikation, keine Schreib-Referenz mehr auf `appdxTeT6bhSBmwx5`).
