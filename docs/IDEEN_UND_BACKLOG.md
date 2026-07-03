@@ -1318,3 +1318,11 @@ Werkzeug-Einordnung in [[massendaten-katalog-miner]] (Memory):
   Zeiterfassung-Widget. Hängt am Clockodo-Zeit-Strang (Timer/Buchen, 6-Schichten-Architektur) —
   erst wenn der echte Timer läuft, lohnt der Puls. Dezent per Design ([[alerts-dezent-datenschutz-
   toggle-regel]]-Geist: abschaltbar). Slot: nach V10-Kern, eigener Delight-Strang mit Boss Button.
+
+- ⚖️ **KORREKTUR Clockodo-Architektur (Johannes 2026-07-03, EISERN): Clockodo wird NIE direkt
+  beschrieben.** Die alte 6-Schichten-Architektur (HANDOFF_LIVE_WIRING_4) ändert sich: Schicht 5
+  „Confirm → POST /api/v2/entries" **entfällt ersatzlos**. Stattdessen: Timer (auch der geplante
+  Boss-Button-Puls) + NLP-Drafts buchen in die **private Clockodo-POSTBOX** (per-User) — ein
+  **Stundenprotokoll für die Eigeneingabe** in Clockodo (auch als Checkout exportierbar). Wahre
+  Zeiten kommen ausschließlich **lesend aus Clockodo** zurück. Gleiche Philosophie wie
+  Belegführung-extern/sevDesk-Postbox: mykilOS protokolliert vor, das externe System beurkundet.
