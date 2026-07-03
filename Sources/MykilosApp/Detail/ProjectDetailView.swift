@@ -151,6 +151,7 @@ struct ProjectDetailView: View {
                 profile: appState.profile.profile,
                 onCreateContact: { await appState.createContact($0) },
                 onCreateDraft: { await appState.createDraft($0) },
+                onWriteAirtableContact: { await appState.writeAirtableContact($0) },
                 onUploadFileToDrive: { file, targetFolderID in
                     // targetFolderID = in der Drop-Card gewählter Ziel-Ordner (Projektordner
                     // oder ein Unterordner). Leerer Wert wird schon in der Card abgefangen.

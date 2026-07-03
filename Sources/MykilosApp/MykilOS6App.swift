@@ -425,6 +425,9 @@ struct AssistantPageView: View {
                     profile: appState.profile.profile,
                     onCreateContact: { await appState.createContact($0) },
                     onCreateDraft: { await appState.createDraft($0) },
+                    // Fix 2026-07-03: war nie injiziert → „Kontakt anlegen"-Knopf der
+                    // Airtable-Karte blieb permanent disabled (Live-Fund Johannes).
+                    onWriteAirtableContact: { await appState.writeAirtableContact($0) },
                     // Home-Scope: kein Projekt fokussiert → Ordner kann nicht automatisch
                     // ermittelt werden. Der Nutzer bekommt einen klaren Hinweis.
                     onUploadFileToDrive: { _, _ in .failed("Bitte ein Projekt öffnen, um Dateien direkt in den Projekt-Ordner hochzuladen.") },

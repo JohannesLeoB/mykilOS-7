@@ -105,6 +105,7 @@ struct ProjectAssistantChatWidget: View {
             profile: appState.profile.profile,
             onCreateContact: { await appState.createContact($0) },
             onCreateDraft: { await appState.createDraft($0) },
+            onWriteAirtableContact: { await appState.writeAirtableContact($0) },
             onUploadFileToDrive: { file, targetFolderID in
                 guard !targetFolderID.isEmpty else {
                     return .failed("Kein Drive-Ordner für dieses Projekt konfiguriert.")
