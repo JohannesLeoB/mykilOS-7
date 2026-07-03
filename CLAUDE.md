@@ -297,6 +297,14 @@ ist bitgenau roundtrip-sicher).
 - Jedes Widget hat alle Renderstates: loading / content / empty / permissionRequired / offline / error.
 - Quelle ist immer sichtbar (Quellenzeile unten).
 
+### Aufgaben & Autorität (Eiserne Regel — ab 2026-07-03, systemweit)
+- **Aufgaben werden immer nur von Menschen an Menschen gegeben. Niemals von KI an Menschen.**
+- ClickUp: App/KI setzt NIE einen Assignee, erstellt NIE einen Task „an" eine Person — auch nach
+  Go-Live. KI legt höchstens Entwürfe vor; ein Mensch weist zu und ist sichtbar der Absender.
+- Alerts sind dezente Hinweise an den Nutzer selbst — nie Aufträge, nie an Dritte.
+- Assistent: Action-Card → menschliche Bestätigung → der Mensch ist Auftraggeber. KI spricht
+  Teammitglieder nie auffordernd an.
+
 ### Architektur
 - Multi-Target: `App → Widgets → Design`, `Services → Kit`, `Integrations → Kit`.
 - `MykilosKit` importiert NIE SwiftUI oder GRDB.
