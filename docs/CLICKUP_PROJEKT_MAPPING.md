@@ -102,3 +102,29 @@ Template-Tasks im Testspace an (idempotent, getestet: `clickUpSchrittLegtListeUn
   Menschen danach in ClickUp. Writes bis Go-Live-Grün nur Testspace. Idempotenz bleibt Pflicht
   (zweiter Lauf erzeugt nichts doppelt).
 - **Slot:** M6 der Bau-Reihenfolge (nach M1–M4 sinnvoll, unabhängig von M5).
+
+## 8. Der Big Bang — Projektstart komplett aus einer Maske (Johannes' Zielbild, 2026-07-03)
+
+**Ein Klick „Projekt anlegen" provisioniert den GESAMTEN Projektstart — hochkorrekt und sicher:**
+
+```
+Fragebogen/Maske
+  → 1. Projektnummer (kollisionsfrei reserviert)            [existiert]
+  → 2. Kunde + Projekt in Airtable                          [existiert]
+  → 3. Drive-Ordnerbaum                                     [existiert]
+  → 4. Warenkorb: Airtable + GRDB-WorkBasket (Bridge)       [existiert, V10 Welle 1]
+  → 5. ClickUp-Liste aus TEMPLATE, Custom Fields befüllt
+       (mykilos_project_id · client_name · drive_folder_url
+        = die Zusammenhänge quer durch alle Systeme),
+       Meilensteine/due_dates als Offsets vom Startdatum    [Basis existiert, Vollausbau §7/M6]
+  → 6. Detailseite lebt sofort: Stepper + Meilenstein-Strip
+       + Korb + Drive + Tasks                               [§2–§3]
+```
+
+**Sicherheits-Eigenschaften (getestet, nicht gehofft):** idempotent (zweiter Lauf erzeugt nichts
+doppelt) · Teilfehler-fest (definierter Zustand + Wiederaufnahme, siehe
+`teilfehlerHinterlaesstDefiniertenZustandUndNimmtWiederAuf`) · jede Weiche im DataFlow-Log ·
+ClickUp-Writes bis Go-Live-Grün nur Testspace · keine Assignees durch die App (Mensch→Mensch-Regel)
+· keine Belege (Belegführung extern).
+
+Der Faden durch alles: **die Projektnummer.** Ein Schlüssel, sechs Systeme, null Doppel-Wahrheit.
