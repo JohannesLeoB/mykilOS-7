@@ -3,21 +3,32 @@ import MykilosKit
 import MykilosDesign
 import MykilosServices
 
-// MARK: - WarenkorbWidget
-// Zeigt den aktuellsten gespeicherten Warenkorb DIESES Projekts (aus der Airtable-
-// Tabelle „Warenkörbe", read-only). Positionen + EK/VK-Summen. Tiefblau (cash).
-// Zusammenstellen/Editieren passiert im Kataloge-Modul → Warenkörbe; hier nur Anzeige.
-// Match: Airtable-Feld „Projekt" (Name/Lookup) gegen Projektnummer ODER Projektname.
+// MARK: - WarenkorbWidget (V10, Block E — Quelle der Wahrheit = persistierter WorkBasket)
+//
+// Zeigt den aktuellsten am Projekt persistierten `WorkBasket` (GRDB, lokal, local-first)
+// über `WorkBasketStore` — NICHT mehr den read-only Airtable-`WarenkorbListeStore`.
+// Damit ist der Projekt-Warenkorb genau EINE Quelle der Wahrheit und editierbar
+// (Menge/Preis korrigieren, Position entfernen — im „Bearbeiten"-Sheet, mit
+// sichtbarem SaveState). Positionen + EK/VK-Summen. Tiefblau (cash).
+//
+// Der Airtable-Versandpfad (`WarenkorbState`/`CartStore`) bleibt für den globalen
+// Session-Warenkorb unverändert bestehen — dieser Widget-Pfad ist der lokale,
+// projektgebundene Nachfolge-Speicher der Wirbelsäule (C3/Block C+D).
 public struct WarenkorbWidget: View {
+    public let store: WorkBasketStore
     public let projectID: String        // Projektnummer (JJJJ-NNN)
     public let projektName: String?     // Menschlicher Projektname
 
-    public init(projectID: String, projektName: String? = nil) {
+    public init(store: WorkBasketStore, projectID: String, projektName: String? = nil) {
+        self.store = store
         self.projectID = projectID
         self.projektName = projektName
     }
 
-    @State private var store = WarenkorbListeStore()
+    @State private var basket: WorkBasket?
+    @State private var loadError: String?
+    @State private var didLoad = false
+    @State private var showEdit = false
 
     private static let preisFormatter: NumberFormatter = {
         let f = NumberFormatter()
@@ -36,61 +47,57 @@ public struct WarenkorbWidget: View {
         ) {
             VStack(alignment: .leading, spacing: MykSpace.s5) {
                 header
-                if items.isEmpty {
-                    leerHinweis
+                if let basket, basket.picks.isEmpty == false {
+                    positionsListe(basket)
+                    summenLeiste(basket)
                 } else {
-                    positionsListe
-                    summenLeiste
+                    leerHinweis
                 }
             }
         }
-        .task(id: projectID) { await store.load() }
-    }
-
-    // MARK: - Auswahl des Projekt-Warenkorbs
-
-    /// Aktuellster Warenkorb (Store sortiert neueste zuerst), dessen „Projekt"-Feld passt.
-    private var eintrag: WarenkorbEintrag? {
-        store.eintraege.first { passtZuProjekt($0) }
-    }
-
-    // Match-Strategie: der Checkout-Flow lässt das Airtable-„Projekt"-Link-Feld bewusst
-    // LEER (Link zeigte sonst in die falsche Base — Härtung 2026-07-01) und legt den
-    // Projektbezug NUR in die Bezeichnung („Warenkorb <Titel>"). Wir matchen daher gegen
-    // BEIDES: das optionale „Projekt"-Feld UND die Bezeichnung — sonst fände das Widget nie
-    // einen realen Warenkorb.
-    private func passtZuProjekt(_ e: WarenkorbEintrag) -> Bool {
-        let nr = projectID.lowercased()
-        let name = (projektName ?? "").lowercased()
-        for feld in [e.projekt, e.bezeichnung] {
-            guard let s = feld?.lowercased(), !s.isEmpty else { continue }
-            if s.contains(nr) { return true }
-            if !name.isEmpty, s.contains(name) || name.contains(s) { return true }
+        .task(id: projectID) { reload() }
+        .sheet(isPresented: $showEdit) {
+            if let basket {
+                WorkBasketEditSheet(store: store, basket: basket, onClose: {
+                    showEdit = false
+                    reload()
+                })
+            }
         }
-        return false
     }
 
-    private var items: [WarenkorbItem] { eintrag?.decodedItems() ?? [] }
+    // MARK: - Laden (lokal, GRDB — Cold-Start-safe, kein Netzwerk)
+
+    private func reload() {
+        do {
+            let alle = try store.alle(projektNummer: projectID)
+            // Aktuellster Korb (jüngster Erstellzeitpunkt) ist der maßgebliche.
+            basket = alle.max(by: { $0.erstellt < $1.erstellt })
+            loadError = nil
+        } catch {
+            loadError = String(describing: error)
+        }
+        didLoad = true
+    }
+
+    // MARK: - Renderstates
 
     private var renderState: WidgetRenderState {
-        switch store.state {
-        case .idle, .loading:  return .loading
-        case .notConnected:    return .permissionRequired
-        case .error(let msg):  return .error(msg)
-        // „empty"/„content" auf Store-Ebene: wir rendern den projektspezifischen
-        // Leer-Hinweis selbst im Content, damit die Botschaft klar ist.
-        case .empty, .content: return .content
-        }
+        if didLoad == false { return .loading }
+        if let loadError { return .error(loadError) }
+        // Leerer/kein Korb → wir rendern den projektspezifischen Leer-Hinweis im Content.
+        return .content
     }
 
     // MARK: - Bausteine
 
+    private var eingefroren: Bool { basket?.status.istEingefroren ?? false }
+
     private var sourceLabel: String {
-        if let e = eintrag {
-            let n = e.anzahlPositionen ?? items.count
-            return "WARENKÖRBE  ·  \(n) POSITIONEN"
+        if let basket {
+            return "WARENKORB (LOKAL)  ·  \(basket.picks.count) POSITIONEN"
         }
-        return "WARENKÖRBE"
+        return "WARENKORB (LOKAL)"
     }
 
     private var header: some View {
@@ -98,21 +105,23 @@ public struct WarenkorbWidget: View {
             SourceChip(kind: .warenkorb)
             Text("Warenkorb").mykWidgetTitle()
             Spacer()
-            if let e = eintrag {
-                Text(versionsLabel(e))
-                    .font(.mykMono(9.5))
-                    .foregroundStyle(MykColor.muted.color)
+            if let basket, basket.picks.isEmpty == false {
+                if eingefroren {
+                    Text("BESTÄTIGT")
+                        .font(.mykMono(9))
+                        .foregroundStyle(MykColor.positive.color)
+                } else {
+                    Button { showEdit = true } label: {
+                        Label("Bearbeiten", systemImage: "slider.horizontal.3")
+                            .font(.mykMono(9.5))
+                            .foregroundStyle(MykColor.cash.color)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Menge/Preis korrigieren oder Position entfernen")
+                    .accessibilityLabel("Warenkorb bearbeiten")
+                }
             }
         }
-    }
-
-    private func versionsLabel(_ e: WarenkorbEintrag) -> String {
-        var parts: [String] = ["v\(e.version)"]
-        if let d = e.erstelltAm {
-            parts.append(d.formatted(.dateTime.day().month(.abbreviated)))
-        }
-        if !e.istAktuell { parts.append("ARCHIV") }
-        return parts.joined(separator: "  ·  ")
     }
 
     private var leerHinweis: some View {
@@ -125,7 +134,7 @@ public struct WarenkorbWidget: View {
                     .font(.mykSmall)
                     .foregroundStyle(MykColor.muted.color)
             }
-            Text("Im Kataloge-Modul zusammenstellen und dem Projekt zuweisen.")
+            Text("Über den Intake-Fragebogen entsteht der Projekt-Warenkorb automatisch.")
                 .font(.mykMono(9.5))
                 .foregroundStyle(MykColor.faint.color)
         }
@@ -134,13 +143,13 @@ public struct WarenkorbWidget: View {
     }
 
     // Positionsliste (max. 6 sichtbar, Rest als „+N weitere").
-    private var positionsListe: some View {
-        let sichtbar = Array(items.prefix(6))
-        let rest = items.count - sichtbar.count
+    private func positionsListe(_ basket: WorkBasket) -> some View {
+        let sichtbar = Array(basket.picks.prefix(6))
+        let rest = basket.picks.count - sichtbar.count
         return VStack(spacing: 0) {
-            ForEach(sichtbar) { item in
-                WarenkorbWidgetZeile(item: item, preisFormatter: Self.preisFormatter)
-                if item.id != sichtbar.last?.id {
+            ForEach(Array(sichtbar.enumerated()), id: \.offset) { idx, pick in
+                WarenkorbWidgetZeile(snapshot: pick.snapshot, preisFormatter: Self.preisFormatter)
+                if idx != sichtbar.count - 1 {
                     Divider().overlay(MykColor.line.color.opacity(0.6))
                 }
             }
@@ -156,12 +165,15 @@ public struct WarenkorbWidget: View {
         }
     }
 
-    private var summenLeiste: some View {
-        HStack(spacing: MykSpace.s6) {
-            summenFeld("EK", wert: eintrag?.gesamtEK ?? gesamtEK, farbe: MykColor.muted)
-            summenFeld("VK", wert: eintrag?.gesamtVK ?? gesamtVK, farbe: MykColor.cash)
+    private func summenLeiste(_ basket: WorkBasket) -> some View {
+        let ek = basket.picks.reduce(0.0) { $0 + ($1.snapshot.ekEinzel ?? 0) * Double($1.snapshot.menge) }
+        let vk = basket.vkNettoSumme
+        let stueck = basket.picks.reduce(0) { $0 + $1.snapshot.menge }
+        return HStack(spacing: MykSpace.s6) {
+            summenFeld("EK", wert: ek, farbe: MykColor.muted)
+            summenFeld("VK", wert: vk, farbe: MykColor.cash)
             Spacer()
-            Text("\(items.reduce(0) { $0 + $1.menge }) Stück")
+            Text("\(stueck) Stück")
                 .font(.mykMono(9.5))
                 .foregroundStyle(MykColor.faint.color)
         }
@@ -169,9 +181,6 @@ public struct WarenkorbWidget: View {
         .overlay(alignment: .top) { Divider().overlay(MykColor.line.color) }
         .padding(.top, MykSpace.s2)
     }
-
-    private var gesamtEK: Double { items.reduce(0) { $0 + ($1.ekNetto ?? 0) * Double($1.menge) } }
-    private var gesamtVK: Double { items.reduce(0) { $0 + ($1.vkNetto ?? 0) * Double($1.menge) } }
 
     private func summenFeld(_ titel: String, wert: Double, farbe: MykColor) -> some View {
         HStack(spacing: MykSpace.s2) {
@@ -185,28 +194,30 @@ public struct WarenkorbWidget: View {
 
 // MARK: - WarenkorbWidgetZeile
 private struct WarenkorbWidgetZeile: View {
-    let item: WarenkorbItem
+    let snapshot: PickSnapshot
     let preisFormatter: NumberFormatter
 
     var body: some View {
         HStack(alignment: .top, spacing: MykSpace.s4) {
-            Text("\(item.menge)×")
+            Text("\(snapshot.menge)×")
                 .font(.mykMono(10))
                 .foregroundStyle(MykColor.cash.color)
                 .frame(width: 28, alignment: .trailing)
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.bezeichnung)
+                Text(snapshot.bezeichnung)
                     .font(.mykSmall)
                     .foregroundStyle(MykColor.ink.color)
                     .lineLimit(1)
-                Text(item.artikelnummer)
-                    .font(.mykMono(9))
-                    .foregroundStyle(MykColor.muted.color)
-                    .lineLimit(1)
+                if let art = snapshot.attribute["artikelnummer"], art.isEmpty == false {
+                    Text(art)
+                        .font(.mykMono(9))
+                        .foregroundStyle(MykColor.muted.color)
+                        .lineLimit(1)
+                }
             }
             Spacer(minLength: MykSpace.s3)
-            if let vk = item.vkNetto {
-                Text(preisFormatter.string(from: NSNumber(value: vk * Double(item.menge))) ?? "–")
+            if let vk = snapshot.vkEinzel {
+                Text(preisFormatter.string(from: NSNumber(value: vk * Double(snapshot.menge))) ?? "–")
                     .font(.mykMono(10))
                     .foregroundStyle(MykColor.inkSoft.color)
             }
