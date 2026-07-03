@@ -40,9 +40,13 @@ struct GlobalPlansView: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // "Zeichnungen" ist zu breit für die 220pt-Sidebar in voller Display-Größe —
+            // ohne Skalierung bricht der Titel mitten im Wort um ("Zeichnunge/n").
             Text("Zeichnungen & Pläne")
                 .font(.mykDisplay)
                 .foregroundStyle(MykColor.ink.color)
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
                 .padding(.horizontal, MykSpace.s7)
                 .padding(.top, MykSpace.s9)
                 .padding(.bottom, MykSpace.s5)
