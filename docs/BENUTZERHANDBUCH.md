@@ -104,14 +104,21 @@ Popover zum Selbst-Konfigurieren: pro Widget-Art ein **Ein/Aus-Schalter** (aus =
 Position/Größe bleiben erhalten) und — wenn sichtbar — eine **Größenwahl** (Klein/Mittel/Breit/
 Voll). Änderungen greifen sofort (SaveState). Reihenfolge weiterhin per Drag im Board.
 
-**Warenkorb-Widget (2026-07-02):** Zeigt den **aktuellsten gespeicherten
-Warenkorb dieses Projekts** (aus dem Kataloge-Modul → Warenkörbe): Positionen
-(Menge × Bezeichnung · Art.-Nr. · VK) und die EK/VK-Summen, plus Version/Datum.
-Zuordnung erfolgt über die Warenkorb-Bezeichnung (Projektnummer oder -name).
-Read-only — Zusammenstellen/Editieren passiert im Kataloge-Modul. Ist noch kein
-Warenkorb zugewiesen, erklärt ein Hinweis, wie man einen anlegt. Bestehende
-Projekte bekommen das Widget automatisch nachgereicht (einmalige Migration,
-respektiert späteres Entfernen). *Wo:* Projekt → Übersicht.
+**Warenkorb-Widget (V10, Block E — 2026-07-03):** Zeigt jetzt den **lokal am Projekt
+gespeicherten Warenkorb** (WorkBasket, GRDB/local-first) statt der Airtable-Kopie —
+**eine editierbare Quelle der Wahrheit**. Positionen (Menge × Bezeichnung · Art.-Nr. · VK)
+und EK/VK-Summen. Über **„Bearbeiten"** öffnet sich ein Panel, in dem man **Menge (±)** und
+**VK-Einzelpreis** korrigieren sowie Positionen **entfernen** kann; gespeichert wird sofort
+mit sichtbarem SaveState. Bestätigte (eingefrorene) Warenkörbe sind nicht editierbar
+(Zustand „BESTÄTIGT"). Der Projekt-Warenkorb entsteht automatisch über den Intake-Fragebogen.
+Der frühere Airtable-Versandpfad (globaler Session-Warenkorb im Kataloge-Modul) bleibt
+unverändert bestehen. *Wo:* Projekt → Übersicht. *Voraussetzung:* keine (lokal).
+
+**Cash-Widget — „Kalkuliert (Warenkorb)" (V10, Block H — 2026-07-03):** Das Cash-Widget zeigt
+zusätzlich eine schlanke Zeile mit der **kalkulierten Warenkorb-Summe** dieses Projekts
+(VK **netto** und **brutto** inkl. 19 % MwSt), sobald ein Warenkorb mit Positionen existiert.
+Reine Anzeige — kein Schreiben, keine sevDesk-Buchung; der Ist-Umsatz-Balken (sevDesk) bleibt
+unverändert read-only. *Wo:* Projekt → Übersicht → Cash. *Voraussetzung:* keine (lokal).
 
 **Assistent-Widget (S25):** Das volle-Breite Assistent-Widget zeigt jetzt den
 **kompletten konversationellen Chat** (statt der alten Insight-Liste) — kompakt
@@ -163,6 +170,17 @@ echtes PDF: lokal materialisiert per PDFKit, sonst per read-only Drive-Download
 (`downloadContent`) — **nicht** im Browser. **Öffnen** (Klick auf den Namen) startet
 lokal-zuerst die macOS-Vorschau, nur ohne lokale Datei den Browser-Fallback.
 Rechtsklick → **„Im Finder zeigen"**. Read-only — nie Schreiben.
+
+**„Zum Angebot" — Kalkulations-Vorschau (V10, Block G — 2026-07-03):** Oben im Angebote-Tab
+erzeugt der Knopf **„Zum Angebot"** aus dem am Projekt gespeicherten Warenkorb ein
+**Angebots-Vorschau-PDF** (Briefkopf, Positionstabelle, Netto/19 % MwSt/Brutto, aus der
+Projektnummer abgeleitete Angebotsnummer, Datum). Die Vorschau wird **lokal** abgelegt
+(`~/Library/Application Support/mykilOS6/AngebotsVorschau/<Projektnummer>/`) und darunter
+gelistet — Klick öffnet sie in der macOS-Vorschau, Rechtsklick → „Im Finder zeigen".
+**Eiserne Regel Belegführung extern:** Das PDF ist eine **beschriftete Vorschau** („Angebots-
+Vorschau", Kopf-Hinweis + Fußzeile „Kalkulations-Vorschau — kein offizielles Angebot"), **kein**
+verbuchungspflichtiger Beleg. Das verbindliche Angebot entsteht separat in sevDesk. **Kein
+Drive-/sevDesk-Schreiben.** *Voraussetzung:* ein Projekt-Warenkorb mit Positionen (aus dem Intake).
 
 ### Timeline
 **Verlauf** des Projekts als eine chronologische Spine: Drive-Dateien, Angebote

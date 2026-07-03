@@ -20,12 +20,39 @@ voller Test-Lauf.
 **Checkpoint:** Version `10.0.0-alpha1` gestempelt, DMG in `dist/` (Rückfälle: 9.0.0 + 8.8.0-SAFETY).
 Ein Konflikt (GRDBDatabase: buildMigrator vs. v22) sauber von Hand gelöst.
 
-## ⏳ Welle 2 — noch offen (nächste Session / nach Limit-Reset)
+## ✅ Welle 2 — KOMPLETT integriert auf `feat/mykilos8-block-d-provisioning` (2026-07-03, Nacht)
 
-- **Block E:** WarenkorbWidget/-Panel vom Airtable-`WarenkorbListeStore` auf den persistierten
-  WorkBasket umhängen (eine Quelle der Wahrheit), editierbar, Renderstates, Screenshot-Check.
-- **Block G:** „Zum Angebot"-Knopf (WorkBasket → Mapper → PDF lokal + Angebote-Tab). Killer-Moment.
-- **Block H:** Cash-Zeile „kalkuliert/offen" aus dem WorkBasket.
+**894 Tests grün (von 879).** Direkt auf dem Zielbranch gebaut (kein isolierter Worktree),
+jeder Block einzeln committet + nach jedem Block voller Testlauf grün. **Begründung der
+Abweichung von „Worktree je Block + Cherry-Pick":** Die drei Blöcke teilen sich alle die
+`ProjectDetailView`-Aufrufstellen (`.warenkorb`/`.offers`/`.cash`) — isolierte Cherry-Picks
+hätten nur künstliche Konflikte auf einer Datei erzeugt. Direkt-Bau im kanonischen Ordner
+(CLAUDE.md „Keine parallelen Worktrees") + volle Suite je Block wahrt den Prüf-Geist.
+
+| Block | Inhalt | Tests | Commit (block-d) |
+|---|---|---|---|
+| **E** | WarenkorbWidget liest den lokal persistierten `WorkBasket` (GRDB) statt Airtable — EINE editierbare Quelle der Wahrheit. `WorkBasketEditing` (Kit, rein: Menge/Preis korrigieren, entfernen; nur `.kalkulation` editierbar) + `WorkBasketEditSheet` (roomy Panel, sichtbarer SaveState, persistiert via `WorkBasketStore.speichere`). `WorkBasket.vkNettoSumme` (Kit). | +7 | `575f98b` |
+| **G** | „Zum Angebot"-Knopf im Angebote-Tab: WorkBasket → `AngebotsRenderMapper` → `MykPDFRenderer` → PDF **lokal** (`<App-Support>/mykilOS6/AngebotsVorschau/<projektNr>/`), sichtbar im Tab. **Beschriftete VORSCHAU** (belegfuehrung-extern-regel): Titel „Angebots-Vorschau" + Kopf-Hinweis + Fußzeile „Kalkulations-Vorschau — kein offizielles Angebot". Kein Drive/sevDesk-Write. `MykPDFRenderer` bekam additiven `footerNote:`. `AngebotsVorschauStore` (Basisordner injizierbar → Cold-Start-Test). | +5 | `ffaf2c5` |
+| **H** | Cash-Widget: schlanke Zeile „Kalkuliert (Warenkorb): netto · brutto" aus `WorkBasket.vkNettoSumme` (19 % MwSt). Reine Sicht, kein Schreiben, sevDesk bleibt read-only. | +3 | `eb440a7` |
+
+**Checkpoint:** Version `10.0.0-alpha2` (Build 20) gestempelt, DMG `dist/mykilOS-10.0.0-alpha2.dmg`
+(12M, signiert). Rückfälle: 10.0.0-alpha1 · 9.0.0 · 8.8.0-SAFETY.
+
+### Offen / bewusst NICHT nachts gemacht
+- **Live-Abnahme (Phase 3, Block I — Schneider-Lauf):** ausschließlich Johannes' Gate. Alle
+  UI-Blöcke sind Build+Test-grün, aber NICHT live gegen Screenshots abgenommen (P0-Drift-Lehre).
+  Insbesondere prüfen: WarenkorbWidget + „Bearbeiten"-Sheet in der Übersicht/Angebote-Tab
+  verschieben Sidebar/Layout nicht; „Zum Angebot" erzeugt sichtbar ein Vorschau-PDF; Cash-Zeile
+  erscheint. Erst nach Live-OK: Block J (10.0.0 final stempeln).
+- **Kein neuer externer Datenstrom:** Block E/G/H schreiben nur LOKAL (GRDB + App-Support-PDF).
+  Kein neuer Airtable-Datenstrom-Handbuch-Eintrag nötig; externe Writes waren nachts korrekt gesperrt.
+- **Datenquelle-Doppelung bewusst:** Der Airtable-`WarenkorbListeStore`/`CartStore`-Versandpfad
+  (globaler Session-Warenkorb) bleibt unberührt; der Widget-Pfad ist jetzt der lokale WorkBasket.
+  Eine spätere Verallgemeinerung/Zusammenführung (CartStore) bleibt Folgethema.
+
+## ⏳ Welle 2 — ursprünglicher Auftrag (jetzt erledigt, Historie)
+
+- ~~Block E / G / H~~ → oben integriert.
 - **Phase 3 (Blocks I+J):** Schneider-Lauf live = **Johannes' Gate**, dann 10.0.0 final.
 
 ## 📌 Für Johannes (Morgen-Checkliste)
