@@ -79,3 +79,26 @@ mehr nicht.
 
 *Kosten-Notiz: alles über die bestehende ClickUp-Read-API, pro Projektöffnung 1–2 Calls, Poll
 gemächlich — kein neues Limit-Risiko.*
+
+## 7. Projekt-Anlage → ClickUp-Template-Provisionierung (Johannes 2026-07-03)
+
+**Idee:** Die „Projekt anlegen"-Maske (Fragebogen-Intake) triggert ein **ClickUp-Projekt-Template**
+— vorausgefüllt aus dem Fragebogen, terminiert ab Startdatum.
+
+**Fundament existiert:** Der Provisionierungs-Service (mykilOS-8 Block D) legt heute schon Liste +
+Template-Tasks im Testspace an (idempotent, getestet: `clickUpSchrittLegtListeUndAlleTemplateTasksAn`).
+
+**Vollausbau:**
+- **Template-Struktur:** Standard-Task-Satz je Projekttyp (Küche etc.) — die Task-Titel/Struktur
+  pflegen Menschen als ClickUp-Vorlage, mykilOS instanziiert nur.
+- **Befüllung aus dem Fragebogen:** `mykilos_project_id` (JJJJ-NNN), `client_name`,
+  `drive_folder_url` (aus der Drive-Provisionierung), `source_system=myKilOS`,
+  `project_phase=Briefing`.
+- **Startdaten:** Fragebogen bekommt ein Startdatum-Feld → Template-Tasks erhalten due_dates als
+  **Offsets vom Startdatum** (z. B. Aufmaß +7 Tage, Vorplanung +14). Offsets leben in der Vorlage,
+  nicht im Code.
+- **Meilensteine:** Template enthält Milestone-Tasks → erscheinen sofort im Stepper-Strip (§3).
+- **Regeln:** Trigger ist der Mensch (Maske). **Keine Assignees** durch die App — Zuweisung machen
+  Menschen danach in ClickUp. Writes bis Go-Live-Grün nur Testspace. Idempotenz bleibt Pflicht
+  (zweiter Lauf erzeugt nichts doppelt).
+- **Slot:** M6 der Bau-Reihenfolge (nach M1–M4 sinnvoll, unabhängig von M5).
