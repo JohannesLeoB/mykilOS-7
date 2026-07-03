@@ -49,7 +49,10 @@ final class OfferPositionGateTests: XCTestCase {
             guard let expected = Decimal(string: row[iNet]) else { continue }
             total += 1
             let p = OfferPositionExtractor.extract(fromBlock: text)
-            let hit = p.netPrice.map { abs(($0 - expected) as Decimal) <= Decimal(0.01) } ?? false
+            // Treffer, wenn Netto-Einzel ODER (bei Rabatt) der Listenpreis passt —
+            // der Korpus führt bei Rabatt-Zeilen den Listenpreis vor Rabatt.
+            func matches(_ d: Decimal?) -> Bool { d.map { abs(($0 - expected) as Decimal) <= Decimal(0.01) } ?? false }
+            let hit = matches(p.netPrice) || matches(p.listPrice)
             if hit { overallHit += 1 }
 
             guard Self.cleanStatuses.contains(row[iStatus]) else { continue }

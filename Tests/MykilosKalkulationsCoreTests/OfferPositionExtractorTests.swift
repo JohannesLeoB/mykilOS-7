@@ -55,6 +55,22 @@ final class OfferPositionExtractorTests: XCTestCase {
                        [Decimal(string: "2995.00")])
     }
 
+    func testRabattLayout_NettoUndListe_Gruen() {
+        // "1,0 Stk 250,00 20,00% 200,00 200,00 €" → netto 200 (nach Rabatt), Liste 250.
+        let text = "2 Aufmaß pauschal Raum Hamburg 1,0 Stk 250,00 20,00% 200,00 200,00 €"
+        let p = X.extract(fromBlock: text)
+        XCTAssertEqual(p.confidence, .green)
+        XCTAssertEqual(p.netPrice, Decimal(string: "200.00"))   // was gezahlt wird
+        XCTAssertEqual(p.listPrice, Decimal(string: "250.00"))  // vor Rabatt
+    }
+
+    func testKeinFalscherRabattBeiMwStProzent() {
+        // "19,00 %" ist MwSt, kein Zeilenrabatt — darf kein listPrice setzen.
+        let p = X.extract(fromBlock: "1 Stk Sockelblende 120,00 120,00 zzgl. 19,00 % MwSt")
+        XCTAssertNil(p.listPrice)
+        XCTAssertEqual(p.netPrice, Decimal(string: "120.00"))
+    }
+
     func testPauschaleOhnePruefbareRechnung_Amber() {
         let text = "1 Pauschale Lieferung und Anfahrt 350,00"
         let p = X.extract(fromBlock: text)

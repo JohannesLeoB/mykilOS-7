@@ -27,9 +27,12 @@ public enum OfferPositionExtractor {
     /// reinem Text ableitet. Die App mappt das später in `OfferPositionBlock`/Pick.
     public struct ExtractedPosition: Equatable, Sendable {
         public let title: String
-        /// Netto-Einzelpreis der Position (E.P.) — das, was der Lernkorpus als
-        /// `price_net` führt. Bei Menge 1 gleich der Zeilensumme.
+        /// Netto-Einzelpreis der Position (E.P.) — bei Zeilenrabatt der Preis NACH
+        /// Rabatt (was tatsächlich gezahlt wird). Bei Menge 1 gleich der Zeilensumme.
         public let netPrice: Decimal?
+        /// Listenpreis VOR Zeilenrabatt, falls ein Rabatt-Layout erkannt wurde
+        /// (z. B. "250,00 20,00% 200,00" → listPrice 250, netPrice 200). Sonst nil.
+        public let listPrice: Decimal?
         /// Zeilensumme (G.P. = Menge × Einzel), sofern per Selbstbeweis bestätigt.
         public let lineTotal: Decimal?
         public let quantity: Double?
@@ -39,11 +42,12 @@ public enum OfferPositionExtractor {
         public let confidence: Confidence
         public let originalText: String
 
-        public init(title: String, netPrice: Decimal?, lineTotal: Decimal?, quantity: Double?,
-                    unit: String?, lengthM: Double?, areaM2: Double?, confidence: Confidence,
-                    originalText: String) {
+        public init(title: String, netPrice: Decimal?, listPrice: Decimal?, lineTotal: Decimal?,
+                    quantity: Double?, unit: String?, lengthM: Double?, areaM2: Double?,
+                    confidence: Confidence, originalText: String) {
             self.title = title
             self.netPrice = netPrice
+            self.listPrice = listPrice
             self.lineTotal = lineTotal
             self.quantity = quantity
             self.unit = unit
@@ -58,10 +62,14 @@ public enum OfferPositionExtractor {
 
     /// Extrahiert die Felder EINES Positionsblocks aus seinem Text.
     public static func extract(fromBlock text: String) -> ExtractedPosition {
+        let deGlued = deGlue(text)
         let amounts = germanAmounts(in: text)
         let qty = leadingQuantity(in: text)
         let (lengthM, areaM2) = dimensions(in: text)
         let unitToken = unit(in: text)
+        // Rabatt-Layout: "…250,00 20,00% 200,00…" → Listenpreis 250, netto 200.
+        // Ist selbst ein arithmetischer Selbstbeweis (list × (1−p) ≈ netto).
+        let disc = discount(in: deGlued)
 
         // Selbstbeweis: das erste Betrags-Paar (einzel, gesamt) suchen, das mit einer
         // plausiblen Menge aufgeht. Kandidat-Mengen bewusst nur Stück-Menge + 1
@@ -70,11 +78,21 @@ public enum OfferPositionExtractor {
         // führt dort aber die Zeilensumme; darum Länge/Fläche NICHT als Multiplikator.
         let candidateQuantities: [Double] = [qty, 1.0].compactMap { $0 }.filter { $0 > 0 }
 
-        // Der Lernkorpus führt price_net = Einzelpreis (E.P.); bei Menge 1 == Zeilensumme.
+        // netPrice = Einzelpreis (bei Rabatt: netto nach Rabatt); bei Menge 1 == Zeilensumme.
         if let proof = selfProof(amounts: amounts, quantities: candidateQuantities) {
+            // Listenpreis nur behalten, wenn er zum bewiesenen Netto-Einzel passt.
+            let list = (disc.map { near($0.net, proof.einzel) } ?? false) ? disc?.list : nil
             return ExtractedPosition(
-                title: firstTextLine(text), netPrice: proof.einzel, lineTotal: proof.gesamt,
+                title: firstTextLine(text), netPrice: proof.einzel, listPrice: list, lineTotal: proof.gesamt,
                 quantity: proof.quantity, unit: unitToken, lengthM: lengthM, areaM2: areaM2,
+                confidence: .green, originalText: text)
+        }
+
+        // Rabatt-Layout ohne Mengen-Selbstbeweis: trotzdem grün (list × (1−p) ≈ netto beweist sich).
+        if let disc {
+            return ExtractedPosition(
+                title: firstTextLine(text), netPrice: disc.net, listPrice: disc.list, lineTotal: nil,
+                quantity: qty, unit: unitToken, lengthM: lengthM, areaM2: areaM2,
                 confidence: .green, originalText: text)
         }
 
@@ -82,13 +100,13 @@ public enum OfferPositionExtractor {
         // (die Positionszeile steht vor Zwischensummen/Bank-/MwSt-Zeilen).
         if let first = amounts.first {
             return ExtractedPosition(
-                title: firstTextLine(text), netPrice: first, lineTotal: nil,
+                title: firstTextLine(text), netPrice: first, listPrice: nil, lineTotal: nil,
                 quantity: qty, unit: unitToken, lengthM: lengthM, areaM2: areaM2,
                 confidence: .amber, originalText: text)
         }
 
         return ExtractedPosition(
-            title: firstTextLine(text), netPrice: nil, lineTotal: nil, quantity: qty,
+            title: firstTextLine(text), netPrice: nil, listPrice: nil, lineTotal: nil, quantity: qty,
             unit: unitToken, lengthM: lengthM, areaM2: areaM2, confidence: .red, originalText: text)
     }
 
@@ -118,6 +136,38 @@ public enum OfferPositionExtractor {
             }
         }
         return nil
+    }
+
+    // MARK: - Rabatt-Layout
+
+    struct Discount: Equatable { let list: Decimal; let percent: Double; let net: Decimal }
+
+    // "<Liste> <Prozent>% <Netto>" z. B. "250,00 20,00% 200,00" — Prozent zwischen
+    // zwei Beträgen, Netto = Liste × (1 − Prozent/100) (±1 %).
+    private static let discountRegex = try! NSRegularExpression(
+        pattern: #"((?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})\s*(\d{1,2}(?:,\d{1,2})?)\s*%\s*((?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})"#)
+
+    static func discount(in text: String) -> Discount? {
+        let ns = text as NSString
+        let range = NSRange(location: 0, length: ns.length)
+        for m in discountRegex.matches(in: text, range: range) where m.numberOfRanges > 3 {
+            guard let list = decimal(fromGerman: ns.substring(with: m.range(at: 1))),
+                  let pct = germanDouble(ns.substring(with: m.range(at: 2))),
+                  let net = decimal(fromGerman: ns.substring(with: m.range(at: 3))),
+                  pct > 0, pct < 100 else { continue }
+            let expected = decimalDouble(list) * (1 - pct / 100)
+            let actual = decimalDouble(net)
+            if actual > 0, abs(expected - actual) / actual <= 0.01 {
+                return Discount(list: list, percent: pct, net: net)
+            }
+        }
+        return nil
+    }
+
+    static func near(_ a: Decimal, _ b: Decimal) -> Bool {
+        let x = decimalDouble(a), y = decimalDouble(b)
+        guard y != 0 else { return x == 0 }
+        return abs(x - y) / abs(y) <= 0.01
     }
 
     // MARK: - Feld-Parser (rein, ohne Zustand)
