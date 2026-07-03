@@ -1309,3 +1309,12 @@ Werkzeug-Einordnung in [[massendaten-katalog-miner]] (Memory):
   (Key+Kosten) damit vom Tisch. Umfang: `WidgetKind .map`, alle Renderstates (keine Adresse →
   Empty), Snapshot cachen, „Route in Karten öffnen"-Klick. Adressquelle: Intake/`mykilOS_Projekte.
   Adresse`. Slot: Delight-Block NACH der Feedback-Fix-Welle (Task #9), nicht im V10-Kern.
+
+- 💡 **Boss Button × pulsierender Clockodo-Timer (Johannes 2026-07-03 früh, verknüpft):** Der
+  schwebende App-Satellit (Boss Button, Always-on-top-NSWindow, bereits im Backlog) bekommt den
+  laufenden Clockodo-Timer als *Herzschlag*: läuft eine Zeitaufzeichnung, **pulsiert der Satellit
+  sanft** (dezenter Atem-Puls in MYKILOS-Orange, kein Blinken) — sichtbar aus jedem Kontext, auch
+  über anderen Apps. Klick = stoppen/Buchungs-Draft. Gleiche Puls-FX auch inline im
+  Zeiterfassung-Widget. Hängt am Clockodo-Zeit-Strang (Timer/Buchen, 6-Schichten-Architektur) —
+  erst wenn der echte Timer läuft, lohnt der Puls. Dezent per Design ([[alerts-dezent-datenschutz-
+  toggle-regel]]-Geist: abschaltbar). Slot: nach V10-Kern, eigener Delight-Strang mit Boss Button.
