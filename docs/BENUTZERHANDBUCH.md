@@ -637,6 +637,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `ASSISTANT_NOTES` | Assistenten-Notizen (lokal) | WRITE | onDemand (Tool-Call) | nur lokale eigene Daten | Tools `create_note`/`list_notes`/`update_note`/`delete_note`. Lokale Notizen in GRDB, **kein** externer Schreibzugriff. Persistent über Neustart (S4). |
 | `ASSISTANT_TASKS` | Assistenten-Aufgaben (lokal) | WRITE | onDemand (Tool-Call) | nur lokale eigene Daten | Tools `create_task`/`list_tasks`/`complete_task`/`delete_task`. Interne To-dos/Erinnerungen (optionales Fälligkeitsdatum) in GRDB v9, **kein** externer Schreibzugriff. Auch sichtbar im Kataloge-Tab „Aufgaben". Persistent über Neustart (S6). |
 | `AIRTABLE_CLOCKODO_ADAPTER_ZEITBUCHUNG` | Zeitbuchung an Clockodo-Adapter (Vorgebucht) | WRITE | onDemand (Buchungs-Bestätigung „Ja, buchen") | keine | 2026-07-01, Johannes freigegeben: `ClockodoAdapterWriter` spiegelt jedes lokal bestätigte `TimeSegment` (Timer-Buchung, 2. Schritt der Doppelbestätigung) als "Vorgebucht"-Zeile in die neue Airtable-Base `mykilOS-Adapter Clockodo` (appuQDCFGLmjo2L6T, Tabelle Zeitbuchungen) — nach Mitarbeiter (Vorname aus dem lokalen Profil)/Datum/Kalenderwoche/Projekt/Kostenstelle aufgegliedert. **Best-effort:** die lokale GRDB-Buchung bleibt in jedem Fall gültig, auch wenn dieser Sync fehlschlägt (offline/Airtable nicht verbunden) — kein Blocker, kein Datenverlust, nur ein Fehler im Datenstrom-Log. **Kein echter Clockodo-API-POST** — das bleibt ein separater, späterer Schritt (braucht den persönlichen Clockodo-API-Key je Nutzer aus der Private Area). Stammdaten (Clockodo-Leistungen mit Schätz-Stundensätzen, Kostenstellen) liegen in derselben Base, nur direkt in Airtable editierbar — kein App-Schreibpfad dafür. |
+| `WORKBASKET_INTAKE_PERSIST` | Fragebogen-Warenkorb als WorkBasket (lokal) | WRITE | onDemand (Fragebogen-Bestätigung, Stufe „Lead"/„Projekt mit Ordner", nur bei Positionen) | nur lokale eigene Daten | V10-Plan, Phase 1, Block C+D (2026-07-03): `WorkBasketStore` (Wirbelsäule, GRDB, vorher `0` Instanziierungen im App-Code) hängt jetzt an `AppState`. `WarenkorbWorkBasketBridge` (MykilosKit, Foundation-only) mappt die Intake-`Warenkorb`-Positionen (Airtable-Domäne) auf `WorkBasket`/`BasicPick` (Status `.kalkulation`, `inhaltsArt = .artikel`) — **kein Fuzzy-Match**, `projektNummer` kommt ausschließlich aus der soeben kollisionsfrei reservierten `nummer.appFormat`. Läuft **zusätzlich** zum bestehenden `AIRTABLE_WARENKORB_SENDEN`-Pfad (unverändert) — noch keine einzige Quelle der Wahrheit, das kommt erst in Block E. Nicht-fatal: Kunde+Projekt+Drive+Routing sind zu diesem Zeitpunkt schon sicher angelegt. |
 
 ---
 
@@ -707,6 +708,22 @@ legt keinen zweiten Drive-Ordner/Routing-Eintrag mehr an.
 *Voraussetzung:* Google verbunden (Drive-Schreibrecht) für Stufe 2+3, Airtable verbunden für alle.
 *Einschränkung:* nur Anlegen, nie Ändern/Löschen bestehender Records — jeder Schritt ist ein
 reiner CREATE.
+
+**Warenkorb wird zusätzlich lokal als WorkBasket persistiert (V10-Plan, Phase 1, Block C+D,
+2026-07-03).** *Was es tut:* Sobald der Fragebogen-Warenkorb Positionen enthält UND die echte
+Projektnummer erfolgreich reserviert wurde (Stufe „Lead"/„Projekt mit Ordner", SCHRITT 4), mappt
+`WarenkorbWorkBasketBridge` die Positionen auf einen `WorkBasket` (Status `.kalkulation`,
+`inhaltsArt = .artikel`, ein `BasicPick` je Position mit Bezeichnung/Menge/EK/VK/Artikelnummer)
+und `AppState.workBaskets` (`WorkBasketStore`, GRDB) speichert ihn lokal ab. *Wo zu finden:* noch
+nirgends in der UI sichtbar — reine Persistenz-Schicht, die Sichtbarkeit im Projekt kommt in
+Block E (Warenkorb-Panel auf den persistierten WorkBasket umgehängt). *Voraussetzungen:* nur
+innerhalb des Fragebogen-Anlage-Flusses, nur bei mindestens einer Warenkorb-Position, nur nach
+erfolgreicher Projektnummern-Reservierung. *Einschränkungen:* läuft **zusätzlich** zum
+bestehenden `AIRTABLE_WARENKORB_SENDEN` (Airtable-`CartStore`-Pfad bleibt unverändert) — es gibt
+noch **keine** einzige Quelle der Wahrheit zwischen beiden. `projektNummer` wird nie geraten
+(kein Fuzzy-Match), sondern immer aus der soeben kollisionsfrei reservierten Nummer übernommen.
+Nicht-fatal: ein Fehler hier (z. B. GRDB-Schreibfehler) wird geloggt, macht aber die bereits
+angelegten Kunde/Projekt/Drive/Routing-Daten nie rückgängig.
 
 **Erinnerungsfunktion + Verwerfen (Härtung, 2026-07-01, Johannes).** Der Fragebogen-Dialog verliert
 keine Eingaben mehr beim Schließen (X-Button, Fensterwechsel, Fensterwechsel innerhalb derselben

@@ -63,6 +63,13 @@ public final class AppState {
     // für den Hero-Stepper. Kein externer Write.
     public let projectLifecycle: ProjectLifecycleStore
 
+    // V10, Phase 1, Block C (2026-07-03): der verallgemeinerte WorkBasket-Speicher
+    // (Wirbelsäule, C3) hängt jetzt an AppState — vorher `0` Instanziierungen im
+    // App-Code. GRDB-backed, @MainActor @Observable, sichtbarer SaveState. Der
+    // Korb lebt jetzt tatsächlich am Projekt (`alle(projektNummer:)`), nicht nur
+    // in der Airtable-`Warenkorb`-Domäne. Kein neuer Store, nur Anschluss.
+    public let workBaskets: WorkBasketStore
+
     // Härtung (2026-07-01, Johannes: Erinnerungsfunktion für den Fragebogen). Lebt hier auf
     // AppState-Ebene statt als @State in KatalogeView — sonst zerstört ein Sidebar-
     // Modulwechsel (der `switch module` in MykilOS6App.swift/moduleView ersetzt KatalogeView
@@ -235,6 +242,9 @@ public final class AppState {
             clickUp: ClickUpClient())
         self.clickUpRouting = ClickUpRoutingStore(db: database)
         self.projectLifecycle = ProjectLifecycleStore(db: database)
+        // V10, Phase 1, Block C: geteilte GRDBDatabase durchreichen, wie alle
+        // anderen Stores hier auch — kein eigener Persistenz-Pfad.
+        self.workBaskets = WorkBasketStore(db: database)
         let claudeCredentials = KeychainClaudeCredentialsStore()
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
         self.assistantLLM = ClaudeMessagesClient(credentialsStore: claudeCredentials)
@@ -1198,6 +1208,33 @@ public final class AppState {
                         dateiname: "Fragebogen_\(nummer.driveFormat)_\(kundeSlug).pdf")
                 } catch {
                     MykLog.lifecycle.error("Fragebogen-PDF-Upload fehlgeschlagen: \(String(describing: error), privacy: .public)")
+                }
+            }
+
+            // V10, Phase 1, Block D: Warenkorb→WorkBasket-Bridge. Erst HIER ist die echte,
+            // reservierte `nummer.appFormat` bekannt (kein Fuzzy-Match, keine geratene
+            // Nummer) — der bestehende Airtable-Pfad (SCHRITT 3, `CartStore.
+            // sendWarenkorbToAirtable`) bleibt unverändert; dies ist ein ZUSÄTZLICHER,
+            // lokaler GRDB-Pfad (eine Quelle der Wahrheit kommt erst in Block E). Nicht-fatal:
+            // Kunde+Projekt+Drive+Routing sind zu diesem Zeitpunkt bereits sicher angelegt.
+            if ergebnis.warenkorb.items.isEmpty == false {
+                let basket = WarenkorbWorkBasketBridge.workBasket(
+                    aus: ergebnis.warenkorb,
+                    projektNummer: nummer.appFormat,
+                    id: WorkBasketID("WK-\(nummer.appFormat)-\(UUID().uuidString.prefix(8))")
+                )
+                do {
+                    try await workBaskets.speichere(basket)
+                    dataFlow.log(
+                        integrationID: "WORKBASKET_INTAKE_PERSIST", actorUserID: actorUserID,
+                        action: .success, recordsWritten: basket.picks.count,
+                        summary: "Fragebogen: WorkBasket lokal persistiert (\(nummer.appFormat), \(basket.picks.count) Position(en))")
+                } catch {
+                    MykLog.lifecycle.error("WorkBasket-Persistenz fehlgeschlagen: \(String(describing: error), privacy: .public)")
+                    dataFlow.log(
+                        integrationID: "WORKBASKET_INTAKE_PERSIST", actorUserID: actorUserID,
+                        action: .error, errorMessage: String(describing: error),
+                        summary: "Fragebogen: WorkBasket-Persistenz fehlgeschlagen")
                 }
             }
 
