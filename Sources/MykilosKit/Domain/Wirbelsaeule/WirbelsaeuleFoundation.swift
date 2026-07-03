@@ -108,7 +108,11 @@ public struct PickSnapshot: Hashable, Sendable, Codable {
 
 /// Der aufgelöste, echte Inhalt eines Picks (Ergebnis von `resolve()`).
 /// Materialisiert erst beim Checkout, damit Warenkörbe leicht bleiben (§2/§5g).
-public enum PickContent: Sendable, Equatable {
+///
+/// `Codable` (C3-Ausbau, S10-Blueprint §3): additive Konformität, damit
+/// `WorkBasketStore` (MykilosServices) einen `BasicPick`-Inhalt verlustfrei als
+/// JSON persistieren kann. Ändert nichts an bestehendem Verhalten.
+public enum PickContent: Sendable, Equatable, Codable {
     /// Reiner Text (Notiz, Textblock, Fließtext).
     case text(String)
     /// Verweis auf eine lokale/entfernte Datei-URL (kein Binärkopieren).
@@ -435,3 +439,4 @@ public struct PortRegistry {
         }
     }
 }
+

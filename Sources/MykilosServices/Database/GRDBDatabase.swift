@@ -398,6 +398,36 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v21_workbasket (Wirbelsäule, Welle C / C3, docs/S10_WIRBELSAEULE.md §3) —
+        // der verallgemeinerte WorkBasket-Speicher. Zwei Tabellen, rein lokal, kein
+        // externer Write: workBaskets (Kopf: inhaltsArt, Projektbezug, Version,
+        // Lebenszyklus-Status, Zeitstempel) + workBasketPicks (Positionen, geordnet,
+        // matrix-agnostisch — kein Artikel-only-Hardwiring). Persistiert nur die
+        // konstruier-/testbare BasicPick-Form der C1-Pick-Protokoll-Instanzen
+        // (snapshot + resolved inhalt als JSON); Foreign-Key-Cascade räumt Positionen
+        // beim Löschen eines Korbs mit auf (append-only Ersatz: Löschen kommt in der
+        // App-Schicht ohnehin nicht vor — nur Status-Übergänge, §7).
+        migrator.registerMigration("v21_workbasket") { db in
+            try db.create(table: "workBaskets") { t in
+                t.primaryKey("id", .text)
+                t.column("projektNummer", .text).notNull().indexed()
+                t.column("inhaltsArt", .text).notNull()
+                t.column("version", .integer).notNull().defaults(to: 1)
+                t.column("statusJSON", .text).notNull()
+                t.column("erstellt", .double).notNull()
+            }
+            try db.create(table: "workBasketPicks") { t in
+                t.primaryKey("id", .text)
+                t.column("basketID", .text).notNull().indexed()
+                    .references("workBaskets", column: "id", onDelete: .cascade)
+                t.column("position", .integer).notNull()
+                t.column("matrix", .text).notNull()
+                t.column("objektID", .text).notNull()
+                t.column("snapshotJSON", .text).notNull()
+                t.column("inhaltJSON", .text).notNull()
+            }
+        }
+
         try migrator.migrate(queue)
     }
 
