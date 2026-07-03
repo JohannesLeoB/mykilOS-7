@@ -1302,3 +1302,10 @@ Werkzeug-Einordnung in [[massendaten-katalog-miner]] (Memory):
   Chat-Composer, (b) echter `gmail.send`-Pfad mit hartem Bestätigungs-Gate. Sitzt auf dem
   Mail-Send-Strang (Integrationen) + dem Checkout/Übergabe-Gedanken. Konkreter Auslöser: das
   Übergabe-Paket an Daniel schicken. **Nicht in V10** (V10 = ein Auftrag läuft durch), Kandidat V11.
+
+- 💡 **Maps-Widget — Technik ENTSCHIEDEN (Empfehlung Claude, 2026-07-03): Apple MapKit statt
+  Google.** Native SwiftUI-`Map` + `CLGeocoder` (Projekt-Adresse → Pin) = kostenlos, kein API-Key,
+  kein externes Limit, nativ-schön ([[oekonomisch-schlank-lean-app-regel]]). Google Static Maps
+  (Key+Kosten) damit vom Tisch. Umfang: `WidgetKind .map`, alle Renderstates (keine Adresse →
+  Empty), Snapshot cachen, „Route in Karten öffnen"-Klick. Adressquelle: Intake/`mykilOS_Projekte.
+  Adresse`. Slot: Delight-Block NACH der Feedback-Fix-Welle (Task #9), nicht im V10-Kern.
