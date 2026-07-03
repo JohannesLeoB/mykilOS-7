@@ -92,17 +92,27 @@ public struct CashWidget: View {
             reviewAccepted = auditStore?.entries.contains {
                 $0.projectID == projectID && $0.action == .offerImported
             } ?? false
-            // Block H: kalkulierte Warenkorb-Summe (nur sichtbar machen, kein Schreiben).
-            if let workBasketStore {
-                let baskets = (try? workBasketStore.alle(projektNummer: projectID)) ?? []
-                kalkuliertNetto = baskets.max(by: { $0.erstellt < $1.erstellt })?.vkNettoSumme ?? 0
-            }
+            ladeKalkulierteSumme()
+        }
+        // Fix 2026-07-03 (Live-Fund Johannes): .task(id: projectID) lief nur beim
+        // ersten Öffnen — eine Warenkorb-Bearbeitung DANACH aktualisierte die Zeile
+        // nicht. workBasketStore ist pull-basiert (kein eigenes Array-Signal), aber
+        // saveState wechselt bei jedem erfolgreichen Speichern → als zusätzlicher
+        // Trigger nutzen.
+        .onChange(of: workBasketStore?.saveState) {
+            ladeKalkulierteSumme()
         }
     }
 
     // MARK: - Block H: kalkulierte Warenkorb-Summe (schlanke Zeile)
     // Reine Sicht auf den am Projekt persistierten WorkBasket — unabhängig von sevDesk,
     // kein Budget-Balken, keine Schreibkette. sevDesk bleibt read-only (Ist-Umsatz).
+    private func ladeKalkulierteSumme() {
+        guard let workBasketStore else { return }
+        let baskets = (try? workBasketStore.alle(projektNummer: projectID)) ?? []
+        kalkuliertNetto = baskets.max(by: { $0.erstellt < $1.erstellt })?.vkNettoSumme ?? 0
+    }
+
     private var kalkuliertZeile: some View {
         HStack(spacing: MykSpace.s2) {
             Text("Kalkuliert (Warenkorb)")
