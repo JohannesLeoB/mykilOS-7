@@ -1295,3 +1295,10 @@ Werkzeug-Einordnung in [[massendaten-katalog-miner]] (Memory):
   größerer Strang, nicht nebenbei für CAD mitzubauen.
 
 **Alle vier: nicht selbstständig starten.** Erst auf Johannes' ausdrücklichen Zuruf zünden.
+
+- 💡 **Assistent verschickt Mail mit gedroppter Datei (Johannes 2026-07-03):** Datei in den
+  Assistenten-Chat droppen → Assistent textet die Mail (kontextbewusst) → **nach Bestätigung**
+  echter Gmail-Versand mit Anhang. Braucht zwei noch ungebaute Bausteine: (a) Datei-Drop/Anhang im
+  Chat-Composer, (b) echter `gmail.send`-Pfad mit hartem Bestätigungs-Gate. Sitzt auf dem
+  Mail-Send-Strang (Integrationen) + dem Checkout/Übergabe-Gedanken. Konkreter Auslöser: das
+  Übergabe-Paket an Daniel schicken. **Nicht in V10** (V10 = ein Auftrag läuft durch), Kandidat V11.
