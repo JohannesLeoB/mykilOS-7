@@ -16,6 +16,9 @@ struct ProfileRecord: Codable, FetchableRecord, PersistableRecord {
     var updatedAt: Double
     var clockodoUserID: String?
     var googleDomain: String?
+    // V10 Folge-Block A, Vorab (v22_user_identity): additiv, alte Zeilen
+    // haben NULL — AppState.ensureUserID() erzeugt + speichert einmalig nach.
+    var userID: String?
 
     init(from profile: UserProfile) {
         self.id = Self.localID
@@ -24,6 +27,15 @@ struct ProfileRecord: Codable, FetchableRecord, PersistableRecord {
         self.updatedAt = profile.updatedAt.timeIntervalSince1970
         self.clockodoUserID = profile.clockodoUserID
         self.googleDomain = profile.googleDomain
+        self.userID = profile.userID
+    }
+
+    /// Reine Value-Kopie mit neuer userID — vermeidet `var`-Closure-Captures
+    /// in ProfileStore.ensureUserID() (Swift 6 Sendable-Closure-Regel).
+    func withUserID(_ newUserID: String) -> ProfileRecord {
+        var copy = self
+        copy.userID = newUserID
+        return copy
     }
 
     func toDomain() -> UserProfile {
@@ -32,7 +44,8 @@ struct ProfileRecord: Codable, FetchableRecord, PersistableRecord {
             role: role,
             updatedAt: Date(timeIntervalSince1970: updatedAt),
             clockodoUserID: clockodoUserID,
-            googleDomain: googleDomain
+            googleDomain: googleDomain,
+            userID: userID
         )
     }
 }

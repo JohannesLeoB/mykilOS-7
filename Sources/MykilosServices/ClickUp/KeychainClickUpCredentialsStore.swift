@@ -23,25 +23,31 @@ public protocol ClickUpCredentialsStoring: Sendable {
 // kein neuer Keychain-Code nötig. Secret bleibt ausschließlich im Keychain.
 public struct KeychainClickUpCredentialsStore: ClickUpCredentialsStoring {
     private let keychain: KeychainStore
-    private static let service = "com.mykilos6.clickup"
+    private static let base = "clickup"
     private static let tokenAccount = "apiToken"
+    private let userID: String?
 
-    public init(keychain: KeychainStore = KeychainStore()) {
+    // V10 Folge-Block A: per-User-Service `com.mykilos6.clickup.<userID>`.
+    public init(keychain: KeychainStore = KeychainStore(), userID: String? = CurrentUserContext.current) {
         self.keychain = keychain
+        self.userID = userID
     }
 
+    private var service: String { PerUserKeychainService.perUser(Self.base, userID: userID) }
+
     public func store(_ credentials: ClickUpCredentials) throws {
-        try keychain.store(credentials.apiToken, service: Self.service, account: Self.tokenAccount)
+        try keychain.store(credentials.apiToken, service: service, account: Self.tokenAccount)
     }
 
     public func load() throws -> ClickUpCredentials? {
-        guard let token = try keychain.load(service: Self.service, account: Self.tokenAccount) else {
+        guard let token = try PerUserKeychainMigrator.loadWithMigration(
+                keychain: keychain, base: Self.base, userID: userID, account: Self.tokenAccount) else {
             return nil
         }
         return ClickUpCredentials(apiToken: token)
     }
 
     public func clear() throws {
-        try keychain.delete(service: Self.service, account: Self.tokenAccount)
+        try keychain.delete(service: service, account: Self.tokenAccount)
     }
 }
