@@ -197,7 +197,7 @@
     <h1>mykilOS <span class="arrow">→</span> Version 10</h1>
     <p class="lede">Der eine Moment, in dem der echte <b>Schneider-Auftrag</b> zum ersten Mal
       komplett durch mykilOS läuft — Fragebogen → Kunde+Projekt → persistierter Warenkorb →
-      ein Klick auf „Zum Angebot" → fertiges PDF → Cash-Zeile. Aus „ein Tool, das wir bauen"
+      ein Klick auf „Zum Angebot" → beschriftete Kalkulations-Vorschau (PDF) → Cash-Zeile. Aus „ein Tool, das wir bauen"
       wird „das läuft mein echtes Studio".</p>
     <div class="safety"><span class="dot"></span> Ausgangspunkt 9.0.0 · SAFETY-Rückfall bleibt 9.0.0</div>
   </header>
@@ -206,9 +206,11 @@
   <section class="killer">
     <div class="tag">Der eine sichtbare Moment</div>
     <div class="big">Ein einziger „Zum Angebot"-Knopf im Projekt.</div>
-    <p class="sub">Aus dem am Projekt persistierten Warenkorb entsteht mit einem Klick das
-      MYKILOS-Angebots-PDF — Briefkopf, Positionstabelle, Netto / 19 % / Brutto, Angebotsnummer, Datum.
-      Der Beweis, dass die ganze gebaute Kette durchgängig <em>und</em> wertig ist.</p>
+    <p class="sub">Aus dem am Projekt persistierten Warenkorb entsteht mit einem Klick eine
+      beschriftete MYKILOS-Kalkulations-Vorschau (PDF) — Briefkopf, Positionstabelle,
+      Netto / 19 % / Brutto, Angebotsnummer, Datum. Kein offizielles Angebot — das entsteht
+      separat in sevDesk, mykilOS liefert nur die Vorstufe. Der Beweis, dass die ganze
+      gebaute Kette durchgängig <em>und</em> wertig ist.</p>
     <div class="flow">
       <span class="chip">Fragebogen</span><span class="sep">→</span>
       <span class="chip">Kunde + Projekt</span><span class="sep">→</span>
@@ -223,7 +225,7 @@
   <ol class="dod">
     <li>Intake-Fragebogen ausgefüllt → <b>Kunde + Projekt</b> angelegt.</li>
     <li>Warenkorb als <b>WorkBasket am Projekt in GRDB</b> persistiert — überlebt Neustart.</li>
-    <li>Aus dem Korb per einem Klick ein <b>Angebots-PDF</b>, sichtbar im Angebote-Tab.</li>
+    <li>Aus dem Korb per einem Klick eine beschriftete <b>Kalkulations-Vorschau (PDF)</b>, sichtbar im Angebote-Tab — kein offizielles Angebot, das entsteht separat in sevDesk.</li>
     <li>Cash-Widget zeigt die <b>kalkulierte Summe genau dieses Auftrags</b>.</li>
   </ol>
   <p style="margin-top:1rem;font-size:.9rem;color:var(--ink-soft)">
@@ -250,7 +252,7 @@
       <div class="node"><span></span></div>
       <h3>Der Killer-Moment <span class="pn">Phase 2 · aus dem Korb wird ein Angebot</span></h3>
       <p class="goal">Ein Klick verwandelt den persistierten Korb in ein wertiges Kundendokument
-        und macht den Auftrag finanziell sichtbar.</p>
+        und macht den Auftrag finanziell sichtbar. Bewusst eine Vorschau — mykilOS stellt nie das offizielle Angebot aus, das bleibt sevDesk vorbehalten.</p>
       <div class="blocks">
         <div class="block"><span class="k">F</span><span class="bt"><b>WorkBasket → Render-Args-Mapper.</b> Positionen → Tabelle, Netto/19 %/Brutto → totals, Briefkopf + Angebotsnummer + Datum.</span></div>
         <div class="block"><span class="k">G</span><span class="bt"><b>„Zum Angebot"-Knopf.</b> Klick → Mapper → Renderer → PDF <em>lokal</em> ablegen + Tab zeigt es. Drive bleibt read-only.</span></div>
