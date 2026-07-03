@@ -172,7 +172,10 @@ struct ProjectDetailView: View {
             OffersTabView(
                 projectID: project.projectNumber,
                 driveFolderID: project.links.driveFolderID,
-                driveFolderPath: project.links.driveFolderPath
+                driveFolderPath: project.links.driveFolderPath,
+                workBasketStore: appState.workBaskets,
+                kundeName: appState.registry.customer(for: project)?.name ?? project.title,
+                projektTitel: project.title
             )
         case .zeit:
             ProjektTimerView(projektNummer: project.projectNumber, projektTitel: project.title)

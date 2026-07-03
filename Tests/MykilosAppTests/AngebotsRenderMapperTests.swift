@@ -63,8 +63,10 @@ struct AngebotsRenderMapperTests {
             datum: Self.fixDatum()
         )
 
-        #expect(args.title == "Angebot")
+        // Vorschau-Beschriftung (belegfuehrung-extern-regel): Titel + Fußnote, nie „Angebot" allein.
+        #expect(args.title == "Angebots-Vorschau")
         #expect(args.subtitle == "Küche Schneider · A-2026-015")
+        #expect(args.footerNote == "Kalkulations-Vorschau — kein offizielles Angebot")
 
         // Tabelle: Kopfzeile + 2 Positionszeilen.
         let table = try? #require(args.table)
@@ -195,5 +197,19 @@ struct AngebotsRenderMapperTests {
             basket: vollerKorb(), kunde: "X", projektTitel: "Y", datum: Self.fixDatum()
         )
         #expect(args.totals[1].label == "MwSt. (19 %)")
+    }
+
+    // MARK: - 6. Vorschau-Beschriftung (belegfuehrung-extern-regel)
+
+    @Test func vorschauHinweisSektionIstVorhandenUndObenAn() {
+        let args = AngebotsRenderMapper.map(
+            basket: vollerKorb(), kunde: "X", projektTitel: "Y", datum: Self.fixDatum()
+        )
+        // Der Hinweis steht als erste Sektion — vor Absender/Kunde/Projekt.
+        #expect(args.sections.first?.heading == "Kalkulations-Vorschau — kein offizielles Angebot")
+        #expect(args.sections.first?.fields.first?.value.contains("sevDesk") == true)
+        // Fußnote deckt sich mit der öffentlichen Konstante (eine Quelle der Wortwahl).
+        #expect(args.footerNote == AngebotsRenderMapper.vorschauFussnote)
+        #expect(args.title == AngebotsRenderMapper.vorschauTitel)
     }
 }

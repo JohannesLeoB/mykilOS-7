@@ -42,13 +42,16 @@ public enum MykPDFRenderer {
     ///   - sections: Abschnitte mit je einem Heading + Feldliste (label/value-Paare).
     ///   - table:    Optionale Tabelle — erste Zeile = Kopfzeile, weitere = Datenzeilen.
     ///   - totals:   Summenpositionen unter der Tabelle (label/value, rechtsbündig).
+    ///   - footerNote: Optionaler Hinweis in der Fußzeile (z. B. „Kalkulations-Vorschau —
+    ///                 kein offizielles Angebot"). Additiv, `nil` = bisheriges Verhalten.
     /// - Returns: PDF-Daten (Data), fertig zum Schreiben oder Hochladen.
     public static func render(
         title: String,
         subtitle: String? = nil,
         sections: [(heading: String, fields: [(label: String, value: String)])],
         table: [[String]]? = nil,
-        totals: [(label: String, value: String)] = []
+        totals: [(label: String, value: String)] = [],
+        footerNote: String? = nil
     ) -> Data {
         let pdfData = NSMutableData()
         var mediaBox = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
@@ -144,7 +147,7 @@ public enum MykPDFRenderer {
         }
 
         // Fußzeile
-        drawFooter(ctx: ctx)
+        drawFooter(ctx: ctx, note: footerNote)
 
         ctx.endPDFPage()
         ctx.closePDF()
@@ -275,9 +278,22 @@ public enum MykPDFRenderer {
         return max(h1, h2)
     }
 
-    private static func drawFooter(ctx: CGContext) {
+    private static func drawFooter(ctx: CGContext, note: String? = nil) {
         let footerY: CGFloat = marginBot - 4
         drawHRule(ctx: ctx, y: footerY + 12, color: colorBorder)
+        // Optionaler Hinweis (z. B. Vorschau-Beschriftung) knapp über der Fußzeile —
+        // sichtbar in Terrakotta, damit ein Vorschau-PDF nie wie ein Beleg wirkt.
+        if let note, note.isEmpty == false {
+            drawText(
+                ctx: ctx,
+                text: note,
+                x: marginH,
+                y: footerY + 22,
+                width: contentWidth,
+                font: .systemFont(ofSize: 7.5),
+                color: colorDrive
+            )
+        }
         drawText(
             ctx: ctx,
             text: "MYKILOS · mykilos.com",

@@ -28,19 +28,23 @@ public struct AngebotsRenderArgs: Equatable {
     public let sections: [(heading: String, fields: [(label: String, value: String)])]
     public let table: [[String]]?
     public let totals: [(label: String, value: String)]
+    /// Fußzeilen-Hinweis (Vorschau-Beschriftung), 1:1 an `MykPDFRenderer.render(footerNote:)`.
+    public let footerNote: String?
 
     public init(
         title: String,
         subtitle: String?,
         sections: [(heading: String, fields: [(label: String, value: String)])],
         table: [[String]]?,
-        totals: [(label: String, value: String)]
+        totals: [(label: String, value: String)],
+        footerNote: String? = nil
     ) {
         self.title = title
         self.subtitle = subtitle
         self.sections = sections
         self.table = table
         self.totals = totals
+        self.footerNote = footerNote
     }
 
     // Tupel-Arrays sind nicht automatisch Equatable — für Tests von Hand vergleichbar machen.
@@ -55,6 +59,7 @@ public struct AngebotsRenderArgs: Equatable {
             }
         }
         guard lhs.table == rhs.table else { return false }
+        guard lhs.footerNote == rhs.footerNote else { return false }
         guard lhs.totals.count == rhs.totals.count else { return false }
         for (a, b) in zip(lhs.totals, rhs.totals) {
             guard a.label == b.label, a.value == b.value else { return false }
@@ -91,6 +96,19 @@ public enum AngebotsRenderMapper {
     /// Fester, sichtbar ausgewiesener MwSt-Satz für das Schneider-Angebot (Plan-Vorgabe).
     public static let mwstSatz: Double = 0.19
 
+    /// Titel des erzeugten Dokuments — bewusst „Vorschau", nie „Angebot" allein.
+    /// EISERNE REGEL (Johannes 2026-07-03, `belegfuehrung-extern-regel`): mykilOS stellt
+    /// NIE verbuchungspflichtige Dokumente aus. Dieses PDF ist ein Arbeits-/Vorschau-Dokument;
+    /// das verbindliche Angebot entsteht separat in sevDesk.
+    public static let vorschauTitel = "Angebots-Vorschau"
+
+    /// Kurz-Beschriftung für die Fußzeile (und die UI): „kein offizielles Angebot".
+    public static let vorschauFussnote = "Kalkulations-Vorschau — kein offizielles Angebot"
+
+    /// Ausführlicher Hinweistext für den Kopfbereich des Dokuments.
+    public static let vorschauHinweis =
+        "Unverbindliche Kalkulations-Vorschau, kein offizielles Angebot. Das verbindliche Angebot wird separat über sevDesk erstellt."
+
     /// Baut die Render-Args für ein Angebots-PDF aus einem WorkBasket.
     ///
     /// - Parameters:
@@ -111,6 +129,12 @@ public enum AngebotsRenderMapper {
         let datumString = DateFormatter.localizedString(from: datum, dateStyle: .long, timeStyle: .none)
 
         let sections: [(heading: String, fields: [(label: String, value: String)])] = [
+            (
+                heading: vorschauFussnote,
+                fields: [
+                    (label: "Hinweis", value: vorschauHinweis),
+                ]
+            ),
             (
                 heading: "Absender",
                 fields: [
@@ -148,11 +172,12 @@ public enum AngebotsRenderMapper {
         ]
 
         return AngebotsRenderArgs(
-            title: "Angebot",
+            title: vorschauTitel,
             subtitle: "\(projektTitel) · \(angebotsnummer)",
             sections: sections,
             table: rows.count > 1 ? rows : nil,   // nur Kopfzeile = leerer Korb → kein Tabellenblock
-            totals: totals
+            totals: totals,
+            footerNote: vorschauFussnote
         )
     }
 

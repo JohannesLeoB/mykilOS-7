@@ -56,4 +56,16 @@ struct MykPDFRendererTests {
         #expect(!data.isEmpty)
         #expect(data.prefix(4) == Data([0x25, 0x50, 0x44, 0x46]))
     }
+
+    // Additiver footerNote-Parameter (Block G, Vorschau-Beschriftung): valides PDF,
+    // Rückwärtskompatibilität (Default nil) bleibt gewahrt.
+    @Test func renderMitFooterNoteGibtValidePDF() {
+        let data = MykPDFRenderer.render(
+            title: "Angebots-Vorschau",
+            sections: [],
+            footerNote: "Kalkulations-Vorschau — kein offizielles Angebot"
+        )
+        #expect(!data.isEmpty)
+        #expect(data.prefix(4) == Data([0x25, 0x50, 0x44, 0x46]))
+    }
 }
