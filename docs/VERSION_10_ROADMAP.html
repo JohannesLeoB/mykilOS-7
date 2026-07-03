@@ -148,6 +148,11 @@
     font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
   }
   .pf-note{font-size:.82rem;color:var(--personal);font-weight:600;margin-top:.2rem}
+  .done-badge{
+    display:inline-flex; align-items:center; gap:.3rem; font-size:.72rem; font-weight:700;
+    letter-spacing:.04em; text-transform:uppercase; color:#fff; background:var(--positive);
+    border-radius:999px; padding:.18rem .6rem; margin-left:.3rem;
+  }
   /* ---- TWO COLUMN ---- */
   .cols{display:grid; grid-template-columns:1fr 1fr; gap:clamp(18px,3vw,28px)}
   @media(max-width:640px){.cols{grid-template-columns:1fr}}
@@ -199,7 +204,7 @@
       komplett durch mykilOS läuft — Fragebogen → Kunde+Projekt → persistierter Warenkorb →
       ein Klick auf „Zum Angebot" → beschriftete Kalkulations-Vorschau (PDF) → Cash-Zeile. Aus „ein Tool, das wir bauen"
       wird „das läuft mein echtes Studio".</p>
-    <div class="safety"><span class="dot"></span> Ausgangspunkt 9.0.0 · SAFETY-Rückfall bleibt 9.0.0</div>
+    <div class="safety"><span class="dot"></span> Stand: Phase 1, 2 + Folge-Block committed (10.0.0-alpha4) · SAFETY-Rückfall bleibt 9.0.0</div>
   </header>
 
   <h2 class="sec">Das Killer-Feature</h2>
@@ -237,7 +242,7 @@
 
     <div class="phase p1">
       <div class="node"><span></span></div>
-      <h3>Rückgrat verdrahten <span class="pn">Phase 1 · der Korb lebt am Projekt</span></h3>
+      <h3>Rückgrat verdrahten <span class="pn">Phase 1 · der Korb lebt am Projekt</span><span class="done-badge">erledigt</span></h3>
       <p class="goal">WorkBasketStore hört auf, toter Code zu sein: er hängt in AppState, das
         Intake-Ergebnis landet als persistierter Korb am Projekt — und man sieht ihn.</p>
       <div class="blocks">
@@ -250,7 +255,7 @@
 
     <div class="phase p2">
       <div class="node"><span></span></div>
-      <h3>Der Killer-Moment <span class="pn">Phase 2 · aus dem Korb wird ein Angebot</span></h3>
+      <h3>Der Killer-Moment <span class="pn">Phase 2 · aus dem Korb wird ein Angebot</span><span class="done-badge">erledigt</span></h3>
       <p class="goal">Ein Klick verwandelt den persistierten Korb in ein wertiges Kundendokument
         und macht den Auftrag finanziell sichtbar. Bewusst eine Vorschau — mykilOS stellt nie das offizielle Angebot aus, das bleibt sevDesk vorbehalten.</p>
       <div class="blocks">
@@ -274,7 +279,7 @@
 
     <div class="phase pf">
       <div class="node"><span></span></div>
-      <h3>Eine echte Identität <span class="pn">Folge-Block · abgestimmt, eigener Branch</span></h3>
+      <h3>Eine echte Identität <span class="pn">Folge-Block · abgestimmt, eigener Branch</span><span class="done-badge">erledigt</span></h3>
       <p class="goal">Das nächste Fundament — bewusst NACH dem Schneider-Beweis, weil es alle Tokens
         invalidiert (team-weiter Re-Consent). Nie im Nacht-Automode, erst mit Johannes ansagen.</p>
       <div class="blocks">

@@ -40,9 +40,10 @@ Integrations-ID `PROJECT_NUMBER_LOCAL_BINDING`). Das ist die „Doppel-Identitä
 | `mykilOS_Fragebogen & Projekt IN` | `appYE7GnC4bcfTBTX` | (noch nicht geprüft) |
 | `mykilOS Mastermind` | `appuVMh3KDfKw4OoQ` | vorhanden (Projekte/Kontakte/Datenstrom-Handbuch etc.) |
 
-**Kernbefund:** Die Ziel-Bases existieren als **Hüllen**, aber die Empfangs-Tabellen (Artikel/
-Preisliste, Kunden, Projekte, Warenkörbe, Projektartikel, Lagerliste) sind **noch nicht gebaut.**
-Die Abnabelung ist deshalb eine echte **Migration**, kein Konstanten-Tausch.
+**Kernbefund (Stand zum Zeitpunkt dieser Prüfung):** Die Ziel-Bases existieren als **Hüllen**, aber
+die Empfangs-Tabellen (Artikel/Preisliste, Kunden, Projekte, Warenkörbe, Projektartikel, Lagerliste)
+sind **noch nicht gebaut.** Die Abnabelung ist deshalb eine echte **Migration**, kein Konstanten-
+Tausch. → Für den inzwischen gebauten Zustand siehe §7 (Phase 1 GEBAUT, mit Field-IDs).
 
 ---
 

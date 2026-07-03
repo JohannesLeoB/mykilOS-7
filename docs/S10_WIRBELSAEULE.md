@@ -5,6 +5,10 @@ Vision Johannes, Architektur Claude. Baut auf `WARENKORB_CHECKOUT.md §1–§5j`
 Blaupause, gegen die Welle C (C1–C4) gebaut wird. Nichts hier ist implementiert — dieses Dokument
 wird bestätigt, *dann* beginnt Code.
 
+> **Update:** C1–C3 sind inzwischen gebaut (C3/WorkBasketStore verifiziert grün) — aktueller
+> Stand siehe [VERSION_9_KONSOLIDIERUNG.md](VERSION_9_KONSOLIDIERUNG.md). Dieses Dokument bleibt
+> die Blaupause, ist aber kein aktueller Fahrplan mehr.
+
 ---
 
 ## 0. Die S10-Grundsatzentscheidung

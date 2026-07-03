@@ -1,6 +1,6 @@
 # mykilOS 6 — Benutzerhandbuch
 
-**Stetige Mitschrift aller Funktionen. Stand: 2026-06-29 · Version 6.5.0**
+**Stetige Mitschrift aller Funktionen. Stand: 2026-07-03 · Version 10.0.0-alpha4**
 Jede neue Funktion wird hier beim Build dokumentiert. Dieses Dokument ist kein
 Abschlussdokument — es wächst mit der App.
 
@@ -790,10 +790,11 @@ projektNummer→Projekt→Kunde→`customers_id` (`Customer.clockodoCustomerID`,
 Leistung ohne ID, unbekanntes Projekt, Projekt ohne Kunde, ungemappter Kunde → jeweils ein
 konkreter Skip-Grund, NIE eine geratene Ersatz-ID in echten Abrechnungsdaten. Die Fallback-Frage
 („ungemappte Kunden auf 'Mykilos GmbH intern' buchen?") ist bewusst offen — aktuell wird
-übersprungen. **Noch nicht verdrahtet:** der eigentliche POST an echtes Clockodo (`createEntry`)
-wird noch NICHT vom Timer-Bestätigungsfluss ausgelöst — das bleibt der letzte, gated Schritt bis
-Johannes' Freigabe + Antworten (Fallback-Politik, IDs für Bestellungen/Versand, 20/30 ungemappte
-Kunden).
+übersprungen. **Kein direkter Clockodo-POST vorgesehen (EISERNE REGEL Clockodo-Postbox):** ein
+Schreibzugriff auf die echte Clockodo-API ist nicht geplant und wird es auch nicht sein. Buchungen
+laufen ausschließlich über die private Clockodo-Postbox (Airtable-Adapter,
+`AIRTABLE_CLOCKODO_ADAPTER_ZEITBUCHUNG`) als Stundenprotokoll für die manuelle Eigeneingabe. Wahre
+Zeiten kommen nur lesend aus Clockodo zurück.
 
 **Assistent: destilliertes Gedächtnis Stufe 2 (Härtung, 2026-07-01, Johannes).**
 Ergänzt Stufe 1 (System-Prompt-/Tool-Cache-Breakpoints): bei langen Chat-Threads wurde bisher der
@@ -1070,7 +1071,7 @@ Klärung echter Ordner vs. Sandbox).
 ---
 
 *Dieses Dokument wird mit jedem Feature-Commit aktualisiert.*
-*Letzte Änderung: 2026-07-01 · feat/mykilos8-block-d-provisioning · Projektnummer-Kollisionsschutz
+*Letzte Änderung: 2026-07-03 · feat/mykilos8-block-d-provisioning · Projektnummer-Kollisionsschutz
 (echte Live-Kollision entdeckt + gefixt: Live-Drive-Check vor jeder Nummernvergabe + Ordnername-
 Vorschau/Edit-Modus im Fragebogen), mykilOS-8.0-Konsolidierung: HYPERBUILD/CLAUDE.md-Doku-Wahrheit,
 toter Code raus (AssistantWidget, Fragebogen-Stubs, Bootstrap-Sondierung), Anthropic Prompt-Caching,
@@ -1084,5 +1085,6 @@ Mail-Entwürfe-Ordner, Assistent-Loop-Härtung (Wiederholungs-Erkennung, Tool-Ti
 Turn-Deadline 45s, echter Abbrechen-Button, Netzwerk-Timeout ClaudeChatClient), Alt-Versionen-
 Aufräumen + Retention-Skript + AppFreshnessBanner-Starthinweis, destilliertes Gedächtnis Stufe 2
 (ChatMemoryStore, Verdichtung ab Schwelle statt endlos wachsender Rohverlauf), toter Code raus
-(ComingTabView/ComingSoonView), Clockodo-Schreibpfad-Grundlage (createEntry, POST /v2/entries),
-PDF-Import (SHA256-Dedup + Eingehende-Angebote, Schreiben blockiert bis Whitelist-Freigabe)*
+(ComingTabView/ComingSoonView), Clockodo-Postbox-Grundlage (`AIRTABLE_CLOCKODO_ADAPTER_ZEITBUCHUNG`
+statt direktem API-POST, per EISERNER Regel 2026-07-03), PDF-Import (SHA256-Dedup +
+Eingehende-Angebote, Schreiben blockiert bis Whitelist-Freigabe)*

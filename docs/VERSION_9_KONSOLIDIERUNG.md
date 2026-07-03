@@ -4,6 +4,11 @@
 Johannes: „Full stop. Rundumblick. Sammle, verstehe, verknüpfe die Fäden, sichere dich ab.
 Konsolidiere und führe als Version 9 komplett und recovery-safe zusammen."
 
+**⚠️ Historischer Konsolidierungs-Schnappschuss vom 2026-07-03 morgens.** Der Ist-Stand in
+Abschnitt 1 (Branch, HEAD, Version, C3-Status) ist ein Zeitpunktbild — der Code ist seither
+weitergelaufen. Für den aktuellen Stand siehe `script/build_and_run.sh` (`APP_VERSION`) und
+`git log` auf dem aktiven Branch.
+
 **Version 9 = Konsolidierungs-Meilenstein, kein Feature-Bündel.** Alles Verstandene + alles real
 Verifizierte an einem Ort, plus ein sauberer, getesteter, gestempelter Rückfall-Punkt — dieselbe
 Safe-State-Logik wie `v7.0.0`. Dieses Dokument ist der Einstieg für jede Folge-Session (löst das

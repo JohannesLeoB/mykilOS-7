@@ -7,10 +7,11 @@ import MykilosKit
 // erfolgt) als "Vorgebucht"-Zeile in die neue Airtable-Base `mykilOS-Adapter Clockodo`
 // (appuQDCFGLmjo2L6T, Tabelle Zeitbuchungen). Append-only, ein Record pro Segment.
 //
-// Bewusst KEIN echter Clockodo-API-POST — das bleibt ein separater, späterer Schritt
-// (braucht den persönlichen Clockodo-API-Key je Nutzer aus der Private Area). Diese
-// Zeile ist die Vorstufe: sichtbar, nach Mitarbeiter/Tag/Woche/Projekt/Kostenstelle
-// aufgegliedert, editierbar/prüfbar direkt in Airtable, bevor sie real gebucht wird.
+// Bewusst KEIN echter Clockodo-API-POST — das ist dauerhaft ausgeschlossen (Eiserne
+// Regel: Clockodo read-only + Postbox). Diese Airtable-Zeile ist die einzige Schreib-
+// Eskalationsstufe: sichtbar, nach Mitarbeiter/Tag/Woche/Projekt/Kostenstelle
+// aufgegliedert, editierbar/prüfbar direkt in Airtable — die tatsächliche Buchung
+// bleibt manuelle Eigeneingabe des Nutzers in Clockodo selbst.
 public struct ClockodoAdapterWriter: Sendable {
     public static let baseID = "appuQDCFGLmjo2L6T"
     public static let table = "Zeitbuchungen"

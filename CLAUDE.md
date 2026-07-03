@@ -1,4 +1,4 @@
-# mykilOS 7.5 — Claude Code Projektgedächtnis
+# mykilOS 10 — Claude Code Projektgedächtnis
 
 **Smarte Projektplanung und Management mit intelligenten Automationen und Integrationen.**
 Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
@@ -267,10 +267,17 @@ ist bitgenau roundtrip-sicher).
 - `SaveState` (.idle/.saving/.saved(Date)/.failed(String)) ist in der UI sichtbar.
 - Cold-Start-Test für jedes neue persistierbare Feature: schreiben → neue Instanz → lesen → identisch.
 
+### Belegführung
+- mykilOS stellt NIE selbst verbuchungspflichtige Dokumente aus (kein Angebot, keine Rechnung). Nur Warenkörbe + sevDesk-Postbox + Drive.
+- Jedes von mykilOS erzeugte Dokument mit Preisen ist eine beschriftete Vorschau ("Kalkulations-Vorschau — kein offizielles Angebot"), nie als fertiges/offizielles Angebot dargestellt. Das offizielle Angebot entsteht separat in sevDesk.
+
+### Clockodo
+- NIE POST an die Clockodo-API. Timer/Drafts landen in der privaten Clockodo-Postbox als Stundenprotokoll für die manuelle Eigeneingabe. Wahre Zeiten kommen NUR LESEND aus Clockodo zurück.
+
 ### Token-Disziplin (SwiftLint erzwingt das)
 - Keine `.font(.system(...))` in Feature-/Widget-Code → `Font.mykHero` etc. aus `MykilosDesign`.
 - Keine `Color(red:...)` → `MykColor.drive.color` etc.
-- Keine `Color(hex:)` in Widgets/Features → `public` in `MykilosDesign/Tokens.swift` nutzen.
+- Keine `Color(hex:)`/`NSColor(hex:)` in Widgets/Features → `public` in `MykilosDesign/Tokens.swift` nutzen (Ausnahme: dokumentierter `NSColor(hex:)`-Fall in `MykPDFRenderer.swift` für reine PDF-Druckausgabe).
 
 ### Secrets & Private Area
 - Tokens, API-Keys, PATs → nur Keychain. Nie in Code, Dateien, Repo, Logs.
@@ -627,7 +634,7 @@ M4: sevdeskRef + Budget in Airtable Projekte (→ B6 live)
   - `Clockodo-Buchungen` (`tblYQxlauwej7FD1w`): Master-Audit-Log nach Bestätigung.
   - `Clockodo-Leistungen` (`tblRtsegocdpM8CJd`): bereits befüllt (8 Services).
   - `Kunden.Clockodo-Kunden-ID`: bereits gemappt (10 von 30 Kunden).
-- **6-Schichten-Architektur (Code noch nicht implementiert):**
+- **6-Schichten-Architektur (Code noch nicht implementiert; Schritt 5 überholt — siehe "Clockodo" unter Absolute Regeln: NIE POST an Clockodo, nur Postbox):**
   1. Intent Layer: `ClaudeConversationEngine` erkennt `clockodoDraft`-Intent,
      extrahiert Dauer, Leistungstyp, Kunden-/Projektreferenz.
   2. Resolution Layer: `ClockodoDraftResolver` mappt Freitext auf echte IDs

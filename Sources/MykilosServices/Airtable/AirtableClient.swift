@@ -152,7 +152,9 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
 
     // MARK: NO-GO-Schreibgrenzen (unverhandelbar)
     // Geschrieben wird AUSSCHLIESSLICH in explizit freigegebene Bases und Tabellen.
-    // Nie die geteilte Base (appkPzoEiI5eSMkNK), nie fremde Bases, kein DELETE.
+    // appkPzoEiI5eSMkNK ist freigegeben (nicht mehr tabu), aber noch nicht in
+    // writableMap aufgenommen — reine Implementierungs-Entscheidung, keine Sperre.
+    // Nie fremde, nicht in writableMap gelistete Bases, kein DELETE.
     //
     // Freigegebene Bases + Tabellen (Stand 2026-06-30):
     //   appuVMh3KDfKw4OoQ  — Mastermind (eigene Schaltzentrale)

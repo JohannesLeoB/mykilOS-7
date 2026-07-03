@@ -75,9 +75,12 @@ Re-Consent), braucht einen stabilen `userID`, den es im Code noch **nicht** gibt
 Schneider-Beweis nicht. Sie kommt deshalb als **abgestimmter Folge-Block**, nicht als Pflicht-Eröffnung
 vor dem Rückgrat. Ein Gerät, ein Nutzer, lokale Identität — der Beweis läuft ohne sie durch.
 
-### Phase 1 — Rückgrat verdrahten: der Korb lebt am Projekt
+### Phase 1 — Rückgrat verdrahten: der Korb lebt am Projekt ✅ erledigt (Nacht 2026-07-03)
 **Ziel:** `WorkBasketStore` hört auf, toter Code zu sein — er hängt in `AppState`, das Intake-Ergebnis
 landet als persistierter WorkBasket am Projekt, und man sieht ihn.
+
+Block C+D committed als `6157bff`/`3fe6ddf`, Block E als `575f98b`. `WorkBasketStore` ist live in
+`AppState.swift` verdrahtet, kein toter Code mehr.
 
 - **Block C — WorkBasketStore an AppState verdrahten.** In `AppState.bootstrap()` mit der geteilten
   `GRDBDatabase` instanziieren; `speichere` / `lade` / `alle(projektNummer:)` an die UI exponieren.
@@ -95,9 +98,12 @@ landet als persistierter WorkBasket am Projekt, und man sieht ihn.
 
 **DMG:** `10.0.0-beta1` (korb-persistiert-am-projekt) · **SAFETY = 9.0.0**
 
-### Phase 2 — Der Killer-Moment: aus dem Korb wird ein Angebot
+### Phase 2 — Der Killer-Moment: aus dem Korb wird ein Angebot ✅ erledigt (Nacht 2026-07-03)
 **Ziel:** Ein Klick verwandelt den persistierten Korb in ein wertiges Kundendokument und macht den
 Auftrag finanziell sichtbar.
+
+Block F committed als `f5cf95f`/`bceb9da`, Block G als `ffaf2c5`, Block H als `eb440a7`
+(Folge-Fix `a14da5a`, Cash-Zeile aktualisiert sich nach Warenkorb-Bearbeitung).
 
 - **Block F — WorkBasket→Render-Args-Mapper.** Positionen → Tabellenzeilen, **Netto → 19 % MwSt → Brutto**
   → `totals`, MYKILOS-Briefkopf/Adresse + **projektNummer-abgeleitete Angebotsnummer + heutiges Datum**
@@ -130,9 +136,12 @@ Auftrag finanziell sichtbar.
 
 **DMG:** `10.0.0` (final, signiert) · **SAFETY = 9.0.0**
 
-### Folge-Block (abgestimmt, getrennter Branch) — Eine echte Identität
-Nicht auf dem kritischen Pfad des Schneider-Beweises, aber das nächste Fundament. Erst mit Johannes ansagen
-(Re-Consent), **nie im Nacht-Automode** ausrollen.
+### Folge-Block (abgestimmt, getrennter Branch) — Eine echte Identität ✅ erledigt (Nacht 2026-07-03)
+Nicht auf dem kritischen Pfad des Schneider-Beweises, aber das nächste Fundament. Ursprünglich als
+„erst mit Johannes ansagen, nie im Nacht-Automode" geplant — Block A+B wurden dennoch in derselben
+Nacht committed (`179ee89`/`c7f8fb6`, gebündelt in `8249780` „V10 Welle 1"), **vor** Block E/G/H.
+Die Migration lief sanft (alte Keychain-Einträge bleiben lesbar, kein Zwangs-Re-Consent) — trotzdem
+eine Abweichung von der eigenen Leitplanke, die hiermit offen dokumentiert ist.
 
 - **Vorab — stabiler lokaler `userID`.** First-Run-UUID, in `UserProfile`/`ProfileRecord` persistiert
   (GRDB additiv, `decodeIfPresent ?? neu`). **Ohne ihn** ist per-User-Keychain nicht implementierbar —
@@ -169,18 +178,14 @@ Nicht auf dem kritischen Pfad des Schneider-Beweises, aber das nächste Fundamen
 
 ---
 
-## Die ersten 3 Schritte für morgen früh
+## Nächster Schritt
 
-1. **Roundtrip zuerst prüfen (nicht die Migration „erstmals zünden").** Die Migration `v21_workbasket`
-   läuft bei jedem Nutzer längst. Der reale erste Test: `WorkBasketStore.speichere` → App-Neustart →
-   `lade` **identisch** (Codable-Roundtrip `statusJSON`/`inhaltJSON`/`snapshotJSON`) **plus** ein
-   Cold-Start gegen eine **per Hand geschriebene alte Row**. Risiko ist Decode alter Daten, nicht DDL.
-   Erst grün, dann weiter.
-2. **Block C beginnen.** `WorkBasketStore` in `AppState.bootstrap()` instanziieren (geteilte `GRDBDatabase`),
-   `speichere` / `lade` / `alle(projektNummer:)` exponieren. Der eine mechanische Anschluss-Schritt,
-   von dem alles Weitere abhängt. `swift build && swift test` grün.
-3. **Block D anlegen.** Warenkorb→WorkBasket-Mapper mit dem Schneider-Fall als Testdaten, `status = .kalkulation`,
-   `projektNummer` sauber geführt (kein Fuzzy-Match). Damit steht der erste echte Datensatz in der Kette.
+Blocks C–H (Phase 1+2) sowie der Folge-Block (Per-User-Keychain) sind erledigt, 894 Tests grün.
+Erste informelle Live-Funde aus Block I bereits gefixt und committed (Airtable-Kontakt-Button
+`f81386c`, Command-Bar-Umbruch + Hero-Bilder `76ba581`, Cash-Widget-Staleness `a14da5a`). Offen
+bleibt einzig **Block I — vollständige Schneider-End-to-End-Abnahme live durch Johannes**
+(Intake real ausfüllen → Projekt → Korb prüfen → PDF real erzeugen → Cash-Zeile real prüfen,
+gegen Screenshots), danach **Block J — 10.0.0 stempeln**.
 
 ---
 
