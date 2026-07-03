@@ -1326,3 +1326,10 @@ Werkzeug-Einordnung in [[massendaten-katalog-miner]] (Memory):
   **Stundenprotokoll für die Eigeneingabe** in Clockodo (auch als Checkout exportierbar). Wahre
   Zeiten kommen ausschließlich **lesend aus Clockodo** zurück. Gleiche Philosophie wie
   Belegführung-extern/sevDesk-Postbox: mykilOS protokolliert vor, das externe System beurkundet.
+
+- ⚖️ **EISERNE REGEL systemweit (Johannes 2026-07-03): Aufgaben nur Mensch→Mensch, nie KI→Mensch.**
+  Prägt zwei Stränge dauerhaft: **ClickUp Ghost→Live** (auch nach Go-Live setzt die App NIE einen
+  Assignee / erstellt NIE Tasks „an" Personen — KI liefert Entwürfe, ein Mensch weist zu und ist
+  Absender; die Ghost-Regel war der Testschutz, dies ist das Dauerprinzip) und den **Alerts-Strang**
+  (Alerts = dezente Hinweise an den Nutzer selbst, nie Aufträge, nie an Dritte). Assistent:
+  Action-Card → Mensch bestätigt → Mensch ist Auftraggeber. In CLAUDE.md „Absolute Regeln" verankert.
