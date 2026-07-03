@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mykilOS → Version 10</title>
+<style>
+  :root{
+    --paper:#FAF8F3; --ink:#1A1814; --brand:#EA5B25;
+    --drive:#C26B4A; --people:#6E8B6A; --tasks:#C99A3E;
+    --cash:#4C6280; --personal:#8A5B73; --positive:#3E7A4E; --critical:#B4503C;
+    --ink-soft:#6b655c; --line:#e7e1d6; --card:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55; font-size:16px;
+    padding:clamp(20px,5vw,64px) clamp(16px,5vw,48px);
+    max-width:940px; margin:0 auto;
+    -webkit-font-smoothing:antialiased;
+  }
+  .eyebrow{
+    font-size:.72rem; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--ink-soft); font-weight:600; margin-bottom:1.1rem;
+  }
+  /* ---- HERO ---- */
+  .hero{
+    padding:clamp(28px,5vw,52px) clamp(24px,4vw,44px);
+    border-radius:22px; background:var(--card);
+    border:1px solid var(--line); position:relative; overflow:hidden;
+    box-shadow:0 1px 0 rgba(26,24,20,.02);
+  }
+  .hero::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:5px;
+    background:linear-gradient(90deg,var(--brand),var(--drive) 55%,var(--cash));
+  }
+  .hero h1{
+    font-size:clamp(2.1rem,7vw,3.4rem); line-height:1.02; font-weight:800;
+    letter-spacing:-.02em; margin:.2rem 0 .5rem;
+  }
+  .hero h1 .arrow{color:var(--brand)}
+  .hero .lede{
+    font-size:clamp(1.02rem,2.4vw,1.2rem); color:var(--ink);
+    max-width:60ch; margin-top:.6rem;
+  }
+  .hero .lede b{color:var(--brand); font-weight:700}
+  .safety{
+    margin-top:1.6rem; display:inline-flex; align-items:center; gap:.55rem;
+    font-size:.82rem; color:var(--ink-soft);
+    background:var(--paper); border:1px solid var(--line);
+    padding:.42rem .8rem; border-radius:999px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--positive);flex:none}
+  /* ---- section title ---- */
+  h2.sec{
+    font-size:1.35rem; font-weight:700; letter-spacing:-.01em;
+    margin:clamp(38px,6vw,58px) 0 1.2rem;
+  }
+  /* ---- KILLER ---- */
+  .killer{
+    border-radius:20px; padding:clamp(24px,4vw,38px);
+    background:linear-gradient(135deg,#fff 0%,#fff6f1 100%);
+    border:1px solid #f0d6c8; position:relative;
+  }
+  .killer .tag{
+    font-size:.68rem; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--brand); font-weight:700; margin-bottom:.7rem;
+  }
+  .killer .big{
+    font-size:clamp(1.3rem,3.4vw,1.75rem); font-weight:700;
+    line-height:1.25; letter-spacing:-.01em; max-width:32ch;
+  }
+  .killer .sub{margin-top:.8rem; color:var(--ink-soft); max-width:56ch; font-size:.96rem}
+  .flow{
+    display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1.4rem; align-items:center;
+  }
+  .chip{
+    font-size:.8rem; font-weight:600; padding:.4rem .7rem; border-radius:9px;
+    background:#fff; border:1px solid var(--line); white-space:nowrap;
+  }
+  .chip.hot{background:var(--brand); color:#fff; border-color:var(--brand)}
+  .sep{color:var(--drive); font-weight:700; font-size:.9rem}
+  /* ---- DoD ---- */
+  .dod{
+    list-style:none; display:grid; gap:.6rem;
+    counter-reset:d;
+  }
+  .dod li{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:.85rem 1rem .85rem 3rem; position:relative; font-size:.95rem;
+  }
+  .dod li::before{
+    counter-increment:d; content:counter(d);
+    position:absolute; left:.85rem; top:.8rem;
+    width:1.5rem;height:1.5rem;border-radius:50%;
+    background:var(--cash); color:#fff; font-size:.82rem; font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .dod li b{font-weight:700}
+  /* ---- TIMELINE ---- */
+  .timeline{position:relative; margin-left:.5rem}
+  .timeline::before{
+    content:""; position:absolute; left:11px; top:8px; bottom:26px; width:2px;
+    background:var(--line);
+  }
+  .phase{position:relative; padding:0 0 1.6rem 2.6rem}
+  .phase:last-child{padding-bottom:0}
+  .phase .node{
+    position:absolute; left:0; top:2px; width:24px;height:24px;border-radius:50%;
+    background:var(--paper); border:3px solid var(--drive);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .phase.p1 .node{border-color:var(--drive)}
+  .phase.p2 .node{border-color:var(--brand)}
+  .phase.p3 .node{border-color:var(--positive)}
+  .phase.pf .node{border-color:var(--personal); border-style:dashed}
+  .phase .node span{width:8px;height:8px;border-radius:50%;background:var(--drive)}
+  .phase.p2 .node span{background:var(--brand)}
+  .phase.p3 .node span{background:var(--positive)}
+  .phase.pf .node span{background:var(--personal)}
+  .phase h3{font-size:1.06rem; font-weight:700; letter-spacing:-.01em; display:flex; flex-wrap:wrap; gap:.5rem; align-items:baseline}
+  .phase h3 .pn{color:var(--ink-soft); font-weight:600; font-size:.82rem; letter-spacing:.04em}
+  .phase .goal{color:var(--ink-soft); font-size:.92rem; margin:.3rem 0 .7rem; max-width:60ch}
+  .blocks{display:grid; gap:.4rem}
+  .block{
+    display:flex; gap:.6rem; align-items:baseline; font-size:.9rem;
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:.55rem .75rem;
+  }
+  .block .k{
+    font-weight:700; font-size:.7rem; letter-spacing:.05em; color:#fff;
+    background:var(--drive); border-radius:6px; padding:.12rem .42rem; flex:none;
+  }
+  .phase.p2 .block .k{background:var(--brand)}
+  .phase.p3 .block .k{background:var(--positive)}
+  .phase.pf .block .k{background:var(--personal)}
+  .block .bt{line-height:1.4}
+  .block .bt b{font-weight:700}
+  .dmgbar{
+    margin-top:.75rem; font-size:.78rem; color:var(--ink-soft);
+    display:inline-flex; align-items:center; gap:.5rem; flex-wrap:wrap;
+  }
+  .dmgbar code{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    padding:.15rem .45rem; font-size:.76rem; color:var(--ink);
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  .pf-note{font-size:.82rem;color:var(--personal);font-weight:600;margin-top:.2rem}
+  /* ---- TWO COLUMN ---- */
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:clamp(18px,3vw,28px)}
+  @media(max-width:640px){.cols{grid-template-columns:1fr}}
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:clamp(18px,3vw,26px);
+  }
+  .panel h4{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin-bottom:1rem}
+  .panel.morning h4{color:var(--brand)}
+  .panel.notin h4{color:var(--ink-soft)}
+  .steps{list-style:none;counter-reset:s;display:grid;gap:.85rem}
+  .steps li{position:relative;padding-left:2.1rem;font-size:.92rem;line-height:1.45}
+  .steps li::before{
+    counter-increment:s;content:counter(s);
+    position:absolute;left:0;top:0;
+    width:1.4rem;height:1.4rem;border-radius:8px;
+    background:var(--brand);color:#fff;font-size:.78rem;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .steps li b{font-weight:700}
+  .notlist{list-style:none;display:grid;gap:.55rem}
+  .notlist li{
+    font-size:.87rem;color:var(--ink-soft);line-height:1.4;
+    padding-left:1.4rem;position:relative;
+  }
+  .notlist li::before{
+    content:"—";position:absolute;left:0;top:0;color:var(--critical);font-weight:700;
+  }
+  .notlist li b{color:var(--ink);font-weight:600}
+  /* ---- RAILS FOOTER ---- */
+  .rails{
+    margin-top:clamp(32px,5vw,48px); padding-top:1.4rem; border-top:1px solid var(--line);
+    font-size:.78rem; color:var(--ink-soft); line-height:1.7;
+  }
+  .rails b{color:var(--ink);font-weight:600}
+  .foot{
+    margin-top:1.6rem;font-size:.76rem;color:var(--ink-soft);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:.6rem;
+  }
+  .foot .star{color:var(--brand);font-weight:700}
+</style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="eyebrow">mykilOS · Roadmap</div>
+    <h1>mykilOS <span class="arrow">→</span> Version 10</h1>
+    <p class="lede">Der eine Moment, in dem der echte <b>Schneider-Auftrag</b> zum ersten Mal
+      komplett durch mykilOS läuft — Fragebogen → Kunde+Projekt → persistierter Warenkorb →
+      ein Klick auf „Zum Angebot" → fertiges PDF → Cash-Zeile. Aus „ein Tool, das wir bauen"
+      wird „das läuft mein echtes Studio".</p>
+    <div class="safety"><span class="dot"></span> Ausgangspunkt 9.0.0 · SAFETY-Rückfall bleibt 9.0.0</div>
+  </header>
+
+  <h2 class="sec">Das Killer-Feature</h2>
+  <section class="killer">
+    <div class="tag">Der eine sichtbare Moment</div>
+    <div class="big">Ein einziger „Zum Angebot"-Knopf im Projekt.</div>
+    <p class="sub">Aus dem am Projekt persistierten Warenkorb entsteht mit einem Klick das
+      MYKILOS-Angebots-PDF — Briefkopf, Positionstabelle, Netto / 19 % / Brutto, Angebotsnummer, Datum.
+      Der Beweis, dass die ganze gebaute Kette durchgängig <em>und</em> wertig ist.</p>
+    <div class="flow">
+      <span class="chip">Fragebogen</span><span class="sep">→</span>
+      <span class="chip">Kunde + Projekt</span><span class="sep">→</span>
+      <span class="chip">Warenkorb (GRDB)</span><span class="sep">→</span>
+      <span class="chip hot">Zum Angebot</span><span class="sep">→</span>
+      <span class="chip">PDF</span><span class="sep">→</span>
+      <span class="chip">Cash-Zeile</span>
+    </div>
+  </section>
+
+  <h2 class="sec">Fertig heißt: Schneider läuft einmal live durch</h2>
+  <ol class="dod">
+    <li>Intake-Fragebogen ausgefüllt → <b>Kunde + Projekt</b> angelegt.</li>
+    <li>Warenkorb als <b>WorkBasket am Projekt in GRDB</b> persistiert — überlebt Neustart.</li>
+    <li>Aus dem Korb per einem Klick ein <b>Angebots-PDF</b>, sichtbar im Angebote-Tab.</li>
+    <li>Cash-Widget zeigt die <b>kalkulierte Summe genau dieses Auftrags</b>.</li>
+  </ol>
+  <p style="margin-top:1rem;font-size:.9rem;color:var(--ink-soft)">
+    Abgenommen <b style="color:var(--ink)">live durch Johannes gegen Screenshots</b> — nicht durch grüne Tests allein.
+    Kein neues Subsystem: fast nur Gebautes zu <b style="color:var(--ink)">einem</b> Faden verdrahtet.</p>
+
+  <h2 class="sec">Die Reise</h2>
+  <div class="timeline">
+
+    <div class="phase p1">
+      <div class="node"><span></span></div>
+      <h3>Rückgrat verdrahten <span class="pn">Phase 1 · der Korb lebt am Projekt</span></h3>
+      <p class="goal">WorkBasketStore hört auf, toter Code zu sein: er hängt in AppState, das
+        Intake-Ergebnis landet als persistierter Korb am Projekt — und man sieht ihn.</p>
+      <div class="blocks">
+        <div class="block"><span class="k">C</span><span class="bt"><b>An AppState verdrahten.</b> Store in bootstrap() instanziieren. Gate: Roundtrip + Cold-Start gegen alte Row.</span></div>
+        <div class="block"><span class="k">D</span><span class="bt"><b>Warenkorb → WorkBasket-Bridge.</b> Kleiner Mapper, status = .kalkulation, projektNummer sauber — kein Fuzzy-Match.</span></div>
+        <div class="block"><span class="k">E</span><span class="bt"><b>Korb im Projekt sichtbar + editierbar.</b> Widget vom Airtable- auf den GRDB-Store umhängen. UI gegen Screenshots.</span></div>
+      </div>
+      <div class="dmgbar">DMG <code>10.0.0-beta1</code> · korb-persistiert-am-projekt</div>
+    </div>
+
+    <div class="phase p2">
+      <div class="node"><span></span></div>
+      <h3>Der Killer-Moment <span class="pn">Phase 2 · aus dem Korb wird ein Angebot</span></h3>
+      <p class="goal">Ein Klick verwandelt den persistierten Korb in ein wertiges Kundendokument
+        und macht den Auftrag finanziell sichtbar.</p>
+      <div class="blocks">
+        <div class="block"><span class="k">F</span><span class="bt"><b>WorkBasket → Render-Args-Mapper.</b> Positionen → Tabelle, Netto/19 %/Brutto → totals, Briefkopf + Angebotsnummer + Datum.</span></div>
+        <div class="block"><span class="k">G</span><span class="bt"><b>„Zum Angebot"-Knopf.</b> Klick → Mapper → Renderer → PDF <em>lokal</em> ablegen + Tab zeigt es. Drive bleibt read-only.</span></div>
+        <div class="block"><span class="k">H</span><span class="bt"><b>Cash zeigt DIESEN Auftrag.</b> Eine schlanke Zeile „kalkuliert" aus dem Korb. sevDesk bleibt read-only.</span></div>
+      </div>
+      <div class="dmgbar">DMG <code>10.0.0-rc1</code> · zum-angebot-pdf-cash</div>
+    </div>
+
+    <div class="phase p3">
+      <div class="node"><span></span></div>
+      <h3>Schneider live + stempeln <span class="pn">Phase 3 · der echte Lauf ist das Gate</span></h3>
+      <p class="goal">Nicht bei grünen Tests stehenbleiben. Der echte End-to-End-Lauf entscheidet.</p>
+      <div class="blocks">
+        <div class="block"><span class="k">I</span><span class="bt"><b>Echter End-to-End-Lauf.</b> Intake real ausfüllen, PDF real ansehen, Cash-Zeile real prüfen. Bricht etwas → C–H nachziehen.</span></div>
+        <div class="block"><span class="k">J</span><span class="bt"><b>10.0.0 stempeln.</b> Version, DMG, Handbücher + Datenstrom-Handbuch nachziehen. Erst dann „fertig".</span></div>
+      </div>
+      <div class="dmgbar">DMG <code>10.0.0</code> · final, signiert · SAFETY = 9.0.0</div>
+    </div>
+
+    <div class="phase pf">
+      <div class="node"><span></span></div>
+      <h3>Eine echte Identität <span class="pn">Folge-Block · abgestimmt, eigener Branch</span></h3>
+      <p class="goal">Das nächste Fundament — bewusst NACH dem Schneider-Beweis, weil es alle Tokens
+        invalidiert (team-weiter Re-Consent). Nie im Nacht-Automode, erst mit Johannes ansagen.</p>
+      <div class="blocks">
+        <div class="block"><span class="k">0</span><span class="bt"><b>Stabiler lokaler userID.</b> First-Run-UUID im Profil (GRDB additiv). Ohne ihn ist per-User-Keychain nicht baubar.</span></div>
+        <div class="block"><span class="k">A</span><span class="bt"><b>Per-User-Keychain.</b> 6 echte Services → com.mykilos6.&lt;service&gt;.&lt;userID&gt;. Cold-Start: A schreibt, B liest nichts.</span></div>
+        <div class="block"><span class="k">B</span><span class="bt"><b>Anti-Impersonation.</b> Nur als Test verankert — geteilte Wissensschichten per userID gefiltert. Kein UI-Ausbau.</span></div>
+      </div>
+      <div class="pf-note">Nicht auf dem kritischen Pfad des Schneider-Beweises.</div>
+      <div class="dmgbar">DMG <code>10.1.0-alpha1</code> · per-user-keychain</div>
+    </div>
+
+  </div>
+
+  <h2 class="sec">Morgen früh &amp; der bewusste Verzicht</h2>
+  <div class="cols">
+    <div class="panel morning">
+      <h4>Die ersten 3 Schritte</h4>
+      <ol class="steps">
+        <li><b>Roundtrip zuerst prüfen.</b> Nicht die Migration „erstmals zünden" — sie läuft längst.
+          Korb schreiben → App neu → identisch, plus Cold-Start gegen eine alte Row. Risiko ist Decode, nicht DDL.</li>
+        <li><b>Block C beginnen.</b> WorkBasketStore in bootstrap() instanziieren, speichere/lade/alle(projektNummer:)
+          exponieren. Der eine Anschluss-Schritt, an dem alles hängt.</li>
+        <li><b>Block D anlegen.</b> Warenkorb→WorkBasket-Mapper mit dem Schneider-Fall als Testdaten,
+          status = .kalkulation, projektNummer sauber geführt.</li>
+      </ol>
+    </div>
+    <div class="panel notin">
+      <h4>Was NICHT reinkommt</h4>
+      <ul class="notlist">
+        <li><b>Klick-Picker / Positions-Extraktion</b> — Flaggschiff, aber nicht nötig. Nach V11.</li>
+        <li><b>Abnabelung Phase 2/3 + Multi-Base</b> — läuft über die bestehende Quelle.</li>
+        <li><b>sevDesk-Postbox Live-Schreibpfad</b> — bleibt read-only. Cash nur kalkuliert.</li>
+        <li><b>Alerts-Kern, Morgen-Brief, Push, Delight</b> — reife Politur, eigene Tiefe.</li>
+        <li><b>Volles DSGVO-Paket</b> — nur Keychain-Härtung wird als Folge-Block vorweggenommen.</li>
+        <li><b>Generisches Pipeline-Modell</b> — V10 braucht genau einen Port.</li>
+        <li><b>Mail senden, Clockodo-Buchung, ClickUp live</b> — der Auftrag läuft ohne sie durch.</li>
+        <li><b>Zweiter PDF-Renderer</b> — der einseitige reicht.</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="rails">
+    <b>RAILS im Plan respektiert:</b> main heilig (kein Push/Force) · externe Writes nur über gated
+    Karte→Bestätigung→Audit · Sevdesk nur via Postbox · Airtable nie DELETE, Daniels Base nur lesen ·
+    Drive read-only (PDF bleibt lokal) · ClickUp nur Testspace + Ghost-Personas · Mail/Memos/Assistent
+    nie kreuzlesbar · jede Integration per-User isoliert · jeder Alert braucht Datenschutz-Toggle ·
+    Kosten als Design-Kriterium · jede Bau-Einheit = kleiner Block + eigenes DMG + SAFETY.
+  </p>
+
+  <div class="foot">
+    <span><span class="star">★ Nordstern</span> · minimal · functional · smart · beautiful</span>
+    <span>Grundlage: docs/VERSION_9_KONSOLIDIERUNG.md · Detail: docs/VERSION_10_PLAN.md</span>
+  </div>
+
+</body>
+</html>
