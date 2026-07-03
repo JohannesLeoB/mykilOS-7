@@ -107,6 +107,11 @@ Auftrag finanziell sichtbar.
   wird **nicht** nach Drive geschrieben; es liegt lokal und der Angebote-Tab liest den lokalen Pfad.
   (Der Tab liest heute aus dem Drive-Ordner — hier wird der lokale Pfad zusätzlich eingespeist,
   keine zweite Render-Pipeline.) **Kein sevDesk-Write, keine Postbox-Live-Anbindung, kein zweiter Renderer.**
+  **⚖️ EISERNE REGEL (Johannes 2026-07-03): mykilOS stellt NIE verbuchungspflichtige Dokumente aus —
+  Belegführung immer extern (sevDesk), mykilOS liefert nur Warenkörbe + Postbox + Drive-Ordner.**
+  Das Block-G-PDF ist deshalb eine **beschriftete Angebots-VORSCHAU** (Titel/Fußzeile z. B.
+  „Kalkulations-Vorschau — kein offizielles Angebot"), ohne Beleg-Optik (keine Zahlungsbedingungen,
+  keine Rechnungsnummern-Anmutung). Das offizielle Angebot entsteht in sevDesk via Postbox.
 - **Block H — Cash-Sicht zeigt DIESEN Auftrag.** Cash-Widget um **eine schlanke Zeile**: Warenkorb-Summe
   (Netto/Brutto) aus dem WorkBasket als „kalkuliert". sevDesk bleibt read-only (Ist-Umsatz) wie bisher.
   **Nur sichtbar machen** — kein Budget-Balken, keine sevDesk-Verknüpfung, keine Schreibkette.
