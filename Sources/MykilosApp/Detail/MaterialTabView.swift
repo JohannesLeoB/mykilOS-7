@@ -19,6 +19,32 @@ struct MaterialTabView: View {
 
     @Environment(AppState.self) private var appState
     @State private var loader = MaterialLoader()
+    @State private var searchText = ""
+    /// Kategorie-Filter. `nil` = alle (vorhandenen) Kategorien.
+    @State private var categoryFilter: PlanCategory?
+    /// Datei-Typ-Filter (PDF/Bilder). `nil` = alle Typen.
+    @State private var typeFilter: PlanTypeFilter?
+    @AppStorage("material.tab.sort") private var sortRaw = MaterialSort.datum.rawValue
+
+    private var sort: MaterialSort { MaterialSort(rawValue: sortRaw) ?? .datum }
+
+    /// Vorhandene Kategorien nach Kategorie-Filter eingeschränkt.
+    private var categoriesToShow: [PlanCategory] {
+        let base = loader.nonEmptyCategories
+        if let categoryFilter { return base.filter { $0 == categoryFilter } }
+        return base
+    }
+
+    /// Sichtbare Dateien einer Kategorie: Typ → Volltext → Sortierung.
+    private func visibleFiles(in category: PlanCategory) -> [GoogleDriveFile] {
+        let byType = MaterialSorter.filtered(loader.files(for: category), type: typeFilter)
+        let byQuery = MaterialSorter.filtered(byType, query: searchText)
+        return MaterialSorter.sorted(byQuery, by: sort)
+    }
+
+    private var visibleTotal: Int {
+        categoriesToShow.reduce(0) { $0 + visibleFiles(in: $1).count }
+    }
 
     var body: some View {
         WidgetContainer(
@@ -29,7 +55,8 @@ struct MaterialTabView: View {
         ) {
             VStack(alignment: .leading, spacing: MykSpace.s5) {
                 header
-                categorySections
+                toolbar
+                categoryColumns
             }
         }
         .task(id: driveFolderID) {
@@ -89,35 +116,149 @@ struct MaterialTabView: View {
         .foregroundStyle(MykColor.drive.color)
     }
 
-    // Eine Sektion pro nicht-leerer Kategorie, in Enum-Deklarationsreihenfolge.
-    private var categorySections: some View {
-        VStack(alignment: .leading, spacing: MykSpace.s6) {
-            ForEach(loader.nonEmptyCategories) { category in
-                VStack(alignment: .leading, spacing: MykSpace.s2) {
-                    HStack(spacing: MykSpace.s3) {
-                        Image(systemName: category.iconName)
-                            .font(.mykMono(10))
-                            .foregroundStyle(MykColor.drive.color)
-                        Text(category.label.uppercased())
-                            .font(.mykMono(9.5))
-                            .foregroundStyle(MykColor.muted.color)
-                        Text("\(loader.files(for: category).count)")
-                            .font(.mykMono(9.5))
-                            .foregroundStyle(MykColor.faint.color)
-                    }
-                    VStack(spacing: 0) {
-                        let files = loader.files(for: category)
-                        ForEach(files) { file in
-                            MaterialRow(file: file)
-                            if file.id != files.last?.id {
-                                Divider().overlay(MykColor.line.color.opacity(0.6))
-                            }
-                        }
-                    }
-                }
+    // MARK: - Toolbar (Sammlungs-Ansicht-Standard: Kategorie/Typ/Sort/Suche)
+    // Nur bei geladenem Inhalt sichtbar — leere/Fehler-Zustände braucht kein Filter.
+
+    @ViewBuilder
+    private var toolbar: some View {
+        if case .content = loader.renderState {
+            HStack(spacing: MykSpace.s4) {
+                categoryMenu
+                typeMenu
+                sortMenu
+                searchField
+                Spacer()
+                Text("\(visibleTotal) Dateien")
+                    .font(.mykMono(10))
+                    .foregroundStyle(MykColor.muted.color)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var searchField: some View {
+        HStack(spacing: MykSpace.s3) {
+            Image(systemName: "magnifyingglass")
+                .font(.mykCaption)
+                .foregroundStyle(MykColor.muted.color)
+            TextField("Datei suchen…", text: $searchText)
+                .font(.mykSmall)
+                .textFieldStyle(.plain)
+                .frame(minWidth: 160)
+        }
+        .padding(.horizontal, MykSpace.s4)
+        .padding(.vertical, MykSpace.s3)
+        .background(RoundedRectangle(cornerRadius: MykRadius.sm)
+            .fill(MykColor.card.color)
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1)))
+    }
+
+    private var categoryMenu: some View {
+        Menu {
+            Button { categoryFilter = nil } label: {
+                Label("Alle Kategorien", systemImage: categoryFilter == nil ? "checkmark" : "square.stack.3d.up")
+            }
+            Divider()
+            ForEach(loader.nonEmptyCategories) { category in
+                Button { categoryFilter = category } label: {
+                    Label(category.label, systemImage: categoryFilter == category ? "checkmark" : category.iconName)
+                }
+            }
+        } label: {
+            toolbarLabel(categoryFilter?.label ?? "Alle Kategorien",
+                         systemImage: "line.3.horizontal.decrease.circle",
+                         active: categoryFilter != nil)
+        }
+        .menuStyle(.borderlessButton).fixedSize()
+        .help("Nach Plan-Kategorie filtern")
+    }
+
+    private var typeMenu: some View {
+        Menu {
+            Button { typeFilter = nil } label: {
+                Label("Alle Typen", systemImage: typeFilter == nil ? "checkmark" : "doc.on.doc")
+            }
+            Divider()
+            ForEach(PlanTypeFilter.allCases, id: \.self) { type in
+                Button { typeFilter = type } label: {
+                    Label(type.label, systemImage: typeFilter == type ? "checkmark" : type.icon)
+                }
+            }
+        } label: {
+            toolbarLabel(typeFilter?.label ?? "Alle Typen",
+                         systemImage: "doc.badge.ellipsis",
+                         active: typeFilter != nil)
+        }
+        .menuStyle(.borderlessButton).fixedSize()
+        .help("Nach Datei-Typ filtern")
+    }
+
+    private var sortMenu: some View {
+        Menu {
+            ForEach(MaterialSort.allCases, id: \.self) { option in
+                Button { sortRaw = option.rawValue } label: {
+                    Label(option.label, systemImage: sort == option ? "checkmark" : option.icon)
+                }
+            }
+        } label: {
+            toolbarLabel("Sortieren: \(sort.label)", systemImage: "arrow.up.arrow.down", active: false)
+        }
+        .menuStyle(.borderlessButton).fixedSize()
+    }
+
+    private func toolbarLabel(_ text: String, systemImage: String, active: Bool) -> some View {
+        Label(text, systemImage: systemImage)
+            .font(.mykSmall)
+            .foregroundStyle(active ? MykColor.drive.color : MykColor.muted.color)
+            .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s3)
+            .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.card.color)
+                .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1)))
+    }
+
+    // MARK: - Spalten je Kategorie (wie globaler Katalog: horizontal scrollend,
+    // jede Spalte eigenständig vertikal). Leere Kategorien nach Filter fallen weg.
+
+    private var categoryColumns: some View {
+        ScrollView(.horizontal) {
+            HStack(alignment: .top, spacing: MykSpace.s7) {
+                ForEach(categoriesToShow) { category in
+                    let files = visibleFiles(in: category)
+                    if files.isEmpty == false {
+                        VStack(alignment: .leading, spacing: MykSpace.s2) {
+                            HStack(spacing: MykSpace.s3) {
+                                Image(systemName: category.iconName)
+                                    .font(.mykMono(10))
+                                    .foregroundStyle(MykColor.drive.color)
+                                Text(category.label.uppercased())
+                                    .font(.mykMono(9.5))
+                                    .foregroundStyle(MykColor.muted.color)
+                                Text("\(files.count)")
+                                    .font(.mykMono(9.5))
+                                    .foregroundStyle(MykColor.faint.color)
+                            }
+                            Divider().overlay(MykColor.line.color.opacity(0.6))
+                            ScrollView {
+                                VStack(spacing: 0) {
+                                    ForEach(files) { file in
+                                        PlanFileRow(file: file, projectFolderID: driveFolderID)
+                                        if file.id != files.last?.id {
+                                            Divider().overlay(MykColor.line.color.opacity(0.6))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .frame(width: 330, alignment: .topLeading)
+                    }
+                }
+                if categoriesToShow.allSatisfy({ visibleFiles(in: $0).isEmpty }) {
+                    Text("Keine Datei passt zu Filter/Suche.")
+                        .font(.mykSmall)
+                        .foregroundStyle(MykColor.muted.color)
+                        .padding(.top, MykSpace.s4)
+                }
+            }
+            .frame(maxHeight: .infinity, alignment: .topLeading)
+        }
     }
 
     // Härtung: DRIVE_MATERIAL_TAB stand im Datenstrom-Manifest, hatte aber nie
@@ -134,53 +275,6 @@ struct MaterialTabView: View {
         case .loading, .permissionRequired, .offline:
             break
         }
-    }
-}
-
-// MARK: - MaterialRow
-private struct MaterialRow: View {
-    let file: GoogleDriveFile
-
-    private var icon: String {
-        switch file.name.split(separator: ".").last?.lowercased() {
-        case "pdf":                    "doc.text"
-        case "pptx", "ppt", "key":    "rectangle.on.rectangle.angled"
-        case "png", "jpg", "jpeg", "heic": "photo"
-        case "mp4", "mov":             "play.rectangle"
-        default:                       "doc"
-        }
-    }
-
-    var body: some View {
-        Button {
-            if let link = file.webViewLink, let url = URL(string: link) {
-                NSWorkspace.shared.open(url)
-            }
-        } label: {
-            HStack(spacing: MykSpace.s4) {
-                Image(systemName: icon)
-                    .font(.mykCaption)
-                    .foregroundStyle(MykColor.drive.color)
-                    .frame(width: 20)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(file.name)
-                        .font(.mykSmall)
-                        .foregroundStyle(MykColor.ink.color)
-                        .lineLimit(1)
-                    if let modifiedAt = file.modifiedAt {
-                        Text(modifiedAt.formatted(.relative(presentation: .named)))
-                            .font(.mykMono(9.5))
-                            .foregroundStyle(MykColor.muted.color)
-                    }
-                }
-                Spacer()
-                Image(systemName: "arrow.up.right.square")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.faint.color)
-            }
-        }
-        .buttonStyle(.plain)
-        .padding(.vertical, MykSpace.s3)
     }
 }
 

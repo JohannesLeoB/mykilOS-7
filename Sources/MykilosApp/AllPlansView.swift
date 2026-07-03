@@ -371,75 +371,18 @@ struct AllPlansView: View {
     }
 }
 
-// MARK: - PlanTypeFilter
-// Datei-Typ-Filter über alle Ordner hinweg ("nur PDFs" / "nur Bilder").
-private enum PlanTypeFilter: String, CaseIterable {
-    case pdf, bild
-
-    var label: String {
-        switch self {
-        case .pdf:  "PDF"
-        case .bild: "Bilder"
-        }
-    }
-    var icon: String {
-        switch self {
-        case .pdf:  "doc.text"
-        case .bild: "photo"
-        }
-    }
-
-    func matches(_ file: GoogleDriveFile) -> Bool {
-        let ext = (file.name as NSString).pathExtension.lowercased()
-        switch self {
-        case .pdf:
-            return ext == "pdf" || file.mimeType == "application/pdf"
-        case .bild:
-            return ext != "pdf" && (file.mimeType.hasPrefix("image/")
-                || ["jpg", "jpeg", "png", "heic", "heif", "tiff", "tif", "webp"].contains(ext))
-        }
-    }
-}
-
 // MARK: - AllPlanRow
-// Eine Zeile der globalen Liste: Datei + echte Projektzuordnung (Titel · Nummer).
+// Eine Zeile der globalen Liste: preview-fähige Datei (geteilte `PlanFileRow`) +
+// echte Projektzuordnung (Titel · Nummer) als Kontextzeile. PlanTypeFilter ist
+// jetzt geteilt (MykilosServices), damit Material-Tab denselben Typ-Filter nutzt.
 private struct AllPlanRow: View {
     let plan: AllPlansCollector.AggregatedPlan
 
     var body: some View {
-        Button {
-            if let link = plan.file.webViewLink, let url = URL(string: link) {
-                NSWorkspace.shared.open(url)
-            }
-        } label: {
-            HStack(spacing: MykSpace.s4) {
-                Image(systemName: plan.file.iconName)
-                    .font(.mykCaption)
-                    .foregroundStyle(MykColor.drive.color)
-                    .frame(width: 20)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(plan.file.name)
-                        .font(.mykSmall)
-                        .foregroundStyle(MykColor.ink.color)
-                        .lineLimit(1)
-                    HStack(spacing: MykSpace.s3) {
-                        Text("\(plan.projectTitle) · \(plan.projectNumber)")
-                            .font(.mykMono(9.5))
-                            .foregroundStyle(MykColor.muted.color)
-                        if let modifiedAt = plan.file.modifiedAt {
-                            Text(modifiedAt.formatted(.relative(presentation: .named)))
-                                .font(.mykMono(9.5))
-                                .foregroundStyle(MykColor.faint.color)
-                        }
-                    }
-                }
-                Spacer()
-                Image(systemName: "arrow.up.right.square")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.faint.color)
-            }
-        }
-        .buttonStyle(.plain)
-        .padding(.vertical, MykSpace.s3)
+        PlanFileRow(
+            file: plan.file,
+            contextLine: "\(plan.projectTitle) · \(plan.projectNumber)",
+            projectFolderID: plan.projectFolderID
+        )
     }
 }

@@ -190,7 +190,13 @@ Termin salbei, Audit pflaume). Klick auf eine Datei/ein Angebot öffnet den Link
 Read-only. Eine kaputte Quelle leert den Tab nicht (die übrigen werden trotzdem gezeigt).
 
 ### Material
-Zeigt Drive-Unterordner `05 Material` (tolerant per Name gematcht).
+Zeigt die Plan-/Zeichnungs-Schema-Ordner des Projekts (Pläne, Werkszeichnung, Renderings,
+Vorplanung, Layouts, Präsentation) — dieselbe Quelle wie der globale Katalog „Zeichnungen &
+Pläne", nur auf das eine Projekt gefiltert. **Volles Sammlungs-Instrumentarium** (seit
+2026-07-03): Kategorie-Filter · Typ-Filter (PDF/Bilder) · Sortierung (Datum/Name) ·
+Volltextsuche, und die Dateien stehen **in Spalten je Kategorie** nebeneinander. Klick aufs
+Datei-Icon öffnet eine **In-App-Vorschau** (PDF/Bild direkt, Vollvorschau möglich); Klick auf
+den Namen öffnet die Datei lokal (macOS-Vorschau) bzw. im Browser. Read-only.
 
 ---
 
@@ -298,7 +304,8 @@ Oben rechts: **+ Neues Projekt** (Fragebogen) und der **Warenkorb-Badge** (Posit
   Projektliste ("Alle Zeichnungen" oder ein Projekt), **rechts** entweder die globale Liste
   mit Kategorie-Sektionen (Kategorie-Filter, Sortierung Datum/Projekt/Kategorie/Name,
   Volltextsuche) oder die Schema-Ordner-Ansicht des gewählten Projekts (identisch zum
-  Material-Tab). Read-only — Klick öffnet die Datei im Browser, nichts wird geschrieben.
+  Material-Tab). Read-only — Klick aufs Icon öffnet die In-App-Vorschau, Klick auf den Namen
+  die Datei lokal/im Browser; nichts wird geschrieben.
   Voraussetzung: Google Drive verbunden. Präsentationsmaterial (03 PRÄSENTATION) erscheint
   bewusst NUR im Material-Tab des Projekts, nicht im globalen Katalog.
 
@@ -587,7 +594,7 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `DRIVE_POLL_OFFERS` | Angebots-PDF-Watcher | READ | Intervall (60s) + manuell | read-only | Baseline-Semantik: erster Poll meldet nichts. Handshake nur bei echtem Treffer. `isOffer` = Typ-Whitelist (PDF/Bild/Mail, kein ZIP/.numbers) **plus** Angebots-/Rechnungs-Schlüsselwort. |
 | `DRIVE_FILES_TAB` | Dateien-Tab (Finder-Baum) | READ | onDemand (Tab öffnen) | read-only | Nur Metadaten (Name/Typ/Datum/Größe). `drive.metadata.readonly` Scope. |
 | `DRIVE_OFFERS_TAB` | Angebote-Tab | READ | onDemand (Tab öffnen) | read-only | Gleiche Erkennungslogik wie `DriveOfferWatcher.detectOffers`. Typ-Whitelist (`isAcceptedOfferFileType`, EINE Quelle der Wahrheit): nur PDF/Bild/Mail, ZIP/.numbers werden ausgefiltert. |
-| `DRIVE_MATERIAL_TAB` | Material-Tab (Schema-Ordner) | READ | onDemand (Tab öffnen) | read-only | Seit 2026-07-03 verallgemeinert: zeigt alle 6 Schema-Ordner (Pläne/Werkszeichnung/Renderings/Vorplanung/Layouts/Präsentation) gruppiert, `PlanCollector` (tolerantes Diakritik-Matching, BFS bis Tiefe 3). Vorher nur `03 PRÄSENTATION`. |
+| `DRIVE_MATERIAL_TAB` | Material-Tab (Schema-Ordner) | READ | onDemand (Tab öffnen) | read-only | Seit 2026-07-03 verallgemeinert: zeigt alle 6 Schema-Ordner (Pläne/Werkszeichnung/Renderings/Vorplanung/Layouts/Präsentation), `PlanCollector` (tolerantes Diakritik-Matching, BFS bis Tiefe 3). Vorher nur `03 PRÄSENTATION`. Seit 2026-07-03 (Sammlungs-Ansicht-Standard) auf den Stand des globalen Katalogs gezogen: Kategorie-/Typ-Filter, Sortierung (Datum/Name), Volltextsuche, Spalten je Kategorie, In-App-Datei-Vorschau (`FilePreviewView`). |
 | `DRIVE_ALL_PLANS` | Zeichnungen & Pläne (global) | READ | onDemand (Kataloge-Tab) | read-only | Aggregiert die Schema-Ordner-Dateien ALLER Projekte mit Drive-Ordner (`AllPlansCollector`, begrenzt nebenläufig, gleiche `PlanCollector`-Logik wie der Material-Tab). Eigene Typ-Whitelist: nur PDF+Bilder (keine Mail-Formate). Kategorie-Sektionen + Filter/Sortierung/Suche. Präsentation bleibt draußen. Neu 2026-07-03. |
 | `DRIVE_ASSISTANT_LIST` | Drive-Ordner-Listing (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `list_drive_folder`. Nur Metadaten, nie Dateiinhalte. Eigene Weiche (Mandate E). |
 | `DRIVE_OFFERS_FIND` | Angebote-Suche (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `find_offers` über `OffersCollector` (rekursiv, klassifiziert). Findet 04/05 auch verschachtelt in „01 INFOS"; global per Projektname auflösbar (S2). Ergebnisse erscheinen als **anklickbare** Karte mit In-App-Vorschau (S22, reine UI — keine eigene Weiche). |
