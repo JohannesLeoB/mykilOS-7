@@ -6,15 +6,18 @@ import MykilosServices
 import MykilosWidgets
 
 // MARK: - MaterialTabView
-// Zeigt den Inhalt des "03 PRÄSENTATION"-Unterordners eines Projekts als
-// scrollbare Dateiliste. Read-only; Klick öffnet Datei im Browser.
-// Folgt dem gleichen Muster wie OffersTabView (generation-token, WidgetContainer,
-// alle WidgetRenderStates abgedeckt). Kein Zwei-Spalten-Layout — Präsentations-
-// material wird in einer einzigen sortierten Liste angezeigt.
+// Zeigt die Schema-Ordner eines Projekts (Pläne, Werkszeichnung, Renderings,
+// Vorplanung, Layouts, Präsentation) als gruppierte, scrollbare Dateiliste —
+// verallgemeinert aus der früheren Nur-Präsentation-Ansicht (der "03
+// PRÄSENTATION"-Bestand bleibt als eigene Sektion erhalten). Read-only;
+// Klick öffnet Datei im Browser. Sammel-Logik: `PlanCollector` (dieselbe
+// Quelle der Wahrheit wie der globale "Zeichnungen & Pläne"-Katalog).
+// Muster wie OffersTabView: generation-token, WidgetContainer, alle Renderstates.
 struct MaterialTabView: View {
     let projectID: String
     let driveFolderID: String?
 
+    @Environment(AppState.self) private var appState
     @State private var loader = MaterialLoader()
 
     var body: some View {
@@ -26,11 +29,12 @@ struct MaterialTabView: View {
         ) {
             VStack(alignment: .leading, spacing: MykSpace.s5) {
                 header
-                fileList
+                categorySections
             }
         }
         .task(id: driveFolderID) {
             await loader.load(rootFolderID: driveFolderID)
+            logDataFlow()
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.top, MykSpace.s7)
@@ -39,15 +43,17 @@ struct MaterialTabView: View {
 
     private var sourceLabel: String {
         switch loader.renderState {
-        case .content: "GOOGLE DRIVE  ·  \(loader.files.count) DATEIEN"
-        default:       "GOOGLE DRIVE"
+        case .content:
+            "GOOGLE DRIVE  ·  \(loader.totalFileCount) DATEIEN  ·  \(loader.nonEmptyCategories.count) ORDNER"
+        default:
+            "GOOGLE DRIVE"
         }
     }
 
     private var header: some View {
         HStack {
             SourceChip(kind: .drive)
-            Text("Präsentation & Material").mykWidgetTitle()
+            Text("Material & Pläne").mykWidgetTitle()
             Spacer()
             if case .content = loader.renderState { refreshButton }
             else if case .error = loader.renderState { retryButton }
@@ -57,7 +63,10 @@ struct MaterialTabView: View {
 
     private var refreshButton: some View {
         Button {
-            Task { await loader.load(rootFolderID: driveFolderID) }
+            Task {
+                await loader.load(rootFolderID: driveFolderID)
+                logDataFlow()
+            }
         } label: {
             Image(systemName: "arrow.clockwise")
                 .font(.mykCaption)
@@ -70,29 +79,61 @@ struct MaterialTabView: View {
 
     private var retryButton: some View {
         Button("Erneut versuchen") {
-            Task { await loader.load(rootFolderID: driveFolderID) }
+            Task {
+                await loader.load(rootFolderID: driveFolderID)
+                logDataFlow()
+            }
         }
         .font(.mykMono(9.5))
         .buttonStyle(.plain)
         .foregroundStyle(MykColor.drive.color)
     }
 
-    private var fileList: some View {
-        VStack(spacing: 0) {
-            if loader.files.isEmpty {
-                Text("Keine Dateien im Präsentationsordner")
-                    .font(.mykSmall)
-                    .foregroundStyle(MykColor.muted.color)
-            } else {
-                ForEach(loader.files) { file in
-                    MaterialRow(file: file)
-                    if file.id != loader.files.last?.id {
-                        Divider().overlay(MykColor.line.color.opacity(0.6))
+    // Eine Sektion pro nicht-leerer Kategorie, in Enum-Deklarationsreihenfolge.
+    private var categorySections: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s6) {
+            ForEach(loader.nonEmptyCategories) { category in
+                VStack(alignment: .leading, spacing: MykSpace.s2) {
+                    HStack(spacing: MykSpace.s3) {
+                        Image(systemName: category.iconName)
+                            .font(.mykMono(10))
+                            .foregroundStyle(MykColor.drive.color)
+                        Text(category.label.uppercased())
+                            .font(.mykMono(9.5))
+                            .foregroundStyle(MykColor.muted.color)
+                        Text("\(loader.files(for: category).count)")
+                            .font(.mykMono(9.5))
+                            .foregroundStyle(MykColor.faint.color)
+                    }
+                    VStack(spacing: 0) {
+                        let files = loader.files(for: category)
+                        ForEach(files) { file in
+                            MaterialRow(file: file)
+                            if file.id != files.last?.id {
+                                Divider().overlay(MykColor.line.color.opacity(0.6))
+                            }
+                        }
                     }
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // Härtung: DRIVE_MATERIAL_TAB stand im Datenstrom-Manifest, hatte aber nie
+    // einen echten dataFlow.log-Aufruf — in der Schaltzentrale unsichtbar.
+    private func logDataFlow() {
+        switch loader.renderState {
+        case .content, .empty:
+            appState.dataFlow.log(integrationID: "DRIVE_MATERIAL_TAB", actorUserID: appState.actorUserID,
+                                   action: .success, recordsRead: loader.totalFileCount,
+                                   summary: "Material & Pläne geladen (\(loader.totalFileCount) Dateien, \(loader.nonEmptyCategories.count) Ordner)")
+        case .error(let msg):
+            appState.dataFlow.log(integrationID: "DRIVE_MATERIAL_TAB", actorUserID: appState.actorUserID,
+                                   action: .error, errorMessage: msg, summary: "Material & Pläne: Laden fehlgeschlagen")
+        case .loading, .permissionRequired, .offline:
+            break
+        }
     }
 }
 
@@ -147,7 +188,7 @@ private struct MaterialRow: View {
 @MainActor
 @Observable
 private final class MaterialLoader {
-    private(set) var files: [GoogleDriveFile] = []
+    private(set) var filesByCategory: [PlanCategory: [GoogleDriveFile]] = [:]
     private(set) var renderState: WidgetRenderState = .loading
 
     private let client: GoogleDriveFetching
@@ -157,45 +198,35 @@ private final class MaterialLoader {
         self.client = client
     }
 
+    var totalFileCount: Int { filesByCategory.values.reduce(0) { $0 + $1.count } }
+
+    /// Nicht-leere Kategorien in Enum-Deklarationsreihenfolge (stabile Sektionen).
+    var nonEmptyCategories: [PlanCategory] {
+        PlanCategory.allCases.filter { (filesByCategory[$0]?.isEmpty == false) }
+    }
+
+    func files(for category: PlanCategory) -> [GoogleDriveFile] {
+        filesByCategory[category] ?? []
+    }
+
     func load(rootFolderID: String?) async {
         loadGeneration &+= 1
         let generation = loadGeneration
         guard let rootFolderID, rootFolderID.isEmpty == false else {
-            files = []; renderState = .empty; return
+            filesByCategory = [:]; renderState = .empty; return
         }
         renderState = .loading
         do {
-            let rootChildren = try await client.listFolder(folderID: rootFolderID)
+            let result = try await PlanCollector.load(rootFolderID: rootFolderID, client: client)
             guard generation == loadGeneration else { return }
-
-            // Tolerant: echte Ordner heißen z.B. "03 PRÄSENTATION" — Nummerierung
-            // und Großschreibung werden ignoriert, nur das Schlüsselwort muss passen.
-            let folder = rootChildren.first {
-                $0.mimeType == "application/vnd.google-apps.folder"
-                    && ($0.name.lowercased().contains("präsentation")
-                        || $0.name.lowercased().contains("prasentation")
-                        || $0.name.lowercased().contains("presentation"))
-            }
-
-            guard let folder else {
-                guard generation == loadGeneration else { return }
-                files = []; renderState = .empty; return
-            }
-
-            let children = try await client.listFolder(folderID: folder.id)
-            guard generation == loadGeneration else { return }
-
-            files = children
-                .filter { $0.mimeType != "application/vnd.google-apps.folder" }
-                .sorted { ($0.modifiedAt ?? .distantPast) > ($1.modifiedAt ?? .distantPast) }
-
-            renderState = files.isEmpty ? .empty : .content
+            filesByCategory = result.filesByCategory
+            renderState = result.isEmpty ? .empty : .content
         } catch GoogleDriveError.notConnected {
             guard generation == loadGeneration else { return }
-            files = []; renderState = .permissionRequired
+            filesByCategory = [:]; renderState = .permissionRequired
         } catch {
             guard generation == loadGeneration else { return }
-            files = []; renderState = .error(String(describing: error))
+            filesByCategory = [:]; renderState = .error(String(describing: error))
         }
     }
 }
