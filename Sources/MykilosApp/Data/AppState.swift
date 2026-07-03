@@ -187,11 +187,26 @@ public final class AppState {
         self.profile = ProfileStore(db: database)
         let chatStore = ChatStore(db: database)
         self.chat = chatStore
-        self.googleAuth = GoogleAuthService()
-        self.clockodoAuth = ClockodoAuthService()
-        self.clickUpAuth = ClickUpAuthService()
-        self.sevdeskAuth = SevdeskAuthService()
-        self.airtableAuth = AirtableAuthService()
+        // V10 Folge-Block A: stabile lokale userID VOR den Keychain-AuthServices
+        // ermitteln (synchron, direkt gegen die DB — profile.load() läuft erst
+        // async in bootstrap(), zu spät für die Store-Konstruktion hier).
+        // Erzeugt beim allerersten Start eine UUID und persistiert sie sofort;
+        // danach bleibt sie stabil über Neustarts (siehe ProfileStore.ensureUserID()).
+        let userID = ProfileStore.ensureUserID(db: database)
+        // Prozess-weit sichtbar machen: alle Default-Parameter-Konstruktionen
+        // von KeychainXCredentialsStore/KeychainGoogleTokenStore (Dutzende
+        // Call-Sites in AssistantTool.swift, TimelineTabView.swift, …) lösen
+        // ihre userID künftig hierüber auf statt "local" zu bekommen.
+        CurrentUserContext.set(userID)
+        self.googleAuth = GoogleAuthService(tokenStore: KeychainGoogleTokenStore(userID: userID))
+        self.clockodoAuth = ClockodoAuthService(
+            credentialsStore: KeychainClockodoCredentialsStore(userID: userID))
+        self.clickUpAuth = ClickUpAuthService(
+            credentialsStore: KeychainClickUpCredentialsStore(userID: userID))
+        self.sevdeskAuth = SevdeskAuthService(
+            credentialsStore: KeychainSevdeskCredentialsStore(userID: userID))
+        self.airtableAuth = AirtableAuthService(
+            credentialsStore: KeychainAirtableCredentialsStore(userID: userID))
         // Logger spiegelt nach Airtable über den eng begrenzten Schreibpfad
         // (nur Datenstrom-Log der Mastermind-Base; Whitelist im AirtableClient).
         let dataFlowLogger = DataFlowLogger(db: database, airtable: AirtableClient())

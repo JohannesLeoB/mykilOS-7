@@ -439,6 +439,17 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v22_user_identity (V10 Block A) — stabile lokale First-Run-UUID je
+        // Profil, Grundlage für Per-User-Keychain-Services. Nullable ALTER
+        // COLUMN: bestehende Zeilen bekommen NULL, AppState erzeugt die UUID
+        // beim nächsten Load nach und speichert sie einmalig zurück (siehe
+        // ProfileStore.ensureUserID()) — kein Datenverlust.
+        migrator.registerMigration("v22_user_identity") { db in
+            try db.alter(table: "userProfile") { t in
+                t.add(column: "userID", .text)
+            }
+        }
+
         return migrator
     }
 

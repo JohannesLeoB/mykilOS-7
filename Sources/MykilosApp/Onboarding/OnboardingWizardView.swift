@@ -232,9 +232,16 @@ struct OnboardingWizardView: View {
     private func saveProfileAndAdvance() {
         profileError = nil
         do {
+            // V10 Folge-Block A: userID der bestehenden Zeile mitführen (von
+            // AppState.init() → ProfileStore.ensureUserID() bereits erzeugt) —
+            // sonst würde dieses Save die stabile Keychain-userID auf nil
+            // zurücksetzen, sobald der Onboarding-Wizard zum ersten Mal speichert.
             try appState.profile.save(UserProfile(
                 displayName: displayName.trimmingCharacters(in: .whitespacesAndNewlines),
-                role: role.trimmingCharacters(in: .whitespacesAndNewlines)
+                role: role.trimmingCharacters(in: .whitespacesAndNewlines),
+                clockodoUserID: appState.profile.profile?.clockodoUserID,
+                googleDomain: appState.profile.profile?.googleDomain,
+                userID: appState.profile.profile?.userID
             ))
             advance()
         } catch {

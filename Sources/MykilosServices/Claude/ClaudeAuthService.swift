@@ -29,30 +29,37 @@ public protocol ClaudeCredentialsStoring: Sendable {
 // MARK: - KeychainClaudeCredentialsStore
 public struct KeychainClaudeCredentialsStore: ClaudeCredentialsStoring {
     private let keychain: KeychainStore
-    private static let service = "com.mykilos6.claude"
+    private static let base = "claude"
     private static let apiKeyAccount = "apiKey"
     private static let modelAccount = "model"
+    private let userID: String?
 
-    public init(keychain: KeychainStore = KeychainStore()) {
+    // V10 Folge-Block A: per-User-Service `com.mykilos6.claude.<userID>`.
+    public init(keychain: KeychainStore = KeychainStore(), userID: String? = CurrentUserContext.current) {
         self.keychain = keychain
+        self.userID = userID
     }
 
+    private var service: String { PerUserKeychainService.perUser(Self.base, userID: userID) }
+
     public func store(_ credentials: ClaudeCredentials) throws {
-        try keychain.store(credentials.apiKey, service: Self.service, account: Self.apiKeyAccount)
-        try keychain.store(credentials.model, service: Self.service, account: Self.modelAccount)
+        try keychain.store(credentials.apiKey, service: service, account: Self.apiKeyAccount)
+        try keychain.store(credentials.model, service: service, account: Self.modelAccount)
     }
 
     public func load() throws -> ClaudeCredentials? {
-        guard let apiKey = try keychain.load(service: Self.service, account: Self.apiKeyAccount),
-              let model = try keychain.load(service: Self.service, account: Self.modelAccount) else {
+        guard let apiKey = try PerUserKeychainMigrator.loadWithMigration(
+                keychain: keychain, base: Self.base, userID: userID, account: Self.apiKeyAccount),
+              let model = try PerUserKeychainMigrator.loadWithMigration(
+                keychain: keychain, base: Self.base, userID: userID, account: Self.modelAccount) else {
             return nil
         }
         return ClaudeCredentials(apiKey: apiKey, model: model)
     }
 
     public func clear() throws {
-        try keychain.delete(service: Self.service, account: Self.apiKeyAccount)
-        try keychain.delete(service: Self.service, account: Self.modelAccount)
+        try keychain.delete(service: service, account: Self.apiKeyAccount)
+        try keychain.delete(service: service, account: Self.modelAccount)
     }
 }
 

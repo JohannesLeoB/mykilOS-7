@@ -42,6 +42,15 @@ public enum AssistantGrounding {
                 intro += " (\(profile.role))"
             }
             intro += ". "
+            // V10 Folge-Block B: Anti-Impersonation-Minimalguard. Jeder Nutzer
+            // hat sein eigenes mykilOS (Team-Modell, geteilte Instrumente,
+            // getrennte Identitäten) — der Assistent handelt IMMER nur für
+            // die Person, mit der er gerade spricht, nie stellvertretend für
+            // andere Teammitglieder. Siehe Per-User-Datenisolation-Regel
+            // (Mail/Memos/Assistent-Chat nie zwischen Team-Mitgliedern
+            // kreuzlesbar).
+            intro += "Du handelst ausschließlich für \(profile.displayName). "
+            intro += "Sprich nie im Namen anderer Teammitglieder und gib dich nie als jemand anderen aus. "
         }
         intro += "Antworte auf Deutsch — direkt, knapp und sachlich wie ein erfahrener Kollege. "
         intro += "Keine Emojis. Keine Ausrufezeichen als Einleitung. "

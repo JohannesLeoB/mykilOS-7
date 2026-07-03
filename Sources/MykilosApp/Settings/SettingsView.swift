@@ -324,12 +324,15 @@ struct SettingsView: View {
         profileSaved = false
         let existing = appState.profile.profile
         do {
+            // V10 Folge-Block A: userID unverändert mitführen — sonst würde
+            // jedes Settings-Save die stabile Keychain-userID auf nil zurücksetzen.
             try appState.profile.save(UserProfile(
                 displayName: profileName,
                 role: profileRole,
                 updatedAt: Date(),
                 clockodoUserID: clockodoUserIDInput.isEmpty ? nil : clockodoUserIDInput,
-                googleDomain: existing?.googleDomain ?? appState.currentGoogleUser?.domain
+                googleDomain: existing?.googleDomain ?? appState.currentGoogleUser?.domain,
+                userID: existing?.userID
             ))
             profileSaved = true
         } catch {}
