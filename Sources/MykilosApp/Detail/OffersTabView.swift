@@ -369,6 +369,7 @@ private struct OfferRow: View {
     var projectFolderID: String? = nil
     var projectFolderPath: String? = nil
 
+    @Environment(AppState.self) private var appState
     @State private var showPreview = false
     @State private var showPositions = false
     @State private var resolvedLocalURL: URL?
@@ -491,6 +492,7 @@ private struct OfferRow: View {
                         }
                     }
                 },
+                learningStore: appState.learningStore,
                 onClose: { showPositions = false })
         }
     }

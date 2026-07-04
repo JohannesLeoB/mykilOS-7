@@ -82,6 +82,7 @@ struct AllOfferRow: View {
     /// Task A (Dev-Checkout-Exporter): optionaler Warenkorb-Kontext für „In Warenkorb".
     var warenkorb: WarenkorbState? = nil
 
+    @Environment(AppState.self) private var appState
     @State private var showPreview = false
     @State private var showPositions = false
     @State private var resolvedLocalURL: URL?
@@ -200,6 +201,7 @@ struct AllOfferRow: View {
                         wk.showPanel = true
                     }
                 },
+                learningStore: appState.learningStore,
                 onClose: { showPositions = false })
         }
     }

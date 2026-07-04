@@ -22,10 +22,14 @@ struct OfferPositionsSheet: View {
     /// Callback (z. B. wo kein Warenkorb im Kontext ist), bleibt das Sheet read-only.
     /// Bekommt Position + stabilen Index → der Aufrufer baut EK/VK aus der Richtung.
     var onTake: ((OfferPositionPDFReader.PagedPosition, Int) -> Void)? = nil
+    /// Optionaler Lern-Store: wenn gesetzt, kann der Nutzer die Positionen als
+    /// Preis-Wissen-KANDIDATEN vormerken (pending; aktiv erst nach Review-Freigabe).
+    var learningStore: LearningStore? = nil
     var onClose: () -> Void
 
     @State private var loader = OfferPositionsLoader()
     @State private var taken: Set<Int> = []
+    @State private var vorgemerkt: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -147,8 +151,51 @@ struct OfferPositionsSheet: View {
             Text(footerText)
                 .font(.mykMono(9)).foregroundStyle(MykColor.muted.color)
             Spacer()
+            vormerkenButton
         }
         .padding(.horizontal, MykSpace.s6).padding(.vertical, MykSpace.s4)
+    }
+
+    // Positionen als Preis-Wissen-KANDIDATEN vormerken (pending). Aktiv (schätz-
+    // wirksam) werden sie erst nach menschlicher Freigabe im Review — hier passiert
+    // KEINE Aktivierung. Nur lernbare Positionen (Preis da, nicht rot, keine Alternative).
+    @ViewBuilder
+    private var vormerkenButton: some View {
+        if let learningStore, case .content(let positions) = loader.state {
+            if let n = vorgemerkt {
+                Label("\(n) vorgemerkt", systemImage: "brain.head.profile")
+                    .font(.mykMono(9.5)).foregroundStyle(MykColor.positive.color)
+            } else {
+                let kandidaten = lernbareKandidaten(sortiert(positions))
+                Button {
+                    vorgemerkt = (try? learningStore.importPDFExtractedPositions(kandidaten))?.imported ?? 0
+                } label: {
+                    Label("Als Preis-Wissen vormerken (\(kandidaten.count))", systemImage: "brain.head.profile")
+                        .font(.mykMono(9.5)).foregroundStyle(MykColor.personal.color)
+                }
+                .buttonStyle(.plain)
+                .disabled(kandidaten.isEmpty)
+                .help("Merkt die Positionen als Kandidaten vor — aktiv erst nach deiner Freigabe im Preis-Wissen-Review.")
+            }
+        }
+    }
+
+    private func numerischeKonfidenz(_ c: OfferPositionExtractor.Confidence) -> Double {
+        switch c { case .green: 0.85; case .amber: 0.6; case .red: 0.3 }
+    }
+
+    private func lernbareKandidaten(_ items: [OfferPositionPDFReader.PagedPosition]) -> [PDFExtractedPosition] {
+        items.enumerated().compactMap { idx, paged in
+            let p = paged.position
+            guard let netto = p.netPrice, p.confidence != .red, p.isAlternative == false else { return nil }
+            return PDFExtractedPosition(
+                id: "\(file.id)-\(paged.pageNumber)-\(idx)",
+                sourceFile: file.name, pageNumber: paged.pageNumber,
+                title: p.title.isEmpty ? file.name : p.title,
+                componentType: p.componentType, netPrice: netto,
+                unit: p.unit ?? "Stk", quantity: p.quantity ?? 1,
+                confidence: numerischeKonfidenz(p.confidence), extractedAt: Date())
+        }
     }
 
     private var footerText: String {

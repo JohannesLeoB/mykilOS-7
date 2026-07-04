@@ -97,6 +97,9 @@ public final class AppState {
     // DeviceCatalog, falls die echte Preisbuch-CSV in Application-Support liegt
     // (sonst nil-Lookup). Echter Seed-/Korpus-Provider folgt separat.
     public let kalkulationsEngine: any KalkulationsEngineProviding
+    // Lern-Loop: dieselbe learning.sqlite wie die Engine — die UI liest hier die
+    // PDF-Positions-Kandidaten (vormerken/freigeben), die Engine liest die Anker.
+    public let learningStore: LearningStore
 
     // S4: vom Assistenten verwaltete Notizen (lokal, persistent).
     public let assistantNotes: AssistantNotesStore
@@ -290,6 +293,7 @@ public final class AppState {
             dataFlowLogger: dataFlow
         )
         self.kalkulationsEngine = kalkulationsEngine
+        self.learningStore = learningStore
         let notes = AssistantNotesStore(db: database)
         self.assistantNotes = notes
         let tasks = AssistantTasksStore(db: database)
