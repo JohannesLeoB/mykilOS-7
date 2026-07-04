@@ -97,7 +97,9 @@ struct ProjectLifecycleBar: View {
     // MARK: KPI-Zeile
     private var kpiRow: some View {
         HStack(spacing: MykSpace.s6) {
-            kpi("ZEIT", zeitText)
+            // ZEIT nur wenn aussagekräftig (Polish 2026-07-04: „ZEIT 0 h" wirkte
+            // unfertig) — gebuchte Stunden > 0 ODER ein Zielkontingent gesetzt.
+            if let z = zeitText { kpi("ZEIT", z) }
             if addendaCount > 0 { kpi("NACHTRÄGE", "\(addendaCount)") }
             if let n = openTaskCount { kpi("AUFGABEN", "\(n)") }
             if isUserSet == false {
@@ -117,14 +119,16 @@ struct ProjectLifecycleBar: View {
 
     private var addendaCount: Int { appState.registry.addenda(of: project).count }
 
-    private var zeitText: String {
+    /// `nil`, wenn weder Zeit gebucht noch ein Ziel gesetzt ist → KPI entfällt ganz.
+    private var zeitText: String? {
         let gebucht = appState.timer.gebuchteStunden(for: project.projectNumber)
+        let ziel = appState.timer.zielkontingent(for: project.projectNumber)?.zielStunden
         let g = gebucht.formatted(.number.precision(.fractionLength(0...1)))
-        if let ziel = appState.timer.zielkontingent(for: project.projectNumber)?.zielStunden, ziel > 0 {
+        if let ziel, ziel > 0 {
             let z = ziel.formatted(.number.precision(.fractionLength(0...1)))
             return "\(g)/\(z) h"
         }
-        return "\(g) h"
+        return gebucht > 0 ? "\(g) h" : nil
     }
 
     // MARK: Aktionen

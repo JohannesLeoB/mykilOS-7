@@ -196,10 +196,13 @@ public struct CartStore: Sendable {
             }
         }
 
-        // 10. Audit-Eintrag (MainActor-Kontext erfordert await)
+        // 10. Audit-Eintrag (MainActor-Kontext erfordert await). EK nur nennen,
+        // wenn > 0 (Polish 2026-07-04: „EK 0.00 €" wirkte unfertig, wenn keine
+        // Einkaufspreise gepflegt sind).
+        let ekTeil = wk.gesamtEKNetto > 0 ? ", EK \(String(format: "%.2f", wk.gesamtEKNetto)) €" : ""
         await appendAudit(
             projektID: akteurProjektID,
-            summary: "Warenkorb '\(bezeichnung)' v\(neueVersion) → Airtable (\(wk.items.count) Pos., EK \(String(format: "%.2f", wk.gesamtEKNetto)) €)"
+            summary: "Warenkorb '\(bezeichnung)' v\(neueVersion) → Airtable (\(wk.items.count) Pos.\(ekTeil))"
         )
 
         return .success(recordID: neueRecordID, version: neueVersion)
