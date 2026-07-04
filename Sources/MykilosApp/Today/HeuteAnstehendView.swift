@@ -126,6 +126,11 @@ final class ScheduleLoader {
                         guard let tasks = try? await clickUp.tasks(listID: ref.listID) else { return [] }
                         return tasks.compactMap { t -> ScheduleItem? in
                             guard let due = t.dueDate, due < endOfDay else { return nil }
+                            // Erledigte Custom-Status rausfiltern: ClickUps
+                            // `include_closed=false` filtert nur den Status-TYP
+                            // "closed" — Custom-Status wie "complete" rutschen
+                            // durch und fluteten die Liste als "überfällig".
+                            guard Self.istErledigt(t.status) == false else { return nil }
                             return ScheduleItem(
                                 id: "cu-\(t.id)", kind: .aufgabe, time: due, isOverdue: due < now,
                                 title: t.name, subtitle: "\(ref.title) · \(t.status)",
@@ -146,6 +151,13 @@ final class ScheduleLoader {
         isLoading = false
         loaded = true
     }
+
+    /// Erledigt-Erkennung über gängige (Custom-)Status-Namen, case-insensitiv.
+    nonisolated static func istErledigt(_ status: String) -> Bool {
+        let done: Set<String> = ["complete", "completed", "done", "closed",
+                                 "erledigt", "abgeschlossen", "fertig"]
+        return done.contains(status.trimmingCharacters(in: .whitespaces).lowercased())
+    }
 }
 
 // MARK: - HeuteAnstehendView
@@ -153,14 +165,24 @@ struct HeuteAnstehendView: View {
     @Environment(AppState.self) private var appState
     @State private var loader = ScheduleLoader()
     @State private var scope: ScheduleScope = .gesamt
+    @State private var expanded = false
 
-    private var visibleItems: [ScheduleItem] {
+    /// Kompakt-Limit (Johannes, 2026-07-04: Block war "viel zu lang") — mehr nur auf Klick.
+    private static let kompaktLimit = 6
+
+    private var scopedItems: [ScheduleItem] {
         switch scope {
         case .gesamt:  return loader.items
         case .clickup: return loader.items.filter { $0.kind == .aufgabe }
         case .projekt: return loader.items.filter { $0.isProjectBound }
         }
     }
+
+    private var visibleItems: [ScheduleItem] {
+        expanded ? scopedItems : Array(scopedItems.prefix(Self.kompaktLimit))
+    }
+
+    private var hiddenCount: Int { max(0, scopedItems.count - Self.kompaktLimit) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s4) {
@@ -204,6 +226,20 @@ struct HeuteAnstehendView: View {
                 ForEach(Array(visibleItems.enumerated()), id: \.element.id) { index, item in
                     if index > 0 { Divider().overlay(MykColor.line.color.opacity(0.5)) }
                     ScheduleRow(item: item)
+                }
+                if hiddenCount > 0 || expanded {
+                    Divider().overlay(MykColor.line.color.opacity(0.5))
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) { expanded.toggle() }
+                    } label: {
+                        Text(expanded ? "Weniger anzeigen" : "+\(hiddenCount) weitere anzeigen")
+                            .font(.mykMono(10)).tracking(0.5)
+                            .foregroundStyle(MykColor.muted.color)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, MykSpace.s3)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(expanded ? "Weniger anzeigen" : "\(hiddenCount) weitere Einträge anzeigen")
                 }
             }
         }

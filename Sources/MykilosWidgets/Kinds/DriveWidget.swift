@@ -6,8 +6,9 @@ import MykilosServices
 
 // MARK: - DriveWidget
 // Dateien & Zeichnungen, lesend aus dem im Projekt verlinkten Drive-Ordner
-// (Project.links.driveFolderID). Nie Schreiben, nie Inhalte herunterladen —
-// nur Metadaten + Link zum Öffnen im Browser.
+// (Project.links.driveFolderID). Nie Schreiben. Klick auf eine Datei öffnet die
+// In-App-Dokumentenvorschau (read-only downloadContent, Sammlungs-Ansicht-
+// Standard); Ordner/Google-Native-Formate öffnen im Browser.
 public struct DriveWidget: View {
     public let projectID: String
     public let driveFolderID: String?
@@ -123,14 +124,36 @@ private final class DriveFolderLoader {
 }
 
 // MARK: - DriveFileRow
+// Klick auf eine Datei öffnet die In-App-Dokumentenvorschau (Sammlungs-Ansicht-
+// Standard: Vorschau überall) — read-only via Drive downloadContent; Ordner und
+// Google-Native-Formate gehen weiterhin in den Browser. Kontextmenü behält den
+// Browser-Weg als Sekundär-Option.
 private struct DriveFileRow: View {
     let file: GoogleDriveFile
 
+    @State private var showViewer = false
+
+    private var canPreview: Bool {
+        file.isFolder == false && file.mimeType.hasPrefix("application/vnd.google-apps") == false
+    }
+
+    // Read-only Remote-Fallback: Datei-Bytes aus Drive (kein Schreiben) — gleiche
+    // Mechanik wie Dateien-Tab/Angebote.
+    private func remoteContent() -> (@Sendable () async -> Data?)? {
+        guard canPreview else { return nil }
+        let fileID = file.id
+        return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
+    }
+
+    private func openInBrowser() {
+        if let link = file.webViewLink, let url = URL(string: link) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     var body: some View {
         Button {
-            if let link = file.webViewLink, let url = URL(string: link) {
-                NSWorkspace.shared.open(url)
-            }
+            if canPreview { showViewer = true } else { openInBrowser() }
         } label: {
             HStack(spacing: MykSpace.s4) {
                 Image(systemName: file.iconName)
@@ -153,5 +176,14 @@ private struct DriveFileRow: View {
         }
         .buttonStyle(.plain)
         .padding(.vertical, MykSpace.s3)
+        .contextMenu {
+            if canPreview { Button("Vorschau") { showViewer = true } }
+            if file.webViewLink != nil { Button("Im Browser öffnen") { openInBrowser() } }
+        }
+        .sheet(isPresented: $showViewer) {
+            DocumentViewerView(file: file, localURL: nil, remoteContent: remoteContent(),
+                               onClose: { showViewer = false })
+                .frame(minWidth: 820, minHeight: 680)
+        }
     }
 }
