@@ -192,7 +192,14 @@ private struct SidebarCollapsedKey: FocusedValueKey {
 private struct PaletteOpenKey: FocusedValueKey {
     typealias Value = Binding<Bool>
 }
+private struct PriceReviewOpenKey: FocusedValueKey {
+    typealias Value = Binding<Bool>
+}
 extension FocusedValues {
+    var priceReviewOpen: Binding<Bool>? {
+        get { self[PriceReviewOpenKey.self] }
+        set { self[PriceReviewOpenKey.self] = newValue }
+    }
     var activeModule: Binding<AppModule>? {
         get { self[ActiveModuleKey.self] }
         set { self[ActiveModuleKey.self] = newValue }
@@ -225,6 +232,9 @@ struct ContentView: View {
     @State private var showFreshnessBanner = true
     // ⌘K Command-Palette (S5): globaler Fuzzy-Sprung zu Modulen + Projekten.
     @State private var showPalette = false
+    // Lern-Loop: Preis-Wissen-Review (offene PDF-Positions-Kandidaten freigeben),
+    // dauerhaft über den Menübefehl erreichbar — nicht nur nach dem Vormerken.
+    @State private var showPriceReview = false
 
     // Direkt nutzbar: der Wizard erzwingt sich beim ersten Start NUR, wenn Claude
     // fehlt (= Assistent stumm). Google ist "empfohlen", nicht Pflicht — wer nur
@@ -266,6 +276,10 @@ struct ContentView: View {
         .focusedValue(\.activeModule, $module)
         .focusedValue(\.sidebarCollapsed, $sidebarCollapsed)
         .focusedValue(\.paletteOpen, $showPalette)
+        .focusedValue(\.priceReviewOpen, $showPriceReview)
+        .sheet(isPresented: $showPriceReview) {
+            PriceKnowledgeReviewView(store: appState.learningStore, onClose: { showPriceReview = false })
+        }
         // Navigations-Brücke (siehe AppState.pendingProjectSelection): sobald ein
         // anderes Modul "öffne Projekt X" anfordert, wechselt hier nur das Modul
         // — das tatsächliche Öffnen übernimmt ProjectGalleryView selbst.
@@ -649,6 +663,7 @@ struct AppCommands: Commands {
     @Environment(\.openWindow) private var openWindow
     @FocusedBinding(\.activeModule)           private var activeModule
     @FocusedBinding(\.paletteOpen)            private var paletteOpen
+    @FocusedBinding(\.priceReviewOpen)        private var priceReviewOpen
     @AppStorage("ui.sidebarCollapsed") private var sidebarCollapsed = false
 
     var body: some Commands {
@@ -682,6 +697,9 @@ struct AppCommands: Commands {
                 .keyboardShortcut("4", modifiers: .command)
             Button("Einstellungen")   { activeModule = .settings }
                 .keyboardShortcut(",", modifiers: .command)
+            Divider()
+            // Lern-Loop: offene PDF-Positions-Kandidaten freigeben (dauerhaft erreichbar).
+            Button("Preis-Wissen freigeben …") { priceReviewOpen = true }
         }
     }
 }
