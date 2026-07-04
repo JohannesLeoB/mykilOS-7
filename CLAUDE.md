@@ -341,6 +341,11 @@ ist bitgenau roundtrip-sicher).
 - Eine Session = ein kleiner PR = ein Handoff (`docs/handoffs/HANDOFF_AKT{n}_S{m}.md`).
 - CI ist Merge-Gate: roter Build/Test = kein Merge.
 - Keine parallelen Worktrees.
+- **Abschlussbericht (Johannes, 2026-07-04):** Am Ende jeder Session einen kurzen,
+  ehrlichen Eintrag an [docs/erfahrungstraeger/PROZESS_LESSONS.md](docs/erfahrungstraeger/PROZESS_LESSONS.md)
+  anhängen (append-only, neueste oben) — was schiefging, was gut lief, Kommunikations-
+  Beobachtungen. Kein Ersatz für den Session-Handoff (der bleibt technisch/inhaltlich),
+  sondern die Meta-Ebene der Zusammenarbeit. Gilt account-übergreifend.
 
 ---
 
