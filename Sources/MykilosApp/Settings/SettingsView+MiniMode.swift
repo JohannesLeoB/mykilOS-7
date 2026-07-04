@@ -6,26 +6,28 @@ import MykilosDesign
 // Verhalten unverändert. Master-Schalter + je ein Schalter pro Aufmerksamkeits-Quelle.
 extension SettingsView {
     // Alle default = an; die Schlüssel MÜSSEN mit MiniModeDefaults / MiniModeSource.defaultsKey
-    // übereinstimmen (der MiniModeStore/StatusBarPresence liest exakt diese UserDefaults).
-    // Dezent + jederzeit abschaltbar (eiserne Alerts-Regel): Master aus → Menüleisten-
-    // Element verschwindet, keine Quelle wird mehr gelesen.
+    // übereinstimmen (der MiniModeStore/MiniModeRailView liest exakt diese UserDefaults).
+    // Dezent + jederzeit abschaltbar (eiserne Alerts-Regel): Master aus → kein Orange-Puls
+    // im Mini-Rail, keine Quelle wird mehr gelesen.
 
-    // MARK: - Datenschutz → Mini-Mode
+    // MARK: - Datenschutz → Mini-Mode Puls
 
     var miniModeSection: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
-            Text("Mini-Mode")
+            Text("Mini-Mode Alerts")
                 .font(.mykHeadline)
                 .foregroundStyle(MykColor.ink.color)
-            Text("Ein ruhiges Menüleisten-Element verdichtet, was gerade Aufmerksamkeit "
-                 + "braucht. Es liest nur bereits vorhandene lokale Daten — es fragt "
-                 + "nichts Neues ab. Jede Quelle lässt sich einzeln abschalten.")
+            Text("Im Mini-Mode (schwebendes Icon-Rail) pulst ein Modul-Icon langsam orange, "
+                 + "wenn seine Quelle Aufmerksamkeit will. Der Puls liest nur bereits "
+                 + "vorhandene lokale Daten — er fragt nichts Neues ab. Jede Quelle lässt "
+                 + "sich einzeln abschalten; der Master-Schalter schaltet allen Puls ab. "
+                 + "(Den Mini-Mode selbst schaltest du unter Darstellung frei.)")
                 .font(.mykMono(9.5))
                 .foregroundStyle(MykColor.muted.color)
                 .fixedSize(horizontal: false, vertical: true)
 
             Toggle(isOn: $miniModeEnabled) {
-                Label("Mini-Mode anzeigen", systemImage: "circle.grid.2x2")
+                Label("Orange-Puls anzeigen", systemImage: "circle.grid.2x2")
                     .font(.mykSmall)
             }
             .toggleStyle(.switch)

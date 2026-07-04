@@ -110,6 +110,19 @@ public struct MiniModeSnapshot: Equatable, Sendable {
     public var hasAnything: Bool {
         badgeCount > 0 || activeTimerLabel != nil || nextEventTitle != nil
     }
+
+    /// Welche Quellen gerade „hey"-Aufmerksamkeit wollen (Rückstand > 0). Treibt den
+    /// langsamen Orange-Puls des jeweiligen Icons im Mini-Rail. Der laufende Timer ist
+    /// ein Zustand, kein Rückstand → pulst NICHT (er hat seine eigene ruhige Zeile), taucht
+    /// hier bewusst nicht auf. Ausgeschaltete Quellen setzt der Store gar nicht erst (die
+    /// jeweiligen Zähler bleiben 0/nil), also können sie hier auch nicht auftauchen.
+    public var attentionSources: Set<MiniModeSource> {
+        var result: Set<MiniModeSource> = []
+        if openTaskCount > 0 { result.insert(.tasks) }
+        if openSignalCount > 0 { result.insert(.signals) }
+        if let mail = unreadMailCount, mail > 0 { result.insert(.mail) }
+        return result
+    }
 }
 
 // MARK: - MiniModeStore

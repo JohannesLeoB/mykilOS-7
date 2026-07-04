@@ -13,10 +13,11 @@ struct MykilOS6App: App {
     enum BootPhase { case ready(AppState); case failed(message: String, dbPath: String) }
     @State private var phase: BootPhase
     @State private var context = StudioContext()
-    // Mini-Mode V1: Menüleisten-Presence (NSStatusItem + Popover). Reine AppKit-
-    // Infrastruktur, daher als NSApplicationDelegate angedockt statt in einer Scene.
-    // Wird erst mit AppState/StudioContext verdrahtet, sobald der Boot fertig ist.
-    @NSApplicationDelegateAdaptor(MiniModeAppDelegate.self) private var miniModeDelegate
+    // Mini-Mode: schwebendes, fokus-neutrales NSPanel mit der eingeklappten Icon-Sidebar
+    // (immer-obenauf über Vollbild-Spaces). Reine AppKit-Fenster-Infrastruktur, imperativ
+    // über einen @Observable-Controller verwaltet (kein SwiftUI-Scene-Objekt). Wird erst mit
+    // AppState/StudioContext verdrahtet, sobald der Boot fertig ist. Opt-in in Settings.
+    @State private var miniMode = MiniModeController()
     @Environment(\.scenePhase) private var scenePhase
     // Hell/Dunkel/Auto (2026-07-02): per-Nutzer-Wahl statt System-Zwang.
     @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
@@ -79,14 +80,15 @@ struct MykilOS6App: App {
     private var rootView: some View {
         switch phase {
         case .ready(let appState):
-            ContentView()
+            ContentView(miniMode: miniMode)
                 .environment(appState)
                 .environment(context)
                 .task { await appState.bootstrap() }
-                // Mini-Mode: sobald der AppState bereit ist, die Menüleisten-Presence
-                // mit den bestehenden Stores + der geteilten StudioContext-Instanz
-                // verdrahten (kein neuer Poll, nur Lesen aus Caches).
-                .task { miniModeDelegate.attach(appState: appState, context: context) }
+                // Mini-Mode: sobald der AppState bereit ist, den Controller mit den
+                // bestehenden Stores + der geteilten StudioContext-Instanz verdrahten
+                // (kein neuer Poll, nur Lesen aus Caches). Startet das Panel NICHT — das
+                // löst erst die Halte-Geste am Sidebar-Button aus (Opt-in vorausgesetzt).
+                .task { miniMode.attach(appState: appState, context: context) }
                 // Beim Wechsel in den Hintergrund / vor App-Quit (macOS geht über
                 // .background) alle ungespeicherten Notizen sichern — sonst kann
                 // Cmd-Q eine im Debounce-Fenster hängende Eingabe verlieren.
@@ -229,6 +231,9 @@ extension FocusedValues {
 
 // MARK: - ContentView
 struct ContentView: View {
+    // Mini-Mode-Controller (schwebendes Panel). Injiziert von der App-Wurzel, damit er die
+    // Boot-Anbindung teilt. Klick-Ziele im Rail routen über onSelectModule zurück hierher.
+    let miniMode: MiniModeController
     @State private var module: AppModule = .today
     // Settings-Sidebar-Modus: gewählte Kategorie + letztes Nicht-Settings-Modul (Rückkehr).
     @State private var settingsCategory: SettingsCategory = .profil
@@ -286,6 +291,9 @@ struct ContentView: View {
                 )
             }
         }
+        // Mini-Mode: Rail-Icon-Klicks öffnen ein Modul über diese Weiche (der Controller
+        // kennt die SwiftUI-Navigation nicht selbst). Bei jedem Aufbau frisch setzen.
+        .onAppear { miniMode.onSelectModule = { module = $0 } }
         .focusedValue(\.activeModule, $module)
         .focusedValue(\.sidebarCollapsed, $sidebarCollapsed)
         .focusedValue(\.paletteOpen, $showPalette)
@@ -337,7 +345,11 @@ struct ContentView: View {
                 settingsMode: module == .settings,
                 settingsCategory: $settingsCategory,
                 onExitSettings: { module = lastModule },
-                timerCheckInRequested: $timerCheckInRequested
+                timerCheckInRequested: $timerCheckInRequested,
+                // Halte-Geste am mykilOS-Button (~2 s) startet den Mini-Mode — aber nur,
+                // wenn er in Settings freigeschaltet ist. Sonst bleibt der Button ein
+                // reiner Sidebar-Toggle (die Geste feuert dann nichts).
+                onEnterMiniMode: { miniMode.activate() }
             )
             .fixedSize(horizontal: true, vertical: false)
             .layoutPriority(1)

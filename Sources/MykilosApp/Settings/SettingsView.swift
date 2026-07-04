@@ -205,8 +205,32 @@ struct SettingsView: View {
                     .font(.mykSmall)
             }
             .toggleStyle(.switch)
+
+            Divider().overlay(MykColor.line.color)
+
+            // Mini-Mode Opt-in (Ansichts-Option). Default aus — bewusste Entscheidung.
+            Text("MINI-MODE")
+                .font(.mykMono(10)).tracking(1.5)
+                .foregroundStyle(MykColor.muted.color)
+            Toggle(isOn: $miniModeViewEnabled) {
+                Label("Mini-Mode erlauben", systemImage: "rectangle.trailinghalf.inset.filled.arrow.trailing")
+                    .font(.mykSmall)
+            }
+            .toggleStyle(.switch)
+            Text("Wenn aktiv: den mykilOS-Button oben links ~2 s HALTEN schrumpft die App "
+                 + "auf ein schmales, schwebendes Icon-Rail, das über Vollbild-Programmen "
+                 + "(z. B. Vectorworks) obenauf bleibt und nie den Fokus stiehlt. Klick aufs "
+                 + "Logo im Rail holt die volle App zurück. Ist der Schalter aus, bleibt der "
+                 + "Button ein reiner Sidebar-Umschalter.")
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.muted.color)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
+
+    // Mini-Mode-Opt-in — MUSS mit MiniModeUserPrefs.enabledKey übereinstimmen (der
+    // MiniModeController liest exakt diesen UserDefaults-Schlüssel). Default aus.
+    @AppStorage("ui.miniMode.enabled") private var miniModeViewEnabled = false
 
     // MARK: - Identität
 
@@ -701,11 +725,11 @@ struct SettingsView: View {
     }
 
     // MARK: - Datenschutz → Mini-Mode
-    // Master-Schalter + je ein Schalter pro Aufmerksamkeits-Quelle. Alle default = an;
-    // die Schlüssel MÜSSEN mit MiniModeDefaults / MiniModeSource.defaultsKey
-    // übereinstimmen (der MiniModeStore/StatusBarPresence liest exakt diese UserDefaults).
-    // Dezent + jederzeit abschaltbar (eiserne Alerts-Regel): Master aus → Menüleisten-
-    // Element verschwindet, keine Quelle wird mehr gelesen.
+    // Master-Schalter (Puls an/aus) + je ein Schalter pro Aufmerksamkeits-Quelle. Alle
+    // default = an; die Schlüssel MÜSSEN mit MiniModeDefaults / MiniModeSource.defaultsKey
+    // übereinstimmen (der MiniModeStore/MiniModeRailView liest exakt diese UserDefaults).
+    // Dezent + jederzeit abschaltbar (eiserne Alerts-Regel): Master aus → kein Orange-Puls
+    // im Mini-Rail, keine Quelle wird mehr gelesen.
     // `miniModeSection` selbst lebt in SettingsView+MiniMode.swift (swiftlint file_length) —
     // die @AppStorage-Properties bleiben hier, weil Extensions keine stored properties
     // hinzufügen dürfen; daher ohne `private`, damit die Extension-Datei im selben

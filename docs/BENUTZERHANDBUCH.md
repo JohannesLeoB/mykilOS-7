@@ -43,28 +43,36 @@ auf Nummer, Titel oder Kundenname; Prefix-Treffer stehen oben). **Enter** oder *
 
 ---
 
-## Mini-Mode (Menüleiste) — 2026-07-04
+## Mini-Mode (schwebende Icon-Sidebar) — 2026-07-04
 
-**Was es tut:** Eine kompakte, nicht ablenkende Hintergrund-Presence in der **macOS-Menüleiste**:
-ein Icon mit **Zähler-Badge** (Summe aus offenen Aufgaben + offenen Signalen) und ein **Popover**,
-das auf einen Blick zeigt: aktiver Clockodo-Timer (Projekt + Laufzeit, läuft/pausiert), offene
-Aufgaben, offene Signale — plus „mykilOS öffnen". Wenn nichts offen ist: dezenter „Nichts
-Offenes"-Zustand, Badge verschwindet.
+**Was es tut:** Schrumpft mykilOS auf **nur die eingeklappte Icon-Sidebar** (kein Inhaltsfenster) —
+ein schmales, **schwebendes, immer-obenauf, fokus-neutrales** Fenster, das du in eine Ecke legst,
+**auch über einem Vollbild-Programm** (z. B. während du in Vectorworks zeichnest). Es stiehlt nie
+den Fokus. Gedacht als „oh, da kam was rein" + „ich geh mal schnell ins Projekt", ohne die
+Vollansicht aufzumachen.
 
-**Wo zu finden:** Rechts oben in der macOS-Menüleiste, sobald die App läuft. Ein/Aus + je-Quelle
-steuerbar in **Einstellungen → Datenschutz → Mini-Mode** (Master-Toggle + ein Schalter pro Quelle).
+**Wo zu finden / Bedienung:**
+- **Einschalten:** Einstellungen → Darstellung → „Mini-Mode" (Standard: aus).
+- **Aktivieren:** den **mykilOS-Button oben links** (der auch die Sidebar ein/ausblendet)
+  **~2 Sekunden gedrückt halten** — ein Ring füllt sich als Fortschritt, früher loslassen bricht
+  ab. **Kurzer Klick** bleibt der normale Sidebar-schmal/breit-Toggle.
+- **Alerts:** kommt etwas Wichtiges rein, **pulsiert das betroffene Icon selbst langsam orange**
+  (offene Aufgaben → Assistent-Icon, offene Signale → Heute-Icon). **Maus übers Mini-Fenster** →
+  kleine Zusammenfassungs-Karte (verschwindet beim Rausfahren).
+- **Zurück:** **Modul-Icon klicken** → rein in das Modul · **Logo klicken** → zurück zur letzten
+  großen Ansicht.
+- **Steuerbar:** Puls + je Quelle abschaltbar in Einstellungen → Datenschutz.
 
-**Voraussetzungen:** keine — Mini-Mode liest ausschließlich aus bereits geladenen lokalen Daten
-(Timer, Signale, Aufgaben), **startet keine eigenen Netzwerk-Abrufe** (lean).
+**Voraussetzungen:** keine — liest ausschließlich aus bereits geladenen lokalen Daten (Timer,
+Signale, Aufgaben), **startet keine eigenen Netzwerk-Abrufe** (lean).
 
 **Einschränkungen (ehrlich):**
 - **Aufgaben** = lokale Assistent-Aufgaben (nicht ClickUp — das hätte einen Extra-Abruf gebraucht).
-- **Nächster Termin** und **Wichtige Mails** sind als Schalter sichtbar, aber `(bald)` — es gibt
-  dafür noch keinen lokalen Cache, aus dem ohne neuen Abruf gelesen werden könnte.
-- **Schwebendes Eck-Fenster** (frei platzierbares Mini-Fenster) ist noch nicht dabei — kommt als
-  Folgeschritt (V1.1), sobald der Fenster-Positionswächter dafür geschärft ist.
-- Der Badge pulsiert nicht aufdringlich — es ist ein ruhiger Zähler, jederzeit pro Quelle
-  abschaltbar (Alerts-dezent-Regel).
+- **Mail-** und **Kalender-Puls** sind vorbereitet, aber noch ohne Wert („bald") — es fehlt ein
+  lokaler Cache, aus dem ohne neuen Abruf gelesen werden könnte.
+- **Live noch abzunehmen (Johannes):** ob das Fenster tatsächlich über einem Vollbild-Space
+  schwebt, das 2-Sekunden-Halten sich gut anfühlt und der Orange-Puls ruhig wirkt — das zeigt erst
+  der echte Mac. Auf Multi-Monitor-Setups erscheint es zunächst am Hauptbildschirm.
 
 ---
 

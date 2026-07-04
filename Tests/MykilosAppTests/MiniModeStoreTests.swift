@@ -95,4 +95,55 @@ struct MiniModeStoreTests {
         // Alle unter dem privacy.miniMode.-Namespace.
         #expect(keys.allSatisfy { $0.hasPrefix("privacy.miniMode.") })
     }
+
+    // MARK: attentionSources (treibt den Per-Icon-Orange-Puls)
+
+    @Test func attentionSourcesEnthaeltNurRueckstaende() {
+        let snap = MiniModeSnapshot(
+            openTaskCount: 2,
+            unreadMailCount: 3,
+            activeTimerLabel: "Küche Meyer",   // Timer läuft — Zustand, KEIN Puls
+            activeTimerSeconds: 60,
+            openSignalCount: 1
+        )
+        #expect(snap.attentionSources == [.tasks, .mail, .signals])
+    }
+
+    @Test func attentionSourcesIstLeerWennNichtsOffen() {
+        let snap = MiniModeSnapshot(activeTimerLabel: "Läuft", activeTimerSeconds: 10)
+        #expect(snap.attentionSources.isEmpty)
+    }
+
+    @Test func attentionSourcesIgnoriertNilUndNullMail() {
+        let a = MiniModeSnapshot(openTaskCount: 0, unreadMailCount: nil, openSignalCount: 0)
+        #expect(a.attentionSources.isEmpty)
+        let b = MiniModeSnapshot(openTaskCount: 0, unreadMailCount: 0, openSignalCount: 0)
+        #expect(b.attentionSources.isEmpty)
+    }
+
+    // MARK: Rail-Modul → Quellen-Mapping (welches Icon pulst bei welcher Quelle)
+
+    @Test func railModuleMaptAufAppModule() {
+        #expect(MiniModeRailModule.today.appModule == .today)
+        #expect(MiniModeRailModule.assistant.appModule == .assistant)
+        // Einstellungen gehören bewusst NICHT ins Rail.
+        #expect(!MiniModeRailModule.allCases.map(\.appModule).contains(.settings))
+    }
+
+    @Test func signaleLassenHeuteUndAufgabenLassenAssistentPulsen() {
+        #expect(MiniModeRailModule.today.sources.contains(.signals))
+        #expect(MiniModeRailModule.assistant.sources.contains(.tasks))
+        // Projekte/Kataloge haben (noch) keine Puls-Quelle.
+        #expect(MiniModeRailModule.projects.sources.isEmpty)
+        #expect(MiniModeRailModule.kataloge.sources.isEmpty)
+    }
+
+    // MARK: Mini-Mode-Opt-in-Schlüssel
+
+    @Test func miniModeOptInDefaultIstAus() {
+        let d = UserDefaults(suiteName: "MiniModeTests.optin")!
+        d.removePersistentDomain(forName: "MiniModeTests.optin")
+        // Ohne gesetzten Wert = aus (bewusste Entscheidung, kein Überraschungs-Fenster).
+        #expect((d.object(forKey: MiniModeUserPrefs.enabledKey) as? Bool ?? false) == false)
+    }
 }

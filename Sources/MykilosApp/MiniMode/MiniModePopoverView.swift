@@ -4,10 +4,12 @@ import MykilosDesign
 import MykilosServices
 
 // MARK: - MiniModePopoverView
-// Kompakte Aggregat-Ansicht, die im Popover des Menüleisten-Icons erscheint.
-// Rein lesend — keine Schreibvorgänge, keine Buttons, die Daten ändern. Ein Klick
-// auf „mykilOS öffnen" bringt nur das Hauptfenster nach vorn.
-// Design: monochrom + Quellfarben als Akzent, alle Werte aus MiniModeStore.snapshot.
+// Kompakte Aggregat-Karte (macOS-Benachrichtigungs-Stil), die beim Hover über das
+// schwebende Mini-Rail als Alert-Summary erscheint. Rein lesend — keine Schreibvorgänge,
+// keine Buttons, die Daten ändern. Ein Klick auf „mykilOS öffnen" bringt nur das
+// Hauptfenster nach vorn. Design: monochrom + Quellfarben als Akzent, alle Werte aus
+// MiniModeStore.snapshot. (Der Name bleibt aus Kompatibilitätsgründen — `hms` ist
+// getestet; die Rolle wandelte sich von „Menüleisten-Popover" zu „Hover-Karte".)
 struct MiniModePopoverView: View {
     let store: MiniModeStore
     /// Bringt das Hauptfenster nach vorn (vom AppDelegate injiziert).
