@@ -502,6 +502,21 @@ Dienstleistungen/Lager); Checkout = Router in beliebige Ziele (DBs/Moodboard/Lis
 Dokumente/Templates). Vereint Formulare-Ebene + Geräteliste + Moodboard + Angebot.
 → **docs/WARENKORB_CHECKOUT.md**
 
+#### 💡 Futurefeature (Johannes 2026-07-04) — Checkout per Drag & Drop als „visualisierter Weg"
+Warenkorb **direkt aus dem gewählten Checkout heraus draggen** und auf die **richtige Ziel-App/
+-Funktion droppen** → **Bestätigungsdialog** → Ausführung. Kein Menü-Ausklappen, sondern man
+**sieht die Route** vom Korb zum Ziel (der „visualisierte Weg"). Fügt sich nahtlos in die
+bestehende **Ports-Architektur** ein: jeder `CheckoutPort` (Dokument/sevDesk/Moodboard/VW-Plankopf
+…) ist ein Drop-Ziel, der Bestätigungsdialog = `preview()`, das Fallenlassen = `execute()`. Also
+eine **visuelle Oberfläche über `PortRegistry`**, kein neues Subsystem. UI-Schicht, später.
+
+#### 💡 Futurefeature (Johannes 2026-07-04) — Text-Bausteine aus PDF via Picker-/Warenkorb-Logik
+Textblöcke aus PDFs mit **derselben Picker-/Warenkorb-Mechanik** ernten wie die Angebots-
+Positionen-Extraktion (§ Nachtrag 2026-07-02, PDF → Positionen → Warenkorb) — nur gemünzt auf
+**Textbausteine** statt Preis-Positionen. Ergebnis: ein `textbausteine`-Pick-Matrix-Korb, der die
+Leer-Templates speist (verknüpft mit dem Textbausteine-Katalog oben, Z. 46-47). Verwandt mit dem
+VW-Plankopf-Strang: die Geräte-/Material-Textblöcke des Plankopfs sind genau solche Bausteine.
+
 ### 💡 UI-Batch 2026-07-02 (aus Screenshot-Runde)
 - **Kontakte klickbar:** Klick auf Mail-Adresse → „Mail schreiben?" → Entwurf im Assistenten-
   Mail-Fenster öffnen. (klein, jetzt baubar)
