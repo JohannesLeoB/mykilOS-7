@@ -72,10 +72,11 @@ struct OfferPositionsSheet: View {
         case .error(let msg):
             hint(icon: "exclamationmark.triangle", text: "Konnte die Datei nicht auslesen:\n\(msg)", critical: true)
         case .content(let positions):
+            let items = sortiert(positions)
             ScrollView {
                 VStack(alignment: .leading, spacing: MykSpace.s4) {
-                    ampelLegende(positions)
-                    ForEach(Array(positions.enumerated()), id: \.offset) { index, paged in
+                    ampelLegende(items)
+                    ForEach(Array(items.enumerated()), id: \.offset) { index, paged in
                         PositionCard(
                             paged: paged,
                             canTake: onTake != nil,
@@ -89,6 +90,20 @@ struct OfferPositionsSheet: View {
                 .padding(MykSpace.s6)
             }
         }
+    }
+
+    // Vertrauenswürdige (grüne, selbstbewiesene) Positionen zuerst, dann nach Seite —
+    // deterministisch (Original-Index als letzter Tiebreak, damit `taken`-Index stabil bleibt).
+    private func sortiert(_ positions: [OfferPositionPDFReader.PagedPosition]) -> [OfferPositionPDFReader.PagedPosition] {
+        func rang(_ c: OfferPositionExtractor.Confidence) -> Int {
+            switch c { case .green: 0; case .amber: 1; case .red: 2 }
+        }
+        return positions.enumerated().sorted { a, b in
+            let ra = rang(a.element.position.confidence), rb = rang(b.element.position.confidence)
+            if ra != rb { return ra < rb }
+            if a.element.pageNumber != b.element.pageNumber { return a.element.pageNumber < b.element.pageNumber }
+            return a.offset < b.offset
+        }.map(\.element)
     }
 
     private func ampelLegende(_ positions: [OfferPositionPDFReader.PagedPosition]) -> some View {
@@ -139,9 +154,11 @@ struct OfferPositionsSheet: View {
     private var footerText: String {
         switch loader.state {
         case .content(let p):
-            return "PDF-POSITIONS v1 · \(p.count) KANDIDATEN · read-only (Übernahme folgt)"
+            let base = "PDF-POSITIONS v1 · \(p.count) KANDIDATEN"
+            if onTake == nil { return base + " · read-only" }
+            return taken.isEmpty ? base : base + " · \(taken.count) ÜBERNOMMEN"
         default:
-            return "PDF-POSITIONS v1 · read-only"
+            return "PDF-POSITIONS v1"
         }
     }
 }
