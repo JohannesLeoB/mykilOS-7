@@ -134,14 +134,25 @@ struct ProjectCard: View {
         ))
     }
 
+    // Kundenname nur zeigen, wenn er echten Zusatz-Info liefert (Polish 2026-07-04:
+    // vorher „Neuhaus / Neuhaus", weil Titel oft = Kundenname). Vergleich tolerant.
+    private var distinctCustomerName: String? {
+        guard let name = customer?.name.trimmingCharacters(in: .whitespaces), name.isEmpty == false,
+              name.compare(project.title.trimmingCharacters(in: .whitespaces),
+                           options: [.caseInsensitive, .diacriticInsensitive]) != .orderedSame
+        else { return nil }
+        return name
+    }
+
     // MARK: Info-Bereich
     private var infoArea: some View {
         VStack(alignment: .leading, spacing: MykSpace.s3) {
             HStack {
-                if let customer {
-                    Text(customer.name)
+                if let name = distinctCustomerName {
+                    Text(name)
                         .font(.mykSmall)
                         .foregroundStyle(MykColor.inkSoft.color)
+                        .lineLimit(1)
                 }
                 Spacer()
                 kindChip

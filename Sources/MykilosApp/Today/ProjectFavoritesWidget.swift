@@ -9,15 +9,29 @@ import MykilosWidgets
 struct ProjectFavoritesWidget: View {
     @Environment(AppState.self) private var appState
 
+    // Bis zu 3 Zeilen à 3 Karten — mehr würde das Home-Board sprengen.
+    private static let maxCards = 9
+
     // Favorisierte aktive Projekte (L25). Reihenfolge folgt der Registry.
     private var favoriteProjects: [Project] {
         appState.registry.activeProjects().filter { appState.favorites.isFavorite($0.projectNumber) }
     }
 
+    private var shownProjects: [Project] { Array(favoriteProjects.prefix(Self.maxCards)) }
+
+    // Zähler MUSS zeigen, was sichtbar ist (Polish 2026-07-04: vorher „7", aber nur
+    // 6 Karten gerendert). Bei Überlauf ehrlich „N VON GESAMT".
+    private var sourceLabel: String {
+        let total = favoriteProjects.count
+        return shownProjects.count < total
+            ? "PINNED  ·  \(shownProjects.count) VON \(total) FAVORITEN"
+            : "PINNED  ·  \(total) FAVORITEN"
+    }
+
     var body: some View {
         WidgetContainer(
             kind: .projectFaves,
-            sourceLabel: "PINNED  ·  \(favoriteProjects.count) FAVORITEN",
+            sourceLabel: sourceLabel,
             renderState: appState.registry.isLoading ? .loading : .content,
             projectID: "home"
         ) {
@@ -49,7 +63,7 @@ struct ProjectFavoritesWidget: View {
             columns: Array(repeating: GridItem(.flexible(), spacing: MykSpace.s4), count: 3),
             spacing: MykSpace.s4
         ) {
-            ForEach(favoriteProjects.prefix(6)) { project in
+            ForEach(shownProjects) { project in
                 MiniProjectCard(project: project, customer: appState.registry.customer(for: project)) {
                     appState.pendingProjectSelection = project
                 }
