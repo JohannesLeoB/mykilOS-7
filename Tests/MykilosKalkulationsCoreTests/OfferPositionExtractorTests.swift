@@ -159,6 +159,17 @@ final class OfferPositionExtractorTests: XCTestCase {
         XCTAssertEqual(p.componentType, .stoneCountertop)
     }
 
+    func testHeaderNoiseWirdGefiltert() {
+        // Seitenkopf mit Seitenzahl+Adresse: darf keine Position werden.
+        let page = """
+        9 Werkstatt für Innenausbau | Rellinger Weg 2-4 375,00 375,00
+        1 1 Stck. Küchenarbeitsplatte Granit 1.234,56 1.234,56
+        """
+        let positions = X.extractPositions(fromPageText: page)
+        XCTAssertEqual(positions.count, 1)
+        XCTAssertEqual(positions[0].netPrice, Decimal(string: "1234.56"))
+    }
+
     // MARK: - selfProof direkt
 
     func testSelfProofBrauchtMindestensZweiBetraege() {

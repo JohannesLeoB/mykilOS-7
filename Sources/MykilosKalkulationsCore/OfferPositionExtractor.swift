@@ -76,7 +76,19 @@ public enum OfferPositionExtractor {
     public static func extractPositions(fromPageText text: String) -> [ExtractedPosition] {
         blocks(inPageText: text)
             .map { extract(fromBlock: $0) }
-            .filter { $0.netPrice != nil }
+            .filter { $0.netPrice != nil && isHeaderNoise($0.title) == false }
+    }
+
+    // Erkennt Seiten-Kopf-/Fußzeilen, die durch eine führende Seitenzahl fälschlich
+    // als Positions-Anker durchrutschen (Sondierung 2026-07-04: Lieferanten-Header wie
+    // „Werkstatt für Innenausbau | Rellinger Weg 2-4"): Straßenadresse, „Seite X von Y",
+    // Firmenrechtsform, Bank/Summenzeilen im TITEL.
+    private static let headerNoiseRegex = try! NSRegularExpression(
+        pattern: #"(?i)((?:straße|strasse|weg|allee|platz|ring|gasse|str\.)\s+\d|seite\s+\d+\s+von|\bgmbh\b|\be\.\s?k\.\b|\bo?hg\b|iban|bankverbindung|nettobetrag|gesamtbetrag)"#)
+
+    static func isHeaderNoise(_ title: String) -> Bool {
+        let ns = title as NSString
+        return headerNoiseRegex.firstMatch(in: title, range: NSRange(location: 0, length: ns.length)) != nil
     }
 
     /// Zerlegt Seitentext in Positionsblöcke an Positions-Ankern. Ein Anker ist eine
