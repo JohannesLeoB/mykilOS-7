@@ -362,5 +362,12 @@
     "system": "Airtable",
     "direction": "WRITE",
     "link": "mykilos://datastream/KALKULATION_PDF_IMPORT"
+  },
+  {
+    "integrationID": "SEVDESK_POSTBOX_DROP",
+    "name": "sevDesk-Postbox: Positions-Drop (Einweg, append-only)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/SEVDESK_POSTBOX_DROP"
   }
 ]

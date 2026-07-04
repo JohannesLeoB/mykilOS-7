@@ -179,6 +179,11 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
             "Projekte",            // Fragebogen-Live-Provisionierung (2026-07-01, Johannes freigegeben):
                                    // echter Routing-Eintrag für ein neu angelegtes Projekt (tblGJR13OliFt6Ewi,
                                    // bisher NUR aus Drive-Scan befüllt). Quelle="Fragebogen" (neue Select-Option).
+            "Postbox-Beleg",       // sevDesk-Postbox Kopf-Ebene (tbluQiYMVllkTS4jQ, 2026-07-04). Append-only
+                                   // Einweg-Briefkasten: Positions-/Kontextdaten Richtung sevDesk, nie
+                                   // belegführend. sevDesk=BOSSMODE, wir schlagen nur vor. Testdaten Status=Test.
+            "Postbox-Position",    // sevDesk-Postbox Positions-Ebene (tblfVRnwgaxvXPfOK, 2026-07-04).
+                                   // N verlinkte Positionen pro Beleg. Append-only, nie DELETE.
         ],
         // Artikel & Einkauf (Webshop-Phase 1, gated, von Johannes freigegeben 2026-06-30)
         // Intake-Fragebogen legt neue Kunden- + Projekt-Records an (append-only, gated, Record-Link gültig).
