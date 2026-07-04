@@ -63,6 +63,19 @@ struct WorkBasketStoreTests {
         #expect(geladen[0].picks[0].snapshot.ekEinzel == 5911.70)
     }
 
+    @Test func fuegePositionHinzuIstIdempotentProObjektID() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let store = WorkBasketStore(db: db)
+        try await store.fuegePositionHinzu(projektNummer: "2026-015", bezeichnung: "Platte",
+                                           menge: 1, ekEinzel: 100, vkEinzel: nil, objektID: "f-p1-0")
+        // Zweiter Klick auf DIESELBE Position → Menge erhöhen, kein Duplikat.
+        try await store.fuegePositionHinzu(projektNummer: "2026-015", bezeichnung: "Platte",
+                                           menge: 1, ekEinzel: 100, vkEinzel: nil, objektID: "f-p1-0")
+        let korb = try store.alle(projektNummer: "2026-015").max(by: { $0.erstellt < $1.erstellt })
+        #expect(korb?.picks.count == 1)
+        #expect(korb?.picks.first?.snapshot.menge == 2)
+    }
+
     @Test func fuegePositionHinzuHaengtAnBestehendenKorbAn() async throws {
         let db = try GRDBDatabase.inMemory()
         let store = WorkBasketStore(db: db)

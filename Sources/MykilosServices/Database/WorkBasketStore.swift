@@ -255,7 +255,19 @@ public final class WorkBasketStore {
                                    ekEinzel: ekEinzel, vkEinzel: vkEinzel))
         let vorhandene = try alle(projektNummer: projektNummer)
         if var basket = vorhandene.max(by: { $0.erstellt < $1.erstellt }) {
-            basket.picks.append(pick)
+            // Idempotent (Ultra-Review-Fix): gleiche objektID → Menge erhöhen statt
+            // Duplikat anhängen (der globale WarenkorbState-Pfad macht es genauso).
+            if let idx = basket.picks.firstIndex(where: { ($0 as? BasicPick)?.objektID == CatalogObjectID(objektID) }),
+               let alt = basket.picks[idx] as? BasicPick {
+                let s = alt.snapshot
+                basket.picks[idx] = BasicPick(
+                    matrix: alt.matrix, objektID: alt.objektID,
+                    snapshot: PickSnapshot(bezeichnung: s.bezeichnung, menge: s.menge + max(1, menge),
+                                           ekEinzel: s.ekEinzel, vkEinzel: s.vkEinzel, attribute: s.attribute),
+                    inhalt: alt.inhalt)
+            } else {
+                basket.picks.append(pick)
+            }
             return try await speichere(basket)
         }
         let neu = WorkBasket(

@@ -33,9 +33,14 @@ public struct LearningSummary: Equatable {
 // No-delete: Es gibt keine Lösch-/Update-API. Statusänderungen (promote/deactivate,
 // Outlier) sind neue Zeilen; "aktuell" wird über die höchste pk je record_id
 // projiziert (latestByID). Der Bundle-Seed wird nie berührt.
-public final class LearningStore: CalibrationFactorProviding {
+public final class LearningStore: CalibrationFactorProviding, @unchecked Sendable {
     public let directory: URL
     private var cachedDatabase: LearningDatabase?
+    // Ultra-Review-Fix: der Store wird jetzt aus zwei Isolation-Domains genutzt
+    // (MainActor-UI: vormerken/freigeben; KalkulationsEngine-actor: Anker lesen).
+    // Der Lock macht die Lazy-Init von `cachedDatabase` atomar (sonst Data Race +
+    // doppelter JSONL-Import). GRDB selbst ist danach thread-safe.
+    private let dbLock = NSLock()
 
     public init(directory: URL = LearningStore.defaultDirectory()) {
         self.directory = directory
@@ -51,6 +56,8 @@ public final class LearningStore: CalibrationFactorProviding {
 
     /// Öffnet die Working-Copy-DB lazy und importiert einmalig vorhandene JSONL-Daten.
     public func database() throws -> LearningDatabase {
+        dbLock.lock()
+        defer { dbLock.unlock() }
         if let cachedDatabase { return cachedDatabase }
         let db = try LearningDatabase(url: directory.appendingPathComponent("learning.sqlite"))
         _ = try db.importJSONLSnapshot(from: directory)

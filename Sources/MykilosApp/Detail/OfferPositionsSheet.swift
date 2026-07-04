@@ -30,6 +30,7 @@ struct OfferPositionsSheet: View {
     @State private var loader = OfferPositionsLoader()
     @State private var taken: Set<Int> = []
     @State private var vorgemerkt: Int?
+    @State private var vormerkFehler: String?
     @State private var showReview = false
 
     var body: some View {
@@ -173,10 +174,16 @@ struct OfferPositionsSheet: View {
                 .sheet(isPresented: $showReview) {
                     PriceKnowledgeReviewView(store: learningStore, onClose: { showReview = false })
                 }
+            } else if let vormerkFehler {
+                Label("Vormerken fehlgeschlagen", systemImage: "exclamationmark.triangle")
+                    .font(.mykMono(9.5)).foregroundStyle(MykColor.critical.color)
+                    .help(vormerkFehler)
             } else {
                 let kandidaten = lernbareKandidaten(sortiert(positions))
                 Button {
-                    vorgemerkt = (try? learningStore.importPDFExtractedPositions(kandidaten))?.imported ?? 0
+                    // Fehler nicht als „0 vorgemerkt" tarnen (Ultra-Review-Fix).
+                    do { vorgemerkt = try learningStore.importPDFExtractedPositions(kandidaten).imported }
+                    catch { vormerkFehler = String(describing: error) }
                 } label: {
                     Label("Als Preis-Wissen vormerken (\(kandidaten.count))", systemImage: "brain.head.profile")
                         .font(.mykMono(9.5)).foregroundStyle(MykColor.personal.color)

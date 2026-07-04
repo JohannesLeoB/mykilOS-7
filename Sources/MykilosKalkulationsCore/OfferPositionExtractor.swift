@@ -338,9 +338,10 @@ public enum OfferPositionExtractor {
     /// Erste „echte" Textzeile als Titel (überspringt führende Nummern/Mengen).
     static func firstTextLine(_ text: String) -> String {
         let line = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? text
-        // Führende Positions-/Mengennummern + Stück-Token abschneiden.
+        // Führende Positionsnummer ("2.", "1.2", "Pos 3"), Dezimalmenge ("1,00") und
+        // Stück-Token abschneiden (Ultra-Review-Fix: kannte '.' und ',' vorher nicht).
         let cleaned = line.replacingOccurrences(
-            of: #"^\s*(\d+\s+){0,3}(Stck\.?|Stk\.?|Stück|x)?\s*"#,
+            of: #"^\s*(?:Pos\.?\s*)?\d+(?:[.)]\d*)?\s+(?:\d+(?:,\d+)?\s+)?(?:Stck\.?|Stk\.?|Stück|Stueck|St\.?|x)?\s*"#,
             with: "", options: .regularExpression)
         return String(cleaned.prefix(120)).trimmingCharacters(in: .whitespaces)
     }

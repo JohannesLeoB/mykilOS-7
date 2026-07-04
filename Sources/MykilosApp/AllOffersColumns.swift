@@ -195,7 +195,7 @@ struct AllOfferRow: View {
                         wk.addOfferPosition(
                             id: "\(file.id)-\(paged.pageNumber)-\(index)",
                             bezeichnung: p.title.isEmpty ? file.name : p.title,
-                            menge: max(1, Int(p.quantity ?? 1)),
+                            menge: max(1, Int((p.quantity ?? 1).rounded())),   // runden statt abschneiden (Ultra-Review)
                             ekNetto: eingehend ? preis : nil,
                             vkNetto: eingehend ? nil : preis)
                         wk.showPanel = true

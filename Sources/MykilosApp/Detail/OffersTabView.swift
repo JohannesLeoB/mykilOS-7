@@ -488,7 +488,7 @@ private struct OfferRow: View {
                                 try await store.fuegePositionHinzu(
                                     projektNummer: projektNummer,
                                     bezeichnung: p.title.isEmpty ? file.name : p.title,
-                                    menge: max(1, Int(p.quantity ?? 1)),
+                                    menge: max(1, Int((p.quantity ?? 1).rounded())),   // runden statt abschneiden (Ultra-Review)
                                     ekEinzel: eingehend ? preis : nil,
                                     vkEinzel: eingehend ? nil : preis,
                                     objektID: "\(file.id)-\(paged.pageNumber)-\(index)")
