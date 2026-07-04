@@ -30,6 +30,32 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-04 (Nacht) — Roundtable: externe KI-Bros sandboxen + Slack Tag-0 (Johannes)
+
+Vision „alle an einen Tisch": jede spezialisierte KI auf ihrem Stuhl, koordiniert über EIN
+Rückgrat (Git-Repo + Airtable-SoR), gegated am Torwächter (PR/Mensch). Kein Bro besitzt die
+Wahrheit. Eigene fokussierte Sessions, NICHT in einem vollen Fenster:
+
+- 💡 **ClickUp-Bro sandboxen (Setup).** Testspace `90128024109` sauber strukturieren (Ordner/Listen
+  nach Projekt/Lebenszyklus, einheitliche Status + Custom Fields, Ghost-Persona-Konvention) +
+  Konventionen-Doc, an dem die ClickUp-KI sich ausrichtet. **HART:** Testspace-only, nie echte
+  Assignees/Notifications, KI weist nie Menschen zu ([[clickup-ghost-persona-rule]]). Offen:
+  Johannes' Job-Definition (einsortieren? taggen? fällige hochholen?).
+- 💡 **Airtable-Bro sandboxen (Setup).** SoR (`appuVMh3KDfKw4OoQ`) NICHT umbauen (App liest feste
+  Tabellen/Felder → Bruch-Gefahr). Stattdessen: dedizierte Sandbox-Fläche + „AI-Leitfaden"
+  (Konventionen + NO-GOs: nie löschen/überschreiben, nie SoR-Felder, nie Daniels Base
+  `appdxTeT6bhSBmwx5`). Offen: Job-Definition (kategorisieren? dedupen? Feldvorschläge?).
+- 💡 **Slack → „Tag 0" nahtlos ziehen, mit Handshake.** Slack-History/aktueller Stand als
+  Anfangs-Seed ins Rückgrat (Projekte/Aufgaben/Wissen), im Handshake mit dem integrierten Slack-
+  Agenten. „Tag 0" = ein sauberer, verankerter Startzustand statt verstreutem Chat-Verlauf.
+  Slack = weitere Speiche, koordiniert über Spine/Gate, nie destruktiv in die SoR. (Slack-Brain
+  169 Projekte als Wissen ist schon Präzedenz — [[bootcamp-online-push]].)
+
+**Grundregel für alle drei:** Autonom = IN DER SANDBOX. SoR + echte Daten + echte Menschen bleiben
+gegated (Torwächter-Modell). Bros kriegen einen Zaun-Spielplatz, nie Schlüssel zur Wahrheit.
+
+---
+
 ## Nachtrag 2026-07-04 — Mini-Mode (VERRIEGELTE Spec, Johannes)
 
 > ⚠️ **Korrektur:** Der Ultracode-Workflow vom 2026-07-04 baute versehentlich ein **Menüleisten-
