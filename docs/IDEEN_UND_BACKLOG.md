@@ -13,6 +13,13 @@ am Ende aktualisiert, damit nichts in einzelnen Handoffs verloren geht.
 > Dieses Dokument wächst kontinuierlich durch verschiedene Sessions und
 > Koordinations-Runden. Mehr Einträge als erwartet = normal, kein Handlungsbedarf.
 
+> **🌟 PRODUKT-NORDSTERN 2027:** Die große strategische Richtung (vertikaler,
+> voll-gehosteter Studio-Werkzeugkasten · Mac Mothership / iOS Satellit / iPad Worker ·
+> Abo mit gemeterter KI · Airtable hinter neutraler Naht) liegt eigenständig in
+> [PRODUKT_NORDSTERN_2027.md](PRODUKT_NORDSTERN_2027.md). Grundhaltung: weiterbauen wie
+> bisher, nichts Bestehendes ändern — aber jede neue Naht so ziehen, dass fremde
+> Bestandssysteme später andocken können.
+
 **Format:** Jeder Eintrag hat Status, Quelle (wann/wodurch entstanden) und
 Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 - 💡 **Idee** — nur angedacht, noch nicht bewertet/entschieden
