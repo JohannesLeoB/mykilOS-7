@@ -122,17 +122,22 @@ gegated (Torwächter-Modell). Bros kriegen einen Zaun-Spielplatz, nie Schlüssel
   Wenn Mini-Mode in Settings AUS ist, ist der Button ein ganz normaler Sidebar-Toggle (niemand
   merkt was). 3-Zustand-Prinzip: **springen, nicht durchzyklen.**
 
-  **Alert-Modell (Drei-Stufen: Puls → Hover → Klick):**
+  **Alert-Modell (Korrektur nach Live-Test 2026-07-05, Johannes): schlank — Puls → Klick-zur-
+  Sache. Hover-Summary-Karte GESTRICHEN** (war Stufe 2 des ursprünglichen Drei-Stufen-Modells —
+  „nervt eher" im Live-Test des schwebenden Icon-Streifens).
   1. **Puls (push):** das **betroffene Icon selbst pulsiert langsam orange** (`MykColor.brand`,
      bzw. Farbmode) — „sehr langsames Feuerwehr-Licht". Ein Signal sagt *beides*: „hey" UND
      „welches Modul". Kein Ganz-Fenster-Puls (Doppel-Puls vermeiden). **Abschaltbar pro Quelle.**
-  2. **Hover (pull):** Maus über das Mini-Fenster → kleine **Alert-Zusammenfassung** (wie ein
-     macOS-Benachrichtigungs-Kärtchen), verschwindet beim Rausfahren. Bewusst **hover-getriggert,
-     nicht auto-poppend** — unterbricht das Zeichnen nie, man zieht es sich, wenn man bereit ist.
-  3. **Klick (commit) — jeder Klick geht zu *genau dem angetippten Ding*:**
-     - Klick auf die **Alert-Zusammenfassung** → **direkt zur Sache** (neue Mail → rein in Mail).
-     - Klick auf ein **Modul-Icon** → rein in *das* Modul.
+  2. **Klick-zur-Sache (commit) — kein Hover mehr dazwischen:** ein **normaler Klick ins Mini**
+     öffnet die App **direkt dort, wo es brennt** (die relevante/pulsende Stelle) — im normalen
+     Mode oder auf dem anderen Desktop. Kein Zwischenschritt, keine Vorschau-Karte.
+     - Klick auf ein **pulsierendes Modul-Icon** → rein in *das* Modul, an die brennende Stelle.
      - Klick auf das **Logo** → zurück zur **letzten großen Ansicht** (wo man war).
+
+  **V1.1-Änderungsvermerk:** Das gebaute Mini-Mode (Commit `9ce2b9b`) hat noch die alte
+  Hover-Summary verdrahtet. **Folge-Änderung (V1.1, noch zu bauen):** Hover-Karte entfernen +
+  Klick-zur-brennenden-Stelle verdrahten (Klick-Handler muss die pulsende Quelle auflösen und
+  gezielt dorthin navigieren, statt nur die App zu öffnen).
 
   **Datenquellen (LEAN):** verdichtet aus bestehenden `AppState`-Stores + Signal-/Mediator-System
   (`StudioContext`), nur lokale Caches + laufende Loops — **KEINE neuen API-Polls**. Aufgaben =
