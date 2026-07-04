@@ -30,6 +30,35 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-04 (Nacht) — DEV-Feedback (Johannes, Screenshots, „drop→check→erklär")
+
+Fünf Punkte aus Johannes' Screenshot-Feedback-Runde. Grundhaltung: alle fünf sind machbar
+(Johannes' Einschätzung), 1/3/4a/5 klein-mittel, 2 mittel, 4b groß (aber Wirbelsäule-gestützt).
+Gilt Interior-Build-Charter (nur innen, Airtable = Outer Limit).
+
+- 💡 **Kontakte als Kachel-/Galerie-Ansicht** (Sammlungs-Ansicht-Standard wie Dateien/Angebote):
+  Liste⇄Galerie mit Zoom-Slider + Vorschau. PLUS **Kontaktbild pro Kontakt**, Toggle (an/aus/
+  eigenes): lokal = User-Upload-Wunsch; global = Google-Contacts-Foto falls vorhanden; sonst
+  individuell; **Standard = Icon** (aktuelles Personen-Icon). Kontakte kommen aus Airtable
+  (904 Kontakte).
+- 💡 **Aufgaben als Widget-Katalog** (statt leerer Liste): ClickUp-Aufgaben-View-Widget ·
+  Termine+Aufgaben-Widget · Notizen/eigene Memos · Dropdown-Feld für WhatsApp / fremde
+  Nachrichten-Apps. (ClickUp-Regeln beachten: Testspace-only, nie echte Assignees/
+  Notifications.)
+- 💡 **Warenkörbe auf den Sammlungs-Ansicht-Standard** ziehen (Liste⇄Galerie/Kachel mit Zoom +
+  Vorschau + volles Instrumentarium: Suche/Filter/Sortierung/Quellzeile/Renderstates) — wie die
+  anderen Kataloge.
+- 💡 **(Bug)** Im globalen Angebote-Modul: Positionen im „Positionen herauslösen"-Sheet lassen
+  sich **nicht picken / nicht in den Warenkorb ziehen** — Fix. **(Feature, groß)** **GLOBALES
+  Drag & Drop**: Items aus ALLEN Katalogen (Kontakte/Artikel/Lager/Zeichnungen/Positionen …) per
+  Ziehen in den Checkout/Warenkorb. Fundament existiert: die Wirbelsäule (Pick → WorkBasket →
+  CheckoutPort).
+- 💡 **Layout-Drift beheben**: uneinheitliche Ausrichtung/Abstände (z.B. Kataloge/Angebote/
+  Alle-Angebote nicht bündig) — Polish-Sweep, gegen Screenshots prüfen (siehe Regel
+  „UI-Layout-Drift/Quer-Wirkung").
+
+---
+
 ## Nachtrag 2026-07-04 (Nacht) — Roundtable: externe KI-Bros sandboxen + Slack Tag-0 (Johannes)
 
 Vision „alle an einen Tisch": jede spezialisierte KI auf ihrem Stuhl, koordiniert über EIN
