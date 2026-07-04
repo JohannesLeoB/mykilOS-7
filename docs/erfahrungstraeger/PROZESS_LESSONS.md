@@ -12,6 +12,31 @@ Einträge oben.
 
 ---
 
+## 2026-07-04 (spät Abend) — Mini-Mode: gebaut, verworfen, neu gebaut + Konsolidierung
+
+**Was auffiel (der teure Zick-Zack):** Ein Ultracode-Workflow wurde direkt auf „Mini-Mode"
+losgelassen und baute eine **Menüleisten-`NSStatusItem`-Variante** (`7eb9a67`) — die **falsche
+Form**. Johannes' Mini-Mode war immer als **schwebende Icon-Sidebar** gemeint. 36 Minuten später
+komplett ersetzt (`9ce2b9b`). Der erste Lauf war teuer UND am Ziel vorbei.
+**Kern-Lehre (eisern fürs nächste Mal):** Ein Mini-Mode-/Presence-*Konzept* erst **zurückspiegeln
+und Spec verriegeln, BEVOR ein Workflow feuert** — nicht ein Bau-Agent auf ein noch unscharfes
+Bild loslassen. Das kostet sonst einen ganzen Bau-Verwerf-Zyklus. (Ist genau der Ausrutscher,
+den die verriegelte Spec im Backlog-Nachtrag hinterher richtig festhält — nur eben zu spät.)
+
+**Was danach sauber lief:** sevDesk-Postbox-UI-Wiring (Drop aus dem Warenkorb, Preview→Confirm,
+Doppel-Klick gesperrt) und Galerie-Ausrollen auf alle Oberflächen + Mail — beide folgen
+etablierten Repo-Mustern, keine Überraschungen, Build/Test-Gate durchgehalten.
+
+**Konsolidierung (dieser Aufräum-Lauf):** Version-Bump alpha13→alpha14 (3 Stellen konsistent),
+Doku-Drift geschlossen (HYPERBUILD 940→962 Tests + Stand-Block, Benutzerhandbuch-Kopf, Backlog-
+„zu-reverten"-Hinweis als ✅ erledigt markiert, EREIGNISPROTOKOLL-Eintrag ergänzt), 1 Politur-
+Fix (fehlende Newline in DatastromManifest.json). Riskante Audit-Befunde **bewusst gelassen**:
+`bestehenderBeleg` lädt die volle Postbox-Tabelle je Drop (LEAN-Kandidat, kein akuter Bug) und
+die Galerie-Sheets instanziieren je Item einen `GoogleDriveClient` (folgt bestehendem Repo-Muster,
+keine Regression) — beides ist eigene Arbeit, kein Ein-Zeiler.
+
+---
+
 ## 2026-07-04 (Abend) — sevDesk-Postbox-Port + Skalierungs-Fix + großer Strategie-Block (Nordstern 2027)
 
 **Was gut lief:**

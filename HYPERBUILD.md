@@ -7,16 +7,22 @@
 ```
 Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
 Branch:  feat/plaene-katalog   ·   GitHub JohannesLeoB/mykilOS-7 (privat, origin)
-Build:   ✅ swift build grün        Tests: ✅ 940 grün (124 Suites)
-Version: 10.0.0-alpha13 (DMG in dist/)
-Stand:   Galerie-Flug komplett (Liste⇄Galerie, Blättern/Diashow, echte Thumbnails) in Dateien-
-         + Material-Tab. PDF-Positions: Art.-Nr.-Extraktion + „In Warenkorb" trägt jetzt ALLE
-         Infos (Text/Art.-Nr./Quelle/Seite/Richtung) — sevDesk-Postbox-CheckoutPort existiert
-         technisch noch NICHT (nächster großer Strang). ClickUp: Write-Basics + Test-Werkbank
-         (nur Sandbox-Liste) + Phasen-Abgleich am Lebenszyklus-Stepper (read-only). Kontakte-
-         Airtable-Migration Schritt 1 (Import-Vorschau in Settings, Johannes muss selbst
-         klicken — braucht seine Google-OAuth-Session). Rainbow Mode Easter Egg.
-         Details: docs/handoffs/HANDOFF_GALERIE_CLICKUP_KONTAKTE_2026-07-04.md
+Build:   ✅ swift build grün        Tests: ✅ 962 grün (126 Suites)
+Version: 10.0.0-alpha14 (DMG in dist/)
+Stand:   sevDesk-Postbox LIVE (CheckoutPort + UI-Drop aus dem Warenkorb, append-only, Preview→
+         Confirm-Gate, Objekt-Hash-Idempotenz). Galerie-Flug auf ALLE Oberflächen + Mail
+         ausgerollt (Liste⇄Galerie, Blättern/Diashow, echte Thumbnails, Leertaste-Vollbild).
+         Skalierungs-Fix im DocumentViewerView (große Bilder/PDFs passen sich dem Rahmen an,
+         global weil alle Oberflächen denselben Viewer nutzen). Mini-Mode: schwebende, immer-
+         obenauf Icon-Sidebar-Presence (Opt-in in Settings, Default aus; ersetzt eine am selben
+         Tag verworfene Menüleisten-Variante) — Puls-Alerts pro Quelle (dezent, abschaltbar),
+         Hover-Karte, 2-Sek-Halten am Logo aktiviert. KEIN neuer API-Poll (LEAN). Vormittag
+         desselben Tages: Galerie-Flug Dateien/Material, ClickUp-Write-Basics, PDF-Positions-
+         Art.-Nr., Kontakte-Airtable-Migration Schritt 1, Rainbow Mode Easter Egg.
+         Details: docs/handoffs/HANDOFF_GALERIE_CLICKUP_KONTAKTE_2026-07-04.md (deckt nur den
+         Vormittag ab — der Abend-Block sevDesk/Skalierung/Mini-Mode ist in
+         docs/erfahrungstraeger/PROZESS_LESSONS.md protokolliert, kein eigener Handoff).
+         Produkt-Nordstern 2027 in PROZESS_LESSONS.md (kein eigenes docs/NORDSTERN.md).
 Fallback: git checkout v7.0.0 (Safe State, e629e84) oder ./script/recall_safe_state.sh
 ```
 

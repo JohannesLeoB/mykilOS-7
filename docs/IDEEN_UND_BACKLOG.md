@@ -35,8 +35,10 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 > ⚠️ **Korrektur:** Der Ultracode-Workflow vom 2026-07-04 baute versehentlich ein **Menüleisten-
 > `NSStatusItem`** (Commit `7eb9a67`, `Sources/MykilosApp/MiniMode/`). Das ist die **falsche Form** —
 > Johannes' Mini-Mode ist ein **schwebendes Icon-Sidebar-Fenster**, kein Menüleisten-Zähler. Der
-> Commit ist **superseded** und beim echten Bau zu reverten/reset (lokal, kein Push). Lehre:
-> Mini-Mode-*Konzept* vor dem Bau zurückspiegeln — nicht direkt einen Workflow drauf loslassen.
+> Commit war **superseded**. ✅ **Erledigt durch Commit `9ce2b9b` (selbentags)** — die Menüleisten-
+> Variante wurde durch die schwebende Icon-Sidebar ersetzt; kein `NSStatusItem`-Restcode mehr im
+> Repo, kein Revert mehr nötig. Lehre: Mini-Mode-*Konzept* vor dem Bau zurückspiegeln — nicht
+> direkt einen Workflow drauf loslassen.
 
 - 🎯 **Mini-Mode — schwebende Icon-Sidebar-Presence (verriegelt 2026-07-04, Design mit Johannes
   im Dialog + interaktivem Mockup durchgespielt).** Kern-Use-Case: **an-lassen, während man in
