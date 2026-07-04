@@ -55,6 +55,29 @@ final class OfferPositionExtractorTests: XCTestCase {
                        [Decimal(string: "2995.00")])
     }
 
+    func testMengeMitEinheitIstKeinBetrag() {
+        // Sondierung 2026-07-04: "1,00 Stk", "4,97 m2", "10,15 m" sind MASSE,
+        // keine Beträge — sonst beweist der Selbstbeweis Mengen (netto=1-Bug).
+        let amounts = X.germanAmounts(in: "1,00 Stk. Arbeitsplatte 4,97 m2 10,15 m 5.911,70 5.911,70")
+        XCTAssertEqual(amounts, [Decimal(string: "5911.70"), Decimal(string: "5911.70")])
+    }
+
+    func testNatursteinPositionMitMengenzeilenBleibtEinePosition() {
+        // Reale Struktur (synthetisch): eine Position mit vielen "N Stk"-Unterzeilen
+        // darf NICHT in Splitter zerfallen — netto = Positionspreis, nicht 1/2/3.
+        let page = """
+        1 1 Stck. Küchenarbeitsplatte 5.911,70 5.911,70 nach Aufmaß liefern
+        2 Stk Bohrung D=35mm
+        1 Stk Ausklinkung zweiseitig gesägt
+        2 Stk Becken werkseits anbauen
+        1 Stk Pflegemittel
+        """
+        let positions = X.extractPositions(fromPageText: page)
+        XCTAssertEqual(positions.count, 1)
+        XCTAssertEqual(positions[0].netPrice, Decimal(string: "5911.70"))
+        XCTAssertEqual(positions[0].confidence, .green)
+    }
+
     func testRabattLayout_NettoUndListe_Gruen() {
         // "1,0 Stk 250,00 20,00% 200,00 200,00 €" → netto 200 (nach Rabatt), Liste 250.
         let text = "2 Aufmaß pauschal Raum Hamburg 1,0 Stk 250,00 20,00% 200,00 200,00 €"

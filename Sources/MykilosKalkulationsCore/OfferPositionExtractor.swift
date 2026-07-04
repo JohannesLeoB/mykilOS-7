@@ -99,8 +99,11 @@ public enum OfferPositionExtractor {
 
     // Positions-Anker: Zeilen-/Segmentanfang, Positionsnummer (evtl. "1.2" oder "Pos 3"),
     // dann Whitespace, dann Menge+Einheit ODER ein Großbuchstaben-Titelwort.
+    // Großbuchstaben-Branch schließt Einheiten-Wörter aus (Sondierung 2026-07-04):
+    // "2 Stk Bohrung" ist eine Mengen-Unterzeile INNERHALB einer Position, kein
+    // neuer Positions-Anker — sonst zerfällt eine Naturstein-Position in Splitter.
     private static let anchorRegex = try! NSRegularExpression(
-        pattern: #"(?:^|[\n\r])\s*(?:Pos\.?\s*)?\d{1,3}(?:\.\d{1,3})?\s+(?=(?:\d+(?:,\d+)?\s+)*(?:\d+(?:,\d+)?\s*(?:Stk|Stck|Stück|Stueck|St|m²|m2|lfm)\b|[A-ZÄÖÜ]))"#,
+        pattern: #"(?:^|[\n\r])\s*(?:Pos\.?\s*)?\d{1,3}(?:\.\d{1,3})?\s+(?=(?:\d+(?:,\d+)?\s+)*(?:\d+(?:,\d+)?\s*(?:Stk|Stck|Stück|Stueck|St|m²|m2|lfm)\b|(?!(?:Stk|Stck|Stück|Stueck|St|EUR)\b)[A-ZÄÖÜ]))"#,
         options: [])
 
     /// Extrahiert die Felder EINES Positionsblocks aus seinem Text.
@@ -167,7 +170,9 @@ public enum OfferPositionExtractor {
             guard gesamt > 0 else { continue }
             for e in 0..<g {
                 let einzel = amounts[e]
-                guard einzel > 0 else { continue }
+                // Mindestbetrag 5 € (Sondierung 2026-07-04): Rest-Mengen/Rundungs-
+                // Zahlen dürfen sich nie gegenseitig "beweisen" — grün muss halten.
+                guard einzel >= Decimal(5) else { continue }
                 for q in quantities {
                     let erwartet = decimalDouble(einzel) * q
                     let ziel = decimalDouble(gesamt)
@@ -218,8 +223,11 @@ public enum OfferPositionExtractor {
     // Deutscher Betrag: entweder mit Tausenderpunkten (5.911,70) ODER als reine
     // Ziffernfolge (2995,00). Beide enden auf ,dd. Kein voranstehender Ziffern/Punkt/
     // Komma, damit "9.762,889.762,8"-Klumpen nicht als ein Riesenbetrag durchgehen.
+    // Negativer Einheiten-Lookahead (Sondierung 2026-07-04): eine Zahl direkt vor
+    // einer Einheit ist ein MASS ("1,00 Stk", "4,97 m2", "10,15 m"), nie ein Betrag —
+    // sonst beweist sich der Selbstbeweis an Mengen selbst (netto=1-Fälle).
     private static let amountRegex = try! NSRegularExpression(
-        pattern: #"(?<![\d.,])(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?![\d])"#)
+        pattern: #"(?<![\d.,])(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?![\d])(?!\s*(?:Stk|Stck|Stück|Stueck|St\b|m²|m2\b|lfm\b|m\b|cm\b|mm\b|%|x\b))"#)
 
     // PDF-Extraktion klebt Beträge oft ohne Trennzeichen aneinander
     // ("9.762,88 9.762,889.762,8" = E.P., G.P. und eine Wiederholung). Ein `,dd`
