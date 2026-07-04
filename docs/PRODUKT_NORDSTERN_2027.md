@@ -111,6 +111,29 @@ verdient seinen Platz **heute**. Es soll nur nicht *tragend für die Produkt-Zuk
 
 ---
 
+## 4b · Config-driven statt hardcoded (die konkreten Bausteine)
+
+Das gemeinsame Muster aller Produkt-Anzahlungen: *was heute im Code festverdrahtet ist, in ein
+editierbares/wählbares Config-Objekt heben.* Genau der Muskel, den 2027 (fremde Studios andocken,
+White-Label) braucht. Drei benannte Stränge (Details + Ist-Stand im Backlog, 2026-07-04):
+
+1. **Ordner-Schema-Editor** — die nächste, optimierte Projekt-Ordnerstruktur kommt von UNS.
+   Motor (`ProjektProvisioningService`, idempotent) + Datei-Klassifikation (`PlanCollector`,
+   Chaos→kanonische Kategorien als Linse) existieren schon. Zu heben: `.v1` → `FolderSchema v2`
+   (editierbar/versioniert) + visueller Baum-Editor + Token-Benennung. **Leitplanke: Alt bleibt
+   physisch unangetastet — Struktur als Vertrag/Linse, nie Umzug.**
+2. **Look-only Theme-System** — wählbare UI-Styles. **Scope: nur Look (Farben/Font/Radien/Spacing/
+   Logos/Icons), kein Layout.** Vier Achsen sind schon Tokens → Theme = Wertesatz-Tausch;
+   `MykTheme` + themefähige Token-Auflösung + Logo-Slot + leichte Icon-Ebene. Rainbow Mode beweist
+   den Laufzeit-Switch. Perspektivisch Mandanten-Config → Premium-White-Label.
+3. **CI/Editorial als erstes Theme** — die Website-CI (Weiß/Schwarz, Radius 0, Grotesk VERSAL,
+   monochrom, bild-first) als Gegenpol zum warmen Standard. Beweist: ein Theme umfasst alle Achsen.
+
+Alle drei sind **Config-driven-Anzahlungen**: heute für uns nützlich, morgen die Andock-/White-
+Label-Fähigkeit. Bewusst als eigene Sessions, nicht nebenbei.
+
+---
+
 ## 5 · Reihenfolge (De-Risk)
 
 1. **Tiefe vor Breite:** erst am eigenen Studio den vollen vertikalen Ablauf durchfliegen lassen

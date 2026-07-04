@@ -30,6 +30,60 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-04 — Mini-Mode (ambiente Hintergrund-Presence) (Johannes)
+
+- 💡 **Mini-Mode — mykilOS als kleine, nicht ablenkende Hintergrund-Presence.** Ein winziges,
+  fokus-neutrales Fenster, das man in eine Bildschirmecke über andere Fenster legt; steht bereit,
+  stört nicht. Meldet sich wieder (pulsiert / Notification-Punkte mit Zähler), wenn Relevantes
+  reinkommt: Termin, Aufgabe, wichtige Mail, Problem, Timer. **Zwei Formen (idealerweise beide):**
+  (1) schwebendes `NSPanel` (`.floating` + `.nonactivatingPanel` → über anderen Fenstern, stiehlt
+  nie Fokus, folgt über Spaces); (2) Menüleisten-`NSStatusItem` mit Zähler-Badge + kompaktem
+  Popover (idiomatisches macOS-„ambient counter"-Muster). **Baut fast nur zusammen, was da ist:**
+  Daten aus bestehenden `AppState`-Stores (Termin/Aufgaben/Mail-Cache/Clockodo-Timer/Signale);
+  Aufmerksamkeit hängt am schon existierenden Signal-/Mediator-System (`StudioContext.emit`) +
+  lokalen Caches — Mini-Mode = Verdichter über den Signalstrom, keine neue Maschine.
+  **Leitplanken:** jede Alert-Quelle mit eigenem Ein/Aus-Toggle in Settings→Datenschutz (Eiserne
+  Regel „Alerts dezent"); KEINE neuen häufigen API-Polls (nur Caches + laufende Loops lesen —
+  „lean"); Glanceability/Privatsphäre (sensible Details erst bei Hover). **Aufwand:** mittel, eine
+  fokussierte Session für V1. **Reizvoll, weil klein + in sich geschlossen + keine externen
+  Entscheidungen nötig** (im Gegensatz zu Kalender-Write/Themes/Ordner-Schema).
+
+---
+
+## Nachtrag 2026-07-04 — Config-driven statt hardcoded (3 Stränge, Nordstern-Anzahlung)
+
+Aus dem Strategie-Gespräch 2026-07-04 (siehe [PRODUKT_NORDSTERN_2027.md](PRODUKT_NORDSTERN_2027.md) §
+„Config-driven statt hardcoded"). Gemeinsames Muster aller drei: *was heute im Code festverdrahtet
+ist, in ein editierbares/wählbares Config-Objekt heben* — genau der Muskel, den 2027 (fremde Studios
+andocken, White-Label) braucht.
+
+- 💡 **Ordner-Schema-Editor (die Drive-Orga ins Cockpit holen).** Ziel: die nächste, optimierte
+  Projekt-Ordnerstruktur kommt von UNS. Ist-Stand (Code geprüft 2026-07-04): `ProjektProvisioning-
+  Service` legt Bäume schon idempotent an (Schema als Parameter `plan.schema`, heute hartkodiert
+  `.v1`); `PlanCollector` klassifiziert lose Drive-Ordner/Dateien bereits per Schlüsselwort in unsere
+  Kategorien (= Struktur als Linse). **Zu bauen:** (1) `.v1` → editierbares/versioniertes
+  `FolderSchema v2` + visueller Finder-artiger Baum-Editor + Token-Benennung `{Jahr}_{Nr:3}_{Kunde}`
+  + Live-Vorschau; (2) Mapping-Linse Ordner→kanonisch (Archiv-Übersetzung-Gerüst existiert).
+  **Leitplanke:** Alt bleibt physisch unangetastet (externe Daten heilig) — Struktur als Vertrag/
+  Linse, nie physischer Umzug. Neue Projekte landen kanonisch. Schwere: neue Projekte 🟢 leicht,
+  Alt-Daten-Linse 🟡 mittel/iterativ. Kandidat für eigene kleine Session.
+- 💡 **Look-only Theme-System (wählbare UI-Styles).** Nutzer wählt „mykilOS Standard / Editorial /
+  …". **Scope-Grenze (Johannes 2026-07-04): nur der LOOK, kein Layout** — Farben, Font, Radien,
+  Spacing (=Dichte), Logos, Icons. Kein Panel-/View-Umbau. Farben/Fonts/Radien/Spacing sind schon
+  Tokens (`MykColor`/`MykSpace`/`MykRadius`/Typography) → Theme = anderer Wertesatz. **Zu bauen:**
+  `MykTheme`-Struct + Token-Auflösung liest aktives Theme (Rainbow Mode beweist Laufzeit-Switch
+  schon) + Logo-Slot + leichte semantische Icon-Ebene + Style-Picker in Settings→Darstellung mit
+  Live-Vorschau + Persistenz (perspektivisch Mandanten-/User-Config → Premium-White-Label).
+  Fallstrick: WCAG-Kontrast pro Theme; „Farbe als Sprache" bewusst opferbar. Schwere: Plumbing 🟢
+  eine Session, schöne Themes = Design-Iteration.
+- 💡 **CI/Editorial als erstes echtes Theme.** Die öffentliche mykilOS-Website-CI (Screenshot
+  2026-07-04) als Theme: reines Weiß/hartes Schwarz, Radien 0, Grotesk/Mono VERSAL gespreizt,
+  monochrom (Quellfarben weg), keine Ornamentik, bild-first/randlos. Perfekter Gegenpol zum warmen
+  Standard-Look → Beweis, dass ein Theme alle Achsen (nicht nur Palette) umfassen muss. Optional:
+  visuelles „Standard vs. Editorial"-Mockup (HTML-Artifact) vor dem Bau.
+
+---
+
 ## Nachtrag 2026-07-03 — Dokumenten-Katalog: alles was sevDesk NICHT macht (Johannes)
 
 - 💡 **Dokumenten-Template-Katalog — der operative/handwerkliche Dokument-Layer** (WARENKORB_
