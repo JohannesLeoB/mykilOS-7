@@ -30,23 +30,54 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
-## Nachtrag 2026-07-04 — Mini-Mode (ambiente Hintergrund-Presence) (Johannes)
+## Nachtrag 2026-07-04 — Mini-Mode (VERRIEGELTE Spec, Johannes)
 
-- 💡 **Mini-Mode — mykilOS als kleine, nicht ablenkende Hintergrund-Presence.** Ein winziges,
-  fokus-neutrales Fenster, das man in eine Bildschirmecke über andere Fenster legt; steht bereit,
-  stört nicht. Meldet sich wieder (pulsiert / Notification-Punkte mit Zähler), wenn Relevantes
-  reinkommt: Termin, Aufgabe, wichtige Mail, Problem, Timer. **Zwei Formen (idealerweise beide):**
-  (1) schwebendes `NSPanel` (`.floating` + `.nonactivatingPanel` → über anderen Fenstern, stiehlt
-  nie Fokus, folgt über Spaces); (2) Menüleisten-`NSStatusItem` mit Zähler-Badge + kompaktem
-  Popover (idiomatisches macOS-„ambient counter"-Muster). **Baut fast nur zusammen, was da ist:**
-  Daten aus bestehenden `AppState`-Stores (Termin/Aufgaben/Mail-Cache/Clockodo-Timer/Signale);
-  Aufmerksamkeit hängt am schon existierenden Signal-/Mediator-System (`StudioContext.emit`) +
-  lokalen Caches — Mini-Mode = Verdichter über den Signalstrom, keine neue Maschine.
-  **Leitplanken:** jede Alert-Quelle mit eigenem Ein/Aus-Toggle in Settings→Datenschutz (Eiserne
-  Regel „Alerts dezent"); KEINE neuen häufigen API-Polls (nur Caches + laufende Loops lesen —
-  „lean"); Glanceability/Privatsphäre (sensible Details erst bei Hover). **Aufwand:** mittel, eine
-  fokussierte Session für V1. **Reizvoll, weil klein + in sich geschlossen + keine externen
-  Entscheidungen nötig** (im Gegensatz zu Kalender-Write/Themes/Ordner-Schema).
+> ⚠️ **Korrektur:** Der Ultracode-Workflow vom 2026-07-04 baute versehentlich ein **Menüleisten-
+> `NSStatusItem`** (Commit `7eb9a67`, `Sources/MykilosApp/MiniMode/`). Das ist die **falsche Form** —
+> Johannes' Mini-Mode ist ein **schwebendes Icon-Sidebar-Fenster**, kein Menüleisten-Zähler. Der
+> Commit ist **superseded** und beim echten Bau zu reverten/reset (lokal, kein Push). Lehre:
+> Mini-Mode-*Konzept* vor dem Bau zurückspiegeln — nicht direkt einen Workflow drauf loslassen.
+
+- 🎯 **Mini-Mode — schwebende Icon-Sidebar-Presence (verriegelt 2026-07-04, Design mit Johannes
+  im Dialog + interaktivem Mockup durchgespielt).** Kern-Use-Case: **an-lassen, während man in
+  einem anderen Vollbild-Programm arbeitet** (z. B. Vectorworks zeichnen). „Oh, da kam was rein" +
+  „ich geh mal schnell ins Projekt", ohne die Vollansicht aufzumachen.
+
+  **Was es ist:** die App geschrumpft auf **nur die eingeklappte Icon-Sidebar** (kein
+  Inhaltsfenster) — ein schmales, **schwebendes, immer-obenauf, fokus-neutrales** Fenster
+  (`NSPanel` `.floating` + `.nonactivatingPanel` + `collectionBehavior` inkl. `.canJoinAllSpaces`
+  + `.fullScreenAuxiliary`, damit es **über Vollbild-Spaces** erscheint), das man in eine Ecke legt.
+  Stiehlt nie den Fokus — man zeichnet weiter.
+
+  **Aktivierung (Klick-Dauer-Geste):** einmalig in Settings → Ansichts-Optionen einschalten. Dann
+  über den **mykilOS-Button oben links** (der auch die Sidebar ein/ausblendet): **kurzer Klick =
+  Sidebar schmal/breit; Halten ~2 s = Mini-Mode.** Beim Halten füllt sich ein **Ring** um den
+  Button (Fortschritt sichtbar) + Button pulst; **früher loslassen = Abbruch**. Kein Versehen.
+  Wenn Mini-Mode in Settings AUS ist, ist der Button ein ganz normaler Sidebar-Toggle (niemand
+  merkt was). 3-Zustand-Prinzip: **springen, nicht durchzyklen.**
+
+  **Alert-Modell (Drei-Stufen: Puls → Hover → Klick):**
+  1. **Puls (push):** das **betroffene Icon selbst pulsiert langsam orange** (`MykColor.brand`,
+     bzw. Farbmode) — „sehr langsames Feuerwehr-Licht". Ein Signal sagt *beides*: „hey" UND
+     „welches Modul". Kein Ganz-Fenster-Puls (Doppel-Puls vermeiden). **Abschaltbar pro Quelle.**
+  2. **Hover (pull):** Maus über das Mini-Fenster → kleine **Alert-Zusammenfassung** (wie ein
+     macOS-Benachrichtigungs-Kärtchen), verschwindet beim Rausfahren. Bewusst **hover-getriggert,
+     nicht auto-poppend** — unterbricht das Zeichnen nie, man zieht es sich, wenn man bereit ist.
+  3. **Klick (commit) — jeder Klick geht zu *genau dem angetippten Ding*:**
+     - Klick auf die **Alert-Zusammenfassung** → **direkt zur Sache** (neue Mail → rein in Mail).
+     - Klick auf ein **Modul-Icon** → rein in *das* Modul.
+     - Klick auf das **Logo** → zurück zur **letzten großen Ansicht** (wo man war).
+
+  **Datenquellen (LEAN):** verdichtet aus bestehenden `AppState`-Stores + Signal-/Mediator-System
+  (`StudioContext`), nur lokale Caches + laufende Loops — **KEINE neuen API-Polls**. Aufgaben =
+  lokale Assistent-Aufgaben (ClickUp hätte Poll gebraucht). Kalender/Mail brauchen einen lokalen
+  Cache-Store (heute nicht da) → bis dahin ehrlich „(bald)".
+
+  **Leitplanken:** Alerts-dezent + Toggle je Quelle (Settings→Datenschutz) · Puls abschaltbar,
+  „langsam" evtl. einstellbar · Per-User-Datenschutz · Token-Disziplin · Modulgrenzen ·
+  WindowGuard muss das schwebende Panel korrekt behandeln (`canBecomeMain`-Filter, 2026-07-04
+  schon geschärft). **Aufwand:** substanziell (schwebendes Panel + Halte-Geste + Per-Icon-Puls-
+  Alerts + Hover-Summary am Signalstrom) — eigene fokussierte Session, frisch bauen.
 
 ---
 
