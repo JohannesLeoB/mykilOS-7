@@ -184,6 +184,16 @@ sie im dortigen Warenkorb (`WarenkorbState`), im **Projekt-Angebote-Tab** im lok
 Projekt-Warenkorb (`WorkBasketStore`, GRDB, append-only, überlebt Neustart). Nichts wird
 geschrieben außer der bestätigten Warenkorb-Position.
 
+**Lern-Loop — Positionen als Preis-Wissen (2026-07-04):** Im Positions-Sheet merkt der Button
+**„Als Preis-Wissen vormerken"** die (grün/amber, nicht-alternativen) Positionen als lokale
+**Kandidaten** vor — noch **ohne** Wirkung. Über **„Freigeben →"** öffnet sich das Review
+(`PriceKnowledgeReviewView`): dort gibt der Mensch **jede Position einzeln** als aktiven
+Preis-Anker frei. **Erst die Freigabe** macht sie schätz-wirksam — ab dann berücksichtigt die
+KalkulationsEngine sie (als dritter Anker-Kanal neben Seed-Korpus und Airtable-Angeboten).
+Alles **lokal** in `learning.sqlite` (kein externer Write), **append-only**, **review-gated**:
+nichts landet ohne menschlichen Klick im Preis-Gedächtnis. Die Belegreferenz eines Ankers ist
+bewusst neutral (keine Summen-/MwSt-Begriffe → Carryforward-sicher).
+
 **„Zum Angebot" — Kalkulations-Vorschau (V10, Block G — 2026-07-03):** Oben im Angebote-Tab
 erzeugt der Knopf **„Zum Angebot"** aus dem am Projekt gespeicherten Warenkorb ein
 **Angebots-Vorschau-PDF** (Briefkopf, Positionstabelle, Netto/19 % MwSt/Brutto, aus der
