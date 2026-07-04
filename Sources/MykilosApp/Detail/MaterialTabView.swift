@@ -25,8 +25,28 @@ struct MaterialTabView: View {
     /// Datei-Typ-Filter (PDF/Bilder). `nil` = alle Typen.
     @State private var typeFilter: PlanTypeFilter?
     @AppStorage("material.tab.sort") private var sortRaw = MaterialSort.datum.rawValue
+    // Galerie-Flug Akt 1: Liste ⇄ Galerie + Finder-Kachelgröße (pro Ansicht gemerkt).
+    @AppStorage("material.tab.galerie") private var galerieAn = false
+    @AppStorage("material.tab.kachel") private var kachelSeiteRaw: Double = 150
+    @State private var viewerFile: GoogleDriveFile?
 
     private var sort: MaterialSort { MaterialSort(rawValue: sortRaw) ?? .datum }
+    private var kachelSeite: Binding<CGFloat> {
+        Binding(get: { CGFloat(kachelSeiteRaw) }, set: { kachelSeiteRaw = Double($0) })
+    }
+
+    // Alle sichtbaren Dateien flach als Galerie-Einträge (mit Kategorie als Untertitel).
+    private var galerieEintraege: [DateiGalerieGrid.Eintrag] {
+        categoriesToShow.flatMap { cat in
+            visibleFiles(in: cat).map { file in
+                DateiGalerieGrid.Eintrag(
+                    file: file, subtitle: cat.label,
+                    localURL: LocalDriveRootResolver.shared.localURL(
+                        forFileID: file.id, fileName: file.name,
+                        inProjectFolderID: driveFolderID ?? "", explicitProjectPath: nil))
+            }
+        }
+    }
 
     /// Vorhandene Kategorien nach Kategorie-Filter eingeschränkt.
     private var categoriesToShow: [PlanCategory] {
@@ -56,7 +76,14 @@ struct MaterialTabView: View {
             VStack(alignment: .leading, spacing: MykSpace.s5) {
                 header
                 toolbar
-                categoryColumns
+                if galerieAn {
+                    DateiGalerieGrid(
+                        eintraege: galerieEintraege, kachelSeite: kachelSeite,
+                        onTap: { viewerFile = $0.file },
+                        onOpen: { oeffne($0.file) })
+                } else {
+                    categoryColumns
+                }
             }
         }
         .task(id: driveFolderID) {
@@ -66,6 +93,21 @@ struct MaterialTabView: View {
         .padding(.horizontal, MykSpace.s9)
         .padding(.top, MykSpace.s7)
         .padding(.bottom, 64)
+        .sheet(item: $viewerFile) { file in
+            DocumentViewerView(
+                file: file, localURL: nil,
+                remoteContent: { try? await GoogleDriveClient().downloadContent(fileID: file.id) },
+                onClose: { viewerFile = nil })
+                .frame(minWidth: 820, minHeight: 680)
+        }
+    }
+
+    private func oeffne(_ file: GoogleDriveFile) {
+        let local = LocalDriveRootResolver.shared.localURL(
+            forFileID: file.id, fileName: file.name,
+            inProjectFolderID: driveFolderID ?? "", explicitProjectPath: nil)
+        LocalDriveRootResolver.shared.openFile(
+            localURL: local, fallbackURL: file.webViewLink.flatMap { URL(string: $0) })
     }
 
     private var sourceLabel: String {
@@ -128,11 +170,34 @@ struct MaterialTabView: View {
                 sortMenu
                 searchField
                 Spacer()
+                if galerieAn { KachelGroessenSlider(kachelSeite: kachelSeite) }
+                ansichtsToggle
                 Text("\(visibleTotal) Dateien")
                     .font(.mykMono(10))
                     .foregroundStyle(MykColor.muted.color)
             }
         }
+    }
+
+    // Liste ⇄ Galerie (Finder-Stil-Segment).
+    private var ansichtsToggle: some View {
+        HStack(spacing: 0) {
+            toggleTaste(aktiv: galerieAn == false, icon: "list.bullet") { galerieAn = false }
+            toggleTaste(aktiv: galerieAn, icon: "square.grid.2x2") { galerieAn = true }
+        }
+        .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.card.color)
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1)))
+    }
+
+    private func toggleTaste(aktiv: Bool, icon: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.mykCaption)
+                .foregroundStyle(aktiv ? MykColor.paper.color : MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s3).padding(.vertical, MykSpace.s2)
+                .background(aktiv ? MykColor.ink.color : Color.clear)
+        }
+        .buttonStyle(.plain)
     }
 
     private var searchField: some View {
