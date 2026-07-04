@@ -93,3 +93,28 @@ alle Punkte oben sind dort mit Status markiert (✅/🚧).
 ### DMG
 `dist/mykilOS-10.0.0-alpha13.dmg` (13M) — frisch aus dieser Session, inkl. aller obigen
 Features.
+
+### Selbstkritik / Lessons Learned (Johannes-Frage zum Abschluss, 2026-07-04)
+Ehrliche Rückschau, damit die nächste Session (auch unter anderem Claude-Account) nicht
+dieselben Fehler wiederholt:
+
+1. **Anführungszeichen-Falle wiederholt passiert.** „…"-Zeichen mitten in einem Swift-
+   String-Literal bricht den Build (ASCII-`"` beendet das Literal, nicht die typografische
+   Curly-Quote — aber Copy-Paste-Text mit gemischten Anführungszeichen rutscht leicht rein).
+   Passierte diese Session mind. 3× (`ClickUpTestWerkbankView`, `ContactsImportView`).
+   **Regel für nächstes Mal:** in Swift-String-Literalen NIE typografische Anführungszeichen
+   verwenden — vor dem Schreiben bewusst dran denken, nicht erst über den Build-Fehler lernen.
+2. **Git-Remote-Check zu oberflächlich** (`head -2` hat einen zweiten Remote abgeschnitten,
+   fast fälschlich Alarm wegen vermeintlich fehlendem origin geschlagen). Bei sicherheits-
+   relevanten Checks (Push-Ziel, Branch-Schutz) volle Ausgabe ansehen, nicht kürzen.
+3. **Dichte Mehrfach-Anfragen zurückspiegeln, bevor losgebaut wird.** Bei Nachrichten mit
+   mehreren gebündelten Anliegen in einem Satz (z. B. „Art.-Nr. + Warenkorb + sevDesk-Drop")
+   lieber kurz "ok, drei Dinge: X, Y, Z — richtig?" bestätigen, statt sich die Aufteilung
+   selbst zusammenzureimen und erst am Ende zu merken, dass ein Teil (hier: sevDesk-Postbox-
+   Port) technisch noch gar nicht existiert.
+4. **Kommunikationsstil des Nutzers:** Nachrichten oft dicht/kurz, teils diktiert (Tippfehler,
+   mehrere Anliegen in einem Satz). Kein Problem, aber reale Fehlerquelle beim Interpretieren —
+   durch kurzes Zurückspiegeln am Anfang abfedern statt stillschweigend zu raten.
+5. **Was gut lief, beibehalten:** hohe Autonomie im Automode hat funktioniert, weil Eiserne
+   Regeln (GO-Rückfrage, Beppo-Prinzip, Testspace-only) vorher klar etabliert waren — bei
+   echten Unklarheiten (sevDesk-Schema, Push-Ziel) wurde nachgefragt statt geraten.
