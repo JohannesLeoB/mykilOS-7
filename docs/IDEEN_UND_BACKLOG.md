@@ -526,6 +526,11 @@ VW-Plankopf-Strang: die Geräte-/Material-Textblöcke des Plankopfs sind genau s
   billig, weil die Token-Palette (MykColor) zentral ist: alternatives Token-Set + Toggle,
   kein UI-Umbau. Kandidat für eine Feierabend-Session mit Feel-Good-Faktor.
   (Design-Nordstern: klein & schön, kein Maximal-Ausbau.)
+- **Boss-Button 🥹 (Johannes, 2026-07-04 Nacht):** DER eine große Knopf. Lesart A
+  „Feierabend-Ritual": ein Druck → Backup jetzt (backup_local_data.sh), Save-States
+  geprüft, Status-Einzeiler „alles sicher, gute Nacht". Lesart B „Chef-Moment":
+  kontextbewusster Knopf, der das gerade Wichtigste auslöst (Tages-Fokus, dringendster
+  Hinweis). Auslegung entscheidet Johannes beim Bau — ein Knopf, ein gutes Gefühl.
 
 ### 💡 UI-Batch 2026-07-02 (aus Screenshot-Runde)
 - **Kontakte klickbar:** Klick auf Mail-Adresse → „Mail schreiben?" → Entwurf im Assistenten-
