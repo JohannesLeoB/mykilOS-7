@@ -12,7 +12,7 @@ import SwiftUI
 @MainActor
 enum WindowGuard {
     static func clampMainWindowToVisibleScreen() {
-        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil }),
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.contentView != nil && $0.canBecomeMain }),
               let screen = window.screen ?? NSScreen.main else { return }
         let visible = screen.visibleFrame
         var frame = window.frame

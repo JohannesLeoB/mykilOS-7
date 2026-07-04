@@ -6,7 +6,7 @@ import MykilosServices
 
 // MARK: - SettingsCategory
 enum SettingsCategory: String, CaseIterable, Identifiable {
-    case profil, darstellung, verbindungen, privat, system
+    case profil, darstellung, verbindungen, privat, datenschutz, system
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -14,6 +14,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
         case .darstellung:  "Darstellung"
         case .verbindungen: "Verbindungen"
         case .privat:       "Privat"
+        case .datenschutz:  "Datenschutz"
         case .system:       "System"
         }
     }
@@ -23,6 +24,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
         case .darstellung:  "paintbrush"
         case .verbindungen: "app.connected.to.app.below.fill"
         case .privat:       "lock.shield"
+        case .datenschutz:  "hand.raised"
         case .system:       "gearshape.2"
         }
     }
@@ -168,6 +170,8 @@ struct SettingsView: View {
             claudeSection
         case .privat:
             privateAreaSection
+        case .datenschutz:
+            miniModeSection
         case .system:
             diagnoseSection
             SchaltzentrumView()
@@ -695,6 +699,24 @@ struct SettingsView: View {
         do { try appState.claudeAuth.disconnect(); claudeApiKey = ""; claudeModel = ClaudeAuthService.defaultModel }
         catch { claudeError = "Trennen fehlgeschlagen: \(error)" }
     }
+
+    // MARK: - Datenschutz → Mini-Mode
+    // Master-Schalter + je ein Schalter pro Aufmerksamkeits-Quelle. Alle default = an;
+    // die Schlüssel MÜSSEN mit MiniModeDefaults / MiniModeSource.defaultsKey
+    // übereinstimmen (der MiniModeStore/StatusBarPresence liest exakt diese UserDefaults).
+    // Dezent + jederzeit abschaltbar (eiserne Alerts-Regel): Master aus → Menüleisten-
+    // Element verschwindet, keine Quelle wird mehr gelesen.
+    // `miniModeSection` selbst lebt in SettingsView+MiniMode.swift (swiftlint file_length) —
+    // die @AppStorage-Properties bleiben hier, weil Extensions keine stored properties
+    // hinzufügen dürfen; daher ohne `private`, damit die Extension-Datei im selben
+    // Modul darauf zugreifen kann (kein externes Modul sieht diesen Typ von außen anders
+    // an als vorher — SettingsView ist ohnehin `internal`/nicht public).
+    @AppStorage("privacy.miniMode.enabled")  var miniModeEnabled = true
+    @AppStorage("privacy.miniMode.calendar") var miniModeCalendar = true
+    @AppStorage("privacy.miniMode.tasks")    var miniModeTasks = true
+    @AppStorage("privacy.miniMode.mail")     var miniModeMail = true
+    @AppStorage("privacy.miniMode.timer")    var miniModeTimer = true
+    @AppStorage("privacy.miniMode.signals")  var miniModeSignals = true
 
     // MARK: - Private Area (Clockodo — datensensitiv)
 

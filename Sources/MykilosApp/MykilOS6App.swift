@@ -13,6 +13,10 @@ struct MykilOS6App: App {
     enum BootPhase { case ready(AppState); case failed(message: String, dbPath: String) }
     @State private var phase: BootPhase
     @State private var context = StudioContext()
+    // Mini-Mode V1: Menüleisten-Presence (NSStatusItem + Popover). Reine AppKit-
+    // Infrastruktur, daher als NSApplicationDelegate angedockt statt in einer Scene.
+    // Wird erst mit AppState/StudioContext verdrahtet, sobald der Boot fertig ist.
+    @NSApplicationDelegateAdaptor(MiniModeAppDelegate.self) private var miniModeDelegate
     @Environment(\.scenePhase) private var scenePhase
     // Hell/Dunkel/Auto (2026-07-02): per-Nutzer-Wahl statt System-Zwang.
     @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
@@ -79,6 +83,10 @@ struct MykilOS6App: App {
                 .environment(appState)
                 .environment(context)
                 .task { await appState.bootstrap() }
+                // Mini-Mode: sobald der AppState bereit ist, die Menüleisten-Presence
+                // mit den bestehenden Stores + der geteilten StudioContext-Instanz
+                // verdrahten (kein neuer Poll, nur Lesen aus Caches).
+                .task { miniModeDelegate.attach(appState: appState, context: context) }
                 // Beim Wechsel in den Hintergrund / vor App-Quit (macOS geht über
                 // .background) alle ungespeicherten Notizen sichern — sonst kann
                 // Cmd-Q eine im Debounce-Fenster hängende Eingabe verlieren.

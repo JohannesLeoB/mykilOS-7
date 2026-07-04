@@ -43,6 +43,31 @@ auf Nummer, Titel oder Kundenname; Prefix-Treffer stehen oben). **Enter** oder *
 
 ---
 
+## Mini-Mode (Menüleiste) — 2026-07-04
+
+**Was es tut:** Eine kompakte, nicht ablenkende Hintergrund-Presence in der **macOS-Menüleiste**:
+ein Icon mit **Zähler-Badge** (Summe aus offenen Aufgaben + offenen Signalen) und ein **Popover**,
+das auf einen Blick zeigt: aktiver Clockodo-Timer (Projekt + Laufzeit, läuft/pausiert), offene
+Aufgaben, offene Signale — plus „mykilOS öffnen". Wenn nichts offen ist: dezenter „Nichts
+Offenes"-Zustand, Badge verschwindet.
+
+**Wo zu finden:** Rechts oben in der macOS-Menüleiste, sobald die App läuft. Ein/Aus + je-Quelle
+steuerbar in **Einstellungen → Datenschutz → Mini-Mode** (Master-Toggle + ein Schalter pro Quelle).
+
+**Voraussetzungen:** keine — Mini-Mode liest ausschließlich aus bereits geladenen lokalen Daten
+(Timer, Signale, Aufgaben), **startet keine eigenen Netzwerk-Abrufe** (lean).
+
+**Einschränkungen (ehrlich):**
+- **Aufgaben** = lokale Assistent-Aufgaben (nicht ClickUp — das hätte einen Extra-Abruf gebraucht).
+- **Nächster Termin** und **Wichtige Mails** sind als Schalter sichtbar, aber `(bald)` — es gibt
+  dafür noch keinen lokalen Cache, aus dem ohne neuen Abruf gelesen werden könnte.
+- **Schwebendes Eck-Fenster** (frei platzierbares Mini-Fenster) ist noch nicht dabei — kommt als
+  Folgeschritt (V1.1), sobald der Fenster-Positionswächter dafür geschärft ist.
+- Der Badge pulsiert nicht aufdringlich — es ist ein ruhiger Zähler, jederzeit pro Quelle
+  abschaltbar (Alerts-dezent-Regel).
+
+---
+
 ## Heute-Board
 
 **Was es tut:** Übersicht über den aktuellen Arbeitstag — Signal-Strip, Drive-Ordner-Status,
