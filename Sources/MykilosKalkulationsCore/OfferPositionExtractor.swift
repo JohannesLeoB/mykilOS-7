@@ -41,12 +41,15 @@ public enum OfferPositionExtractor {
         public let areaM2: Double?
         /// Bauteil-Kategorie (aus dem Text klassifiziert) — für Kategorie-Chip + Lern-Loop.
         public let componentType: ComponentType
+        /// Alternativ-/Bedarfs-/Optionalposition („wie Pos. X", „optional", „eventual") —
+        /// NICHT blind aufsummieren. Rein informativ (kein Ausschluss).
+        public let isAlternative: Bool
         public let confidence: Confidence
         public let originalText: String
 
         public init(title: String, netPrice: Decimal?, listPrice: Decimal?, lineTotal: Decimal?,
                     quantity: Double?, unit: String?, lengthM: Double?, areaM2: Double?,
-                    componentType: ComponentType = .other,
+                    componentType: ComponentType = .other, isAlternative: Bool = false,
                     confidence: Confidence, originalText: String) {
             self.title = title
             self.netPrice = netPrice
@@ -57,6 +60,7 @@ public enum OfferPositionExtractor {
             self.lengthM = lengthM
             self.areaM2 = areaM2
             self.componentType = componentType
+            self.isAlternative = isAlternative
             self.confidence = confidence
             self.originalText = originalText
         }
@@ -85,6 +89,16 @@ public enum OfferPositionExtractor {
     // Firmenrechtsform, Bank/Summenzeilen im TITEL.
     private static let headerNoiseRegex = try! NSRegularExpression(
         pattern: #"(?i)((?:straße|strasse|weg|allee|platz|ring|gasse|str\.)\s+\d|seite\s+\d+\s+von|\bgmbh\b|\be\.\s?k\.\b|\bo?hg\b|iban|bankverbindung|nettobetrag|gesamtbetrag)"#)
+
+    // Alternativ-/Bedarfs-/Optionalposition: der Angebotssprech dafür („wie Pos.",
+    // „alternativ", „optional", „eventual", „Bedarfsposition", „wahlweise", „Variante").
+    private static let alternativeRegex = try! NSRegularExpression(
+        pattern: #"(?i)(wie\s+pos|alternativ|optional|eventual|bedarfsposition|bedarfsvariante|wahlweise|materialvariante|\bvariante\b|zzgl\.\s*wenn)"#)
+
+    static func isAlternativePosition(_ text: String) -> Bool {
+        let ns = text as NSString
+        return alternativeRegex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)) != nil
+    }
 
     static func isHeaderNoise(_ title: String) -> Bool {
         let ns = title as NSString
@@ -130,6 +144,7 @@ public enum OfferPositionExtractor {
         let (lengthM, areaM2) = dimensions(in: text)
         let unitToken = unit(in: text)
         let category = OfferPositionClassifier.classify(text: text)
+        let alternativ = isAlternativePosition(text)
         // Rabatt-Layout: "…250,00 20,00% 200,00…" → Listenpreis 250, netto 200.
         // Ist selbst ein arithmetischer Selbstbeweis (list × (1−p) ≈ netto).
         let disc = discount(in: deGlued)
@@ -148,7 +163,7 @@ public enum OfferPositionExtractor {
             return ExtractedPosition(
                 title: firstTextLine(text), netPrice: proof.einzel, listPrice: list, lineTotal: proof.gesamt,
                 quantity: proof.quantity, unit: unitToken, lengthM: lengthM, areaM2: areaM2,
-                componentType: category, confidence: .green, originalText: text)
+                componentType: category, isAlternative: alternativ, confidence: .green, originalText: text)
         }
 
         // Rabatt-Layout ohne Mengen-Selbstbeweis: trotzdem grün (list × (1−p) ≈ netto beweist sich).
@@ -156,7 +171,7 @@ public enum OfferPositionExtractor {
             return ExtractedPosition(
                 title: firstTextLine(text), netPrice: disc.net, listPrice: disc.list, lineTotal: nil,
                 quantity: qty, unit: unitToken, lengthM: lengthM, areaM2: areaM2,
-                componentType: category, confidence: .green, originalText: text)
+                componentType: category, isAlternative: alternativ, confidence: .green, originalText: text)
         }
 
         // Kein Selbstbeweis: der erste Betrag ist in der Praxis der Positionspreis
@@ -165,13 +180,13 @@ public enum OfferPositionExtractor {
             return ExtractedPosition(
                 title: firstTextLine(text), netPrice: first, listPrice: nil, lineTotal: nil,
                 quantity: qty, unit: unitToken, lengthM: lengthM, areaM2: areaM2,
-                componentType: category, confidence: .amber, originalText: text)
+                componentType: category, isAlternative: alternativ, confidence: .amber, originalText: text)
         }
 
         return ExtractedPosition(
             title: firstTextLine(text), netPrice: nil, listPrice: nil, lineTotal: nil, quantity: qty,
             unit: unitToken, lengthM: lengthM, areaM2: areaM2,
-            componentType: category, confidence: .red, originalText: text)
+            componentType: category, isAlternative: alternativ, confidence: .red, originalText: text)
     }
 
     // MARK: - Selbstbeweis

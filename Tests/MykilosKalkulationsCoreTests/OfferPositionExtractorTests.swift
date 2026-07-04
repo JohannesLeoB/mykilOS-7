@@ -159,6 +159,13 @@ final class OfferPositionExtractorTests: XCTestCase {
         XCTAssertEqual(p.componentType, .stoneCountertop)
     }
 
+    func testAlternativePositionWirdMarkiert() {
+        let p = X.extract(fromBlock: "2 wie Pos.1, jedoch Materialvariante Eiche 5.174,65 5.174,65")
+        XCTAssertTrue(p.isAlternative)
+        let normal = X.extract(fromBlock: "1 1 Stck. Küchenarbeitsplatte 1.234,56 1.234,56")
+        XCTAssertFalse(normal.isAlternative)
+    }
+
     func testHeaderNoiseWirdGefiltert() {
         // Seitenkopf mit Seitenzahl+Adresse: darf keine Position werden.
         let page = """

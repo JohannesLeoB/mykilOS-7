@@ -196,6 +196,7 @@ private struct PositionCard: View {
             HStack(spacing: MykSpace.s3) {
                 arithmetikZeile
                 Spacer()
+                if p.isAlternative { alternativBadge }
                 kategorieChip
             }
             if let list = p.listPrice {
@@ -222,6 +223,15 @@ private struct PositionCard: View {
         .padding(MykSpace.s5)
         .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
         .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
+    }
+
+    // Warnhinweis für Alternativ-/Bedarfspositionen — nicht blind aufsummieren.
+    private var alternativBadge: some View {
+        Text("Alternative")
+            .font(.mykMono(8.5)).foregroundStyle(MykColor.paper.color)
+            .padding(.horizontal, MykSpace.s2).padding(.vertical, 2)
+            .background(Capsule().fill(MykColor.tasks.color))
+            .help("Alternativ-/Bedarfsposition — gehört evtl. nicht in die Summe.")
     }
 
     // Bauteil-Kategorie als dezenter Chip (aus dem Text klassifiziert). `.other`
