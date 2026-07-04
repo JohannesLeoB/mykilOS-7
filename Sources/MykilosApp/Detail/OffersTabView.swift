@@ -482,13 +482,19 @@ private struct OfferRow: View {
                         let p = paged.position
                         let preis = p.netPrice.map { ($0 as NSDecimalNumber).doubleValue }
                         Task {
-                            try? await store.fuegePositionHinzu(
-                                projektNummer: projektNummer,
-                                bezeichnung: p.title.isEmpty ? file.name : p.title,
-                                menge: max(1, Int(p.quantity ?? 1)),
-                                ekEinzel: eingehend ? preis : nil,
-                                vkEinzel: eingehend ? nil : preis,
-                                objektID: "\(file.id)-\(paged.pageNumber)-\(index)")
+                            // Fehler nicht stumm schlucken (Ultra-Review): der WorkBasketStore
+                            // macht ihn über seinen SaveState im Warenkorb-Widget sichtbar.
+                            do {
+                                try await store.fuegePositionHinzu(
+                                    projektNummer: projektNummer,
+                                    bezeichnung: p.title.isEmpty ? file.name : p.title,
+                                    menge: max(1, Int(p.quantity ?? 1)),
+                                    ekEinzel: eingehend ? preis : nil,
+                                    vkEinzel: eingehend ? nil : preis,
+                                    objektID: "\(file.id)-\(paged.pageNumber)-\(index)")
+                            } catch {
+                                MykLog.lifecycle.error("Warenkorb-Anhängen fehlgeschlagen: \(String(describing: error), privacy: .public)")
+                            }
                         }
                     }
                 },

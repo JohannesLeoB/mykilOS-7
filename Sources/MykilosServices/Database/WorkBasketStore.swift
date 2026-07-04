@@ -230,6 +230,12 @@ public final class WorkBasketStore {
     /// an, wenn keiner existiert. Lokale Bearbeitung (gleiche ID, `speichere`
     /// überschreibt); die Airtable-seitige Versionierung bleibt davon unberührt.
     /// EK/VK trägt der Aufrufer bei (aus der Angebotsrichtung).
+    // Serialisierungs-Flag gegen Lost-Update (Ultra-Review 2026-07-04): weil
+    // `speichere` suspendiert (await), können zwei schnelle Aufrufe auf dem MainActor
+    // beide den ALTEN Korb lesen und der zweite den ersten überschreiben. Der
+    // Spin-Wait (Task.yield, MainActor-isoliert) macht Lesen→Anhängen→Speichern atomar.
+    private var anhaengenLaeuft = false
+
     @discardableResult
     public func fuegePositionHinzu(
         projektNummer: String,
@@ -239,6 +245,9 @@ public final class WorkBasketStore {
         vkEinzel: Double?,
         objektID: String
     ) async throws -> WorkBasket {
+        while anhaengenLaeuft { await Task.yield() }
+        anhaengenLaeuft = true
+        defer { anhaengenLaeuft = false }
         let pick = BasicPick(
             matrix: .artikel,
             objektID: CatalogObjectID(objektID),
