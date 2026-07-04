@@ -274,7 +274,9 @@ public final class AppState {
         let kalkulationsEngine = KalkulationsEngine(
             provider: CompositeAnchorProvider(
                 primary: BrainSeedProvider(),
-                learned: LearnedAnchorProvider(store: learningStore)
+                learned: LearnedAnchorProvider(store: learningStore),
+                // Lern-Loop: lokal review-bestätigte PDF-Positionen als dritter Anker-Kanal.
+                pdfLearned: PDFLearnedAnchorProvider(store: learningStore)
             ),
             learningStore: learningStore,
             deviceCatalog: DeviceCatalog.loadDefault(),

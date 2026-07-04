@@ -265,25 +265,26 @@ public struct LearnedAnchorProvider: PriceAnchorProviding {
 public struct CompositeAnchorProvider: PriceAnchorProviding {
     private let primary: PriceAnchorProviding
     private let learned: PriceAnchorProviding
+    /// Optionaler dritter Kanal: lokal review-bestätigte PDF-Positionen (Lern-Loop).
+    /// Wie der gelernte Kanal degradiert er bei Fehler still.
+    private let pdfLearned: PriceAnchorProviding?
 
-    public init(primary: PriceAnchorProviding, learned: PriceAnchorProviding) {
+    public init(primary: PriceAnchorProviding, learned: PriceAnchorProviding,
+                pdfLearned: PriceAnchorProviding? = nil) {
         self.primary = primary
         self.learned = learned
+        self.pdfLearned = pdfLearned
     }
 
     public func activeAnchors() throws -> [CandidateReleaseDecision] {
-        // Seed-Ausfall ist ein echter Fehler → werfen. Der gelernte Kanal degradiert
+        // Seed-Ausfall ist ein echter Fehler → werfen. Die gelernten Kanäle degradieren
         // dagegen bewusst still (do/catch statt stillem Optional-Schlucken): fällt das Gate/die
         // learning.sqlite aus, bleibt der Seed-Korpus allein funktional.
         let base = try primary.activeAnchors()
-        return base + learnedAnchorsOrEmpty()
+        return base + orEmpty(learned) + (pdfLearned.map(orEmpty) ?? [])
     }
 
-    private func learnedAnchorsOrEmpty() -> [CandidateReleaseDecision] {
-        do {
-            return try learned.activeAnchors()
-        } catch {
-            return []
-        }
+    private func orEmpty(_ provider: PriceAnchorProviding) -> [CandidateReleaseDecision] {
+        (try? provider.activeAnchors()) ?? []
     }
 }
