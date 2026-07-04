@@ -70,7 +70,9 @@ Versuche verlaufen im Sande — genau dafür gibt es den Safe State.
 
 - **Ein Repo:** `origin` = github.com/JohannesLeoB/**mykilOS-7** (privat). mykilOS-6 ist
   **archiviert** (Remote `mykilos6-archive`, read-only). Kein zweites aktives Repo.
-- `main` steht auf `v7.0.0` (e629e84). Tag liegt in `origin` + Archiv + als GitHub-Release.
+- Tag `v7.0.0` (e629e84) liegt in `origin` + Archiv + als GitHub-Release — die unantastbare
+  Rückfallebene. `main` entwickelt sich seit 2026-07-03 per PR weiter (erster Merge:
+  PR #2 → `6699dc6`); weiterhin gilt: nur über PR auf `main`.
 - **NIE** den Tag verschieben/löschen, **NIE** `main` force-pushen, **NIE** direkt auf `main`.
 - Neue Arbeit nur auf Branches (`release/7.5`, `feat/…`, `experiment/…`), signiert (SSH).
 - Frisch aufrufen: `./script/recall_safe_state.sh` (separater Worktree) oder `git checkout v7.0.0`.
