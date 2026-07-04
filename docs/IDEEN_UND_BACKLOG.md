@@ -517,6 +517,16 @@ Positionen-Extraktion (§ Nachtrag 2026-07-02, PDF → Positionen → Warenkorb)
 Leer-Templates speist (verknüpft mit dem Textbausteine-Katalog oben, Z. 46-47). Verwandt mit dem
 VW-Plankopf-Strang: die Geräte-/Material-Textblöcke des Plankopfs sind genau solche Bausteine.
 
+#### 💡 Spielwiese (Johannes 2026-07-04, Nacht) — Heuler + Rainbow/Freaky-Friday-Mode
+- **Heuler:** ein bewusst LAUTER, theatralischer Alert (Brüllbrief-Stil) für selbst
+  gewählte Dinge („wenn X passiert, schrei mich an"). Spannung zur Eisernen Regel
+  „Alerts dezent" → Auflösung: strikt **opt-in, nur an sich selbst**, pro Alert einzeln
+  scharf gestellt — Selbst-Beschallung erlaubt, Fremd-Beschallung nie.
+- **Rainbow Mode / Freaky Friday:** Easter-Egg-Theme in den Einstellungen — architektonisch
+  billig, weil die Token-Palette (MykColor) zentral ist: alternatives Token-Set + Toggle,
+  kein UI-Umbau. Kandidat für eine Feierabend-Session mit Feel-Good-Faktor.
+  (Design-Nordstern: klein & schön, kein Maximal-Ausbau.)
+
 ### 💡 UI-Batch 2026-07-02 (aus Screenshot-Runde)
 - **Kontakte klickbar:** Klick auf Mail-Adresse → „Mail schreiben?" → Entwurf im Assistenten-
   Mail-Fenster öffnen. (klein, jetzt baubar)
