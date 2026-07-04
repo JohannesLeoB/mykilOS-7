@@ -56,11 +56,15 @@ Gilt Interior-Build-Charter (nur innen, Airtable = Outer Limit).
 - 💡 **Layout-Drift beheben**: uneinheitliche Ausrichtung/Abstände (z.B. Kataloge/Angebote/
   Alle-Angebote nicht bündig) — Polish-Sweep, gegen Screenshots prüfen (siehe Regel
   „UI-Layout-Drift/Quer-Wirkung").
-- 💡 **Barcode-Scanner-Widget** im Übersichts-Ansichtsbereich (Heute/Übersicht). Liest Artikel
-  per Barcode ein → Artikel-Erkennung/-Zuordnung (Katalog „Artikel/Shop" bzw. „Lager"). Passt
-  zur Interior-Build-Charter (Eingang → sauberes I/O → Airtable als Outer Limit; nie Daniels
-  Base überschreiben). Machbarkeit: macOS-Kamera/AVFoundation bzw. eingehende Scans; Job =
-  Barcode → Artikel-Lookup.
+- 💡 **Barcode + QR einlesen** im Übersichts-Ansichtsbereich (Heute/Übersicht). Liest Artikel
+  per Barcode **oder QR-Code** ein → Artikel-Erkennung/-Zuordnung (Katalog „Artikel/Shop" bzw.
+  „Lager"). Passt zur Interior-Build-Charter (Eingang → sauberes I/O → Airtable als Outer Limit;
+  nie Daniels Base überschreiben). Machbarkeit: macOS-Kamera/AVFoundation bzw. eingehende Scans;
+  Job = Barcode/QR → Artikel-Lookup.
+- 💡 **Visitenkarten-Scan → Kontakt anlegen.** Visitenkarte scannen (Kamera/Foto, OCR) →
+  automatisch neuer Kontakt (Name/Firma/Mail/Telefon). Greift in die Kontakte-Bild-Idee (Punkt 1):
+  gescannte Karte = Kontakt MIT Foto. Airtable-Kontakte als Ziel (nie destruktiv). Interior-Build-
+  Charter beachten.
 
 ---
 
