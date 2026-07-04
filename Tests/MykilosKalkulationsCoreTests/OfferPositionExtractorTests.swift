@@ -138,6 +138,27 @@ final class OfferPositionExtractorTests: XCTestCase {
         XCTAssertEqual(positions[0].netPrice, Decimal(string: "1850.00"))
     }
 
+    // MARK: - Bauteil-Klassifikation (synthetisch, Küchen-Domäne)
+
+    func testKlassifikatorKategorien() {
+        typealias C = OfferPositionClassifier
+        XCTAssertEqual(C.classify(text: "Küchenarbeitsplatte 2cm Quarzit TAJ MAHAL"), .stoneCountertop)
+        XCTAssertEqual(C.classify(text: "Fronten der Schubkästen mit Auszug"), .drawerAddon)
+        XCTAssertEqual(C.classify(text: "1 St Küchenhochschrank, ca. 2269x2850mm"), .tallCabinetBlock)
+        XCTAssertEqual(C.classify(text: "Kochinsel Korpus lackiert"), .island)
+        XCTAssertEqual(C.classify(text: "Inselarbeitsplatte Naturstein"), .stoneCountertop) // Stein vor Insel
+        XCTAssertEqual(C.classify(text: "Bora Kochfeld flächenbündig"), .applianceScope)
+        XCTAssertEqual(C.classify(text: "1 St Küchenzeile Unterschrank Korpus"), .baseCabinetRun)
+        XCTAssertEqual(C.classify(text: "Lieferung und Montage der gesamten Küche"), .installation)
+        XCTAssertEqual(C.classify(text: "An- und Abfahrt Fahrkostenpauschale"), .projectLogistics)
+        XCTAssertEqual(C.classify(text: "Irgendwas völlig Unbekanntes XYZ"), .other)
+    }
+
+    func testExtractSetztKomponentenTyp() {
+        let p = X.extract(fromBlock: "1 1 Stck. Küchenarbeitsplatte Granit 1.234,56 1.234,56")
+        XCTAssertEqual(p.componentType, .stoneCountertop)
+    }
+
     // MARK: - selfProof direkt
 
     func testSelfProofBrauchtMindestensZweiBetraege() {

@@ -176,7 +176,11 @@ private struct PositionCard: View {
                     .padding(.horizontal, MykSpace.s2).padding(.vertical, 2)
                     .background(Capsule().fill(MykColor.line.color.opacity(0.3)))
             }
-            arithmetikZeile
+            HStack(spacing: MykSpace.s3) {
+                arithmetikZeile
+                Spacer()
+                kategorieChip
+            }
             if let list = p.listPrice {
                 Text("Listenpreis \(euro(list)) · Netto nach Rabatt")
                     .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
@@ -201,6 +205,18 @@ private struct PositionCard: View {
         .padding(MykSpace.s5)
         .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
         .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
+    }
+
+    // Bauteil-Kategorie als dezenter Chip (aus dem Text klassifiziert). `.other`
+    // wird nicht gezeigt — kein Rauschen für Unklassifiziertes.
+    @ViewBuilder
+    private var kategorieChip: some View {
+        if p.componentType != .other {
+            Text(p.componentType.displayName)
+                .font(.mykMono(9)).foregroundStyle(MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s3).padding(.vertical, 2)
+                .background(Capsule().fill(MykColor.line.color.opacity(0.3)))
+        }
     }
 
     // "3 Stk × 12,00 € = 36,00 €" wenn selbstbewiesen, sonst der reine Netto-Preis.
