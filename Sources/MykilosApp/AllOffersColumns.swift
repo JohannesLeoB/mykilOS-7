@@ -83,10 +83,15 @@ struct AllOfferRow: View {
     var warenkorb: WarenkorbState? = nil
 
     @State private var showPreview = false
+    @State private var showPositions = false
     @State private var resolvedLocalURL: URL?
     @State private var isHovered = false
 
     private var file: GoogleDriveFile { item.offer.file }
+
+    private var isPDF: Bool {
+        file.mimeType == "application/pdf" || (file.name as NSString).pathExtension.lowercased() == "pdf"
+    }
 
     // Führt mit der echten Projektzuordnung (Titel · Nummer). Richtung + Typ zeigt
     // schon die Spalte bzw. die Typ-Sektion — hier bewusst nicht doppelt.
@@ -163,6 +168,10 @@ struct AllOfferRow: View {
                 .padding(MykSpace.s2)
         }
         .contextMenu {
+            if isPDF {
+                Button("Positionen herauslösen") { showPositions = true }
+                Divider()
+            }
             Button("Im Finder zeigen") {
                 if let local = resolveLocalURL() {
                     LocalDriveRootResolver.shared.revealInFinder(localURL: local)
@@ -173,6 +182,9 @@ struct AllOfferRow: View {
             if let link = file.webViewLink, let url = URL(string: link) {
                 Button("Im Browser öffnen") { NSWorkspace.shared.open(url) }
             }
+        }
+        .sheet(isPresented: $showPositions) {
+            OfferPositionsSheet(file: file, onClose: { showPositions = false })
         }
     }
 }
