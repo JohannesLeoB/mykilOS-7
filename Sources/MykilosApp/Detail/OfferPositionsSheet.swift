@@ -30,6 +30,7 @@ struct OfferPositionsSheet: View {
     @State private var loader = OfferPositionsLoader()
     @State private var taken: Set<Int> = []
     @State private var vorgemerkt: Int?
+    @State private var showReview = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -163,8 +164,15 @@ struct OfferPositionsSheet: View {
     private var vormerkenButton: some View {
         if let learningStore, case .content(let positions) = loader.state {
             if let n = vorgemerkt {
-                Label("\(n) vorgemerkt", systemImage: "brain.head.profile")
-                    .font(.mykMono(9.5)).foregroundStyle(MykColor.positive.color)
+                HStack(spacing: MykSpace.s3) {
+                    Label("\(n) vorgemerkt", systemImage: "brain.head.profile")
+                        .font(.mykMono(9.5)).foregroundStyle(MykColor.positive.color)
+                    Button("Freigeben →") { showReview = true }
+                        .font(.mykMono(9.5)).foregroundStyle(MykColor.personal.color).buttonStyle(.plain)
+                }
+                .sheet(isPresented: $showReview) {
+                    PriceKnowledgeReviewView(store: learningStore, onClose: { showReview = false })
+                }
             } else {
                 let kandidaten = lernbareKandidaten(sortiert(positions))
                 Button {
