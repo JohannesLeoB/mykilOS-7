@@ -517,6 +517,19 @@ Positionen-Extraktion (§ Nachtrag 2026-07-02, PDF → Positionen → Warenkorb)
 Leer-Templates speist (verknüpft mit dem Textbausteine-Katalog oben, Z. 46-47). Verwandt mit dem
 VW-Plankopf-Strang: die Geräte-/Material-Textblöcke des Plankopfs sind genau solche Bausteine.
 
+#### ✅ ClickUp-Basics IN der App (Johannes 2026-07-04: „Aufgaben anlegen, zuweisen, erledigt markieren")
+Heute nur READ (TasksWidget/ClickUpClient). Gewünscht: WRITE-Basics in der App. **Bau mit
+harten Regel-Leitplanken (nicht verhandelbar):**
+- **KI weist NIE zu** ([[aufgaben-nur-mensch-zu-mensch-regel]]): die App ist Werkzeug, der
+  MENSCH ist Auftraggeber/Absender. Kein Auto-Assign, kein KI-erzeugter Task „an" jemanden.
+- **Ghost-Persona-Regel** ([[clickup-ghost-persona-rule]]): Entwicklung/Test NUR im Testspace
+  `90128024109`, NIE echte Assignee-ID (löst reale Notifikation aus!), simulierte Zuweisung nur
+  als Kürzel (Jo/Da/Fra/Sen/Jil) im Text. Ghost→echt erst auf Johannes' ausdrückliche Freigabe.
+- **Baubar davon SICHER jetzt:** Task anlegen (im Testspace), Status ändern / erledigt markieren
+  (kein Assignment nötig), Kommentar. `ClickUpClient` braucht Write-Methoden (createTask/
+  updateStatus) + der PAT ist per-User ([[team-konten-topologie]]).
+- Verwandt: `mykilos8-clickup-orchestration` (vertagt), `vor-rollout-bereinigung-ordner-clickup`.
+
 #### 🪂 Galerie-Flug (Johannes 2026-07-04: „durch alle Dateien fliegen, blättern, Diashowen")
 Finder-/QuickLook-Inspo (macOS-Screenshots im Feedback-Ordner) → Ausbaustufe des
 Sammlungs-Ansicht-Standards, als NÄCHSTER UI-Strang eingeplant (nach Ultra-Review-Fixes):
