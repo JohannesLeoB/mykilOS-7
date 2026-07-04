@@ -225,6 +225,38 @@ public final class WorkBasketStore {
         return try await speichere(basket)
     }
 
+    /// Hängt eine (z. B. aus einem Angebots-PDF herausgelöste) Position als neuen
+    /// `BasicPick` an den jüngsten WorkBasket des Projekts an — oder legt einen neuen
+    /// an, wenn keiner existiert. Lokale Bearbeitung (gleiche ID, `speichere`
+    /// überschreibt); die Airtable-seitige Versionierung bleibt davon unberührt.
+    /// EK/VK trägt der Aufrufer bei (aus der Angebotsrichtung).
+    @discardableResult
+    public func fuegePositionHinzu(
+        projektNummer: String,
+        bezeichnung: String,
+        menge: Int,
+        ekEinzel: Double?,
+        vkEinzel: Double?,
+        objektID: String
+    ) async throws -> WorkBasket {
+        let pick = BasicPick(
+            matrix: .artikel,
+            objektID: CatalogObjectID(objektID),
+            snapshot: PickSnapshot(bezeichnung: bezeichnung, menge: max(1, menge),
+                                   ekEinzel: ekEinzel, vkEinzel: vkEinzel))
+        let vorhandene = try alle(projektNummer: projektNummer)
+        if var basket = vorhandene.max(by: { $0.erstellt < $1.erstellt }) {
+            basket.picks.append(pick)
+            return try await speichere(basket)
+        }
+        let neu = WorkBasket(
+            id: WorkBasketID("WK-\(projektNummer)-\(UUID().uuidString.prefix(8))"),
+            projektNummer: projektNummer,
+            inhaltsArt: .artikel,
+            picks: [pick])
+        return try await speichere(neu)
+    }
+
     // MARK: Lesen — Cold-Start-safe
 
     /// Lädt einen WorkBasket per ID (inkl. seiner Picks, positionsgeordnet). `nil`, wenn nicht vorhanden.
