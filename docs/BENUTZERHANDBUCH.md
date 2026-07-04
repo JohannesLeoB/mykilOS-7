@@ -171,6 +171,18 @@ echtes PDF: lokal materialisiert per PDFKit, sonst per read-only Drive-Download
 lokal-zuerst die macOS-Vorschau, nur ohne lokale Datei den Browser-Fallback.
 Rechtsklick → **„Im Finder zeigen"**. Read-only — nie Schreiben.
 
+**Positionen herauslösen (PDF-Positions v1 — 2026-07-04):** Rechtsklick auf ein Angebots-**PDF**
+→ **„Positionen herauslösen"** öffnet ein Sheet, das die Datei read-only liest und die einzelnen
+Positionen als Karten zeigt — mit **Selbstbeweis-Ampel** (🟢 grün = Menge × Einzelpreis = Gesamt
+geht arithmetisch auf; 🟠 amber = Preis da, Rechnung nicht prüfbar), Seiten-Verweis, erkanntem
+Rabatt-Listenpreis und aufklappbarem Originaltext. Die Extraktion nutzt `OfferPositionExtractor`
+(Zwei-Pass: Positions-Anker → Block → Felder; an 815 echten Alt-Positionen zu 98,8 % validiert).
+Im **globalen Angebote-Modul** legt ein Klick auf **„In Warenkorb"** die Position in den Warenkorb
+(eingehendes Lieferanten-Angebot → EK-Preis, ausgehend → VK; Menge aus der Position; ein Klick =
+Bestätigung, ein zweiter erhöht die Menge). Im Projekt-Angebote-Tab ist das Sheet vorerst
+**read-only** (der Projekt-Warenkorb läuft über den Wirbelsäule-Store; die Übernahme dorthin folgt).
+Nichts wird geschrieben außer der bestätigten Warenkorb-Position.
+
 **„Zum Angebot" — Kalkulations-Vorschau (V10, Block G — 2026-07-03):** Oben im Angebote-Tab
 erzeugt der Knopf **„Zum Angebot"** aus dem am Projekt gespeicherten Warenkorb ein
 **Angebots-Vorschau-PDF** (Briefkopf, Positionstabelle, Netto/19 % MwSt/Brutto, aus der

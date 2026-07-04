@@ -184,7 +184,23 @@ struct AllOfferRow: View {
             }
         }
         .sheet(isPresented: $showPositions) {
-            OfferPositionsSheet(file: file, onClose: { showPositions = false })
+            OfferPositionsSheet(
+                file: file,
+                onTake: warenkorb.map { wk in
+                    { (paged: OfferPositionPDFReader.PagedPosition, index: Int) in
+                        let p = paged.position
+                        let preis = p.netPrice.map { ($0 as NSDecimalNumber).doubleValue }
+                        let eingehend = item.direction == .incoming
+                        wk.addOfferPosition(
+                            id: "\(file.id)-\(paged.pageNumber)-\(index)",
+                            bezeichnung: p.title.isEmpty ? file.name : p.title,
+                            menge: max(1, Int(p.quantity ?? 1)),
+                            ekNetto: eingehend ? preis : nil,
+                            vkNetto: eingehend ? nil : preis)
+                        wk.showPanel = true
+                    }
+                },
+                onClose: { showPositions = false })
         }
     }
 }

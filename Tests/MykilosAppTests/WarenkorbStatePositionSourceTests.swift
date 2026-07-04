@@ -65,6 +65,33 @@ struct WarenkorbStatePositionSourceTests {
         #expect(state.positionen[0].menge == 2)
     }
 
+    @Test func offerPositionEingehendLandetAlsEK() {
+        let state = WarenkorbState()
+        state.addOfferPosition(id: "file1-p1-0", bezeichnung: "Küchenarbeitsplatte Granit",
+                               menge: 1, ekNetto: 5911.70, vkNetto: nil)
+        #expect(state.positionen.count == 1)
+        #expect(state.positionen[0].source == "position")
+        #expect(state.positionen[0].bezeichnung == "Küchenarbeitsplatte Granit")
+        #expect(state.positionen[0].ekNetto == 5911.70)
+        #expect(state.positionen[0].vkNetto == nil)
+        #expect(state.gesamtEK == 5911.70)
+    }
+
+    @Test func offerPositionZweiterKlickErhoehtMenge() {
+        let state = WarenkorbState()
+        state.addOfferPosition(id: "file1-p2-3", bezeichnung: "Griffleiste", menge: 5, ekNetto: 12, vkNetto: nil)
+        state.addOfferPosition(id: "file1-p2-3", bezeichnung: "Griffleiste", menge: 5, ekNetto: 12, vkNetto: nil)
+        #expect(state.positionen.count == 1)
+        #expect(state.positionen[0].menge == 10)
+    }
+
+    @Test func offerPositionAusgehendLandetAlsVK() {
+        let state = WarenkorbState()
+        state.addOfferPosition(id: "f2-p1-0", bezeichnung: "Sonderanfertigung", menge: 1, ekNetto: nil, vkNetto: 1850)
+        #expect(state.positionen[0].vkNetto == 1850)
+        #expect(state.gesamtVK == 1850)
+    }
+
     @Test func devExportPositionUebernimmtQuelleUndFelder() {
         let state = WarenkorbState()
         state.addAngebot(fileID: "fileABC", bezeichnung: "Rechnung.pdf",

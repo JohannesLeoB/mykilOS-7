@@ -18,9 +18,14 @@ import MykilosKalkulationsCore
 // Johannes' Semantik-Freigabe. Nichts wird hier geschrieben.
 struct OfferPositionsSheet: View {
     let file: GoogleDriveFile
+    /// Optionale Übernahme in den Warenkorb (PDF-Positions Teil 2). Fehlt der
+    /// Callback (z. B. wo kein Warenkorb im Kontext ist), bleibt das Sheet read-only.
+    /// Bekommt Position + stabilen Index → der Aufrufer baut EK/VK aus der Richtung.
+    var onTake: ((OfferPositionPDFReader.PagedPosition, Int) -> Void)? = nil
     var onClose: () -> Void
 
     @State private var loader = OfferPositionsLoader()
+    @State private var taken: Set<Int> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -70,8 +75,15 @@ struct OfferPositionsSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: MykSpace.s4) {
                     ampelLegende(positions)
-                    ForEach(Array(positions.enumerated()), id: \.offset) { _, paged in
-                        PositionCard(paged: paged)
+                    ForEach(Array(positions.enumerated()), id: \.offset) { index, paged in
+                        PositionCard(
+                            paged: paged,
+                            canTake: onTake != nil,
+                            taken: taken.contains(index),
+                            onTake: {
+                                onTake?(paged, index)
+                                taken.insert(index)
+                            })
                     }
                 }
                 .padding(MykSpace.s6)
@@ -137,6 +149,9 @@ struct OfferPositionsSheet: View {
 // MARK: - PositionCard
 private struct PositionCard: View {
     let paged: OfferPositionPDFReader.PagedPosition
+    var canTake: Bool = false
+    var taken: Bool = false
+    var onTake: () -> Void = {}
     @State private var showRaw = false
 
     private var p: OfferPositionExtractor.ExtractedPosition { paged.position }
@@ -166,11 +181,15 @@ private struct PositionCard: View {
                 Text("Listenpreis \(euro(list)) · Netto nach Rabatt")
                     .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
             }
-            Button { withAnimation(.easeInOut(duration: 0.12)) { showRaw.toggle() } } label: {
-                Text(showRaw ? "Originaltext ausblenden" : "Originaltext")
-                    .font(.mykMono(9)).foregroundStyle(MykColor.cash.color)
+            HStack(spacing: MykSpace.s4) {
+                Button { withAnimation(.easeInOut(duration: 0.12)) { showRaw.toggle() } } label: {
+                    Text(showRaw ? "Originaltext ausblenden" : "Originaltext")
+                        .font(.mykMono(9)).foregroundStyle(MykColor.cash.color)
+                }
+                .buttonStyle(.plain)
+                Spacer()
+                if canTake { uebernahmeButton }
             }
-            .buttonStyle(.plain)
             if showRaw {
                 Text(p.originalText)
                     .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
@@ -201,6 +220,26 @@ private struct PositionCard: View {
                 Text(euro(net))
                     .font(.mykMono(12)).foregroundStyle(MykColor.ink.color)
             }
+        }
+    }
+
+    // Ein Klick = Übernahme dieser einen Position (etabliertes Bestätigungs-Muster).
+    // Nur wenn ein Preis da ist (rote Karten ohne Preis sind nicht übernehmbar).
+    @ViewBuilder
+    private var uebernahmeButton: some View {
+        if taken {
+            Label("Im Warenkorb", systemImage: "checkmark.circle.fill")
+                .font(.mykMono(9.5)).foregroundStyle(MykColor.positive.color)
+        } else if p.netPrice != nil {
+            Button(action: onTake) {
+                Label("In Warenkorb", systemImage: "cart.badge.plus")
+                    .font(.mykMono(9.5))
+                    .foregroundStyle(MykColor.paper.color)
+                    .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s2)
+                    .background(Capsule().fill(MykColor.cash.color))
+            }
+            .buttonStyle(.plain)
+            .help("Diese Position in den Warenkorb übernehmen")
         }
     }
 
