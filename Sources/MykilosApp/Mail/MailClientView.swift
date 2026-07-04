@@ -582,7 +582,7 @@ private struct MailDetailView: View {
                 .font(.mykMono(9))
                 .foregroundStyle(MykColor.muted.color)
             ForEach(message.attachments, id: \.attachmentID) { att in
-                AttachmentRow(messageID: message.id, attachment: att)
+                AttachmentRow(messageID: message.id, attachment: att, siblings: message.attachments)
             }
         }
     }

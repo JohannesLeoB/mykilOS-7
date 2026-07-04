@@ -29,6 +29,10 @@ struct OffersTabView: View {
     @State private var loader = OffersLoader()
     @State private var searchText = ""
     @State private var sortByDate = true   // true = neueste zuerst, false = Name A–Z
+    // Galerie-Flug: Liste ⇄ Galerie + Kachelgröße (pro Ansicht gemerkt).
+    @AppStorage("angebote.galerie") private var galerieAn = false
+    @AppStorage("angebote.kachel") private var kachelSeiteRaw: Double = 150
+    @State private var viewerFile: GoogleDriveFile?
 
     @State private var vorschauStore = AngebotsVorschauStore()
     @State private var vorschauMeldung: String?
@@ -47,6 +51,16 @@ struct OffersTabView: View {
         .padding(.horizontal, MykSpace.s9)
         .padding(.top, MykSpace.s7)
         .padding(.bottom, 64)   // Platz für SaveStateBar
+        .sheet(item: $viewerFile) { file in
+            let items = galerieEintraege.map { eintrag in
+                DocumentViewerItem(
+                    file: eintrag.file, localURL: eintrag.localURL,
+                    remoteContent: { try? await GoogleDriveClient().downloadContent(fileID: eintrag.file.id) })
+            }
+            let startIndex = items.firstIndex(where: { $0.id == file.id }) ?? 0
+            DocumentViewerView(items: items, initialIndex: startIndex, onClose: { viewerFile = nil })
+                .frame(minWidth: 820, minHeight: 680)
+        }
     }
 
     private var driveBelege: some View {
@@ -59,7 +73,16 @@ struct OffersTabView: View {
             VStack(alignment: .leading, spacing: MykSpace.s5) {
                 header
                 if case .content = loader.renderState { searchAndSort }
-                columns
+                if galerieAn {
+                    DateiGalerieGrid(
+                        eintraege: galerieEintraege, kachelSeite: kachelSeite,
+                        onPreview: { viewerFile = $0.file },
+                        onOpen: { LocalDriveRootResolver.shared.openFile(
+                            localURL: $0.localURL,
+                            fallbackURL: $0.file.webViewLink.flatMap { URL(string: $0) }) })
+                } else {
+                    columns
+                }
             }
         }
     }
@@ -170,6 +193,8 @@ struct OffersTabView: View {
                 .font(.mykSmall)
                 .textFieldStyle(.plain)
             Spacer()
+            if galerieAn { KachelGroessenSlider(kachelSeite: kachelSeite) }
+            ansichtsToggle
             Button {
                 sortByDate.toggle()
             } label: {
@@ -193,6 +218,45 @@ struct OffersTabView: View {
         return sortByDate
             ? base.sorted { ($0.file.modifiedAt ?? .distantPast) > ($1.file.modifiedAt ?? .distantPast) }
             : base.sorted { $0.file.name.localizedCompare($1.file.name) == .orderedAscending }
+    }
+
+    private var kachelSeite: Binding<CGFloat> {
+        Binding(get: { CGFloat(kachelSeiteRaw) }, set: { kachelSeiteRaw = Double($0) })
+    }
+
+    // Alle sichtbaren Belege (eingehend + ausgehend) flach als Galerie-Einträge.
+    private var galerieEintraege: [DateiGalerieGrid.Eintrag] {
+        let ein = filtered(loader.incoming).map { (offer: $0, dir: "eingehend") }
+        let aus = filtered(loader.outgoing).map { (offer: $0, dir: "ausgehend") }
+        return (ein + aus).map { pair in
+            DateiGalerieGrid.Eintrag(
+                file: pair.offer.file,
+                subtitle: "\(pair.offer.type.label) · \(pair.dir)",
+                localURL: LocalDriveRootResolver.shared.localURL(
+                    forFileID: pair.offer.file.id, fileName: pair.offer.file.name,
+                    inProjectFolderID: driveFolderID ?? "", explicitProjectPath: driveFolderPath))
+        }
+    }
+
+    // Liste ⇄ Galerie (Finder-Stil-Segment).
+    private var ansichtsToggle: some View {
+        HStack(spacing: 0) {
+            toggleTaste(aktiv: galerieAn == false, icon: "list.bullet") { galerieAn = false }
+            toggleTaste(aktiv: galerieAn, icon: "square.grid.2x2") { galerieAn = true }
+        }
+        .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.card.color)
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1)))
+    }
+
+    private func toggleTaste(aktiv: Bool, icon: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.mykCaption)
+                .foregroundStyle(aktiv ? MykColor.paper.color : MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s3).padding(.vertical, MykSpace.s2)
+                .background(aktiv ? MykColor.ink.color : Color.clear)
+        }
+        .buttonStyle(.plain)
     }
 
     private var refreshButton: some View {

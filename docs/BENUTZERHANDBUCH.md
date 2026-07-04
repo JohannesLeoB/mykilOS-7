@@ -284,6 +284,14 @@ den Namen öffnet die Datei lokal (macOS-Vorschau) bzw. im Browser. Read-only.
 echte Thumbnails, Finder-Slider, Einfachklick anwählen/Leertaste-Vorschau) — pilotiert hier
 zuerst (2026-07-04), seither auch im Dateien-Tab.
 
+**Galerie-Ausrollen (2026-07-04):** Der Liste-⇄-Galerie-Umschalter + Leertaste→Vollbild
+(mit Blättern/Diashow) ist jetzt auch im **Angebote-Tab (Projekt)**, im **globalen Angebote-Modul**
+und im **Zeichnungs-Katalog** verfügbar — überall dasselbe Instrumentarium (Sammlungs-Ansicht-
+Standard). **Mail-Anhänge:** die Vorschau öffnet weiterhin per Klick, blättert jetzt aber mit
+←/→ und Leertaste durch **alle Anhänge derselben Nachricht**. Der **Timeline-Tab** bleibt bewusst
+Liste-only (heterogen: Dateien + Termine + Audit — eine Galerie würde die Chronologie zerreißen).
+Alle großen Vorschauen passen sich jetzt in den verfügbaren Rahmen ein (Skalierungs-Fix).
+
 ---
 
 ## Globale Ansichten (Sidebar)

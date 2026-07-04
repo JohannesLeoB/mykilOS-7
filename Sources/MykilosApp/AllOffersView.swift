@@ -98,6 +98,10 @@ struct AllOffersView: View {
     /// Kategorie-Filter (Dokumenttyp). `nil` = alle Kategorien.
     @State private var categoryFilter: OfferDocumentType?
     @AppStorage("angebote.alle.sort") private var sortRaw = AllOffersSort.datum.rawValue
+    // Galerie-Flug: Liste ⇄ Galerie + Kachelgröße (pro Ansicht gemerkt).
+    @AppStorage("angebote.alle.galerie") private var galerieAn = false
+    @AppStorage("angebote.alle.kachel") private var kachelSeiteRaw: Double = 150
+    @State private var viewerFile: GoogleDriveFile?
 
     // Richtung übernimmt jetzt das zweispaltige Layout — als Sortierschlüssel
     // wäre sie redundant, daher hier ausgeklammert.
@@ -119,6 +123,43 @@ struct AllOffersView: View {
     }
     private var visibleOutgoing: [AllOffersCollector.AggregatedOffer] {
         visible.filter { $0.direction == .outgoing }
+    }
+
+    private var kachelSeite: Binding<CGFloat> {
+        Binding(get: { CGFloat(kachelSeiteRaw) }, set: { kachelSeiteRaw = Double($0) })
+    }
+
+    // Alle sichtbaren Belege flach als Galerie-Einträge (Typ · Projekt als Untertitel).
+    private var galerieEintraege: [DateiGalerieGrid.Eintrag] {
+        visible.map { agg in
+            DateiGalerieGrid.Eintrag(
+                file: agg.offer.file,
+                subtitle: "\(agg.offer.type.label) · \(agg.projectNumber)",
+                localURL: LocalDriveRootResolver.shared.localURL(
+                    forFileID: agg.offer.file.id, fileName: agg.offer.file.name,
+                    inProjectFolderID: agg.projectFolderID, explicitProjectPath: nil))
+        }
+    }
+
+    // Liste ⇄ Galerie (Finder-Stil-Segment).
+    private var ansichtsToggle: some View {
+        HStack(spacing: 0) {
+            toggleTaste(aktiv: galerieAn == false, icon: "list.bullet") { galerieAn = false }
+            toggleTaste(aktiv: galerieAn, icon: "square.grid.2x2") { galerieAn = true }
+        }
+        .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.card.color)
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1)))
+    }
+
+    private func toggleTaste(aktiv: Bool, icon: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.mykCaption)
+                .foregroundStyle(aktiv ? MykColor.paper.color : MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s3).padding(.vertical, MykSpace.s2)
+                .background(aktiv ? MykColor.ink.color : Color.clear)
+        }
+        .buttonStyle(.plain)
     }
 
     var body: some View {
@@ -149,6 +190,16 @@ struct AllOffersView: View {
             case .loading, .permissionRequired, .offline:
                 break
             }
+        }
+        .sheet(item: $viewerFile) { file in
+            let items = galerieEintraege.map { eintrag in
+                DocumentViewerItem(
+                    file: eintrag.file, localURL: eintrag.localURL,
+                    remoteContent: { try? await GoogleDriveClient().downloadContent(fileID: eintrag.file.id) })
+            }
+            let startIndex = items.firstIndex(where: { $0.id == file.id }) ?? 0
+            DocumentViewerView(items: items, initialIndex: startIndex, onClose: { viewerFile = nil })
+                .frame(minWidth: 820, minHeight: 680)
         }
     }
 
@@ -191,6 +242,8 @@ struct AllOffersView: View {
                 .fill(MykColor.card.color)
                 .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1)))
             Spacer()
+            if galerieAn { KachelGroessenSlider(kachelSeite: kachelSeite) }
+            ansichtsToggle
             Text("\(visible.count) Belege")
                 .font(.mykMono(10))
                 .foregroundStyle(MykColor.muted.color)
@@ -244,7 +297,16 @@ struct AllOffersView: View {
         case .loading:
             loadingState
         case .content:
-            twoColumns
+            if galerieAn {
+                DateiGalerieGrid(
+                    eintraege: galerieEintraege, kachelSeite: kachelSeite,
+                    onPreview: { viewerFile = $0.file },
+                    onOpen: { LocalDriveRootResolver.shared.openFile(
+                        localURL: $0.localURL,
+                        fallbackURL: $0.file.webViewLink.flatMap { URL(string: $0) }) })
+            } else {
+                twoColumns
+            }
         case .empty:
             hint(icon: "tray", text: "Keine Angebote/Rechnungen in den 04/05-Ordnern gefunden.")
         case .permissionRequired:

@@ -14,6 +14,9 @@ struct AttachmentRow: View {
 
     let messageID: String
     let attachment: GmailAttachment
+    /// Alle Anhänge derselben Nachricht — ermöglicht ←/→ + Leertaste-Blättern im Viewer.
+    /// Leer = nur dieser eine Anhang (Rückwärtskompatibilität).
+    var siblings: [GmailAttachment] = []
 
     @State private var showPreview = false
     @State private var showDriveSheet = false
@@ -64,12 +67,19 @@ struct AttachmentRow: View {
         .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
         .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
         .sheet(isPresented: $showPreview) {
-            DocumentViewerView(
-                file: driveFileForPreview,
-                remoteContent: remoteContent(),
-                onClose: { showPreview = false }
-            )
-            .frame(minWidth: 820, minHeight: 680)
+            let msgID = messageID
+            let atts = siblings.isEmpty ? [attachment] : siblings
+            let items = atts.map { att -> DocumentViewerItem in
+                let attID = att.attachmentID
+                // Read-only Anhang-Bytes über die Gmail-API; Closure fängt nur lokale
+                // Sendable-Werte (msgID/attID), nicht self → echt @Sendable.
+                return DocumentViewerItem(
+                    file: driveFile(for: att), localURL: nil,
+                    remoteContent: { try? await GoogleGmailClient().downloadAttachment(messageID: msgID, attachmentID: attID) })
+            }
+            let startIndex = atts.firstIndex(where: { $0.attachmentID == attachment.attachmentID }) ?? 0
+            DocumentViewerView(items: items, initialIndex: startIndex, onClose: { showPreview = false })
+                .frame(minWidth: 820, minHeight: 680)
         }
         .sheet(isPresented: $showDriveSheet) {
             MailAttachmentDriveSheet(
@@ -86,22 +96,15 @@ struct AttachmentRow: View {
     /// Synthetischer GoogleDriveFile (nur Metadaten) für den geteilten DocumentViewerView.
     /// Kein Drive-Objekt — der Viewer klassifiziert nur nach MIME-Typ und lädt die Bytes
     /// über `remoteContent`.
-    private var driveFileForPreview: GoogleDriveFile {
+    private func driveFile(for att: GmailAttachment) -> GoogleDriveFile {
         GoogleDriveFile(
-            id: "gmail-\(messageID)-\(attachment.attachmentID)",
-            name: attachment.filename,
-            mimeType: attachment.mimeType,
+            id: "gmail-\(messageID)-\(att.attachmentID)",
+            name: att.filename,
+            mimeType: att.mimeType,
             modifiedAt: nil,
             webViewLink: nil,
-            fileSize: Int64(attachment.sizeBytes)
+            fileSize: Int64(att.sizeBytes)
         )
-    }
-
-    /// Read-only Anhang-Bytes über die Gmail-API (kein drive.readonly nötig).
-    private func remoteContent() -> (@Sendable () async -> Data?)? {
-        let msgID = messageID
-        let attID = attachment.attachmentID
-        return { try? await GoogleGmailClient().downloadAttachment(messageID: msgID, attachmentID: attID) }
     }
 
     private func iconName(for mimeType: String) -> String {

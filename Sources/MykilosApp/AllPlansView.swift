@@ -99,8 +99,26 @@ struct AllPlansView: View {
     /// Datei-Typ-Filter über alle Ordner hinweg. `nil` = alle Typen.
     @State private var typeFilter: PlanTypeFilter?
     @AppStorage("plaene.alle.sort") private var sortRaw = AllPlansSort.datum.rawValue
+    // Galerie-Flug: Liste ⇄ Galerie + Finder-Kachelgröße (pro Ansicht gemerkt).
+    @AppStorage("plaene.alle.galerie") private var galerieAn = false
+    @AppStorage("plaene.alle.kachel") private var kachelSeiteRaw: Double = 150
+    @State private var viewerFile: GoogleDriveFile?
 
     private var sort: AllPlansSort { AllPlansSort(rawValue: sortRaw) ?? .datum }
+    private var kachelSeite: Binding<CGFloat> {
+        Binding(get: { CGFloat(kachelSeiteRaw) }, set: { kachelSeiteRaw = Double($0) })
+    }
+
+    // Alle sichtbaren Pläne flach als Galerie-Einträge (Kategorie · Projekt als Untertitel).
+    private var galerieEintraege: [DateiGalerieGrid.Eintrag] {
+        visible.map { plan in
+            DateiGalerieGrid.Eintrag(
+                file: plan.file, subtitle: "\(plan.category.label) · \(plan.projectNumber)",
+                localURL: LocalDriveRootResolver.shared.localURL(
+                    forFileID: plan.file.id, fileName: plan.file.name,
+                    inProjectFolderID: plan.projectFolderID, explicitProjectPath: nil))
+        }
+    }
 
     /// Kategorien, die im globalen Katalog auftauchen (ohne Präsentation).
     private var globalCategories: [PlanCategory] {
@@ -145,6 +163,16 @@ struct AllPlansView: View {
                 break
             }
         }
+        .sheet(item: $viewerFile) { file in
+            let items = galerieEintraege.map { eintrag in
+                DocumentViewerItem(
+                    file: eintrag.file, localURL: eintrag.localURL,
+                    remoteContent: { try? await GoogleDriveClient().downloadContent(fileID: eintrag.file.id) })
+            }
+            let startIndex = items.firstIndex(where: { $0.id == file.id }) ?? 0
+            DocumentViewerView(items: items, initialIndex: startIndex, onClose: { viewerFile = nil })
+                .frame(minWidth: 820, minHeight: 680)
+        }
     }
 
     // MARK: Kopf
@@ -187,10 +215,33 @@ struct AllPlansView: View {
                 .fill(MykColor.card.color)
                 .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1)))
             Spacer()
+            if galerieAn { KachelGroessenSlider(kachelSeite: kachelSeite) }
+            ansichtsToggle
             Text("\(visible.count) Dateien")
                 .font(.mykMono(10))
                 .foregroundStyle(MykColor.muted.color)
         }
+    }
+
+    // Liste ⇄ Galerie (Finder-Stil-Segment).
+    private var ansichtsToggle: some View {
+        HStack(spacing: 0) {
+            toggleTaste(aktiv: galerieAn == false, icon: "list.bullet") { galerieAn = false }
+            toggleTaste(aktiv: galerieAn, icon: "square.grid.2x2") { galerieAn = true }
+        }
+        .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.card.color)
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1)))
+    }
+
+    private func toggleTaste(aktiv: Bool, icon: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.mykCaption)
+                .foregroundStyle(aktiv ? MykColor.paper.color : MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s3).padding(.vertical, MykSpace.s2)
+                .background(aktiv ? MykColor.ink.color : Color.clear)
+        }
+        .buttonStyle(.plain)
     }
 
     private var categoryMenu: some View {
@@ -262,7 +313,16 @@ struct AllPlansView: View {
         case .loading:
             loadingState
         case .content:
-            categoryColumns
+            if galerieAn {
+                DateiGalerieGrid(
+                    eintraege: galerieEintraege, kachelSeite: kachelSeite,
+                    onPreview: { viewerFile = $0.file },
+                    onOpen: { LocalDriveRootResolver.shared.openFile(
+                        localURL: $0.localURL,
+                        fallbackURL: $0.file.webViewLink.flatMap { URL(string: $0) }) })
+            } else {
+                categoryColumns
+            }
         case .empty:
             hint(icon: "tray", text: "Keine Pläne/Zeichnungen in den Schema-Ordnern gefunden.")
         case .permissionRequired:
