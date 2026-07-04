@@ -517,6 +517,23 @@ Positionen-Extraktion (§ Nachtrag 2026-07-02, PDF → Positionen → Warenkorb)
 Leer-Templates speist (verknüpft mit dem Textbausteine-Katalog oben, Z. 46-47). Verwandt mit dem
 VW-Plankopf-Strang: die Geräte-/Material-Textblöcke des Plankopfs sind genau solche Bausteine.
 
+#### 🪂 Galerie-Flug (Johannes 2026-07-04: „durch alle Dateien fliegen, blättern, Diashowen")
+Finder-/QuickLook-Inspo (macOS-Screenshots im Feedback-Ordner) → Ausbaustufe des
+Sammlungs-Ansicht-Standards, als NÄCHSTER UI-Strang eingeplant (nach Ultra-Review-Fixes):
+1. **Ansichts-Switch Liste ⇄ Galerie** in jeder Datei-Sammlung (Dateien-Tab, Zeichnungs-
+   Katalog, Angebote): Kachel-Grid mit großen echten Vorschauen (thumbnailLink/PDFKit).
+2. **Mouseover:** Anheben+Schatten (Projektkarten-Muster) + Quick-Actions (Vorschau/Öffnen/Korb).
+3. **Blättern (der Hebel):** DocumentViewerView bekommt Sammlung+Index statt einer Datei →
+   ←/→ blättert ohne Schließen, animiert — EIN Umbau, alle Ansichten profitieren.
+4. **Diashow:** Play im Viewer, Auto-Advance, Leertaste pausiert.
+5. **Echte Mini-Thumbnails für JEDE Datei** (Johannes: „Kachel mit ihrem Mini-Inhalt", nie
+   nur Typ-Icon): Drive `thumbnailLink` (remote) + `QLThumbnailGenerator` (lokal, gleiche
+   Engine wie Finder — kann auch .numbers/Video). Thumbnail-Cache (fileID+Größe, off-main,
+   LRU) — Lean-Regel: nie beim Scrollen neu fetchen.
+6. **Kachelgröße stufenlos wie Finder** (Slider unten rechts): `@AppStorage`-Wert +
+   `LazyVGrid(.adaptive(minimum: größe))`, Grid fließt live um, pro Ansicht gemerkt.
+Klein & schön (Nordstern), Live-Feedback von Johannes beim Bau erwünscht.
+
 #### 💡 Spielwiese (Johannes 2026-07-04, Nacht) — Heuler + Rainbow/Freaky-Friday-Mode
 - **Heuler:** ein bewusst LAUTER, theatralischer Alert (Brüllbrief-Stil) für selbst
   gewählte Dinge („wenn X passiert, schrei mich an"). Spannung zur Eisernen Regel
