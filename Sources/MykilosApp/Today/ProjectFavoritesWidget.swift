@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import MykilosKit
 import MykilosDesign
 import MykilosWidgets
@@ -78,18 +79,25 @@ private struct MiniProjectCard: View {
     let customer: Customer?
     let onTap: () -> Void
     @State private var isHovered = false
+    // Echtes Hero-Bild je Projekt — konsistent zur Galerie-Karte (ProjectCard).
+    @State private var heroImage: NSImage?
+    @State private var focalPoint = CGPoint(x: 0.5, y: 0.5)
 
     var body: some View {
         Button(action: onTap) {
             cardContent
         }
         .buttonStyle(.plain)
+        .task(id: project.projectNumber) {
+            heroImage = ProjectHeroImageStore.image(for: project.projectNumber)
+            focalPoint = ProjectHeroImageStore.focalPoint(for: project.projectNumber)
+        }
     }
 
     private var cardContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Hero-Mini
-            heroGradient
+            // Hero-Mini: eigenes Bild (Fokus-Fill) sonst Archetyp-Gradient.
+            heroArea
                 .frame(height: 72)
                 .clipShape(UnevenRoundedRectangle(
                     topLeadingRadius: MykRadius.sm, bottomLeadingRadius: 0,
@@ -131,11 +139,37 @@ private struct MiniProjectCard: View {
         .onHover { isHovered = $0 }
     }
 
-    private var heroGradient: some View {
-        LinearGradient(
-            colors: project.kind.heroGradient,   // L26: geteilter, token-basierter Verlauf
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+    private var heroArea: some View {
+        GeometryReader { geo in
+            if let heroImage {
+                focalImage(heroImage, in: geo.size)
+            } else {
+                LinearGradient(
+                    colors: project.kind.heroGradient,   // L26: geteilter, token-basierter Verlauf
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        }
+    }
+
+    // Fokus-zentrierter Fill-Zuschnitt — identische Logik wie ProjectCard/ProjectHeroView.
+    private func focalImage(_ image: NSImage, in frame: CGSize) -> some View {
+        let iw = max(image.size.width, 1)
+        let ih = max(image.size.height, 1)
+        let scale = max(frame.width / iw, frame.height / ih)
+        let sw = iw * scale
+        let sh = ih * scale
+        let offsetX = min(0, max(frame.width - sw, frame.width / 2 - focalPoint.x * sw))
+        let offsetY = min(0, max(frame.height - sh, frame.height / 2 - focalPoint.y * sh))
+        return Color.clear
+            .overlay(alignment: .topLeading) {
+                Image(nsImage: image)
+                    .resizable()
+                    .frame(width: sw, height: sh)
+                    .offset(x: offsetX, y: offsetY)
+            }
+            .frame(width: frame.width, height: frame.height)
+            .clipped()
     }
 }

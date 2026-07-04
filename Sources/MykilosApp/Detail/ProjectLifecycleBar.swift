@@ -14,6 +14,10 @@ struct ProjectLifecycleBar: View {
     let project: Project
     @Environment(AppState.self) private var appState
     @State private var openTaskCount: Int?
+    // ClickUp-Phasen-Abgleich (2026-07-04, docs/CLICKUP_PROJEKT_MAPPING.md §2): read-only
+    // Signal aus dem Custom Field `project_phase` — nie Auto-Write in eine Richtung, der
+    // Nutzer setzt seine Stufe weiterhin selbst im Stepper.
+    @State private var clickUpPhase: ClickUpProjectPhase?
 
     private var currentStage: ProjectLifecycleStage {
         appState.projectLifecycle.stage(for: project.projectNumber)
@@ -106,6 +110,11 @@ struct ProjectLifecycleBar: View {
                 Text("Stufe abgeleitet · tippen zum Setzen")
                     .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
             }
+            if let clickUpPhase, clickUpPhase.mykilosStage != currentStage {
+                Text("ClickUp sagt: \(clickUpPhase.label)")
+                    .font(.mykMono(9)).foregroundStyle(MykColor.tasks.color)
+                    .help("Custom Field project_phase aus der verknüpften ClickUp-Liste weicht ab — mykilOS schreibt nicht automatisch, tippe selbst auf die passende Stufe.")
+            }
             Spacer()
         }
     }
@@ -139,11 +148,13 @@ struct ProjectLifecycleBar: View {
     private func loadOpenTasks() async {
         guard let listID = project.links.clickUpListID, listID.isEmpty == false else {
             openTaskCount = nil
+            clickUpPhase = nil
             return
         }
         let client = ClickUpClient()
         if let tasks = try? await client.tasks(listID: listID) {
             openTaskCount = tasks.count
+            clickUpPhase = ClickUpClient.projectPhase(from: tasks)
         }
     }
 }

@@ -5,27 +5,58 @@ import Quartz          // QLPreviewView (QuickLook)
 import MykilosDesign
 import MykilosServices
 
-// MARK: - DocumentViewerView (S3) — volle Dokumentenvorschau
+// MARK: - DocumentViewerItem (Galerie-Flug · Blättern/Diashow)
+// Ein Eintrag einer blätterbaren Sammlung — Datei + ihre lokale/remote Inhaltsquelle,
+// identisch zu dem, was DocumentViewerView vorher als lose Parameter bekam.
+public struct DocumentViewerItem: Identifiable, Sendable {
+    public let file: GoogleDriveFile
+    public let localURL: URL?
+    public let remoteContent: (@Sendable () async -> Data?)?
+    public var id: String { file.id }
+
+    public init(file: GoogleDriveFile, localURL: URL? = nil,
+                remoteContent: (@Sendable () async -> Data?)? = nil) {
+        self.file = file
+        self.localURL = localURL
+        self.remoteContent = remoteContent
+    }
+}
+
+// MARK: - DocumentViewerView (S3, Galerie-Flug) — volle Dokumentenvorschau
 // DocumentViewerMode (Klassifizierung) liegt testbar in MykilosServices.
 // Mehrseitiger PDF-Viewer (PDFKit), NSImage für Bilder, QuickLook für sonstige Typen.
 // Quelle: lokale Datei (LocalDriveRootResolver) ODER read-only Drive-Bytes (downloadContent,
 // braucht drive.readonly → M2). Alle Zustände sind sichtbar: laden / fertig / leer / Fehler /
 // Verbindung-nötig. Schreibt NIE; öffnet zur Not im Browser.
+//
+// Blättern/Diashow: nimmt optional eine ganze Sammlung + Startindex — ←/→ (oder die Header-
+// Pfeile) wechseln ohne zu schließen, Leertaste startet/pausiert eine Diashow (Auto-Advance,
+// wrapt am Ende zurück zum Anfang). Der alte Einzeldatei-Init bleibt als Komfort-Wrapper
+// bestehen (Sammlung mit genau einem Eintrag) — bestehende Aufrufer bleiben unverändert.
 @MainActor
 public struct DocumentViewerView: View {
-    let file: GoogleDriveFile
-    var localURL: URL?
-    var remoteContent: (@Sendable () async -> Data?)?
+    @State private var items: [DocumentViewerItem]
+    @State private var index: Int
     var onClose: () -> Void
 
     public init(file: GoogleDriveFile, localURL: URL? = nil,
                 remoteContent: (@Sendable () async -> Data?)? = nil,
                 onClose: @escaping () -> Void = {}) {
-        self.file = file
-        self.localURL = localURL
-        self.remoteContent = remoteContent
+        self.init(items: [DocumentViewerItem(file: file, localURL: localURL, remoteContent: remoteContent)],
+                  initialIndex: 0, onClose: onClose)
+    }
+
+    public init(items: [DocumentViewerItem], initialIndex: Int = 0, onClose: @escaping () -> Void = {}) {
+        self._items = State(initialValue: items)
+        self._index = State(initialValue: min(max(0, initialIndex), max(0, items.count - 1)))
         self.onClose = onClose
     }
+
+    private var current: DocumentViewerItem { items[index] }
+    private var file: GoogleDriveFile { current.file }
+    private var localURL: URL? { current.localURL }
+    private var remoteContent: (@Sendable () async -> Data?)? { current.remoteContent }
+    private var kannBlaettern: Bool { items.count > 1 }
 
     private enum Phase: Equatable {
         case loading
@@ -37,6 +68,7 @@ public struct DocumentViewerView: View {
         case failed(String)
     }
     @State private var phase: Phase = .loading
+    @State private var diashowLaeuft = false
 
     public var body: some View {
         VStack(spacing: 0) {
@@ -47,6 +79,36 @@ public struct DocumentViewerView: View {
         .frame(minWidth: 640, minHeight: 520)
         .background(MykColor.paper.color)
         .task(id: file.id) { await load() }
+        .focusable()
+        .onKeyPress(.leftArrow) { blaettere(-1); return .handled }
+        .onKeyPress(.rightArrow) { blaettere(1); return .handled }
+        .onKeyPress(.space) {
+            guard kannBlaettern else { return .ignored }
+            diashowLaeuft.toggle()
+            return .handled
+        }
+        .task(id: diashowLaeuft) {
+            guard diashowLaeuft else { return }
+            while diashowLaeuft {
+                try? await Task.sleep(for: .seconds(3.5))
+                guard diashowLaeuft, Task.isCancelled == false else { return }
+                blaettere(1, wrap: true)
+            }
+        }
+    }
+
+    // MARK: Blättern/Diashow
+
+    private func blaettere(_ delta: Int, wrap: Bool = false) {
+        guard kannBlaettern else { return }
+        var next = index + delta
+        if wrap {
+            next = (next % items.count + items.count) % items.count
+        } else {
+            next = min(max(0, next), items.count - 1)
+        }
+        guard next != index else { return }
+        index = next
     }
 
     // MARK: Header
@@ -56,9 +118,15 @@ public struct DocumentViewerView: View {
             Image(systemName: file.iconName).font(.mykHeadline).foregroundStyle(MykColor.drive.color)
             VStack(alignment: .leading, spacing: 1) {
                 Text(file.name).font(.mykBody).foregroundStyle(MykColor.ink.color).lineLimit(1)
-                Text(file.typeLabel).font(.mykMono(9)).foregroundStyle(MykColor.muted.color)
+                HStack(spacing: MykSpace.s2) {
+                    Text(file.typeLabel).font(.mykMono(9)).foregroundStyle(MykColor.muted.color)
+                    if kannBlaettern {
+                        Text("· \(index + 1) / \(items.count)").font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                    }
+                }
             }
             Spacer()
+            if kannBlaettern { blaetternControls }
             if let link = file.webViewLink, let url = URL(string: link) {
                 Button { NSWorkspace.shared.open(url) } label: {
                     Label("Im Browser", systemImage: "arrow.up.right.square").font(.mykSmall)
@@ -69,6 +137,28 @@ public struct DocumentViewerView: View {
             }.buttonStyle(.plain)
         }
         .padding(.horizontal, MykSpace.s5).padding(.vertical, MykSpace.s4)
+    }
+
+    private var blaetternControls: some View {
+        HStack(spacing: MykSpace.s3) {
+            Button { blaettere(-1) } label: {
+                Image(systemName: "chevron.left")
+            }
+            .disabled(index == 0)
+            Button {
+                diashowLaeuft.toggle()
+            } label: {
+                Image(systemName: diashowLaeuft ? "pause.fill" : "play.fill")
+            }
+            .help(diashowLaeuft ? "Diashow pausieren (Leertaste)" : "Diashow starten (Leertaste)")
+            Button { blaettere(1) } label: {
+                Image(systemName: "chevron.right")
+            }
+            .disabled(index == items.count - 1)
+        }
+        .buttonStyle(.plain)
+        .font(.mykCaption)
+        .foregroundStyle(MykColor.drive.color)
     }
 
     // MARK: Content / Zustände

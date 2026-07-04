@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import MykilosKit
 @testable import MykilosServices
 
 struct ClickUpClientTests {
@@ -84,6 +85,100 @@ struct ClickUpClientTests {
         } catch {
             #expect(error as? ClickUpError == .notConnected)
         }
+    }
+
+    // MARK: - ClickUpTaskWriting (2026-07-04)
+
+    @Test func buildUpdateTaskURLEnthaeltTaskID() {
+        let url = ClickUpClient.buildUpdateTaskURL(baseURL: baseURL, taskID: "abc123")
+        #expect(url?.absoluteString == "https://api.clickup.com/api/v2/task/abc123")
+    }
+
+    @Test func createTaskWirftNotConnectedOhneCredentials() async {
+        let store = InMemoryClickUpCredentialsStore()
+        let client = ClickUpClient(credentialsStore: store)
+
+        do {
+            _ = try await client.createTask(listID: "9012345", name: "Testaufgabe", content: "Zugewiesen (simuliert): Jo")
+            Issue.record("sollte werfen")
+        } catch {
+            #expect(error as? ClickUpError == .notConnected)
+        }
+    }
+
+    @Test func setStatusWirftNotConnectedOhneCredentials() async {
+        let store = InMemoryClickUpCredentialsStore()
+        let client = ClickUpClient(credentialsStore: store)
+
+        do {
+            try await client.setStatus(taskID: "abc123", status: "complete")
+            Issue.record("sollte werfen")
+        } catch {
+            #expect(error as? ClickUpError == .notConnected)
+        }
+    }
+
+    // MARK: - project_phase Custom Field (2026-07-04)
+
+    @Test func parseTasksDekodiertProjectPhaseAusCustomFields() throws {
+        let json = """
+        {
+          "tasks": [
+            {
+              "id": "t1",
+              "name": "Aufmaß terminieren",
+              "status": { "status": "to do" },
+              "custom_fields": [
+                { "id": "936d3989-9236-4673-821e-755411b9d042", "name": "project_phase", "value": 4 },
+                { "id": "5764d5ed-c9c6-4ea8-9446-033faad12ff0", "name": "review_required", "value": true }
+              ]
+            },
+            {
+              "id": "t2",
+              "name": "Ohne Phase",
+              "status": { "status": "to do" },
+              "custom_fields": [
+                { "id": "3fe9a608-b25c-469d-adf2-01b82cbe7641", "name": "drive_folder_url", "value": null }
+              ]
+            }
+          ]
+        }
+        """
+        let tasks = try ClickUpClient.parseTasks(from: Data(json.utf8))
+        #expect(tasks[0].projectPhase == .ausfuehrung)
+        #expect(tasks[1].projectPhase == nil)
+    }
+
+    @Test func parseTasksToleriertFehlendeCustomFields() throws {
+        let json = """
+        { "tasks": [ { "id": "t1", "name": "Ohne Custom Fields", "status": { "status": "to do" } } ] }
+        """
+        let tasks = try ClickUpClient.parseTasks(from: Data(json.utf8))
+        #expect(tasks[0].projectPhase == nil)
+    }
+
+    @Test func projectPhaseNimmtDieWeitestFortgeschritteneStufe() {
+        let tasks = [
+            ClickUpTask(id: "a", name: "A", status: "", projectPhase: .briefing),
+            ClickUpTask(id: "b", name: "B", status: "", projectPhase: .ausfuehrung),
+            ClickUpTask(id: "c", name: "C", status: "", projectPhase: nil),
+        ]
+        #expect(ClickUpClient.projectPhase(from: tasks) == .ausfuehrung)
+    }
+
+    @Test func projectPhaseNilOhneGesetztesFeld() {
+        let tasks = [ClickUpTask(id: "a", name: "A", status: "")]
+        #expect(ClickUpClient.projectPhase(from: tasks) == nil)
+    }
+
+    @Test func mykilosStageMappingFuerAlle7Phasen() {
+        #expect(ClickUpProjectPhase.briefing.mykilosStage == .akquise)
+        #expect(ClickUpProjectPhase.planung.mykilosStage == .planung)
+        #expect(ClickUpProjectPhase.angebot.mykilosStage == .angebot)
+        #expect(ClickUpProjectPhase.bestellung.mykilosStage == .ausfuehrung)
+        #expect(ClickUpProjectPhase.ausfuehrung.mykilosStage == .ausfuehrung)
+        #expect(ClickUpProjectPhase.abschluss.mykilosStage == .abschluss)
+        #expect(ClickUpProjectPhase.service.mykilosStage == .abschluss)
     }
 }
 

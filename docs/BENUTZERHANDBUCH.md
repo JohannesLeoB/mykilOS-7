@@ -91,6 +91,22 @@ offene Aufgaben und Kalender-Ereignisse auf einen Blick.
 
 **Was es tut:** Zeigt alle Informationen und Werkzeuge eines Projekts.
 
+### Lebenszyklus-Stepper (unter dem Hero)
+Fünf antippbare Stufen: Akquise → Planung → Angebot → Ausführung → Abschluss. Ohne manuelles
+Setzen wird die Stufe ehrlich abgeleitet (gebuchte Zeit → mindestens „Planung", Archiv-Status →
+„Abschluss", sonst „Akquise") und zeigt „Stufe abgeleitet · tippen zum Setzen". Ein Klick auf
+eine Stufe setzt sie fest (lokal, pro Nutzer). KPI-Zeile daneben: Zeit, Nachträge, offene
+ClickUp-Aufgaben (nur wenn eine Liste verknüpft ist).
+
+**ClickUp-Phasen-Abgleich (2026-07-04):** Ist eine ClickUp-Liste verknüpft und hat mindestens
+eine Aufgabe das Custom Field `project_phase` gesetzt (7 Stufen: Briefing/Planung/Angebot/
+Bestellung/Ausführung/Abschluss/Service — feiner als die 5 mykilOS-Stufen), erscheint bei
+Abweichung ein dezenter Hinweis „ClickUp sagt: Ausführung". **Kein Auto-Write in beide
+Richtungen:** mykilOS schreibt nie nach ClickUp zurück und übernimmt die ClickUp-Stufe nie
+automatisch — der Nutzer entscheidet weiterhin selbst per Tippen auf die passende Stufe.
+Herangezogen wird die am weitesten fortgeschrittene gesetzte Phase unter den Aufgaben der
+Liste (kein einzelner „Projekt-Meister"-Datensatz nötig).
+
 **Tabs:**
 
 ### Übersicht
@@ -103,6 +119,12 @@ Widgets sind drag-and-drop sortierbar. Jedes Widget zeigt Quelle und SaveState.
 Popover zum Selbst-Konfigurieren: pro Widget-Art ein **Ein/Aus-Schalter** (aus = ausgeblendet,
 Position/Größe bleiben erhalten) und — wenn sichtbar — eine **Größenwahl** (Klein/Mittel/Breit/
 Voll). Änderungen greifen sofort (SaveState). Reihenfolge weiterhin per Drag im Board.
+
+**Kontakte-Widget:** Google-Kontakte, gefiltert über die Projekt-Suchanfrage
+(`Project.links.contactsQuery`). Read-only Anzeige — **Klick auf die Mail-Adresse (2026-07-04)**
+öffnet einen vorbefüllten Entwurf (ComposeMailView), kein Auto-Versand. Noch nicht editierbar/
+zuweisbar (das ist eine größere, eigenständige Migration auf die Airtable-Kontakttabelle,
+weiterhin offen — siehe Backlog).
 
 **Warenkorb-Widget (V10, Block E — 2026-07-03):** Zeigt jetzt den **lokal am Projekt
 gespeicherten Warenkorb** (WorkBasket, GRDB/local-first) statt der Airtable-Kopie —
@@ -160,6 +182,18 @@ Optionaler Vorrang: ein expliziter Pfad in Airtable `driveFolderPath`.
 **Voraussetzung:** Google-Konto verbunden (Settings → Google); für lokale Vorschau
 zusätzlich Google Drive für Desktop mit materialisiertem (heruntergeladenem) Ordner.
 
+**Galerie-Ansicht (Galerie-Flug — 2026-07-04):** Segment-Umschalter oben rechts (Liste ⇄
+Galerie) lädt alle Unterordner rekursiv (Tiefe max. 6) und zeigt jede Datei als Kachel mit
+echtem Mini-Thumbnail (`ThumbnailStore`: lokal via `QLThumbnailGenerator`, sonst Drive-
+Vorschaulink). Finder-Slider für Kachelgröße, pro Nutzer gemerkt. **Finder-Bedienung:**
+Einfachklick wählt eine Kachel an (oranger Ring), **Leertaste oder Doppelklick** öffnet die
+volle Fenster-Vorschau; der Hover-Button öffnet extern im Finder. Read-only wie die Liste.
+
+**Blättern + Diashow (im geöffneten Viewer):** ←/→ (Pfeiltasten oder Header-Pfeile) wechselt
+zur nächsten/vorherigen Datei derselben Galerie, ohne das Fenster zu schließen. Leertaste
+(oder der Play-Button) startet eine Diashow — wechselt automatisch alle 3,5 s weiter, wrapt am
+Ende zurück zum Anfang; nochmal Leertaste/Klick pausiert.
+
 ### Angebote
 Zwei Spalten — eingehende (`05 …`) und ausgehende (`04 …`) Belege —, rekursiv
 gesammelt und nach Dokumenttyp gruppiert. Es werden nur echte Beleg-Dateitypen
@@ -171,18 +205,31 @@ echtes PDF: lokal materialisiert per PDFKit, sonst per read-only Drive-Download
 lokal-zuerst die macOS-Vorschau, nur ohne lokale Datei den Browser-Fallback.
 Rechtsklick → **„Im Finder zeigen"**. Read-only — nie Schreiben.
 
-**Positionen herauslösen (PDF-Positions v1 — 2026-07-04):** Rechtsklick auf ein Angebots-**PDF**
-→ **„Positionen herauslösen"** öffnet ein Sheet, das die Datei read-only liest und die einzelnen
-Positionen als Karten zeigt — mit **Selbstbeweis-Ampel** (🟢 grün = Menge × Einzelpreis = Gesamt
-geht arithmetisch auf; 🟠 amber = Preis da, Rechnung nicht prüfbar), Seiten-Verweis, erkanntem
-Rabatt-Listenpreis und aufklappbarem Originaltext. Die Extraktion nutzt `OfferPositionExtractor`
-(Zwei-Pass: Positions-Anker → Block → Felder; an 815 echten Alt-Positionen zu 98,8 % validiert).
-Ein Klick auf **„In Warenkorb"** legt die Position in den Warenkorb (eingehendes Lieferanten-
-Angebot → EK-Preis, ausgehend → VK; Menge aus der Position; ein Klick = Bestätigung, ein zweiter
-erhöht die Menge). Funktioniert in **beiden** Angebote-Ansichten: im **globalen Modul** landet
-sie im dortigen Warenkorb (`WarenkorbState`), im **Projekt-Angebote-Tab** im lokalen
-Projekt-Warenkorb (`WorkBasketStore`, GRDB, append-only, überlebt Neustart). Nichts wird
-geschrieben außer der bestätigten Warenkorb-Position.
+**Positionen herauslösen — jetzt mit Art.-Nr. + vollen Infos im Warenkorb (2026-07-04):**
+Der Extraktor erkennt jetzt auch die Herstellerartikelnummer im Positionstext
+(„Art.-Nr. 155.01.595", „Art.Nr.502.73.902" — Muster am echten Alt-Korpus verifiziert),
+zeigt sie auf der Karte, und **„In Warenkorb" nimmt jetzt ALLE Infos mit**: Art.-Nr., der
+volle Original-Positionstext, Quelldatei, Seite und Richtung (eingehend/ausgehend) landen
+als Attribute am Pick — nicht nur Bezeichnung und Preis. Sichtbar im Warenkorb-Widget
+(Art.-Nr. unter der Bezeichnung). **Noch offen:** ein eigener sevDesk-Postbox-Checkout-Port
+existiert technisch noch nicht (nur das `CheckoutPort`-Protokoll + 3 andere Ports) — die
+Positions-Daten liegen jetzt vollständig im Warenkorb bereit, der tatsächliche „Drop in den
+sevDesk-Briefkasten" ist ein eigener, noch zu bauender Strang.
+
+**Positionen herauslösen (PDF-Positions v1 — 2026-07-04, Button seit 2026-07-04 sichtbar):**
+Ein Klick auf den **„Positionen"**-Knopf an jeder Angebots-**PDF**-Zeile (auch per Rechtsklick →
+„Positionen herauslösen" erreichbar) öffnet ein Sheet, das die Datei read-only liest und die
+einzelnen Positionen als Karten zeigt — mit **Selbstbeweis-Ampel** (🟢 grün = Menge × Einzelpreis
+= Gesamt geht arithmetisch auf; 🟠 amber = Preis da, Rechnung nicht prüfbar), Seiten-Verweis,
+erkanntem Rabatt-Listenpreis und aufklappbarem Originaltext. Die Extraktion nutzt
+`OfferPositionExtractor` (Zwei-Pass: Positions-Anker → Block → Felder; an 815 echten
+Alt-Positionen zu 98,8 % validiert). Ein Klick auf **„In Warenkorb"** legt die Position in den
+**echten, persistenten Projekt-Warenkorb** (`WorkBasketStore`, GRDB, append-only, überlebt
+Neustart; eingehendes Lieferanten-Angebot → EK-Preis, ausgehend → VK; Menge aus der Position; ein
+Klick = Bestätigung, ein zweiter erhöht die Menge). Funktioniert identisch in **beiden**
+Angebote-Ansichten (Projekt-Angebote-Tab + globales „Alle Angebote"-Modul) — beide schreiben in
+denselben Korb des jeweiligen Projekts. Nichts wird geschrieben außer der bestätigten
+Warenkorb-Position.
 
 **Lern-Loop — Positionen als Preis-Wissen (2026-07-04):** Im Positions-Sheet merkt der Button
 **„Als Preis-Wissen vormerken"** die (grün/amber, nicht-alternativen) Positionen als lokale
@@ -220,6 +267,10 @@ Pläne", nur auf das eine Projekt gefiltert. **Volles Sammlungs-Instrumentarium*
 Volltextsuche, und die Dateien stehen **in Spalten je Kategorie** nebeneinander. Klick aufs
 Datei-Icon öffnet eine **In-App-Vorschau** (PDF/Bild direkt, Vollvorschau möglich); Klick auf
 den Namen öffnet die Datei lokal (macOS-Vorschau) bzw. im Browser. Read-only.
+
+**Galerie-Ansicht:** gleicher Liste-⇄-Galerie-Umschalter wie im Dateien-Tab (Kachel-Grid,
+echte Thumbnails, Finder-Slider, Einfachklick anwählen/Leertaste-Vorschau) — pilotiert hier
+zuerst (2026-07-04), seither auch im Dateien-Tab.
 
 ---
 
@@ -423,6 +474,14 @@ Verbindet Drive, Kalender, Kontakte und Gmail über ein einziges OAuth-Login
 
 Scopes: Drive (read-only Metadaten), Calendar (read), Contacts (read),
 Gmail (read Metadaten+Snippet), UserInfo (E-Mail + Profil).
+
+**Kontakte-Import (2026-07-04):** Erscheint hier, sobald Google UND Airtable verbunden sind.
+**Vorgang:** „Vorschau laden" holt alle Google-Kontakte + den bestehenden Airtable-Bestand und
+zeigt, wie viele neu angelegt / als Dublette übersprungen (Mail oder Telefon stimmt bereits) /
+als unvollständig verworfen (weder Mail noch Telefon) würden. Erst „N Kontakte anlegen"
+schreibt wirklich — ein Kontakt nach dem anderen, mit Audit. **Voraussetzung:** beide Konten
+verbunden. **Wiederholbar** — bereits vorhandene Kontakte werden beim nächsten Lauf erneut als
+Dublette erkannt, nie doppelt angelegt.
 
 ### Airtable
 Personal Access Token (PAT) + Base-ID. Liest `Kunden` und `Projekte` aus

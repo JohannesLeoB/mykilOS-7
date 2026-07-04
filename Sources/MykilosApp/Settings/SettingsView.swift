@@ -178,6 +178,7 @@ struct SettingsView: View {
     // Per-Nutzer-Wahl (AppStorage `ui.appearance`) — dieselbe Quelle wie die Scene
     // in MykilOS6App. Nicht mehr stur nach System.
     @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
+    @AppStorage("ui.rainbowMode") private var rainbowMode = false
 
     private var darstellungSection: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
@@ -194,6 +195,12 @@ struct SettingsView: View {
             .frame(maxWidth: 360, alignment: .leading)
             // UI-Polish (2026-07-02, Johannes): Erklärtext entfernt — der Umschalter
             // erklärt sich selbst, das Verhalten steht im Benutzerhandbuch.
+
+            Toggle(isOn: $rainbowMode) {
+                Label("Rainbow Mode 🌈", systemImage: "paintpalette")
+                    .font(.mykSmall)
+            }
+            .toggleStyle(.switch)
         }
     }
 
@@ -413,7 +420,7 @@ struct SettingsView: View {
 
     // MARK: - Google
 
-    private var googleSection: some View {
+    @ViewBuilder private var googleSection: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
             Text("Google Workspace")
                 .font(.mykHeadline)
@@ -440,6 +447,10 @@ struct SettingsView: View {
                 .foregroundStyle(MykColor.faint.color)
         }
         .settingsCard()
+
+        if appState.googleAuth.status == .connected && appState.airtableAuth.status == .connected {
+            ContactsImportView()
+        }
     }
 
     private var googleStatusText: String {
@@ -543,7 +554,7 @@ struct SettingsView: View {
 
     // MARK: - ClickUp
 
-    private var clickUpSection: some View {
+    @ViewBuilder private var clickUpSection: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
             Text("ClickUp Aufgaben")
                 .font(.mykHeadline)
@@ -566,6 +577,10 @@ struct SettingsView: View {
                 .foregroundStyle(MykColor.faint.color)
         }
         .settingsCard()
+
+        if appState.clickUpAuth.status == .connected {
+            ClickUpTestWerkbankView()
+        }
     }
 
     private var clickUpStatusText: String {
@@ -929,7 +944,7 @@ struct SettingsView: View {
 }
 
 // MARK: - View-Extension: einheitliche Karten-Formatierung
-private extension View {
+extension View {
     func settingsCard() -> some View {
         self
             .padding(MykSpace.s6)

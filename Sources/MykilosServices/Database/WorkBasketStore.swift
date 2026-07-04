@@ -243,7 +243,8 @@ public final class WorkBasketStore {
         menge: Int,
         ekEinzel: Double?,
         vkEinzel: Double?,
-        objektID: String
+        objektID: String,
+        attribute: [String: String] = [:]
     ) async throws -> WorkBasket {
         while anhaengenLaeuft { await Task.yield() }
         anhaengenLaeuft = true
@@ -252,7 +253,7 @@ public final class WorkBasketStore {
             matrix: .artikel,
             objektID: CatalogObjectID(objektID),
             snapshot: PickSnapshot(bezeichnung: bezeichnung, menge: max(1, menge),
-                                   ekEinzel: ekEinzel, vkEinzel: vkEinzel))
+                                   ekEinzel: ekEinzel, vkEinzel: vkEinzel, attribute: attribute))
         let vorhandene = try alle(projektNummer: projektNummer)
         if var basket = vorhandene.max(by: { $0.erstellt < $1.erstellt }) {
             // Idempotent (Ultra-Review-Fix): gleiche objektID → Menge erhöhen statt

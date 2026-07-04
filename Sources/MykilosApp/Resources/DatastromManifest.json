@@ -1,5 +1,12 @@
 [
   {
+    "integrationID": "GOOGLE_CONTACTS_TO_AIRTABLE_IMPORT",
+    "name": "Google-Kontakte → Airtable-Import (Vorschau)",
+    "system": "Google",
+    "direction": "READ",
+    "link": "mykilos://datastream/GOOGLE_CONTACTS_TO_AIRTABLE_IMPORT"
+  },
+  {
     "integrationID": "AIRTABLE_KUNDEN_PROJEKTE",
     "name": "Airtable Kunden & Projekte",
     "system": "Airtable",

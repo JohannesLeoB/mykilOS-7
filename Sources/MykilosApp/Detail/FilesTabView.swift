@@ -125,6 +125,50 @@ final class DriveTreeStore {
         walk(rootNodes, depth: 0)
         return result
     }
+
+    // Lädt die Kinder eines Ordners, OHNE ihn im Baum aufzuklappen (`isExpanded`
+    // bleibt unberührt). Speist die Galerie-Ansicht, ohne die Liste zu verändern.
+    private func loadChildren(_ node: DriveTreeNode) async {
+        guard node.file.isFolder, node.children == nil, !node.isLoading else { return }
+        node.isLoading = true
+        do {
+            let items = try await client.listFolder(folderID: node.file.id)
+            node.children = items.map { DriveTreeNode(file: $0) }
+        } catch {
+            node.children = []
+        }
+        node.isLoading = false
+    }
+
+    // „Durch alle Dateien fliegen": lädt rekursiv alle Unterordner (begrenzte Tiefe,
+    // damit tiefe Archivbäume die App nicht fluten). Read-only.
+    func expandAll(maxDepth: Int = 6) async {
+        func walk(_ nodes: [DriveTreeNode], depth: Int) async {
+            guard depth < maxDepth else { return }
+            for node in nodes where node.file.isFolder {
+                await loadChildren(node)
+                if let children = node.children { await walk(children, depth: depth + 1) }
+            }
+        }
+        await walk(rootNodes, depth: 0)
+    }
+
+    // Alle geladenen Dateien (Ordner ausgeschlossen), flach — mit lokalem URL-Hinweis
+    // für das Thumbnail. Basis der Galerie-Kacheln.
+    var alleDateien: [(file: GoogleDriveFile, localURL: URL?)] {
+        var result: [(GoogleDriveFile, URL?)] = []
+        func walk(_ nodes: [DriveTreeNode]) {
+            for node in nodes {
+                if node.file.isFolder {
+                    if let children = node.children { walk(children) }
+                } else {
+                    result.append((node.file, localURL(for: node.file)))
+                }
+            }
+        }
+        walk(rootNodes)
+        return result
+    }
 }
 
 // MARK: - FilesTabView
@@ -135,6 +179,14 @@ struct FilesTabView: View {
     var driveFolderPath: String? = nil
 
     @State private var store = DriveTreeStore()
+    // Galerie-Flug: „durch alle Dateien fliegen, gekachelt" — pro Nutzer gemerkt.
+    @AppStorage("dateien.tab.galerie") private var galerieAn = false
+    @AppStorage("dateien.tab.kachel") private var kachelSeiteRaw: Double = 150
+    @State private var viewerFile: GoogleDriveFile?
+
+    private var kachelSeite: Binding<CGFloat> {
+        Binding(get: { CGFloat(kachelSeiteRaw) }, set: { kachelSeiteRaw = Double($0) })
+    }
 
     var body: some View {
         WidgetContainer(
@@ -145,7 +197,9 @@ struct FilesTabView: View {
         ) {
             VStack(spacing: 0) {
                 statusBar
-                if case .content = store.renderState { treeContent }
+                if case .content = store.renderState {
+                    if galerieAn { galerieContent } else { treeContent }
+                }
             }
         }
         .task(id: driveFolderID) {
@@ -178,6 +232,8 @@ struct FilesTabView: View {
                     .foregroundStyle(MykColor.muted.color)
             }
             Spacer()
+            if galerieAn { KachelGroessenSlider(kachelSeite: kachelSeite) }
+            ansichtsUmschalter
             Button("Jetzt prüfen") {
                 Task { await store.load(folderID: driveFolderID) }
             }
@@ -188,6 +244,67 @@ struct FilesTabView: View {
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s3)
         .background(MykColor.line.color.opacity(0.18))
+    }
+
+    // Liste (Finder-Baum) ⇄ Galerie (Kachel-Flug durch alle Dateien).
+    private var ansichtsUmschalter: some View {
+        Picker("", selection: $galerieAn) {
+            Image(systemName: "list.bullet").tag(false)
+            Image(systemName: "square.grid.2x2").tag(true)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(width: 78)
+        .help("Liste oder Galerie")
+    }
+
+    // MARK: Galerie
+    // Eine Quelle der Wahrheit für Grid + Viewer-Blättern — gleiche Reihenfolge, gleiche Indizes.
+    private var galerieEintraege: [DateiGalerieGrid.Eintrag] {
+        store.alleDateien.map {
+            DateiGalerieGrid.Eintrag(file: $0.file, subtitle: $0.file.typeLabel, localURL: $0.localURL)
+        }
+    }
+
+    private var galerieViewerItems: [DocumentViewerItem] {
+        galerieEintraege.map {
+            DocumentViewerItem(file: $0.file, localURL: $0.localURL, remoteContent: galerieRemoteContent(for: $0.file))
+        }
+    }
+
+    @ViewBuilder private var galerieContent: some View {
+        let eintraege = galerieEintraege
+        Group {
+            if eintraege.isEmpty {
+                VStack(spacing: MykSpace.s4) {
+                    ProgressView().controlSize(.small)
+                    Text("Lade alle Dateien …")
+                        .font(.mykMono(10))
+                        .foregroundStyle(MykColor.muted.color)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.top, MykSpace.s9)
+            } else {
+                DateiGalerieGrid(
+                    eintraege: eintraege, kachelSeite: kachelSeite,
+                    onPreview: { viewerFile = $0.file },
+                    onOpen: { store.revealInFinder(for: $0.file) })
+                .padding(.horizontal, MykSpace.s6)
+            }
+        }
+        .task(id: galerieAn) { if galerieAn { await store.expandAll() } }
+        .sheet(item: $viewerFile) { file in
+            let items = galerieViewerItems
+            let startIndex = items.firstIndex(where: { $0.id == file.id }) ?? 0
+            DocumentViewerView(items: items, initialIndex: startIndex, onClose: { viewerFile = nil })
+                .frame(minWidth: 820, minHeight: 680)
+        }
+    }
+
+    private func galerieRemoteContent(for file: GoogleDriveFile) -> (@Sendable () async -> Data?)? {
+        guard file.isFolder == false else { return nil }
+        let fileID = file.id
+        return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
     }
 
     // MARK: Tree

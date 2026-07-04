@@ -154,34 +154,6 @@ public final class WarenkorbState {
         }
     }
 
-    /// Eine aus einem Angebots-PDF herausgelöste Position übernehmen (PDF-Positions v1,
-    /// Teil 2). `id` muss die Position eindeutig identifizieren (Datei + Seite + Index),
-    /// damit ein zweiter Klick die Menge erhöht statt zu doppeln. EK/VK abhängig von der
-    /// Angebotsrichtung: eingehendes Lieferanten-Angebot → EK, ausgehendes → VK.
-    public func addOfferPosition(
-        id: String,
-        bezeichnung: String,
-        menge: Int,
-        ekNetto: Double?,
-        vkNetto: Double?
-    ) {
-        let posID = "position-\(id)"
-        if let idx = positionen.firstIndex(where: { $0.id == posID }) {
-            positionen[idx].menge += max(1, menge)
-        } else {
-            positionen.append(Position(
-                id: posID,
-                source: "position",
-                artikelRecordID: nil,
-                bezeichnung: bezeichnung,
-                artikelnummer: id,
-                menge: max(1, menge),
-                ekNetto: ekNetto,
-                vkNetto: vkNetto
-            ))
-        }
-    }
-
     /// Aus einem `WarenkorbItem` (z. B. wiederhergestellt aus JSON) eine Position anlegen.
     /// Bestehende Positionen mit gleicher Artikelnummer bekommen die Menge addiert.
     public func addWarenkorbItem(_ item: WarenkorbItem) {

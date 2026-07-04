@@ -17,6 +17,10 @@ struct MykilOS6App: App {
     // Hell/Dunkel/Auto (2026-07-02): per-Nutzer-Wahl statt System-Zwang.
     @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
     private var appearance: AppAppearance { AppAppearance.from(appearanceRaw) }
+    // Rainbow Mode (Easter Egg, 2026-07-04): Toggle sitzt in UserDefaults (MykColor liest
+    // direkt daraus), `.id(rainbowMode)` erzwingt einen kompletten Redraw der Baumstruktur
+    // beim Umschalten — gleiches Reaktivitätsmuster wie `appearanceRaw` oben.
+    @AppStorage("ui.rainbowMode") private var rainbowMode = false
 
     init() {
         // Single-Instance-Guard: läuft bereits eine andere Instanz, diese aktivieren
@@ -47,6 +51,7 @@ struct MykilOS6App: App {
                 // Per-Nutzer-Wahl treibt die gesamte App-Darstellung; nil (=auto)
                 // folgt weiter dem System.
                 .preferredColorScheme(appearance.preferredColorScheme)
+                .id(rainbowMode)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1340, height: 860)

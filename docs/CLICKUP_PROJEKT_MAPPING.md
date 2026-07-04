@@ -71,6 +71,15 @@ mehr nicht.
 
 ## 6. Bau-Reihenfolge (nach V10-Kern, kleine Blöcke)
 
+**✅ Teil-Vorzug 2026-07-04 (Johannes: „Projekt-Status-Anzeige müsste mit ClickUp gesynced
+werden"):** der `project_phase`-Abgleich aus §2 ist vorgezogen und live. `ClickUpProjectPhase`
+(`ClickUpClient.swift`) dekodiert das Custom Field aus den Task-`custom_fields` (Orderindex →
+7-Phasen-Enum, gemappt auf `ProjectLifecycleStage.mykilosStage`). `ClickUpClient.projectPhase(from:)`
+nimmt die am weitesten fortgeschrittene gesetzte Phase unter den geladenen Aufgaben.
+`ProjectLifecycleBar` zeigt bei Divergenz einen dezenten Text „ClickUp sagt: Ausführung" —
+**kein Auto-Write**, der Nutzer setzt seine Stufe weiterhin selbst im Stepper. 6 neue Tests, 928
+Tests grün. Rest von M1 (Badges/Chips für blocker_type etc.) weiterhin offen.
+
 1. **M1:** TasksWidget-Anreicherung (Badges + Chips aus den Custom Fields, Testspace, read-only).
 2. **M2:** Meilenstein-Strip am Stepper + Timeline-Marker.
 3. **M3:** Hinweis-Kandidaten in den Signal-Strip + Datenschutz-Toggle (Stufe 1: Johannes).

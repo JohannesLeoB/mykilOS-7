@@ -6,6 +6,27 @@ import MykilosServices
 import MykilosWidgets
 import MykilosKalkulationsCore
 
+// MARK: - Warenkorb-Attribute einer herausgelösten Position (2026-07-04)
+// „Mit allen Infos" (Johannes-Feedback): Art.-Nr., voller Positionstext und Herkunft
+// (Datei/Seite/Richtung) sollen im Pick landen, nicht nur Bezeichnung+Preis — sichtbar
+// schon heute im Warenkorb-Widget (`snapshot.attribute["artikelnummer"]`), ein zukünftiger
+// sevDesk-Postbox-CheckoutPort (noch nicht gebaut) bräuchte dieselben Felder ebenfalls.
+// Gemeinsamer Helper für beide Angebote-Ansichten (Projekt-Tab + globales Modul).
+func positionsAttribute(
+    _ position: OfferPositionExtractor.ExtractedPosition,
+    quelle: String, seite: Int, eingehend: Bool
+) -> [String: String] {
+    var attribute: [String: String] = [
+        "originalText": position.originalText,
+        "quelle": quelle,
+        "seite": String(seite),
+        "richtung": eingehend ? "eingehend" : "ausgehend",
+    ]
+    if let art = position.artikelnummer { attribute["artikelnummer"] = art }
+    if let unit = position.unit { attribute["einheit"] = unit }
+    return attribute
+}
+
 // MARK: - OfferPositionsSheet (PDF-Positions v1 · UI Teil 1: read-only Kandidaten)
 //
 // „Positionen herauslösen" an einem Angebots-PDF → dieses Sheet lädt die Datei
@@ -264,6 +285,10 @@ private struct PositionCard: View {
             if let list = p.listPrice {
                 Text("Listenpreis \(euro(list)) · Netto nach Rabatt")
                     .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+            }
+            if let art = p.artikelnummer {
+                Text("Art.-Nr. \(art)")
+                    .font(.mykMono(9.5)).foregroundStyle(MykColor.drive.color)
             }
             HStack(spacing: MykSpace.s4) {
                 Button { withAnimation(.easeInOut(duration: 0.12)) { showRaw.toggle() } } label: {

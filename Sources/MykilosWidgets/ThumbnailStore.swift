@@ -34,7 +34,8 @@ public final class ThumbnailStore {
         if let localURL, FileManager.default.fileExists(atPath: localURL.path) {
             image = await Self.quickLookThumbnail(url: localURL, side: CGFloat(bucket))
         }
-        if image == nil, let link = file.thumbnailLink, let url = URL(string: link) {
+        if image == nil, let link = file.thumbnailLink,
+           let url = Self.sizedDriveThumbnailURL(link, side: bucket) {
             image = await Self.remoteThumbnail(url: url)
         }
         if let image {
@@ -55,6 +56,22 @@ public final class ThumbnailStore {
             representationTypes: .thumbnail)
         let rep = try? await QLThumbnailGenerator.shared.generateBestRepresentation(for: request)
         return rep?.nsImage
+    }
+
+    // Google-Drive/Photos-Thumbnail-Links tragen einen Größenparameter am Ende
+    // („=s220", „=w200-h150", ggf. mit „-c"-Crop-Suffix) — standardmäßig winzig.
+    // Für scharfe große Kacheln auf die Zielkantenlänge hochschrauben (gedeckelt).
+    private nonisolated static func sizedDriveThumbnailURL(_ link: String, side: Int) -> URL? {
+        let target = min(1600, max(256, side))
+        var s = link
+        if let r = s.range(of: #"=s\d+(-c)?$"#, options: .regularExpression) {
+            s.replaceSubrange(r, with: "=s\(target)")
+        } else if let r = s.range(of: #"=w\d+-h\d+(-[a-z]+)?$"#, options: .regularExpression) {
+            s.replaceSubrange(r, with: "=s\(target)")
+        } else {
+            s += "=s\(target)"
+        }
+        return URL(string: s)
     }
 
     private nonisolated static func remoteThumbnail(url: URL) async -> NSImage? {

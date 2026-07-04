@@ -204,6 +204,32 @@ final class OfferPositionExtractorTests: XCTestCase {
         XCTAssertEqual(positions[0].netPrice, Decimal(string: "1234.56"))
     }
 
+    // MARK: - Artikelnummer (2026-07-04, am echten Korpus verifizierte Formate)
+
+    func testArtikelnummerMitPunktGliederung() {
+        XCTAssertEqual(X.artikelnummer(in: "Scharnier Häfele Art.-Nr. 155.01.595 Oberfläche entsprechend"),
+                       "155.01.595")
+    }
+
+    func testArtikelnummerOhneLeerzeichenVorNummer() {
+        XCTAssertEqual(X.artikelnummer(in: "Auszug Häfele Art.Nr.502.73.902 Häfele. -1 Stück Korpus"),
+                       "502.73.902")
+    }
+
+    func testArtikelnummerMitLeerzeichenZwischenArtUndNr() {
+        XCTAssertEqual(X.artikelnummer(in: "Griffleiste, Art. Nr. 126.00.531"), "126.00.531")
+    }
+
+    func testArtikelnummerFehltGibtNil() {
+        XCTAssertNil(X.artikelnummer(in: "Küchenarbeitsplatte Granit, nach Aufmaß liefern und einbauen"))
+    }
+
+    func testExtractSetztArtikelnummerAusDemBlock() {
+        let block = "1 1 Stck. Auszug Häfele Art.-Nr. 372.74.538 Hinweis: Korpushöhe maximal 1.234,56 1.234,56"
+        let position = X.extract(fromBlock: block)
+        XCTAssertEqual(position.artikelnummer, "372.74.538")
+    }
+
     // MARK: - selfProof direkt
 
     func testSelfProofBrauchtMindestensZweiBetraege() {

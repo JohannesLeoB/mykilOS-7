@@ -456,6 +456,25 @@ private struct OfferRow: View {
                 }
             }
             .buttonStyle(.plain)
+
+            // Flaggschiff-Feature sichtbar statt nur im Rechtsklick-Menü versteckt
+            // (Johannes-Feedback 2026-07-04: nicht auffindbar).
+            if isPDF {
+                Button {
+                    showPositions = true
+                } label: {
+                    Label("Positionen", systemImage: "text.line.first.and.arrowtriangle.forward")
+                        .font(.mykMono(9.5))
+                        .foregroundStyle(MykColor.paper.color)
+                        .padding(.horizontal, MykSpace.s3)
+                        .padding(.vertical, 4)
+                        .background(MykColor.cash.color)
+                        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                }
+                .buttonStyle(.plain)
+                .help("Positionen aus diesem PDF-Angebot herauslösen und in den Warenkorb legen")
+                .accessibilityLabel("Positionen aus PDF herauslösen")
+            }
         }
         .padding(.vertical, MykSpace.s3)
         .contextMenu {
@@ -491,7 +510,8 @@ private struct OfferRow: View {
                                     menge: max(1, Int((p.quantity ?? 1).rounded())),   // runden statt abschneiden (Ultra-Review)
                                     ekEinzel: eingehend ? preis : nil,
                                     vkEinzel: eingehend ? nil : preis,
-                                    objektID: "\(file.id)-\(paged.pageNumber)-\(index)")
+                                    objektID: "\(file.id)-\(paged.pageNumber)-\(index)",
+                                    attribute: positionsAttribute(p, quelle: file.name, seite: paged.pageNumber, eingehend: eingehend))
                             } catch {
                                 MykLog.lifecycle.error("Warenkorb-Anhängen fehlgeschlagen: \(String(describing: error), privacy: .public)")
                             }

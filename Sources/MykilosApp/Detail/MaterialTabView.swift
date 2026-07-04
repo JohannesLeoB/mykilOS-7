@@ -79,7 +79,7 @@ struct MaterialTabView: View {
                 if galerieAn {
                     DateiGalerieGrid(
                         eintraege: galerieEintraege, kachelSeite: kachelSeite,
-                        onTap: { viewerFile = $0.file },
+                        onPreview: { viewerFile = $0.file },
                         onOpen: { oeffne($0.file) })
                 } else {
                     categoryColumns
@@ -94,10 +94,13 @@ struct MaterialTabView: View {
         .padding(.top, MykSpace.s7)
         .padding(.bottom, 64)
         .sheet(item: $viewerFile) { file in
-            DocumentViewerView(
-                file: file, localURL: nil,
-                remoteContent: { try? await GoogleDriveClient().downloadContent(fileID: file.id) },
-                onClose: { viewerFile = nil })
+            let items = galerieEintraege.map { eintrag in
+                DocumentViewerItem(
+                    file: eintrag.file, localURL: eintrag.localURL,
+                    remoteContent: { try? await GoogleDriveClient().downloadContent(fileID: eintrag.file.id) })
+            }
+            let startIndex = items.firstIndex(where: { $0.id == file.id }) ?? 0
+            DocumentViewerView(items: items, initialIndex: startIndex, onClose: { viewerFile = nil })
                 .frame(minWidth: 820, minHeight: 680)
         }
     }

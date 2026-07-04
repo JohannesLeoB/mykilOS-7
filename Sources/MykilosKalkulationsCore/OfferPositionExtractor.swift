@@ -46,11 +46,14 @@ public enum OfferPositionExtractor {
         public let isAlternative: Bool
         public let confidence: Confidence
         public let originalText: String
+        /// Herstellerartikelnummer, falls im Blocktext gefunden (z. B. „Art.-Nr. 155.01.595",
+        /// „Art.Nr.502.73.902" — Muster am echten Alt-Korpus verifiziert, 2026-07-04).
+        public let artikelnummer: String?
 
         public init(title: String, netPrice: Decimal?, listPrice: Decimal?, lineTotal: Decimal?,
                     quantity: Double?, unit: String?, lengthM: Double?, areaM2: Double?,
                     componentType: ComponentType = .other, isAlternative: Bool = false,
-                    confidence: Confidence, originalText: String) {
+                    confidence: Confidence, originalText: String, artikelnummer: String? = nil) {
             self.title = title
             self.netPrice = netPrice
             self.listPrice = listPrice
@@ -63,6 +66,7 @@ public enum OfferPositionExtractor {
             self.isAlternative = isAlternative
             self.confidence = confidence
             self.originalText = originalText
+            self.artikelnummer = artikelnummer
         }
     }
 
@@ -102,6 +106,20 @@ public enum OfferPositionExtractor {
     // Hauptpositionen vom Lern-Loop aus. Nur EINDEUTIGER Alternativ-/Bedarfs-Sprech bleibt.
     private static let alternativeRegex = try! NSRegularExpression(
         pattern: #"(?i)(wie\s+pos|\balternativ|optional\b|eventual|bedarfsposition|wahlweise|zzgl\.\s*wenn)"#)
+
+    // Herstellerartikelnummer: „Art.-Nr.", „Art. Nr.", „Art.Nr." (Punkt/Bindestrich/Leerzeichen
+    // beliebig), gefolgt von einem Zifferncode — am echten Korpus verifizierte Formate wie
+    // „155.01.595" (Häfele), aber auch kürzere reine Ziffernfolgen ohne Punkt-Gliederung.
+    private static let artikelnummerRegex = try! NSRegularExpression(
+        pattern: #"(?i)art\.?\s*-?\s*nr\.?\s*:?\s*([0-9]{2,}(?:[.\-][0-9]+){0,3})"#)
+
+    static func artikelnummer(in text: String) -> String? {
+        let ns = text as NSString
+        guard let match = artikelnummerRegex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
+              match.numberOfRanges > 1 else { return nil }
+        let raw = ns.substring(with: match.range(at: 1))
+        return raw.isEmpty ? nil : raw
+    }
 
     static func isAlternativePosition(_ text: String) -> Bool {
         let ns = text as NSString
@@ -153,6 +171,7 @@ public enum OfferPositionExtractor {
         let unitToken = unit(in: text)
         let category = OfferPositionClassifier.classify(text: text)
         let alternativ = isAlternativePosition(text)
+        let artNr = artikelnummer(in: text)
         // Rabatt-Layout: "…250,00 20,00% 200,00…" → Listenpreis 250, netto 200.
         // Ist selbst ein arithmetischer Selbstbeweis (list × (1−p) ≈ netto).
         let disc = discount(in: deGlued)
@@ -171,7 +190,7 @@ public enum OfferPositionExtractor {
             return ExtractedPosition(
                 title: firstTextLine(text), netPrice: proof.einzel, listPrice: list, lineTotal: proof.gesamt,
                 quantity: proof.quantity, unit: unitToken, lengthM: lengthM, areaM2: areaM2,
-                componentType: category, isAlternative: alternativ, confidence: .green, originalText: text)
+                componentType: category, isAlternative: alternativ, confidence: .green, originalText: text, artikelnummer: artNr)
         }
 
         // Rabatt-Layout ohne Mengen-Selbstbeweis: trotzdem grün (list × (1−p) ≈ netto beweist sich).
@@ -179,7 +198,7 @@ public enum OfferPositionExtractor {
             return ExtractedPosition(
                 title: firstTextLine(text), netPrice: disc.net, listPrice: disc.list, lineTotal: nil,
                 quantity: qty, unit: unitToken, lengthM: lengthM, areaM2: areaM2,
-                componentType: category, isAlternative: alternativ, confidence: .green, originalText: text)
+                componentType: category, isAlternative: alternativ, confidence: .green, originalText: text, artikelnummer: artNr)
         }
 
         // Kein Selbstbeweis: der erste Betrag ist in der Praxis der Positionspreis
@@ -188,13 +207,13 @@ public enum OfferPositionExtractor {
             return ExtractedPosition(
                 title: firstTextLine(text), netPrice: first, listPrice: nil, lineTotal: nil,
                 quantity: qty, unit: unitToken, lengthM: lengthM, areaM2: areaM2,
-                componentType: category, isAlternative: alternativ, confidence: .amber, originalText: text)
+                componentType: category, isAlternative: alternativ, confidence: .amber, originalText: text, artikelnummer: artNr)
         }
 
         return ExtractedPosition(
             title: firstTextLine(text), netPrice: nil, listPrice: nil, lineTotal: nil, quantity: qty,
             unit: unitToken, lengthM: lengthM, areaM2: areaM2,
-            componentType: category, isAlternative: alternativ, confidence: .red, originalText: text)
+            componentType: category, isAlternative: alternativ, confidence: .red, originalText: text, artikelnummer: artNr)
     }
 
     // MARK: - Selbstbeweis

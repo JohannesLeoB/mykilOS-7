@@ -18,17 +18,22 @@ public struct DateiKachel: View {
     public var subtitle: String? = nil
     public var localURL: URL? = nil
     public var side: CGFloat = 140
-    public var onTap: () -> Void = {}
-    public var onOpen: (() -> Void)? = nil
+    public var isSelected: Bool = false
+    public var onSelect: () -> Void = {}      // Einfachklick → anwählen
+    public var onPreview: () -> Void = {}     // Doppelklick / Leertaste → Vollvorschau
+    public var onOpen: (() -> Void)? = nil    // Hover-Button → extern öffnen
 
     public init(file: GoogleDriveFile, subtitle: String? = nil, localURL: URL? = nil,
-                side: CGFloat = 140, onTap: @escaping () -> Void = {},
+                side: CGFloat = 140, isSelected: Bool = false,
+                onSelect: @escaping () -> Void = {}, onPreview: @escaping () -> Void = {},
                 onOpen: (() -> Void)? = nil) {
         self.file = file
         self.subtitle = subtitle
         self.localURL = localURL
         self.side = side
-        self.onTap = onTap
+        self.isSelected = isSelected
+        self.onSelect = onSelect
+        self.onPreview = onPreview
         self.onOpen = onOpen
     }
 
@@ -36,7 +41,7 @@ public struct DateiKachel: View {
     @State private var isHovered = false
 
     public var body: some View {
-        Button(action: onTap) {
+        Button(action: onSelect) {
             VStack(spacing: MykSpace.s2) {
                 bildflaeche
                 Text(file.name)
@@ -55,6 +60,7 @@ public struct DateiKachel: View {
             }
         }
         .buttonStyle(.plain)
+        .simultaneousGesture(TapGesture(count: 2).onEnded { onPreview() })
         .scaleEffect(isHovered ? MykMotion.hoverScale : 1)
         .animation(MykMotion.hover, value: isHovered)
         .onHover { isHovered = $0 }
@@ -100,7 +106,9 @@ public struct DateiKachel: View {
             }
         }
         .frame(width: side, height: side)
-        .overlay(RoundedRectangle(cornerRadius: MykRadius.md).stroke(MykColor.line.color, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: MykRadius.md)
+            .stroke(isSelected ? MykColor.brand.color : MykColor.line.color,
+                    lineWidth: isSelected ? 2.5 : 1))
         .shadow(color: .black.opacity(isHovered ? MykMotion.hoverShadow.opacity : MykMotion.restShadow.opacity),
                 radius: isHovered ? MykMotion.hoverShadow.radius : MykMotion.restShadow.radius,
                 y: isHovered ? MykMotion.hoverShadow.y : MykMotion.restShadow.y)
@@ -122,15 +130,21 @@ public struct DateiGalerieGrid: View {
 
     public let eintraege: [Eintrag]
     @Binding public var kachelSeite: CGFloat
-    public var onTap: (Eintrag) -> Void
-    public var onOpen: ((Eintrag) -> Void)? = nil
+    public var onPreview: (Eintrag) -> Void          // Vollvorschau (Leertaste/Doppelklick)
+    public var onOpen: ((Eintrag) -> Void)? = nil    // extern öffnen (Hover-Button)
+    public var onSelect: ((Eintrag) -> Void)? = nil  // optionaler Anwahl-Hook
+
+    @State private var selektiert: String?
 
     public init(eintraege: [Eintrag], kachelSeite: Binding<CGFloat>,
-                onTap: @escaping (Eintrag) -> Void, onOpen: ((Eintrag) -> Void)? = nil) {
+                onPreview: @escaping (Eintrag) -> Void,
+                onOpen: ((Eintrag) -> Void)? = nil,
+                onSelect: ((Eintrag) -> Void)? = nil) {
         self.eintraege = eintraege
         self._kachelSeite = kachelSeite
-        self.onTap = onTap
+        self.onPreview = onPreview
         self.onOpen = onOpen
+        self.onSelect = onSelect
     }
 
     public var body: some View {
@@ -142,12 +156,22 @@ public struct DateiGalerieGrid: View {
                     DateiKachel(
                         file: eintrag.file, subtitle: eintrag.subtitle,
                         localURL: eintrag.localURL, side: kachelSeite,
-                        onTap: { onTap(eintrag) },
+                        isSelected: selektiert == eintrag.id,
+                        onSelect: { selektiert = eintrag.id; onSelect?(eintrag) },
+                        onPreview: { selektiert = eintrag.id; onPreview(eintrag) },
                         onOpen: onOpen.map { open in { open(eintrag) } })
                 }
             }
             .padding(.vertical, MykSpace.s4)
             .animation(MykMotion.spring, value: kachelSeite)
+        }
+        .focusable()
+        // Finder-Muster: angewählte Datei + Leertaste → volle Fenster-Vorschau.
+        .onKeyPress(.space) {
+            guard let selektiert, let e = eintraege.first(where: { $0.id == selektiert })
+            else { return .ignored }
+            onPreview(e)
+            return .handled
         }
     }
 }

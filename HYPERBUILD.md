@@ -6,16 +6,17 @@
 
 ```
 Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
-Branch:  feat/plaene-katalog   ·   HEAD 01e007d (gepusht)   ·   GitHub JohannesLeoB/mykilOS-7 (privat)
-Build:   ✅ swift build grün        Tests: ✅ 918 grün (122 Suites)
-Modell:  Modell-Routing S26 (Haiku Default, Sonnet Tool-Use, Opus Kalkulation)   Stand: 2026-07-04
-Version: 10.0.0-alpha11 (DMG in dist/)
-Stand:   Zeichnungs-/Planstand-Katalog + Material-Sammlungsstandard (Vorschau überall) live;
-         PDF-Positions v1 gebaut: Angebots-PDF → Zwei-Pass-Extraktion (Gate 98,8 %) → Ampel-
-         Karten (Selbstbeweis Menge×Einzel=Gesamt) + Bauteil-Kategorie → Klick → Warenkorb,
-         in BEIDEN Angebote-Views. Offen: Live-Abnahme (Sheet noch nie live gesehen); Lern-Loop
-         (Positionen → learning.sqlite-Anker) = Architektur-Entscheidung (lokal vs. Airtable),
-         NICHT autonom gebaut. Korpus gesichert: Vault MYK-KALK-KORPUS-01.
+Branch:  feat/plaene-katalog   ·   GitHub JohannesLeoB/mykilOS-7 (privat, origin)
+Build:   ✅ swift build grün        Tests: ✅ 940 grün (124 Suites)
+Version: 10.0.0-alpha13 (DMG in dist/)
+Stand:   Galerie-Flug komplett (Liste⇄Galerie, Blättern/Diashow, echte Thumbnails) in Dateien-
+         + Material-Tab. PDF-Positions: Art.-Nr.-Extraktion + „In Warenkorb" trägt jetzt ALLE
+         Infos (Text/Art.-Nr./Quelle/Seite/Richtung) — sevDesk-Postbox-CheckoutPort existiert
+         technisch noch NICHT (nächster großer Strang). ClickUp: Write-Basics + Test-Werkbank
+         (nur Sandbox-Liste) + Phasen-Abgleich am Lebenszyklus-Stepper (read-only). Kontakte-
+         Airtable-Migration Schritt 1 (Import-Vorschau in Settings, Johannes muss selbst
+         klicken — braucht seine Google-OAuth-Session). Rainbow Mode Easter Egg.
+         Details: docs/handoffs/HANDOFF_GALERIE_CLICKUP_KONTAKTE_2026-07-04.md
 Fallback: git checkout v7.0.0 (Safe State, e629e84) oder ./script/recall_safe_state.sh
 ```
 
