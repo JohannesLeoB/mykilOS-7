@@ -355,7 +355,13 @@ private struct OfferRow: View {
     var projectFolderPath: String? = nil
 
     @State private var showPreview = false
+    @State private var showPositions = false
     @State private var resolvedLocalURL: URL?
+
+    // Positions-Extraktion nur für echte PDFs anbieten.
+    private var isPDF: Bool {
+        file.mimeType == "application/pdf" || (file.name as NSString).pathExtension.lowercased() == "pdf"
+    }
 
     // Belegnummer + Version als kompakte Kennung (z.B. "2026-0151 · v3").
     private var metaLine: String? {
@@ -437,6 +443,10 @@ private struct OfferRow: View {
         }
         .padding(.vertical, MykSpace.s3)
         .contextMenu {
+            if isPDF {
+                Button("Positionen herauslösen") { showPositions = true }
+                Divider()
+            }
             Button("Im Finder zeigen") {
                 if let local = resolveLocalURL() {
                     LocalDriveRootResolver.shared.revealInFinder(localURL: local)
@@ -447,6 +457,9 @@ private struct OfferRow: View {
             if let link = file.webViewLink, let url = URL(string: link) {
                 Button("Im Browser öffnen") { NSWorkspace.shared.open(url) }
             }
+        }
+        .sheet(isPresented: $showPositions) {
+            OfferPositionsSheet(file: file, onClose: { showPositions = false })
         }
     }
 }
