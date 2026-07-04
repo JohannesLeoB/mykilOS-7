@@ -15,13 +15,20 @@ import MykilosServices
 @MainActor
 struct WorkBasketEditSheet: View {
     let store: WorkBasketStore
+    let postboxPort: SevdeskPostboxCheckoutPort?
+    let actorUserID: String
     let onClose: () -> Void
 
     @State private var basket: WorkBasket
     @State private var saveError: String?
+    @State private var showPostboxDrop = false
 
-    init(store: WorkBasketStore, basket: WorkBasket, onClose: @escaping () -> Void) {
+    init(store: WorkBasketStore, basket: WorkBasket,
+         postboxPort: SevdeskPostboxCheckoutPort? = nil, actorUserID: String = "local",
+         onClose: @escaping () -> Void) {
         self.store = store
+        self.postboxPort = postboxPort
+        self.actorUserID = actorUserID
         self.onClose = onClose
         self._basket = State(initialValue: basket)
     }
@@ -86,6 +93,13 @@ struct WorkBasketEditSheet: View {
         }
         .frame(width: 520, height: 560)
         .background(MykColor.paper.color)
+        .sheet(isPresented: $showPostboxDrop) {
+            if let postboxPort {
+                SevdeskPostboxDropSheet(port: postboxPort, basket: basket,
+                                        actorUserID: actorUserID,
+                                        onClose: { showPostboxDrop = false })
+            }
+        }
     }
 
     // MARK: - Bausteine
@@ -142,6 +156,14 @@ struct WorkBasketEditSheet: View {
         HStack(spacing: MykSpace.s4) {
             saveStateLabel
             Spacer()
+            if postboxPort != nil, basket.picks.isEmpty == false {
+                Button { showPostboxDrop = true } label: {
+                    Label("In sevDesk-Postbox", systemImage: "tray.and.arrow.down")
+                        .font(.mykSmall).foregroundStyle(MykColor.cash.color)
+                }
+                .buttonStyle(.plain)
+                .help("Positionen als Vorschlag in die sevDesk-Einweg-Postbox legen (kein Beleg).")
+            }
             Button("Abbrechen") { onClose() }
                 .buttonStyle(.plain)
                 .font(.mykSmall)

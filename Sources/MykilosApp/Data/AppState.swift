@@ -136,6 +136,14 @@ public final class AppState {
         googleAuth.currentUser?.email ?? profile.profile?.displayName ?? "local"
     }
 
+    // sevDesk-Postbox-CheckoutPort (append-only Positions-Drop). Leichter Struct,
+    // Credentials kommen zur Laufzeit aus dem Keychain (AirtableClient) — daher als
+    // Computed-Property statt gespeicherter Instanz. Datenstrom-Log über dataFlow.
+    public var sevdeskPostboxPort: SevdeskPostboxCheckoutPort {
+        SevdeskPostboxCheckoutPort(
+            airtableCreate: AirtableClient(), airtableFetch: AirtableClient(), logger: dataFlow)
+    }
+
     // S9: legt einen vom Nutzer BESTÄTIGTEN Kontakt via People API an + Audit.
     // Wird der AssistantChatView als `onCreateContact` injiziert — der Widgets-Layer
     // kennt keinen Schreib-Client. Erst die Bestätigung an der Karte ruft das hier.

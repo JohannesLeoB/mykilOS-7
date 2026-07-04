@@ -326,7 +326,8 @@ private struct ProjectWidgetBoardView: View {
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)
         case .assistant: ProjectAssistantChatWidget(projectID: projectID, driveFolderID: driveFolderID, clickUpListID: clickUpListID)
         case .mail:      MailWidget(projectID: projectID, mailQuery: mailQuery)
-        case .warenkorb: WarenkorbWidget(store: appState.workBaskets, projectID: projectID, projektName: projektName)
+        case .warenkorb: WarenkorbWidget(store: appState.workBaskets, projectID: projectID, projektName: projektName,
+                                         postboxPort: appState.sevdeskPostboxPort, actorUserID: appState.actorUserID)
         default:         EmptyView()
         }
     }

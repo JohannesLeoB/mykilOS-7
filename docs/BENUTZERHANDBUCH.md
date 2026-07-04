@@ -136,6 +136,18 @@ mit sichtbarem SaveState. Bestätigte (eingefrorene) Warenkörbe sind nicht edit
 Der frühere Airtable-Versandpfad (globaler Session-Warenkorb im Kataloge-Modul) bleibt
 unverändert bestehen. *Wo:* Projekt → Übersicht. *Voraussetzung:* keine (lokal).
 
+**In sevDesk-Postbox droppen (2026-07-04):** Im Warenkorb-„Bearbeiten"-Panel gibt es jetzt
+den Knopf **„In sevDesk-Postbox"**. Er legt die Positionen des Warenkorbs als **Vorschlag** in
+den Airtable-Einweg-Briefkasten (Tabellen `Postbox-Beleg` + `Postbox-Position`) — ein Mensch
+baut daraus in sevDesk den echten Beleg. Ein Bestätigungs-Fenster zeigt zuerst eine Vorschau
+(Beleg-Typ wählbar: Angebot/Rechnung/Gutschrift/Lieferschein/Auftragsbestätigung) samt Netto-
+Gegenprobe; geschrieben wird erst auf Knopfdruck. **mykilOS stellt keinen Beleg aus.**
+**sevDesk hat die Hoheit über Mengen, Margen und Steuer** — die Zahlen sind ein Vorschlag,
+es wird keine Brutto-/Steuersumme und keine Belegnummer geschrieben. Append-only: ein zweiter
+identischer Drop legt nichts Neues an (Idempotenz). *Wo:* Projekt → Übersicht → Warenkorb →
+Bearbeiten → „In sevDesk-Postbox". *Voraussetzung:* Airtable verbunden; Warenkorb mit Positionen.
+*Einschränkung:* schreibt in die mykilOS-Postbox, **nie** direkt nach sevDesk.
+
 **Cash-Widget — „Kalkuliert (Warenkorb)" (V10, Block H — 2026-07-03):** Das Cash-Widget zeigt
 zusätzlich eine schlanke Zeile mit der **kalkulierten Warenkorb-Summe** dieses Projekts
 (VK **netto** und **brutto** inkl. 19 % MwSt), sobald ein Warenkorb mit Positionen existiert.
@@ -211,10 +223,10 @@ Der Extraktor erkennt jetzt auch die Herstellerartikelnummer im Positionstext
 zeigt sie auf der Karte, und **„In Warenkorb" nimmt jetzt ALLE Infos mit**: Art.-Nr., der
 volle Original-Positionstext, Quelldatei, Seite und Richtung (eingehend/ausgehend) landen
 als Attribute am Pick — nicht nur Bezeichnung und Preis. Sichtbar im Warenkorb-Widget
-(Art.-Nr. unter der Bezeichnung). **Noch offen:** ein eigener sevDesk-Postbox-Checkout-Port
-existiert technisch noch nicht (nur das `CheckoutPort`-Protokoll + 3 andere Ports) — die
-Positions-Daten liegen jetzt vollständig im Warenkorb bereit, der tatsächliche „Drop in den
-sevDesk-Briefkasten" ist ein eigener, noch zu bauender Strang.
+(Art.-Nr. unter der Bezeichnung). Der **Drop in die sevDesk-Postbox** ist seit 2026-07-04
+gebaut (`SevdeskPostboxCheckoutPort` + „In sevDesk-Postbox"-Knopf im Warenkorb-Bearbeiten-Panel,
+siehe oben) — die Positions-Attribute (Art.-Nr./Original-Text/Richtung) landen dabei vollständig
+in der `Postbox-Position`-Tabelle.
 
 **Positionen herauslösen (PDF-Positions v1 — 2026-07-04, Button seit 2026-07-04 sichtbar):**
 Ein Klick auf den **„Positionen"**-Knopf an jeder Angebots-**PDF**-Zeile (auch per Rechtsklick →
