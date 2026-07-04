@@ -48,10 +48,13 @@ public extension ComponentType {
         case .baseCabinetRun:   .kitchenRun
         case .island:           .island
         case .tallCabinetBlock: .tallCabinetBlock
-        case .wallCabinets:     .baseUnit
+        // wallCabinets/drawerAddon haben KEINE eigene Kalkulations-Klasse. Sie auf
+        // baseUnit zu mappen würde sie fälschlich als Unterschrank-Anker einsortieren
+        // (falsche Kategorie-Pollution). Ehrlich `unknownReview` = geparkt, bis eine
+        // passende Klasse existiert (Ultra-Review-Fix).
+        case .wallCabinets, .drawerAddon: .unknownReview
         case .stoneCountertop, .worktopScope: .worktopSurface
         case .applianceScope:   .applianceHandling
-        case .drawerAddon:      .baseUnit
         case .delivery, .installation, .projectLogistics: .logistics
         case .aggregateKitchen: .aggregateKitchen
         case .other:            .unknownReview

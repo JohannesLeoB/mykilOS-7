@@ -87,13 +87,21 @@ public enum OfferPositionExtractor {
     // als Positions-Anker durchrutschen (Sondierung 2026-07-04: Lieferanten-Header wie
     // „Werkstatt für Innenausbau | Rellinger Weg 2-4"): Straßenadresse, „Seite X von Y",
     // Firmenrechtsform, Bank/Summenzeilen im TITEL.
+    // Ultra-Review-Fix: NUR eindeutige Fuß-/Summen-/Bankzeilen filtern — die kommen
+    // NIE in einem Produkt-Titel vor. Frühere Tokens (straße/weg/ring/gmbh/e.k./hg)
+    // verwarfen echte Positionen: „Front NX 501 HG" (Hochglanz), „Kochfeld Miele GmbH",
+    // „O-Ring", „Anlieferung … Straße 12". Lieber ein paar Header-Karten mehr zeigen
+    // (Mensch ignoriert sie) als eine echte Position lautlos schlucken.
     private static let headerNoiseRegex = try! NSRegularExpression(
-        pattern: #"(?i)((?:straße|strasse|weg|allee|platz|ring|gasse|str\.)\s+\d|seite\s+\d+\s+von|\bgmbh\b|\be\.\s?k\.\b|\bo?hg\b|iban|bankverbindung|nettobetrag|gesamtbetrag)"#)
+        pattern: #"(?i)(seite\s+\d+\s+von\s+\d+|\biban\b|\bbic\b|bankverbindung|ust[-\s.]?id|steuer[-\s.]?nr|nettobetrag|gesamtbetrag|mehrwertsteuer|zwischensumme|bruttobetrag)"#)
 
     // Alternativ-/Bedarfs-/Optionalposition: der Angebotssprech dafür („wie Pos.",
     // „alternativ", „optional", „eventual", „Bedarfsposition", „wahlweise", „Variante").
+    // Ultra-Review-Fix: `\bvariante\b`/`materialvariante` entfernt — sie triggerten auf
+    // Produktnamen („Arbeitsplatte Dekton, Variante Helena") und schlossen so echte
+    // Hauptpositionen vom Lern-Loop aus. Nur EINDEUTIGER Alternativ-/Bedarfs-Sprech bleibt.
     private static let alternativeRegex = try! NSRegularExpression(
-        pattern: #"(?i)(wie\s+pos|alternativ|optional|eventual|bedarfsposition|bedarfsvariante|wahlweise|materialvariante|\bvariante\b|zzgl\.\s*wenn)"#)
+        pattern: #"(?i)(wie\s+pos|\balternativ|optional\b|eventual|bedarfsposition|wahlweise|zzgl\.\s*wenn)"#)
 
     static func isAlternativePosition(_ text: String) -> Bool {
         let ns = text as NSString
@@ -259,8 +267,13 @@ public enum OfferPositionExtractor {
     // Negativer Einheiten-Lookahead (Sondierung 2026-07-04): eine Zahl direkt vor
     // einer Einheit ist ein MASS ("1,00 Stk", "4,97 m2", "10,15 m"), nie ein Betrag —
     // sonst beweist sich der Selbstbeweis an Mengen selbst (netto=1-Fälle).
+    // Zwei Zweige (Ultra-Review-Fix): Beträge MIT Tausenderpunkt (5.911,70) sind IMMER
+    // Preise — nie ein Maß, also kein Einheiten-Ausschluss. Nur reine Ziffernbeträge
+    // (56,00) bekommen den Einheiten-Ausschluss — und der nutzt `[ \t]*` statt `\s*`,
+    // damit er NICHT über Zeilengrenzen greift (Betrag am Zeilenende + Einheit am
+    // Anfang der Folgezeile wurde sonst fälschlich verworfen → Preis-/Datenverlust).
     private static let amountRegex = try! NSRegularExpression(
-        pattern: #"(?<![\d.,])(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2}(?![\d])(?!\s*(?:Stk|Stck|Stück|Stueck|St\b|m²|m2\b|lfm\b|m\b|cm\b|mm\b|%|x\b))"#)
+        pattern: #"(?<![\d.,])(?:\d{1,3}(?:\.\d{3})+,\d{2}(?![\d])|\d+,\d{2}(?![\d])(?![ \t]*(?:Stk|Stck|Stück|Stueck|St\b|m²|m2\b|lfm\b|m\b|cm\b|mm\b|%|x\b)))"#)
 
     // PDF-Extraktion klebt Beträge oft ohne Trennzeichen aneinander
     // ("9.762,88 9.762,889.762,8" = E.P., G.P. und eine Wiederholung). Ein `,dd`

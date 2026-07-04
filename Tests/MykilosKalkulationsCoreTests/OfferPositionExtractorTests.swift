@@ -166,11 +166,38 @@ final class OfferPositionExtractorTests: XCTestCase {
         XCTAssertFalse(normal.isAlternative)
     }
 
-    func testHeaderNoiseWirdGefiltert() {
-        // Seitenkopf mit Seitenzahl+Adresse: darf keine Position werden.
+    // MARK: - Ultra-Review-Regressionen (echte Positionen dürfen NICHT verschwinden)
+
+    func testHeaderNoiseVerwirftKeineEchtenProdukte() {
+        // 'HG' (Hochglanz), 'GmbH', 'Ring', Baustellenadresse dürfen keine Position killen.
+        for titel in ["Front NX 501 HG kristallweiß", "Kochfeld Miele GmbH KM 7897",
+                      "O-Ring 5 mm Dichtung", "Anlieferung Baustelle Hamburger Straße 12"] {
+            XCTAssertFalse(X.isHeaderNoise(titel), "fälschlich als Header verworfen: \(titel)")
+        }
+        // Echte Fuß-/Bankzeilen bleiben gefiltert.
+        XCTAssertTrue(X.isHeaderNoise("Seite 2 von 3"))
+        XCTAssertTrue(X.isHeaderNoise("IBAN DE12 3456"))
+        XCTAssertTrue(X.isHeaderNoise("Nettobetrag EUR 5.911,70"))
+    }
+
+    func testBetragMitTausenderpunktVorEinheitBleibt() {
+        // "1.250,00 x 600" — der tausenderseparierte Preis darf NICHT als Maß verworfen werden.
+        XCTAssertEqual(X.germanAmounts(in: "Sonderschrank 1.250,00 x 600 x 720 mm"),
+                       [Decimal(string: "1250.00")])
+        // Reine Ziffern-Menge vor Einheit bleibt ausgeschlossen.
+        XCTAssertEqual(X.germanAmounts(in: "Anschlag 2,00 Stk 450,00"), [Decimal(string: "450.00")])
+    }
+
+    func testVarianteImProduktnamenIstKeineAlternative() {
+        XCTAssertFalse(X.extract(fromBlock: "1 Arbeitsplatte Dekton Variante Helena 4.500,00 4.500,00").isAlternative)
+        XCTAssertTrue(X.extract(fromBlock: "2 wie Pos.1 jedoch in Eiche 5.174,65 5.174,65").isAlternative)
+    }
+
+    func testHeaderNoiseFiltertNurEchteFusszeilen() {
+        // Nach dem Ultra-Review-Fix: eindeutige Summen-/Fußzeilen raus, echte Positionen bleiben.
         let page = """
-        9 Werkstatt für Innenausbau | Rellinger Weg 2-4 375,00 375,00
         1 1 Stck. Küchenarbeitsplatte Granit 1.234,56 1.234,56
+        2 Nettobetrag gesamt 375,00 375,00
         """
         let positions = X.extractPositions(fromPageText: page)
         XCTAssertEqual(positions.count, 1)
