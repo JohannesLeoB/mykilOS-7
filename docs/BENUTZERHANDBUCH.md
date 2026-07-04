@@ -177,11 +177,12 @@ Positionen als Karten zeigt — mit **Selbstbeweis-Ampel** (🟢 grün = Menge �
 geht arithmetisch auf; 🟠 amber = Preis da, Rechnung nicht prüfbar), Seiten-Verweis, erkanntem
 Rabatt-Listenpreis und aufklappbarem Originaltext. Die Extraktion nutzt `OfferPositionExtractor`
 (Zwei-Pass: Positions-Anker → Block → Felder; an 815 echten Alt-Positionen zu 98,8 % validiert).
-Im **globalen Angebote-Modul** legt ein Klick auf **„In Warenkorb"** die Position in den Warenkorb
-(eingehendes Lieferanten-Angebot → EK-Preis, ausgehend → VK; Menge aus der Position; ein Klick =
-Bestätigung, ein zweiter erhöht die Menge). Im Projekt-Angebote-Tab ist das Sheet vorerst
-**read-only** (der Projekt-Warenkorb läuft über den Wirbelsäule-Store; die Übernahme dorthin folgt).
-Nichts wird geschrieben außer der bestätigten Warenkorb-Position.
+Ein Klick auf **„In Warenkorb"** legt die Position in den Warenkorb (eingehendes Lieferanten-
+Angebot → EK-Preis, ausgehend → VK; Menge aus der Position; ein Klick = Bestätigung, ein zweiter
+erhöht die Menge). Funktioniert in **beiden** Angebote-Ansichten: im **globalen Modul** landet
+sie im dortigen Warenkorb (`WarenkorbState`), im **Projekt-Angebote-Tab** im lokalen
+Projekt-Warenkorb (`WorkBasketStore`, GRDB, append-only, überlebt Neustart). Nichts wird
+geschrieben außer der bestätigten Warenkorb-Position.
 
 **„Zum Angebot" — Kalkulations-Vorschau (V10, Block G — 2026-07-03):** Oben im Angebote-Tab
 erzeugt der Knopf **„Zum Angebot"** aus dem am Projekt gespeicherten Warenkorb ein

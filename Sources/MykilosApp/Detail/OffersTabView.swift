@@ -223,6 +223,9 @@ struct OffersTabView: View {
                 title: "Eingehende Angebote",
                 offers: filtered(loader.incoming),
                 folderFound: loader.incomingFolderFound,
+                eingehend: true,
+                projektNummer: projectID,
+                workBasketStore: workBasketStore,
                 projectFolderID: driveFolderID,
                 projectFolderPath: driveFolderPath
             )
@@ -231,6 +234,9 @@ struct OffersTabView: View {
                 title: "Ausgehende Angebote",
                 offers: filtered(loader.outgoing),
                 folderFound: loader.outgoingFolderFound,
+                eingehend: false,
+                projektNummer: projectID,
+                workBasketStore: workBasketStore,
                 projectFolderID: driveFolderID,
                 projectFolderPath: driveFolderPath
             )
@@ -245,6 +251,9 @@ private struct OfferColumn: View {
     let title: String
     let offers: [ClassifiedOffer]
     let folderFound: Bool
+    var eingehend: Bool = true
+    var projektNummer: String = ""
+    var workBasketStore: WorkBasketStore? = nil
     var projectFolderID: String? = nil
     var projectFolderPath: String? = nil
 
@@ -286,6 +295,9 @@ private struct OfferColumn: View {
             VStack(spacing: 0) {
                 ForEach(offers) { offer in
                     OfferRow(file: offer.file, meta: offer,
+                             eingehend: eingehend,
+                             projektNummer: projektNummer,
+                             workBasketStore: workBasketStore,
                              projectFolderID: projectFolderID,
                              projectFolderPath: projectFolderPath)
                     if offer.id != offers.last?.id {
@@ -351,6 +363,9 @@ private struct VorschauZeile: View {
 private struct OfferRow: View {
     let file: GoogleDriveFile
     var meta: ClassifiedOffer? = nil
+    var eingehend: Bool = true
+    var projektNummer: String = ""
+    var workBasketStore: WorkBasketStore? = nil
     var projectFolderID: String? = nil
     var projectFolderPath: String? = nil
 
@@ -459,7 +474,24 @@ private struct OfferRow: View {
             }
         }
         .sheet(isPresented: $showPositions) {
-            OfferPositionsSheet(file: file, onClose: { showPositions = false })
+            OfferPositionsSheet(
+                file: file,
+                onTake: workBasketStore.map { store in
+                    { (paged: OfferPositionPDFReader.PagedPosition, index: Int) in
+                        let p = paged.position
+                        let preis = p.netPrice.map { ($0 as NSDecimalNumber).doubleValue }
+                        Task {
+                            try? await store.fuegePositionHinzu(
+                                projektNummer: projektNummer,
+                                bezeichnung: p.title.isEmpty ? file.name : p.title,
+                                menge: max(1, Int(p.quantity ?? 1)),
+                                ekEinzel: eingehend ? preis : nil,
+                                vkEinzel: eingehend ? nil : preis,
+                                objektID: "\(file.id)-\(paged.pageNumber)-\(index)")
+                        }
+                    }
+                },
+                onClose: { showPositions = false })
         }
     }
 }
