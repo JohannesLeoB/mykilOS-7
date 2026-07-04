@@ -8,12 +8,12 @@ Quelle: Bilder-Inventur des Feedback-Ordners (2026-07-04) + [[design-nordstern-m
 
 | # | Fund (aus Screenshots) | Datei | Status |
 |---|---|---|---|
-| P1 | „EK 0.00 €"/„VK 0 €" wirkt unfertig → 0-Werte ausblenden | ProjectFavoritesWidget/Verlauf | ⏳ |
-| P2 | Favoriten-Zähler „7" bei 6 sichtbaren Karten → Zähler = Realität | ProjectFavoritesWidget | ⏳ |
-| P3 | Heute-Signale doppeln sich (gleiches Projekt mehrfach) → dedup | TodayView/Signal-Strip | ⏳ |
-| P4 | Pipeline-Karte „Neuhaus / Neuhaus" → Kunde nur wenn ≠ Titel | ProjectCard/ProjectPipelineView | ⏳ |
-| P5 | Dateien-Tab: zwei „Prüfen"-Leisten (Banner + innen) → eine | FilesTabView/DriveFolderRefreshBar | ⏳ |
-| P6 | „ZEIT 0 h" im Hero → nur zeigen wenn > 0 | ProjectHeroView | ⏳ |
+| P1 | „EK 0.00 €" wirkt unfertig → 0-Werte ausblenden | CartStore-Audit-Summary | ✅ `a85e3dd` |
+| P2 | Favoriten-Zähler „7" bei 6 sichtbaren Karten → Zähler = Realität | ProjectFavoritesWidget | ✅ (Karten-Commit) |
+| P3 | Heute-Signale doppeln sich (gleiches Projekt mehrfach) → dedup | TodayView/Signal-Strip | ✅ |
+| P4 | Pipeline-Karte „Neuhaus / Neuhaus" → Kunde nur wenn ≠ Titel | ProjectCard | ✅ (Karten-Commit) |
+| P5 | Dateien-Tab: zwei „Prüfen"-Leisten? | FilesTabView | 🟡 **VERTAGT** — im Code nur EINE Statusleiste; Screenshot-Lesung unsicher, braucht Live-Blick |
+| P6 | „ZEIT 0 h" im Hero → nur zeigen wenn > 0 | ProjectLifecycleBar | ✅ `a85e3dd` |
 
 ## Vorsichtig (rein visuell — defensiv verbessern + für Live-Abnahme flaggen)
 

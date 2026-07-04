@@ -97,6 +97,19 @@ struct TodayView: View {
             .foregroundStyle(MykColor.inkSoft.color)
     }
 
+    // Neueste-zuerst, dann entdoppelt (Polish 2026-07-04: dasselbe „Projekt
+    // fokussiert: X" stapelte sich mehrfach). Ein Signal je Identität, max. 5.
+    private var distinctSignals: [WidgetSignal] {
+        var seen = Set<String>()
+        var out: [WidgetSignal] = []
+        for signal in context.signals.reversed() {
+            let key = String(describing: signal)
+            if seen.insert(key).inserted { out.append(signal) }
+            if out.count == 5 { break }
+        }
+        return out
+    }
+
     // MARK: Signal-Strip
     private var signalStrip: some View {
         VStack(alignment: .leading, spacing: MykSpace.s3) {
@@ -104,7 +117,7 @@ struct TodayView: View {
                 .font(.mykMono(10))
                 .foregroundStyle(MykColor.muted.color)
                 .tracking(0.5)
-            ForEach(Array(context.signals.suffix(5).reversed().enumerated()), id: \.offset) { _, signal in
+            ForEach(Array(distinctSignals.enumerated()), id: \.offset) { _, signal in
                 SignalPill(signal: signal)
             }
         }
