@@ -76,7 +76,8 @@ public struct DocumentViewerView: View {
             Divider().overlay(MykColor.line.color)
             content
         }
-        .frame(minWidth: 640, minHeight: 520)
+        .frame(minWidth: 640, idealWidth: 1040, maxWidth: .infinity,
+               minHeight: 520, idealHeight: 800, maxHeight: .infinity)
         .background(MykColor.paper.color)
         .task(id: file.id) { await load() }
         .focusable()
@@ -171,9 +172,13 @@ public struct DocumentViewerView: View {
         case .pdf(let doc):
             FullPDFKitView(document: doc)
         case .image(let img):
-            ScrollView([.horizontal, .vertical]) {
-                Image(nsImage: img).resizable().scaledToFit().padding(MykSpace.s5)
-            }
+            // In den verfügbaren Rahmen einpassen (herunter- UND heraufskaliert, Seitenverhältnis
+            // erhalten). Vorher lag das Bild in einer beidachsigen ScrollView, in der `scaledToFit`
+            // keinen Bezugsrahmen hatte → große Bilder rendern in Nativgröße und liefen über statt
+            // sich einzupassen. `maxWidth/maxHeight: .infinity` gibt scaledToFit den Rahmen.
+            Image(nsImage: img).resizable().scaledToFit()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(MykSpace.s5)
         case .quicklook(let url):
             QuickLookView(url: url)
         case .browserOnly:
