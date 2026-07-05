@@ -21,6 +21,29 @@ Agenten, jede Session, jedes Tool.**
 
 Vollständiger Kontext + Warum: Gedächtnis `kein-hohles-erledigt-nie-ansagen-vergessen`.
 
+## 🔁 SESSION-ROUTINE — jedes Mal besser als beim letzten Mal
+
+**Verankert 2026-07-05 (Johannes: „Wie machen wir es jedes Mal besser als beim letzten Mal?"). Gilt bei
+JEDER Session, jeder Agent, jeder Account. Bewusst LEICHT — leicht genug, dass sie WIRKLICH jedes Mal
+passiert. Sinn: die Regeln oben *beißen* zu lassen (sie zu kennen reicht nicht — das war das Versagen
+am 2026-07-05).**
+
+1. **Anfang — ZUERST die letzte Prozess-Lektion lesen** (`docs/erfahrungstraeger/PROZESS_LESSONS.md`,
+   oberster Eintrag) und in einem Satz sagen, wie du den letzten Stolperer *diesmal* vermeidest.
+2. **Ziel, nicht Plan.** Johannes' aktuelle #1-Priorität in EINEM Satz zurückspiegeln — „das, was du
+   jetzt am dringendsten brauchst, ist X — richtig?" — und erst nach seinem Ja bauen.
+3. **Richtung früh + billig zeigen.** Vor viel Bauen ein Einzeiler „ich mach jetzt X", damit er in
+   Sekunden umlenken kann — nicht erst nach einem Tag Arbeit.
+4. **Klein bauen, jede Stufe von Johannes LIVE abgenommen** — dann fällt „falsche Richtung" nach 20
+   Minuten auf, nicht nach einem Tag.
+5. **„Fertig" = Johannes hat's geprüft.** Nie „grün/Tests = fertig" (Proxy ≠ Beweis).
+6. **Ende — 3 ehrliche Zeilen** an `PROZESS_LESSONS.md` (append-only): was näher an der Vision, was
+   gestolpert, die EINE Sache anders. Für die nächste Session (→ Schritt 1). Danach das Gästebuch
+   (menschliche Ebene) bei Bedarf.
+
+**Kurzform: Ziel zuerst · klein bauen · Johannes prüft · wir lernen laut.**
+Johannes hält aktiv ehrlich („bist du sicher?") — das ist Teil des Systems, kein Störfaktor.
+
 ## ⛔ EISERNE REGEL: Kanonischer Ordner + Branch-Verifikation
 
 **Diese Regel gilt für JEDEN Agenten, jede Session, jedes Tool — Claude, Codex, GitHub Actions, alles.**
