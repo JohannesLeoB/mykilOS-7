@@ -57,10 +57,10 @@ Vollansicht aufzumachen.
   **~2 Sekunden gedrückt halten** — ein Ring füllt sich als Fortschritt, früher loslassen bricht
   ab. **Kurzer Klick** bleibt der normale Sidebar-schmal/breit-Toggle.
 - **Alerts:** kommt etwas Wichtiges rein, **pulsiert das betroffene Icon selbst langsam orange**
-  (offene Aufgaben → Assistent-Icon, offene Signale → Heute-Icon). **Maus übers Mini-Fenster** →
-  kleine Zusammenfassungs-Karte (verschwindet beim Rausfahren).
-- **Zurück:** **Modul-Icon klicken** → rein in das Modul · **Logo klicken** → zurück zur letzten
-  großen Ansicht.
+  (offene Aufgaben → Assistent-Icon, offene Signale → Heute-Icon). *(Kein Hover-Flyout mehr —
+  das Mouseover-Fenster wurde auf Wunsch entfernt, 2026-07-05.)*
+- **Zurück:** **Modul-Icon klicken** → rein in das Modul · **Logo oder freie Streifen-Fläche
+  klicken** → zurück zur letzten großen Ansicht (die ganze Satellit-Fläche öffnet die App).
 - **Steuerbar:** Puls + je Quelle abschaltbar in Einstellungen → Datenschutz.
 
 **Voraussetzungen:** keine — liest ausschließlich aus bereits geladenen lokalen Daten (Timer,

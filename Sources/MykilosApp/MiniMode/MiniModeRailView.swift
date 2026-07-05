@@ -16,30 +16,17 @@ import MykilosDesign
 //     (Settings → Datenschutz).
 //   • Unten eine ruhige Timer-Kachel, solange ein Timer läuft (Zustand, kein Rückstand →
 //     kein Puls).
-//   • Hover über das Rail → kleine Alert-Summary-Karte (macOS-Benachrichtigungs-Stil),
-//     verschwindet beim Rausfahren. Hover-getriggert, NICHT auto-poppend.
+//   • Klick auf eine freie Rail-Fläche → bringt die große Ansicht zurück (wie das Logo).
+//     KEIN Hover-Flyout mehr (2026-07-05, Feedback Johannes: Mouseover entfernt).
 struct MiniModeRailView: View {
     let store: MiniModeStore
     let controller: MiniModeController
 
-    @State private var hovering = false
-
     private var snapshot: MiniModeSnapshot { store.snapshot }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            // Hover-Summary-Karte links neben dem Rail (nur bei Hover).
-            if hovering && snapshot.hasAnything {
-                MiniModePopoverView(store: store, onOpenApp: { controller.returnToMainWindow() })
-                    .fixedSize()
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-            }
-
-            rail
-        }
-        .animation(.easeInOut(duration: 0.18), value: hovering)
-        .onHover { hovering = $0 }
-        .task { await store.refresh() }
+        rail
+            .task { await store.refresh() }
     }
 
     // MARK: Das Rail
@@ -75,6 +62,11 @@ struct MiniModeRailView: View {
                         .stroke(MykColor.line.color, lineWidth: 1)
                 )
         )
+        // Klick auf eine freie Rail-Fläche (nicht auf ein Icon) → große Ansicht zurück.
+        // Die Modul-Buttons und das Logo fangen ihre Klicks selbst ab; nur der Rest
+        // des Streifens löst hier aus. (Drag zum Verschieben bleibt über das Panel.)
+        .contentShape(Rectangle())
+        .onTapGesture { controller.returnToMainWindow() }
     }
 
     // MARK: Logo → zurück zur letzten großen Ansicht
@@ -103,7 +95,7 @@ struct MiniModeRailView: View {
             Image(systemName: snapshot.timerIsPaused ? "pause.circle" : "timer")
                 .font(.mykBody)
                 .foregroundStyle(MykColor.people.color)
-            Text(MiniModePopoverView.hms(snapshot.activeTimerSeconds ?? 0))
+            Text(MiniModeFormat.hms(snapshot.activeTimerSeconds ?? 0))
                 .font(.mykMono(8))
                 .foregroundStyle(MykColor.inkSoft.color)
                 .monospacedDigit()

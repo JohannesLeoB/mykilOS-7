@@ -46,6 +46,20 @@ public enum MiniModeSource: String, CaseIterable, Sendable {
     }
 }
 
+// MARK: - MiniModeFormat
+// SwiftUI-freie, non-isolierte Formatier-Helfer des Mini-Modus (testbar ohne
+// MainActor). `hms` formatiert Timer-Sekunden als H:MM:SS bzw. MM:SS.
+public enum MiniModeFormat {
+    /// H:MM:SS bzw. MM:SS Formatierung der Timer-Sekunden (negativ → 00:00).
+    public static func hms(_ seconds: Double) -> String {
+        let total = Int(max(0, seconds))
+        let h = total / 3600, m = (total % 3600) / 60, s = total % 60
+        return h > 0
+            ? String(format: "%d:%02d:%02d", h, m, s)
+            : String(format: "%02d:%02d", m, s)
+    }
+}
+
 // MARK: - MiniModeDefaults
 // Zentrale, SwiftUI-freie Auswertung der Datenschutz-Toggles. Master-Schalter
 // (`privacy.miniMode.enabled`) plus je Quelle ein Schalter. Alle default = an,

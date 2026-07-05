@@ -54,18 +54,18 @@ struct MiniModeStoreTests {
     // MARK: Zeitformat
 
     @Test func hmsUnterEinerStundeIstMMSS() {
-        #expect(MiniModePopoverView.hms(0) == "00:00")
-        #expect(MiniModePopoverView.hms(65) == "01:05")
-        #expect(MiniModePopoverView.hms(3599) == "59:59")
+        #expect(MiniModeFormat.hms(0) == "00:00")
+        #expect(MiniModeFormat.hms(65) == "01:05")
+        #expect(MiniModeFormat.hms(3599) == "59:59")
     }
 
     @Test func hmsAbEinerStundeIstHMMSS() {
-        #expect(MiniModePopoverView.hms(3600) == "1:00:00")
-        #expect(MiniModePopoverView.hms(3661) == "1:01:01")
+        #expect(MiniModeFormat.hms(3600) == "1:00:00")
+        #expect(MiniModeFormat.hms(3661) == "1:01:01")
     }
 
     @Test func hmsNegativClamptAufNull() {
-        #expect(MiniModePopoverView.hms(-42) == "00:00")
+        #expect(MiniModeFormat.hms(-42) == "00:00")
     }
 
     // MARK: Datenschutz-Toggle-Auswertung
