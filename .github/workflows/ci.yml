@@ -5,7 +5,10 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: macos-14
+    # 2026-07-05: von macos-14 auf macos-15 gehoben — die ältere Toolchain crashte
+    # den Swift-Compiler (error: fatalError) beim Kompilieren von MykilosServices.
+    # Der Code wird gegen eine neuere macOS-SDK/Swift-Version entwickelt.
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - name: Swift version
