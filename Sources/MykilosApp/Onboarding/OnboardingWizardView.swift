@@ -24,6 +24,9 @@ struct OnboardingWizardView: View {
     @State private var profileError: String?
     @State private var claudeError: String?
     @State private var googleError: String?
+    // E4: lokal bestätigbare clockodoUserID (Meldeadresse-Schritt).
+    @State private var clockodoUserIDInput = ""
+    @State private var meldeadresseError: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,7 +42,10 @@ struct OnboardingWizardView: View {
         .overlay(RoundedRectangle(cornerRadius: MykRadius.lg).stroke(MykColor.line.color, lineWidth: 1))
         .shadow(color: MykColor.ink.color.opacity(0.25), radius: 30, y: 12)
         .task {
-            if let p = appState.profile.profile { displayName = p.displayName; role = p.role }
+            if let p = appState.profile.profile {
+                displayName = p.displayName; role = p.role
+                clockodoUserIDInput = p.clockodoUserID ?? ""
+            }
             googleClientID = (try? appState.googleAuth.storedClientID()) ?? ""
             if let c = try? appState.claudeAuth.storedCredentials() { claudeKey = c.apiKey; claudeModel = c.model }
         }
@@ -82,6 +88,7 @@ struct OnboardingWizardView: View {
         case .profile:  profileBody
         case .claude:   claudeBody
         case .google:   googleBody
+        case .meldeadresse: meldeadresseBody
         case .optional: optionalBody
         case .done:     doneBody
         }
@@ -135,6 +142,36 @@ struct OnboardingWizardView: View {
                           || googleClientID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             if let googleError { errorText(googleError) }
             hint("Es öffnet sich dein Browser zur Google-Anmeldung. mykilOS schreibt nie — alle Zugriffe sind read-only.")
+        }
+    }
+
+    // E4: Meldeadresse-Bestätigung — der Ausweis zeigt die aus Google erkannte Identität
+    // (read-only), die clockodoUserID lässt sich lokal ergänzen. Kein externer Write.
+    private var meldeadresseBody: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            stepTitle("Deine Meldeadresse", "Erkannt aus deinem Google-Login. Stimmt das?")
+            if let user = appState.currentGoogleUser {
+                HStack(spacing: MykSpace.s4) {
+                    Circle().fill(MykColor.brand.color).frame(width: 40, height: 40)
+                        .overlay(
+                            Text(mykNameInitials(user.displayName))
+                                .font(.mykBody).foregroundStyle(MykColor.paper.color)
+                        )
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(user.displayName).font(.mykBody).foregroundStyle(MykColor.ink.color)
+                        Text(user.email).font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
+                        if let domain = user.domain {
+                            Text(domain).font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                        }
+                    }
+                }
+                labeledField("Clockodo User-ID (optional)", text: $clockodoUserIDInput, placeholder: "z. B. 123456")
+                if let meldeadresseError { errorText(meldeadresseError) }
+                hint("Nur lokal gespeichert — mykilOS schreibt hier nichts nach außen. Dein Ausweis bleibt auf diesem Gerät.")
+            } else {
+                hint("Noch keine Google-Identität erkannt. Verbinde im vorigen Schritt Google "
+                     + "oder überspringe — du kannst es später in den Einstellungen nachtragen.")
+            }
         }
     }
 
@@ -210,9 +247,30 @@ struct OnboardingWizardView: View {
 
     private func primaryAction() {
         switch step {
-        case .profile: saveProfileAndAdvance()
-        case .done:    onFinish()
-        default:       advance()
+        case .profile:      saveProfileAndAdvance()
+        case .meldeadresse: saveMeldeadresseAndAdvance()
+        case .done:         onFinish()
+        default:            advance()
+        }
+    }
+
+    // E4: Nur lokaler Write — die bestätigte clockodoUserID in den Ausweis/das Profil,
+    // alle anderen Felder unverändert mitführen (userID/googleDomain nicht verlieren).
+    private func saveMeldeadresseAndAdvance() {
+        meldeadresseError = nil
+        let existing = appState.profile.profile
+        let trimmedID = clockodoUserIDInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            try appState.profile.save(UserProfile(
+                displayName: existing?.displayName ?? displayName.trimmingCharacters(in: .whitespacesAndNewlines),
+                role: existing?.role ?? role.trimmingCharacters(in: .whitespacesAndNewlines),
+                clockodoUserID: trimmedID.isEmpty ? nil : trimmedID,
+                googleDomain: existing?.googleDomain ?? appState.currentGoogleUser?.domain,
+                userID: existing?.userID
+            ))
+            advance()
+        } catch {
+            meldeadresseError = "Speichern fehlgeschlagen: \(error)"
         }
     }
 

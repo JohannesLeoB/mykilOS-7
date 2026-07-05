@@ -12,9 +12,13 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
     // `.profil` steht oben (wird in Etappe 2 zum Personalausweis-Header).
     case profil, darstellung, privat, schluesselInventar, verbindungen, datenschutz, system
     var id: String { rawValue }
+    // E2 (2026-07-05): Der Personalausweis (`.profil`) lebt als sticky Header im
+    // Content-Pane, NICHT als Rail-Eintrag. Beide Rails (SettingsView.categoryRail +
+    // SidebarView.navItems) iterieren `railCases` statt `allCases`.
+    static let railCases: [SettingsCategory] = allCases.filter { $0 != .profil }
     var title: String {
         switch self {
-        case .profil:             "Profil"
+        case .profil:             "Personalausweis"
         case .darstellung:        "Darstellung"
         case .verbindungen:       "Integrationen"
         case .schluesselInventar: "Schlüssel-Inventar"
@@ -38,7 +42,9 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
 
 // MARK: - SettingsView
 struct SettingsView: View {
-    @Environment(AppState.self) private var appState
+    // internal (nicht private): die ausgelagerte Extension SettingsView+Personalausweis
+    // greift auf appState zu (gleiches Modul), analog zu den @AppStorage-Props für MiniMode.
+    @Environment(AppState.self) var appState
     // Item D (2026-07-05): globaler Drive-Sync über alle aktiven Projekt-Ordner an
     // EINEM Ort (Parent-I/O). Der StudioContext ist app-weit injiziert (MykilOS6App).
     @Environment(StudioContext.self) private var context
@@ -77,8 +83,8 @@ struct SettingsView: View {
     // Sidebar (Settings-Sidebar-Modus) und hier bleibt nur der Content. `nil` = eigenständig.
     var externalCategory: Binding<SettingsCategory>? = nil
     @State private var internalCategory: SettingsCategory = .profil
-    private var category: SettingsCategory { externalCategory?.wrappedValue ?? internalCategory }
-    private func selectCategory(_ c: SettingsCategory) {
+    var category: SettingsCategory { externalCategory?.wrappedValue ?? internalCategory }
+    func selectCategory(_ c: SettingsCategory) {
         if let e = externalCategory { e.wrappedValue = c } else { internalCategory = c }
     }
 
@@ -90,17 +96,26 @@ struct SettingsView: View {
                 categoryRail
                 Divider().overlay(MykColor.line.color)
             }
-            ScrollView {
-                VStack(alignment: .leading, spacing: MykSpace.s7) {
-                    HStack(spacing: MykSpace.s4) {
-                        Image(systemName: category.icon).font(.mykTitle).foregroundStyle(MykColor.brand.color)
-                        Text(category.title).font(.mykDisplay).foregroundStyle(MykColor.ink.color)
+            // E2: Personalausweis als sticky Header über dem scrollenden Inhalt.
+            VStack(spacing: 0) {
+                personalausweisHeader
+                Divider().overlay(MykColor.line.color)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: MykSpace.s7) {
+                        // Der .profil-Detailtitel ist redundant zum Header → nur bei anderen
+                        // Kategorien den großen Kategorie-Titel zeigen.
+                        if category != .profil {
+                            HStack(spacing: MykSpace.s4) {
+                                Image(systemName: category.icon).font(.mykTitle).foregroundStyle(MykColor.brand.color)
+                                Text(category.title).font(.mykDisplay).foregroundStyle(MykColor.ink.color)
+                            }
+                        }
+                        categoryContent
+                        Spacer()
                     }
-                    categoryContent
-                    Spacer()
+                    .padding(MykSpace.s9)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(MykSpace.s9)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .background(MykColor.paper.color)
@@ -140,7 +155,7 @@ struct SettingsView: View {
                 .font(.mykMono(10)).tracking(1.2).textCase(.uppercase)
                 .foregroundStyle(MykColor.muted.color)
                 .padding(.horizontal, MykSpace.s4).padding(.bottom, MykSpace.s4).padding(.top, MykSpace.s2)
-            ForEach(SettingsCategory.allCases) { cat in
+            ForEach(SettingsCategory.railCases) { cat in
                 Button { withAnimation(.easeInOut(duration: 0.15)) { selectCategory(cat) } } label: {
                     HStack(spacing: MykSpace.s4) {
                         Image(systemName: cat.icon).font(.mykBody).frame(width: 20)
