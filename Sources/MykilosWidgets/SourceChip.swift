@@ -38,6 +38,7 @@ extension WidgetKind {
         case .recentActivity: "bolt"
         case .kalkulation:    "eurosign.square"
         case .warenkorb:      "cart"
+        case .barcode:        "barcode.viewfinder"
         }
     }
 }

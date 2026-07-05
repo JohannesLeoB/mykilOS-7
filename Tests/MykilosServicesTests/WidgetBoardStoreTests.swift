@@ -203,4 +203,32 @@ struct WidgetBoardStoreTests {
         try store.load()
         #expect(store.instances.count == countAfterFirst)
     }
+
+    // MARK: Barcode-Widget landet per Nachzügler-Migration aufs Home-Board + überlebt Neustart
+    // Beweist die 2026-07-05-Migration: ein bestehendes Home-Board (Vor-Barcode-Stand)
+    // bekommt das neue Barcode-Widget ergänzt und behält es über Neustarts.
+    @Test func barcodeLandetAufHomeBoardUndUeberlebtNeustart() throws {
+        let db = try GRDBDatabase.inMemory()
+        // Session A: altes Home-Board OHNE Barcode
+        let altHome: [WidgetInstance] = [
+            WidgetInstance(kind: .focus,          size: .wide,   position: 0),
+            WidgetInstance(kind: .notes,          size: .medium, position: 1),
+            WidgetInstance(kind: .projectFaves,   size: .full,   position: 2),
+            WidgetInstance(kind: .recentActivity, size: .wide,   position: 3),
+            WidgetInstance(kind: .clockodo,       size: .medium, position: 4),
+        ]
+        let storeA = WidgetBoardStore(boardID: "home", db: db) { altHome }
+        try storeA.load()
+        #expect(storeA.instances.contains(where: { $0.kind == .barcode }) == false)
+
+        // Session B: App aktualisiert — homeLayout enthält jetzt .barcode → Migration ergänzt
+        let storeB = WidgetBoardStore(boardID: "home", db: db) { WidgetBoardDefault.homeLayout }
+        try storeB.load()
+        #expect(storeB.instances.contains(where: { $0.kind == .barcode }))
+
+        // Session C: Neustart — Barcode bleibt persistent
+        let storeC = WidgetBoardStore(boardID: "home", db: db) { WidgetBoardDefault.homeLayout }
+        try storeC.load()
+        #expect(storeC.instances.contains(where: { $0.kind == .barcode }))
+    }
 }

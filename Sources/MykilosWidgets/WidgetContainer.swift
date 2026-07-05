@@ -185,6 +185,7 @@ extension WidgetKind {
         case .recentActivity: .drive
         case .kalkulation:    .tasks
         case .warenkorb:      .cash
+        case .barcode:        .drive
         }
     }
 }
