@@ -513,6 +513,12 @@ Freigabe von Johannes ausstehend, `createRecord` wirft bis dahin ehrlich
 Neuer Abschnitt in den Einstellungen (direkt unter „Wer bin ich?"): ein
 Segment-Umschalter **Automatisch · Hell · Dunkel**. Die App-Ansicht richtet sich
 damit **nicht mehr stur nach dem System**, sondern nach deiner Wahl.
+
+**Dock-Icon Hell/Dunkel (2026-07-05):** Das Dock-Icon der laufenden App zeigt die neue
+MYKILOS-„M"-Wortmarke und **wechselt mit dem macOS-System-Modus** — Ink (dunkler Grund) im
+Dunkelmodus, Paper (heller Grund) im Hellmodus, live beim Umschalten. *(Das statische
+Bundle-Icon in Finder/geschlossenem Dock bleibt vorerst das alte — Neubacken braucht einen
+SVG-Rasterizer, kleiner Folge-Strang.)*
 - **Name · Was es tut:** legt das Farbschema der gesamten App fest (treibt alle
   Design-Tokens `MykColor` um). „Automatisch" folgt weiter dem System.
 - **Wo zu finden:** Einstellungen → Darstellung.
