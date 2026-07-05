@@ -182,15 +182,42 @@ Header-Inkonsistenz (Item B) ist der sichtbare offene Punkt daraus.
 
 ---
 
-## 6. STARTPROMPT für die nächste Session
-> Moin. Lies `MEMORY.md` (v. a. `kein-hohles-erledigt-nie-ansagen-vergessen`), die neue `CLAUDE.md`-
-> Regel ganz oben, und DIESEN Handoff komplett. Pflichtprüfung `pwd`/`git status`/`swift build && swift
-> test`. **Dann ZUERST:** Johannes fragen, ob in alpha2 die 6×-Keychain-Prompts weg sind (eine Zahl).
-> **Danach DAS Thema, nichts anderes:** Einstellungen + User-Log-Ins — Stufe 1 (Abmelden + Nutzer-
-> Wechsel, neustart-basiert, per-User-Namespace, Cold-Start-Isolations-Test der beweist: Kollege sieht
-> nie fremde Daten). Architektur + Modell stehen in §1. Regeln: kein hohles „erledigt" (done =
-> Johannes-verifiziert), keine Ansage vergessen, keine Fragebögen, Basics vor Features, jede Build
-> eindeutig markiert, nichts auf main/extern ohne GO. Header (Item B) nur „wenn free minute".
+## 6. STARTPROMPT für die nächste Session (Ziel · Plan · Aufgaben-Skript)
+
+**LESEN zuerst (in dieser Reihenfolge), dann handeln:** `MEMORY.md` (v. a.
+`kein-hohles-erledigt-nie-ansagen-vergessen`) → `CLAUDE.md` ganz oben (Meta-Regel + **Session-Routine**)
+→ DIESER Handoff komplett. Pflichtprüfung: `pwd` · `git status` · `swift build && swift test`.
+Branch: `feat/bewohner-oberflaeche` (ist auf origin gesichert).
+
+**🎯 ZIEL (nichts anderes, bis das steht):** Die **Einstellungen + User-Log-Ins** zu Ende bringen —
+**Multi-User**: sich abmelden, Kollege loggt sich mit SEINEN Accounts ein, **per-User isoliert** (er
+sieht NIE fremde Daten), Rückkehr ohne Datenverlust. Modell: persönlich = Google/Clockodo/ClickUp/Claude
+· geteilt = Airtable/Sevdesk (§1a).
+
+**▶️ ZUERST (vor jedem Bau):** (1) Johannes fragen: „In alpha2 — kommen die 6 Keychain-Prompts noch?
+(0 / weniger / 6)?" → Task #10. Kommt noch was: Wortlaut holen, Wurzel fixen. (2) Ziel in EINEM Satz
+zurückspiegeln, sein Ja abwarten.
+
+**🗺️ PLAN (klein, jede Stufe von Johannes LIVE abgenommen):**
+- **Stufe 1 — Abmelden + Nutzer-Wechsel** (Settings): Google-Login + Namespace, **neustart-basiert**.
+  `ProfileStore.ensureUserID` um einen Switch-Zustand erweitern (neuer Bewohner → FRISCHER
+  userID-Namespace; Rückkehrer → Rebind über `KeychainIdentityAnchorStore`). **Cold-Start-Isolations-Test
+  als hartes Gate** (Person B sieht nie Person A's Daten). ⚠️ Identitäts-Kern — falsch = Datenleck.
+- **Stufe 2 — 1Password-Schicht** (`op`-CLI, Touch ID; KEIN Swift-SDK, §1c): Tokens raus aus Keychain,
+  geteilter + persönliche Vaults.
+
+**✅ AUFGABEN-SKRIPT (der Reihe nach):**
+1. Keychain-Verifikation (Johannes-Zahl) → #10.
+2. Stufe 1 in kleinen Schritten, jeder `swift build && swift test`, jeder von Johannes live abgenommen.
+   Version bumpen (alpha3), DMG, Johannes testet.
+3. Stufe 2 (1Password) — erst wenn Stufe 1 live steht.
+4. Vor irgendeinem `main`-PR: **Baseline-Regen** (#8), CI-grün, dann Johannes' GO.
+5. „Header in eine Linie" (#9) nur, wenn free minute — nicht vordrängen.
+
+**⛔ REGELN (nicht verhandelbar):** Ziel zuerst · klein bauen · Johannes prüft · wir lernen laut ·
+kein hohles „erledigt" (done = Johannes-live-geprüft, Tests grün = Proxy) · keine Fragebögen wenn er's
+gesagt hat · nichts auf `main`/extern ohne GO, kein Force, Safe State `v7.0.0` heilig · jede Build
+eindeutig markiert. **Wir müssen aufholen: EINE Sache, sauber, verifiziert, ohne Theater. Los.**
 
 *Quellen 1Password: [SDKs](https://developer.1password.com/docs/sdks/) · [CLI-Desktop-Biometrie](https://developer.1password.com/docs/cli/about-biometric-unlock/) · [Secrets laden](https://developer.1password.com/docs/sdks/load-secrets/).*
 
