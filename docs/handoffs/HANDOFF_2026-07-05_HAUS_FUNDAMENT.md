@@ -163,6 +163,12 @@ Eintrag nachzuholen (ist ein Write → wenn der Enrich live geht).
 
 ## 5. Die Anker (wo alles liegt)
 
+> **📦 Wichtig:** Alle detaillierten Baupläne/Designs (`tasks/*.output`, im Text unten referenziert) lagen
+> ursprünglich im Session-Scratchpad (`/private/tmp/…`, session-gebunden) und sind jetzt **durabel ins Repo
+> kopiert:** `docs/handoffs/plaene-2026-07-05/` (git-tracked + offsite). Wo unten `tasks/X.output` steht,
+> liegt die Datei in `docs/handoffs/plaene-2026-07-05/X.output`.
+
+
 - **Nordstern/Vision:** [[haus-mykilos-grundriss-metapher]] · Grundriss-Artifact (lebend, macOS-Client)
   · Kommode-Artifact · `docs/HAUS_GESAMTPLAN.md`
 - **MoU/Arbeitsweise:** [[zusammenarbeits-charter]] · [[orchestrator-partner-role]] · [[bumerang-flotte-torwaechter]]

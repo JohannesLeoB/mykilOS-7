@@ -1,0 +1,317 @@
+{
+  "summary": "Ehrliche Sicherungs-Statik von mykilOS: was ist sturmfest/versichert/offsite-gesichert vs. nur reserviert-leer — Mauern & Ferienhaus fürs Haus-Grundriss. Read-only.",
+  "agentCount": 5,
+  "logs": [
+    "Vermessung fertig: 26 Posture-Zeilen aus 4/4 Spähern",
+    "Statik: 21 konsolidierte Zeilen"
+  ],
+  "result": {
+    "posture": [
+      {
+        "layer": "Code (git) — aktuelle Arbeit (mykilOS 10)",
+        "asset": "Working-Branch feat/kamera-barcode-widget, HEAD b59c275 — die gesamte alpha7–alpha19-Entwicklung (zwei Tage volle mykilOS-10-Linie)",
+        "protectedHow": "Nur lokale git-Commits auf dem einen Mac. Sauber committet, aber nirgends gespiegelt.",
+        "offsite": "nein — nur lokal. Live geprüft: git branch -r --contains HEAD ist LEER, HEAD auf keinem Remote-Branch. Letzter offsite-Stand ist origin/main 6699dc6 vom 2026-07-03 22:56 — zwei Tage älter als HEAD.",
+        "stormRating": "luecke",
+        "gap": "~87 Commits vom 03.–05.07. existieren ausschliesslich auf diesem Mac. Brennt der Mac heute Nacht ab, ist die komplette mykilOS-10-Linie weg; nur der Stand vom 03.07. wäre auf origin gerettet.",
+        "recommendation": "Sofort nach GO: git push -u origin feat/kamera-barcode-widget. Kostet nichts, schliesst die grösste Einzellücke. Danach täglich pushen, nicht erst zum PR — dringendste Massnahme überhaupt."
+      },
+      {
+        "layer": "Airtable-Daten (Cloud) — Volldatenbestand",
+        "asset": "Alle Geschäftsdaten in 3 Bases: Mastermind (appuVMh3KDfKw4OoQ — Kunden/Projekte/Routing/Datenstrom/Kalkulation/Clockodo-Entwürfe/Postbox), Artikel & Einkauf (appdxTeT6bhSBmwx5 — Daniels Stamm), Zuliefererpreise-Schätzung (appkPzoEiI5eSMkNK)",
+        "protectedHow": "Liegt ausschliesslich in Airtables eigener Cloud. mykilOS hat KEINEN wiederholbaren Airtable-Voll-Export/Dump. Die einzige mykilOS-eigene Redundanz ist der lokale Registry-Cache (customers.json/projects.json), der aber NUR Kunden+Projekt-Routing abdeckt — nicht Artikel/Kalkulation/Postbox/Clockodo-Tabellen.",
+        "offsite": "nein — alles hängt an Airtables Cloud; kein zweiter Ort ausserhalb Airtable für den vollen Bestand.",
+        "stormRating": "luecke",
+        "gap": "Fällt das Airtable-Konto/der Workspace aus oder wird gesperrt, ist der Grossteil der Geschäftsdaten (Artikel, Kalkulation, Postbox, Clockodo-Adapter, externe Systeme) nur in Airtable und nirgends sonst. Der lokale Cache rettet nur Kunden+Projekte. Zudem: kein dokumentiertes Restore-Drehbuch für den Fall, dass ein Mensch/Fremd-Tool (nicht die App) die Base löscht/fehl-editiert.",
+        "recommendation": "Wiederholbaren, versionierten Airtable-Voll-Export bauen (REST list über alle Tabellen der 3 Bases → JSON/CSV nach Application Support UND ins Git/Drive), pro Sync oder täglich. Damit existiert der volle Bestand mindestens an einem zweiten Ort — plus ein kurzer Restore-Hinweis."
+      },
+      {
+        "layer": "Google Drive (externe Dateien)",
+        "asset": "Der PROJEKTE-Dateikorpus (31 aktive Projektordner + ~200 Archiv) — Angebote, Pläne, Belege",
+        "protectedHow": "Read-only-Posture im Code belegt: Scopes drive.readonly/metadata.readonly für Bestandsdateien; drive.file (Schreiben) least-privilege nur für von der App SELBST erzeugte Dateien. Bestehender Korpus ist unveränderbar. Reads (downloadContent) sind ephemere In-App-Vorschauen.",
+        "offsite": "nein (als mykilOS-eigener Spiegel) — Dateien leben in Googles Cloud; DriveLocalResolver liest nur Googles eigenen File-Provider-Cache, kein von mykilOS gehaltener Zweitbestand.",
+        "stormRating": "luecke",
+        "gap": "Kein mykilOS-eigener Offsite-Spiegel. downloadContent materialisiert nichts dauerhaft. Fällt das Google-Konto aus, hat mykilOS keine eigene Kopie der Angebote/Pläne/Belege.",
+        "recommendation": "Falls geschäftskritisch: selektiver read-only Materialisierungs-Job (downloadContent → externer Ordner, SHA-dedup) für Angebote/Belege. Kosten/Storage bewusst abwägen — sonst ehrlich als akzeptierte Lücke dokumentieren (Google IST das Primärsystem)."
+      },
+      {
+        "layer": "Kalkulations-Korpus (learning.sqlite)",
+        "asset": "learning.sqlite (483 KB) — Lern-Store der KalkulationsEngine: recordAdjustment-Lernschleife, promovierte Kalibrierungsfaktoren, PDF-Positions-Kandidaten, Airtable-Offer-Anker, Schätz-Sessions",
+        "protectedHow": "5 Migrationen, Premigration-Backup vor jeder Migration (4 Snapshots real, 27.06.–05.07.). Cold-Start-Tests beweisen Neustartfestigkeit des Lern-Loops. WIRD vom launchd-Job backup_local_data.sh täglich mitgesichert (Log: '2 DB(s)', bestätigt bis 05.07.). ABER: NICHT im in-App BackupService-Quellset (sourcePaths = nur db.sqlite/-wal/-shm + projects/customers.json) — Backup-Knopf/Auto-Backup der App sichern den Korpus GAR NICHT.",
+        "offsite": "nein — beide Kopien lokal: eigener Pfad ~/Library/Application Support/MYKILOS/Kalkulationslabor/Learning/ + launchd-Snapshot ~/mykilOS-App-Backups/auto/. Kein zweiter Speicherort.",
+        "stormRating": "luecke",
+        "gap": "Kein Offsite. Zwischen zwei launchd-Läufen dazugelerntes ist bis zum nächsten 03:30-Snapshot nur einfach vorhanden. Der Groundtruth-Vault enthält nur den SEED-Korpus, NICHT den live gelernten Zustand. Plattenverlust nimmt Original UND alle lokalen Snapshots gleichzeitig mit.",
+        "recommendation": "learning.sqlite zusätzlich ins in-App BackupService-Quellset aufnehmen (Konsistenz mit db.sqlite) UND den launchd-Backup-Ordner offsite spiegeln — dann ist der teuerste, nicht reproduzierbare Store versichert."
+      },
+      {
+        "layer": "Secrets / Keychain + versteckte userID-Kopplung",
+        "asset": "OAuth-Tokens (Google Drive/Kalender/Kontakte/Gmail inkl. Refresh), Airtable-PAT, ClickUp-, Clockodo-, Sevdesk-Token, Claude-API-Key — je Nutzer unter com.mykilos6.<service>.<userID>",
+        "protectedHow": "macOS-Keychain, Per-User-Isolation über userID-Suffix, sanfte Legacy-Migration ohne Löschen, kSecAttrAccessibleWhenUnlockedThisDeviceOnly (bewusst NICHT iCloud). Secrets nie in Code/Repo/Logs/Backup-Manifest. Fake-Keychain in Tests.",
+        "offsite": "nein — per Design ThisDeviceOnly, explizit NICHT in iCloud-Keychain. Stirbt der Mac, sind alle Tokens weg.",
+        "stormRating": "luecke",
+        "gap": "(1) Bei Mac-Verlust muss jede Integration neu verbunden werden — bei Secrets gewollt, aber die App ist nach Backup-Restore NICHT sofort einsatzbereit. (2) Versteckte Kopplung: die per-User-Service-Namen hängen an einer userID-UUID, die AUSSCHLIESSLICH in db.sqlite lebt (ProfileStore.ensureUserID). Ein DB-Reset via recoverByResettingDatabase OHNE Backup-Restore vergibt eine NEUE UUID → Tokens im Keychain (unter alter UUID) verwaisen: physisch da, aber die App findet sie nicht. Wirkt wie Totalverlust aller Verbindungen.",
+        "recommendation": "(1) Recovery-Drehbuch: nach DB-Reset IMMER erst Backup-Restore, dann starten. (2) Robuster: userID zusätzlich im Keychain/einer plist spiegeln, damit ein DB-Reset die Token-Zuordnung nicht bricht. (3) Kurze Nutzer-Checkliste 'so verbindest du nach Mac-Wechsel alles neu' als ehrlicher Offsite-Ersatz für Secrets."
+      },
+      {
+        "layer": "Offsite-Gesamtbild (das eine Ferienhaus)",
+        "asset": "Ein vollständiger gespiegelter Sicherungsort ausserhalb des einen Mac für ALLE Schichten",
+        "protectedHow": "Für Code existiert das Ferienhaus real (GitHub origin + Archiv-Remote + Release). Das ist die EINZIGE Schicht mit echtem Offsite.",
+        "offsite": "teilweise — nur Code ist offsite; alle lokalen Daten (SQLites, Korpus, Caches) und externe Daten (Airtable, Drive) sind es nicht. Time Machine nachweislich unkonfiguriert (tmutil: No destinations configured).",
+        "stormRating": "luecke",
+        "gap": "Brennt der Mac: Code ist gerettet, aber db.sqlite, learning.sqlite, der Groundtruth-Vault und jeder nicht anderswo gespiegelte Airtable-Stand sind der harte Verlust-Bereich. Das 'Ferienhaus' hält heute nur den Code.",
+        "recommendation": "EIN Offsite-Ziel definieren (verschlüsselte externe Platte oder Cloud) und ALLE Daten-Schichten dorthin spiegeln: launchd-Auto-Backups + Vault + periodischer Airtable-Export. Danach ein zweiseitiges 'Wenn der Mac abbrennt'-Drehbuch (Code / lokale Daten / externe Daten getrennt)."
+      },
+      {
+        "layer": "Airtable-Voll-Spiegel-Base (Backup/TRESOR)",
+        "asset": "Reservierte Vorrats-Kammer für künftiges Airtable-Offsite (Volldaten-Kopie)",
+        "protectedHow": "Es existiert EINE backup-orientierte Base (app56DTbSoqPvZhom, 'mykilOS 8 Backup Base') als Write-Shadow-Spiegelziel (backupBaseID in AppState gesetzt). Eine dedizierte 'Backup'/'TRESOR'-Base als Volldaten-Vorrat existiert NICHT.",
+        "offsite": "reserviert aber leer — App-Token sieht nur 3 Produktiv-Bases; die eine Backup-Base ist für den Token unsichtbar (403), ihr Schema/Tabellenname unverifiziert. Kein gespiegelter Datenbestand, nur (unbestätigter) Write-Shadow-Log-Spiegel.",
+        "stormRating": "reserviert-leer",
+        "gap": "Die vermutete Volldaten-TRESOR-Base gibt es nicht. Die existierende Backup-Base ist ein unverifizierter Write-Shadow-Log-Spiegel, kein gespiegelter Bestand — und für den aktiven Token nicht mal sichtbar. Suggeriert Scheinsicherheit.",
+        "recommendation": "Entweder echte Voll-Spiegel-Base anlegen und per automatisiertem Export befüllen, ODER das Konzept streichen und ehrlich auf externen Voll-Export (Git/Drive) setzen. Aktuell leere Kammer."
+      },
+      {
+        "layer": "Write-Shadow (Airtable-Schreibprotokoll)",
+        "asset": "Wiederherstellungskopie jedes App-ausgelösten Airtable-Writes (payload + previousValue als JSON)",
+        "protectedHow": "WriteShadowRecorder schreibt bei jedem Airtable-Write IMMER zuerst lokal nach GRDB (writeShadowLog, append-only, wirft bei DB-Fehler) — das ist die echte lokale Kopie. Zusätzlich Spiegel-Versuch in Backup-Base app56DTbSoqPvZhom.",
+        "offsite": "teilweise — Spiegel-Base konfiguriert, aber Schema/Tabellenname unverifiziert (App-Token 403 auf die Base). Ob der externe Spiegel real ankommt, ist nie bestätigt.",
+        "stormRating": "teilweise",
+        "gap": "Externer Spiegel nicht-fatal und unbestätigt — stimmt der Tabellenname nicht, scheitert er still (nur DataFlow-Warnung). Deckt zudem nur Airtable-Writes ab (targetSystem u.a. drive/clockodo/clickUp im Enum, aber Schreibpfad ist Airtable), nicht Drive/Clockodo/ClickUp-Writes.",
+        "recommendation": "Backup-Base-Schema einmal live mit Johannes gegenprüfen, echten Spiegel-Roundtrip verifizieren, DataFlow-Fehlerzustand aktiv monitoren statt nur loggen."
+      },
+      {
+        "layer": "Lokale App-DB (GRDB, db.sqlite)",
+        "asset": "db.sqlite (864 KB live) — Widget-Boards, Notizen, Chat-Verlauf, Audit-Log, Profil/userID, Favoriten, Timer, Warenkörbe, Write-Shadow-Log, Provisioning; 22 Migrationsstufen",
+        "protectedHow": "Sturmfest gegen Korruption: WAL+foreign_keys, boot() crasht nie, Korruptions-Recovery quarantäniert statt löscht, BackupService macht WAL-checkpoint→SHA256-Manifest→atomarer Restore mit Rettungsbackup+Smoke-Test, Auto-Backup 1×/Tag. Cold-Start-Tests inkl. echtem WAL→Totalverlust→Restore-Roundtrip. Zusätzlich sichert der launchd-Job backup_local_data.sh db.sqlite täglich (Log belegt Läufe bis 05.07. 03:30).",
+        "offsite": "nein — beide Backup-Ziele auf DEMSELBEN Mac: appSupportDir/backups (verifiziert, 5 Ordner) UND ~/mykilOS-App-Backups/auto/ (verifiziert, 3 Snapshots). Kein iCloud/Drive/Netz. Time Machine: No destinations configured.",
+        "stormRating": "teilweise",
+        "gap": "Sturmfest gegen App-Crash/DB-Korruption (echt getestet), aber NICHT gegen Verlust des Mac: alle Backups auf derselben Platte. Plattenverlust/Diebstahl/versehentliches Löschen des Application-Support-Ordners/Ransomware nimmt DB und alle lokalen Backups gleichzeitig mit.",
+        "recommendation": "Backup-Zielordner offsite spiegeln (Google-Drive-/iCloud-Pfad — App hat schon Drive-OAuth — oder rsync/launchd in die Cloud/aufs Ferienhaus-Laufwerk). Ökonomisch: nur die jüngsten 1–2 Backup-Ordner (wenige MB) offsite reichen."
+      },
+      {
+        "layer": "Backup-Mechanismus selbst (BackupService)",
+        "asset": "WAL-checkpoint + SHA256-Manifest + atomarer Restore mit Smoke-Test, Auto-Backup 1×/Tag, Retention, Restore-Marker",
+        "protectedHow": "Sehr solide + getestet: BackupServiceTests decken Manifest-Prüfsummen (known SHA256-Vektor), Korruptionserkennung, Live-Datei-Überschreiben und echten WAL-Roundtrip nach Totalverlust ab. Restore legt vor Überschreiben ein Pre-Restore-Rettungsbackup an. 5 reale Backup-Ordner auf der Platte.",
+        "offsite": "nein — Zielordner default appSupportDir/backups, also derselbe Ordner-Baum wie die Live-DB.",
+        "stormRating": "teilweise",
+        "gap": "Echt sturmfest gegen die abgedeckten Fehler (Korruption, WAL-Verlust, versehentliche Änderung), aber definitionsgemäss LOKALES Snapshot-System auf einer Platte — schützt NICHT gegen Verlust genau dieser Platte. Quellset deckt zudem nur db.sqlite + 2 JSONs ab, NICHT learning.sqlite.",
+        "recommendation": "Zwei gezielte Erweiterungen schliessen fast alle Lücken: (a) learning.sqlite ins Quellset aufnehmen, (b) backupDir offsite spiegeln. Damit wird aus 'lokal sturmfest' echtes 'versichert im Ferienhaus'."
+      },
+      {
+        "layer": "Restore-Pfad / Recovery-Fähigkeit (lokal)",
+        "asset": "Fähigkeit, aus einem Backup real wiederherzustellen",
+        "protectedHow": "Für die lokale DB echter, getesteter Restore-Pfad (BackupService.restore: Prüfsumme→Rettungsbackup→atomarer Tausch→Smoke-Test, in AppDatabase verdrahtet). Cold-Start-Tests decken Persistenz-Roundtrips ab.",
+        "offsite": "teilweise — lokaler Restore echt; für Airtable-Voll-Wiederherstellung und Drive gibt es KEIN Drehbuch (kein Export → nichts zum Zurückspielen). Für die launchd-Snapshots kein dokumentierter Zurückspiel-Absatz.",
+        "stormRating": "teilweise",
+        "gap": "Restore funktioniert nur für lokale sqlite/JSON — und nur solange das lokale Backup (gleiche Platte) existiert. Für 'Mac weg' oder 'Airtable weg' kein durchgespieltes Recovery-Drehbuch, teils gar keine Quelle. Zurückspielen eines launchd-Snapshots (Snapshot → App beenden → Datei nach Application Support kopieren → starten) ist nirgends beschrieben.",
+        "recommendation": "Kurzes Recovery-Runbook schreiben (welche Quelle → welcher Schritt, inkl. launchd-Snapshot-Restore) und zuerst die Offsite-Lücken schliessen, damit das Runbook überhaupt eine Fernquelle hat."
+      },
+      {
+        "layer": "Airtable Schreib-Sicherheit (append-only / kein DELETE)",
+        "asset": "Unversehrtheit bestehender Airtable-Records (v.a. Daniels Artikel-Stamm, externe Daten)",
+        "protectedHow": "AirtableClient.swift verifiziert: Schreiben nur über harte writableMap-Whitelist (Base+Tabelle), createRecord/updateRecord werfen invalidBaseID ausserhalb. deleteRecord existiert, ist aber gegen eine SEPARATE testDeletableMap gesperrt, die nachweislich LEER ist ([:]) → kein einziger DELETE-Pfad erreichbar. Daniels Artikel-Stamm steht NICHT in writableMap → unantastbar.",
+        "offsite": "n/a (Integritäts-Garantie, kein Backup)",
+        "stormRating": "teilweise",
+        "gap": "PATCH (updateRecord) kann bestehende Records auf whitelisted Tabellen (z.B. Mastermind Projekte) überschreiben — kein append-only-Zwang dort, kein Vorwert-Rollback in Airtable selbst (nur im lokalen Write-Shadow-Log als JSON). Kein echtes DELETE-Risiko.",
+        "recommendation": "Für kritische whitelisted Tabellen erwägen, PATCH auf ergänzende Felder zu beschränken oder Vorwerte konsequent im Write-Shadow zu halten; ansonsten akzeptierte, protokollierte Restlücke."
+      },
+      {
+        "layer": "DMG-Safety-Rückfall",
+        "asset": "dist/safe/mykilOS-7-v7.0.0-SAFE.dmg — lauffähiges Goldstand-Bundle",
+        "protectedHow": "DMG + .sha256-Prüfsumme vorhanden (verifiziert im Ordner). Ist Redundanz zum offsite-gesicherten Tag v7.0.0, kein alleiniger Anker.",
+        "offsite": "nein — liegt nur lokal in dist/safe/ (git-ignored). Aber der Code dahinter (v7.0.0) ist offsite und jederzeit neu baubar.",
+        "stormRating": "teilweise",
+        "gap": "Reines Lokal-Artefakt. Kein Verlust-Drama, weil der Code hinter dem DMG offsite gesichert ist; nur die Bequemlichkeit des fertigen Bundles ginge verloren.",
+        "recommendation": "Optional: SAFE-DMG einmal ins Ferienhaus (Drive/externe Platte) legen, damit im Ernstfall ein lauffähiges Bundle ohne Rebuild bereitliegt."
+      },
+      {
+        "layer": "Git-Registry-Kopie (docs/registry/*.json)",
+        "asset": "Dritte, portable Kopie der Projekt-/Kunden-Registry im Git-Verlauf (31 Projekte, 30 Kunden)",
+        "protectedHow": "projekte.json + kunden.json in Git committet und via origin offsite. Bewusst ISO-8601-lesbar für Diff/Portabilität.",
+        "offsite": "ja — GitHub-Remote (origin), unabhängig von Airtable UND vom Mac.",
+        "stormRating": "teilweise",
+        "gap": "Laut README EINMALIGER manueller Snapshot (git-Stand 2026-06-27, airtableRecordID überall null), KEINE Automatisierung, veraltet. Deckt nur Kunden+Projekte. NICHT restore-ready: anderes Datumsformat als der App-Cache, kein Konvertierungsskript. Reine Lesearchiv-Kopie.",
+        "recommendation": "Export automatisieren (aus Airtable-REST oder lokalem Cache) und ein kleines Konvertierungsskript ISO-8601 → timeIntervalSinceReferenceDate schreiben, damit die Git-Kopie zurückspielbar ist statt nur lesbar."
+      },
+      {
+        "layer": "Weitere lokale Stores (JSON/Cache/Bilder)",
+        "asset": "artikel_katalog_cache.json (3,9 MB Artikel-Spiegel), business_projects/customers.json, projects/customers.json (Registry-Cache), hero-images/ (Titelbilder), AngebotsVorschau/ (Vorschau-PDFs), FileBackedRepository-JSONs",
+        "protectedHow": "projects.json + customers.json sind im BackupService-Quellset. FileBackedRepository nutzt roundtrip-sichere timeIntervalSinceReferenceDate-Kodierung (Cold-Start-Tests). ProjectHeroImageStore + AngebotsVorschauStore haben eigene Cold-Start-Tests.",
+        "offsite": "nein — nur lokal im Application-Support-Ordner.",
+        "stormRating": "teilweise",
+        "gap": "artikel_katalog_cache.json (3,9 MB), business_*.json, hero-images/ und AngebotsVorschau/ sind NICHT im Backup-Quellset. Meist reproduzierbar (Artikel-Cache kommt aus Airtable neu, Registry ist 3-fach redundant), daher kein harter Verlust — aber hero-images und lokal generierte Vorschau-PDFs wären bei Plattenverlust weg.",
+        "recommendation": "Kein dringender Bedarf für reproduzierbare Caches. hero-images/ optional ins Backup-Set, falls nicht anderweitig (Drive) vorhanden. Primär über generelle Offsite-Spiegelung mit abgedeckt."
+      },
+      {
+        "layer": "Code (git) — lokale Branches",
+        "asset": "29 lokale Branches (feat/*, claude/*, fix/*, handoff/*)",
+        "protectedHow": "9 von 29 Branches auf origin (main, docs/mykilos8-handoff, feat/plaene-katalog u.a.). 20 Branches (alle claude/*, die meisten feat/* inkl. v10-Linie, fix/intake) leben nur lokal.",
+        "offsite": "teilweise — 9 offsite, 20 nur lokal.",
+        "stormRating": "teilweise",
+        "gap": "Ob in den 20 lokal-only Branches noch nicht anderweitig gesicherte Unikat-Arbeit steckt, ist ungeprüft. Manche (claude/*) sind vermutlich Wegwerf-Worktrees, aber unverifiziert.",
+        "recommendation": "Kurz sichten welche lokal-only Branches echte Unikate sind vs. Altlasten; echte pushen, Altlasten löschen (Datenhygiene-Regel). Nicht pauschal alle pushen."
+      },
+      {
+        "layer": "Groundtruth-Vault (Kalkulations-Korpus MYK-KALK-KORPUS-01)",
+        "asset": "ALLEANGEBOTE.pdf + destilliertes brain/ (815 Positionen, 3.384 Beobachtungen, v4.sqlite) — Geschäftsgeheimnis, nie im Repo",
+        "protectedHow": "~/mykilOS-App-Backups/kalk-korpus-groundtruth-01/ existiert mit IDENT.md + MANIFEST.sha256 (verifiziert vorhanden; am 04.07. bit-genau gegen Originale geprüft). Bewusst NICHT in git (korrekt, Geschäftsgeheimnis).",
+        "offsite": "nein — nur auf diesem Mac, bewusst nicht im Repo, keine zweite Kopie belegt.",
+        "stormRating": "teilweise",
+        "gap": "Gegen Datei-DRIFT gut geschützt (feste Kopie + sha256-Manifest), aber NICHT gegen Hardwareverlust: teilt das Schicksal der lokalen Daten (kein Offsite, kein Time Machine). Da bewusst nicht in git, keine Rückfallebene für den einzigen verifizierten Groundtruth-Korpus bei Plattenausfall.",
+        "recommendation": "Denselben Offsite-Spiegel wie für lokale Daten nutzen (verschlüsselter Cloud-/Zweitplatten-Sync, da Geschäftsgeheimnis) — das sha256-Manifest macht die Integrität der Fernkopie danach jederzeit prüfbar."
+      },
+      {
+        "layer": "Code (git) — Goldstand v7.0.0",
+        "asset": "Der unantastbare Safe State (Commit e629e84, Tag v7.0.0)",
+        "protectedHow": "Annotated Tag v7.0.0 (Tag-Objekt 64485b5). Tag-Message verbietet Verschieben/Force. Enthält 409 grüne Tests. Live gegen beide Remotes geprüft: identischer Objekt-Hash 64485b5 auf origin UND mykilos6-archive.",
+        "offsite": "ja — auf origin (mykilOS-7) UND mykilos6-archive (mykilOS-6) UND als GitHub-Release. Dreifach redundant offsite, live bestätigt.",
+        "stormRating": "echt-sturmfest",
+        "gap": "—",
+        "recommendation": "—"
+      },
+      {
+        "layer": "Recovery-Drehbuch (Code / Safe State)",
+        "asset": "script/recall_safe_state.sh — frischer Aufruf des Goldstands + drei dokumentierte Rückweg-Varianten (SAFE_STATE.md)",
+        "protectedHow": "Skript existiert, ausführbar (verifiziert 755), holt Tag v7.0.0 notfalls per git fetch aus origin, legt separaten detached Worktree an, baut+startet, fasst den Arbeitsordner nicht an. SAFE_STATE.md beschreibt Variante A (Skript), B (git checkout v7.0.0), C (SAFE-DMG). Skript liegt versioniert im Repo, damit offsite.",
+        "offsite": "ja — Skript + Docs sind Teil des Repos auf origin.",
+        "stormRating": "echt-sturmfest",
+        "gap": "Recall hängt an origin-Erreichbarkeit für den Tag-Fetch, falls das lokale Repo weg ist. Solange origin lebt, voll funktionsfähig. In dieser Session nicht live durchgespielt.",
+        "recommendation": "Gelegentlich real testen (./script/recall_safe_state.sh --build), um zu beweisen dass der Goldstand aus reinem git-Stand baubar bleibt."
+      },
+      {
+        "layer": "Code (git) — main-Schutz",
+        "asset": "Schutz-Konvention für den heiligen main-Branch",
+        "protectedHow": "docs/GIT_WORKFLOW.md + SAFE_STATE.md dokumentieren: main heilig, nie direkt/force. origin/main (6699dc6) unverändert seit 2026-07-03 (verifiziert).",
+        "offsite": "ja — Regel-Docs im Repo auf origin.",
+        "stormRating": "teilweise",
+        "gap": "Dokumentierte KONVENTION, keine erzwungene GitHub-Branch-Protection-Rule — technisch könnte force-push/Tag-Deletion weiterhin durchgehen, wenn jemand die Regel ignoriert.",
+        "recommendation": "Auf GitHub eine Branch-Protection-Rule für main aktivieren (force-push blockieren, PR erzwingen, Tag-Deletion sperren) — macht die eiserne Regel technisch unumgehbar statt nur schriftlich."
+      },
+      {
+        "layer": "Code (git) — Release- & forensische Tags",
+        "asset": "12 Versions-Tags v6.5.0–v7.7.2 + forensischer Tag mykilos6-last-known-good-2026-06-28-013028 + forensic/-Branch (Recovery-Point 0b7c366)",
+        "protectedHow": "Alle als Tags im lokalen Repo. v7.0.0 live auf origin+archive bestätigt. docs/forensics/RECOVERY_POINT_2026-06-28.md dokumentiert den letzten stabilen Stand mit git-Befehlen + 7-Punkte-Arbeitsvertrag; Doku-Text ist via git offsite.",
+        "offsite": "teilweise — v7.0.0 nachweislich offsite; für die übrigen Versions-Tags + den forensischen Tag/Branch NICHT gegen origin verifiziert. Zwei Tags (checkpoint/8.5.0-chips-integrated, safe/10.0.0-alpha14) wurden nicht auf origin gefunden.",
+        "stormRating": "teilweise",
+        "gap": "Nicht jeder Tag ist offsite bestätigt; der forensische Beweisanker (Tag + forensic-Branch) ist nicht als auf origin vorhanden verifiziert. Fällt der Mac aus, sind nicht gepushte Tags/Branches weg.",
+        "recommendation": "Einmal git push origin --tags und den forensic-Branch/-Tag pushen (nach GO), damit checkpoint/8.5.0, safe/10.0.0-alpha14 und der forensische Anker auch offsite liegen. Im Doku-Kopf vermerken."
+      }
+    ],
+    "rawCount": 26,
+    "finderHits": 4
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Vermessung"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Statik"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "statik:code-git",
+      "phaseIndex": 1,
+      "phaseTitle": "Vermessung",
+      "agentId": "a7e585908549ff331",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783249433057,
+      "queuedAt": 1783249433045,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first App. Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep/Bash lesend/git lesend/MCP read-only). Ändere NICHTS, committe NICHTS, pushe NICHTS.\nMetapher (Johannes): das System ist ein HAUS — du vermisst seine STATIK & Sicherung: feste Mauern (Regeln),\nsturmfest (crash/recovery-safe), versichert…",
+      "lastProgressAt": 1783249598017,
+      "tokens": 90903,
+      "toolCalls": 12,
+      "durationMs": 164960,
+      "resultPreview": "{\"posture\":[{\"layer\":\"Code (git) — Goldstand v7.0.0\",\"asset\":\"Der unantastbare Safe State (Commit e629e84)\",\"protectedHow\":\"Annotated Tag v7.0.0 (Tag-Objekt 64485b5 → dereferenziert auf Commit e629e84). Tag-Message verbietet Verschieben/Force ausdrücklich. Enthält 409 grüne Tests, S22–S24.\",\"offsite\":\"ja — auf origin (mykilOS-7) UND mykilos6-archive UND als GitHub-Release. Dreifach redundant offsi…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "statik:extern-daten",
+      "phaseIndex": 1,
+      "phaseTitle": "Vermessung",
+      "agentId": "a6f1b23819b2f37e7",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783249433057,
+      "queuedAt": 1783249433045,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first App. Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep/Bash lesend/git lesend/MCP read-only). Ändere NICHTS, committe NICHTS, pushe NICHTS.\nMetapher (Johannes): das System ist ein HAUS — du vermisst seine STATIK & Sicherung: feste Mauern (Regeln),\nsturmfest (crash/recovery-safe), versichert…",
+      "lastProgressAt": 1783249674829,
+      "tokens": 122445,
+      "toolCalls": 24,
+      "durationMs": 241772,
+      "resultPreview": "{\"posture\":[{\"layer\":\"Airtable-Daten (Cloud)\",\"asset\":\"Alle Geschäftsdaten in den 3 Bases: Mastermind (appuVMh3KDfKw4OoQ — Kunden/Projekte/Routing/Datenstrom/Kalkulation/Postbox), Artikel & Einkauf (appdxTeT6bhSBmwx5 — Daniels Stamm), Zuliefererpreise-Schätzung (appkPzoEiI5eSMkNK)\",\"protectedHow\":\"Liegt ausschliesslich in Airtables eigener Cloud. mykilOS hat KEINEN eigenen, wiederholbaren Airtable…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "statik:lokal-daten",
+      "phaseIndex": 1,
+      "phaseTitle": "Vermessung",
+      "agentId": "aa990dc833a2ace84",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783249433058,
+      "queuedAt": 1783249433045,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first App. Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep/Bash lesend/git lesend/MCP read-only). Ändere NICHTS, committe NICHTS, pushe NICHTS.\nMetapher (Johannes): das System ist ein HAUS — du vermisst seine STATIK & Sicherung: feste Mauern (Regeln),\nsturmfest (crash/recovery-safe), versichert…",
+      "lastProgressAt": 1783249626764,
+      "tokens": 119432,
+      "toolCalls": 19,
+      "durationMs": 193706,
+      "resultPreview": "{\"posture\":[{\"layer\":\"Lokale App-DB (GRDB)\",\"asset\":\"db.sqlite — die zentrale App-Datenbank: Widget-Boards, Notizen (NoteStore), Chat-Verlauf (ChatStore/ChatMemory), Audit-Log (AuditStore), Profil (ProfileStore), Favoriten, Zeit-Timer, Warenkörbe/WorkBaskets, Nomenklatur, Provisioning-Ledger, Write-Shadow-Log, Projekt-Bindungen. 22 Migrationsstufen (v1…v22).\",\"protectedHow\":\"WAL-Mode + foreign_key…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "statik:recovery-drehbuch",
+      "phaseIndex": 1,
+      "phaseTitle": "Vermessung",
+      "agentId": "a5af894cf85bd4f79",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783249433058,
+      "queuedAt": 1783249433046,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first App. Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep/Bash lesend/git lesend/MCP read-only). Ändere NICHTS, committe NICHTS, pushe NICHTS.\nMetapher (Johannes): das System ist ein HAUS — du vermisst seine STATIK & Sicherung: feste Mauern (Regeln),\nsturmfest (crash/recovery-safe), versichert…",
+      "lastProgressAt": 1783249570940,
+      "tokens": 98874,
+      "toolCalls": 13,
+      "durationMs": 137882,
+      "resultPreview": "{\"posture\":[{\"layer\":\"Recovery-Drehbuch (Code / Safe State)\",\"asset\":\"Der Goldstand mykilOS 7 (Tag v7.0.0, Commit e629e84) und der Weg zurück dorthin\",\"protectedHow\":\"docs/SAFE_STATE.md beschreibt drei getestete Rückweg-Varianten (A: recall_safe_state.sh legt separaten Worktree an + baut/startet; B: git checkout v7.0.0; C: Safe-DMG). script/recall_safe_state.sh existiert, ist ausführbar, holt den …"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 5,
+      "label": "sicherungs-statik",
+      "phaseIndex": 2,
+      "phaseTitle": "Statik",
+      "agentId": "acd12cbf30187d223",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783249674832,
+      "queuedAt": 1783249674831,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first App. Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep/Bash lesend/git lesend/MCP read-only). Ändere NICHTS, committe NICHTS, pushe NICHTS.\nMetapher (Johannes): das System ist ein HAUS — du vermisst seine STATIK & Sicherung: feste Mauern (Regeln),\nsturmfest (crash/recovery-safe), versichert…",
+      "lastProgressAt": 1783250018076,
+      "tokens": 105801,
+      "toolCalls": 10,
+      "durationMs": 343244,
+      "resultPreview": "{\"posture\":[{\"layer\":\"Code (git) — aktuelle Arbeit (mykilOS 10)\",\"asset\":\"Working-Branch feat/kamera-barcode-widget, HEAD b59c275 — die gesamte alpha7–alpha19-Entwicklung (zwei Tage volle mykilOS-10-Linie)\",\"protectedHow\":\"Nur lokale git-Commits auf dem einen Mac. Sauber committet, aber nirgends gespiegelt.\",\"offsite\":\"nein — nur lokal. Live geprüft: git branch -r --contains HEAD ist LEER, HEAD au…"
+    }
+  ],
+  "totalTokens": 537455,
+  "totalToolCalls": 78
+}

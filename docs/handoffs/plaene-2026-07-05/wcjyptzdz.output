@@ -1,0 +1,309 @@
+{
+  "summary": "Liest die drei Knochen (CheckoutPort/ActionCard/AuditEntry) und schreibt den exakten, nicht-brechenden Implementierungs-Bauplan für die eine CheckIn-Naht. Read-only, kein Code.",
+  "agentCount": 6,
+  "logs": [
+    "Ist-Analyse: 4/4 Knochen kartiert",
+    "Bauplan: 9 Schritte, erster Adapter: offerImported (CashWidget.confirmReview, CashWidget.swift:178-196) — der kleinste sichere Beweis der Naht. Begruendung: (1) Er schreibt heute schon EINEN AuditEntry(.offerImported) mit exakt den Feldern, die die Spine braucht (actorUserID/projectID/action/summary) — die Spine muss also nur denselben Eintrag ueber denselben AuditStore erzeugen, kein neues Persistenzverhalten. (2) Er hat den hartkodierten actorUserID 'local-user' (CashWidget.swift:186) UND schreibt aus einem View (Widgets-Layer) — beide Schwaechen behebt der Umzug in die Spine sichtbar, was den Wert der Naht sofort demonstriert. (3) Er ist idempotenz-freundlich: der Signaltext/Offer-Referenz gibt einen natuerlichen deterministischen idempotenzSchluessel her (kein Date()/UUID()). (4) Der bestehende Test prueft nur die Existenz eines .offerImported-Eintrags — die Spine erzeugt denselben, also bleibt der Test ohne Aenderung gruen (Nicht-Brechen bewiesen). Danach folgt recordAdjustment (Kalkulation) und warenkorbGesendet (CartStore, inkl. try?→throws-Fix). Der Sevdesk-Port ist NICHT der erste Adapter, obwohl reif — er hat keinen bestehenden Audit-Trail, das Andocken erzeugt also NEUES Verhalten und ist damit ein Schritt weiter, nicht der sicherste erste Beweis.\"",
+    "Kritik: tragfähig-mit-auflagen · 3 Bruchstellen · 5 Lücken"
+  ],
+  "result": {
+    "plan": {
+      "spineDesign": "DIE CHECKIN-NAHT — EINE dünne Klammer um die vier bestehenden Knochen, kein Neubau.\n\nZIELORT (neu, Foundation-only): Sources/MykilosKit/Domain/Wirbelsaeule/CheckInSpine.swift. Importiert NUR Foundation (§-Modulregel wie WirbelsaeuleFoundation.swift:1). Kein SwiftUI, kein GRDB. Alle Wertetypen/Protokolle liegen hier; die schreibende Implementierung (AuditStore-Wrapper) liegt in MykilosServices.\n\nLEITSATZ (belegt MASTER_ARCHITEKTUR_CHECKIN.md): \"ich hab was → was/wohin/warum → verifizierter Review (okay/nicht okay) → Audit.\" Append-only, idempotent, nie überschreiben/löschen, Nutzerstempel (wer), throws+SaveState, Cold-Start-safe.\n\n1) DAS EINE PROTOKOLL (neue Typen in CheckInSpine.swift):\n\n  // \"ich hab was\" — Einzel-Ingest ist ein WorkBasket mit 1 Pick; EIN Transport-Typ, kein neuer.\n  public typealias CheckInGegenstand = WorkBasket   // WirbelsaeuleFoundation.swift:244\n\n  // \"was/wohin/warum/WER\"\n  public struct CheckInAbsicht: Sendable {\n    public let adapterID: PortID            // welcher Adapter (WirbelsaeuleFoundation.swift:283)\n    public let ziel: PortZiel               // wohin (:298)\n    public let begruendung: String          // warum → AuditEntry.summary\n    public let actorUserID: String          // WER (der bestätigende Mensch, Pflichtfeld, nie leer)\n    public let projektNummer: String?       // → AuditEntry.projectID (bei nil = \"-\")\n    public init(...) { ... }\n  }\n\n  // Vorschau — trägt die BESTEHENDE CheckoutPreview unverändert + Spine-Additive.\n  public struct CheckInVorschau: Sendable {\n    public let vorschau: CheckoutPreview    // (:313) UNVERÄNDERT wiederbenutzt\n    public let idempotenzSchluessel: String // deterministisch (SHA/Hash, NIE Date()/UUID())\n    public let istDuplikat: Bool            // schon eingecheckt? → keine erneute Aktion\n  }\n\n  // Quittung — trägt das BESTEHENDE CheckoutResult + den von der Spine erzeugten AuditEntry.\n  public struct CheckInQuittung: Sendable {\n    public let ergebnis: CheckoutResult     // (:326) UNVERÄNDERT\n    public let audit: AuditEntry            // von der Spine geschrieben, nicht vom Adapter\n  }\n\n2) DAS ADAPTER-PROTOKOLL — echtes SUPERSET von CheckoutPort (bestehende Ports bleiben unberührt):\n\n  public protocol CheckInAdapter: Sendable {\n    var id: PortID { get }\n    var name: String { get }\n    func erlaubteInhaltsArten() -> Set<InhaltsArt>\n    // deterministischer Idempotenz-Schlüssel (Muster: SevdeskPostboxCheckoutPort.objektHash)\n    func idempotenzSchluessel(_ g: CheckInGegenstand, _ a: CheckInAbsicht) -> String\n    // schreibt NICHTS; liefert Vorschau + Duplikat-Erkennung\n    func vorschau(_ g: CheckInGegenstand, _ a: CheckInAbsicht) async throws -> CheckInVorschau\n    // append-only, idempotent; MUSS AuditEntry-Bausteine liefern, schreibt Audit aber NICHT selbst\n    func fuehreAus(_ g: CheckInGegenstand, _ a: CheckInAbsicht) async throws -> CheckInAusfuehrung\n  }\n  // CheckInAusfuehrung = (ergebnis: CheckoutResult, actionKanal: AuditKanal, summaryDetail: String?)\n  // — der Adapter liefert Roh-Ergebnis + Klassifikation; die Spine BAUT den finalen AuditEntry.\n\n  WICHTIG (Modulgrenze): CheckInAdapter erbt NICHT von CheckoutPort (das würde nichts erzwingen),\n  aber ein trivialer Brücken-Wrapper `CheckoutPortAsCheckInAdapter` macht aus jedem bestehenden\n  CheckoutPort einen CheckInAdapter (idempotenzSchluessel default = stabiler Hash über basket.id+ziel;\n  vorschau ruft port.preview; fuehreAus ruft port.execute). So andockt Sevdesk OHNE Umbau.\n\n3) DIE AUDIT-SENKE als injizierbares Protokoll (Modul-sauber, analog PortRightsProviding):\n\n  // In CheckInSpine.swift (Kit, Foundation-only) — NUR das Protokoll:\n  public protocol CheckInAuditSink: Sendable {\n    func schreibe(_ entry: AuditEntry) async throws\n  }\n  // Implementierung in MykilosServices/Wirbelsaeule/AuditStoreCheckInSink.swift:\n  //   wrappt AuditStore. AuditStore.append ist @MainActor + throws + NICHT async → der Wrapper\n  //   macht `await MainActor.run { try store.append(entry) }` (der eine echte Nahtpunkt-Aufwand,\n  //   den Späher 4 korrekt markiert hat). Kein neuer Store, kein neuer Cold-Start-Store nötig —\n  //   die Persistenz bleibt der bestehende, bereits cold-start-getestete AuditStore.\n\n4) DER ORCHESTRATOR (zwei-Schritt, erzwingt Review→Audit):\n\n  public struct CheckInSpine {\n    let registry: [PortID: any CheckInAdapter]   // aufgebaut aus PortRegistry + Brücken-Wrapper\n    let rechte: PortRightsProviding              // (:378) heute AllowAllPortRights (:388)\n    let audit: any CheckInAuditSink\n\n    // Schritt 1: schreibt NIE. Recht + Inhalts-Art prüfen, sonst wirft. Liefert CheckInVorschau.\n    func vorschlagen(_ g, _ a) async throws -> CheckInVorschau\n\n    // Schritt 2: NACH menschlichem Klick. Recht ERNEUT prüfen (nicht der UI vertrauen).\n    //   adapter.fuehreAus → dann baut die SPINE den AuditEntry aus (a.actorUserID, a.projektNummer ?? \"-\",\n    //   kanal, begruendung+detail) und ruft `try await audit.schreibe(entry)`. throws, kein try?.\n    //   Bei istDuplikat=true: erfolg=true zurück, KEIN zweiter Audit-Write (Idempotenz).\n    func bestaetigen(_ g, _ a) async throws -> CheckInQuittung\n  }\n\n  KERNPOINTE (die Garantie): der Adapter kann das Audit NICHT \"vergessen\", weil die Spine es zentral\n  schreibt. Das behebt den heutigen Zustand, wo DokumentPort/MoodboardPort/FireflyPort GAR KEIN Audit\n  schreiben und jeder Flow (KalkulationsEngine/CashWidget/CartStore) sein Audit selbst + teils mit\n  try? / hartkodiertem \"local-user\" schreibt.\n\n5) AUDIT-ERWEITERUNG (nicht-brechend, additiv):\n  AuditEntry.Action (AuditEntry.swift:7-10) ist ein geschlossenes 10-Fälle-Enum. Zwei nicht-brechende\n  Optionen — EMPFEHLUNG Variante B:\n  - (A) additiver enum-case `checkInAusgefuehrt` — minimal, aber jeder neue Adapter braucht weiter Kit-Edit.\n  - (B) EMPFOHLEN: AuditEntry additiv um zwei OPTIONALE Codable-Felder erweitern:\n        `public let quelle: String?`   (Herkunft: \"sevdesk\"/\"kalkulation\"/\"warenkorb\"/\"drive\"…)\n        `public let idempotenzKey: String?`  (deterministischer Dedup-Key)\n      Beide mit `decodeIfPresent(...) ?? nil` im Decoder und Default nil im init → bestehende Aufrufer\n      UND bestehende GRDB-Zeilen bleiben gültig. Dazu neue GRDB-Migration `v23_audit_checkin`\n      (nullable Spalten `quelle TEXT`, `idempotenzKey TEXT`) — additiv, alte Zeilen lesen weiter.\n      Das `action`-Enum wird NICHT geöffnet; neue Adapter tragen ihre Herkunft im `quelle`-String,\n      `action` bleibt der grobe Kanal (z. B. .estimateAdjusted / .warenkorbGesendet / neuer .checkInAusgefuehrt).\n\nINVARIANTEN (die die Spine erzwingt):\n- Idempotenz: idempotenzSchluessel deterministisch (kein Date()/UUID()); Duplikat → erfolg=true, kein\n  neuer Write, kein zweiter Audit. Muster real: SevdeskPostboxCheckoutPort.objektHash.\n- Append-only/nie destruktiv: kein DELETE; Fortschreibung nur über neue Version (WorkBasket.version,\n  :253) oder Status-Flag (WorkBasketStatus.darfWechselnZu, :225). AuditStore ist strukturell append-only.\n- Nutzerstempel: actorUserID Pflichtfeld in CheckInAbsicht; Quelle = AppState.actorUserID (AppState.swift:135,\n  Google-Mail ?? Profilname ?? \"local\"). Die hartkodierten \"local-user\" (KalkulationsEngine:198, CashWidget:186)\n  werden bei Migration durch den echten Stempel ersetzt.\n- throws + SaveState: Audit-Write über AuditStore (SaveState sichtbar); der try? in CartStore:243 wird bei\n  Migration zu throws.\n- Cold-Start: jeder neue persistierbare Adapter + der Spine-Audit-Pfad bekommen einen schreiben→neue-Instanz\n  →lesen-Test nach Muster auditEntryUeberlebtNeustart (WidgetBoardStoreTests.swift:103).",
+      "buildSteps": [
+        {
+          "n": 1,
+          "title": "Spine-Wertetypen + Protokolle (rein additiv, kein persistenter Zustand)",
+          "files": "NEU Sources/MykilosKit/Domain/Wirbelsaeule/CheckInSpine.swift",
+          "change": "CheckInGegenstand (typealias WorkBasket), CheckInAbsicht, CheckInVorschau, CheckInQuittung, CheckInAusfuehrung, AuditKanal, CheckInAdapter-Protokoll, CheckInAuditSink-Protokoll, CheckInSpine-Struct (vorschlagen/bestaetigen). Foundation-only. Nutzt bestehende Typen (WorkBasket/PortID/PortZiel/CheckoutPreview/CheckoutResult/AuditEntry/PortRightsProviding) unveraendert.",
+          "breaking": "NICHTS bricht: nur neue Typen, kein bestehender Typ/Aufrufer beruehrt. Alle 900+ Tests bleiben gruen (nur neue Symbole).",
+          "migration": "—"
+        },
+        {
+          "n": 2,
+          "title": "Bruecken-Wrapper: bestehende CheckoutPorts andocken",
+          "files": "CheckInSpine.swift (Extension) oder NEU CheckoutPortBridge.swift in MykilosKit",
+          "change": "CheckoutPortAsCheckInAdapter: nimmt any CheckoutPort, implementiert CheckInAdapter (idempotenzSchluessel = stabiler Hash aus basket.id+ziel.kind+sortierte parameter; vorschau→port.preview; fuehreAus→port.execute). Duplikat-Erkennung im Default: false (Port-eigene Idempotenz bleibt im Port).",
+          "breaking": "NICHTS: additiver Adapter. Bestehende CheckoutPort-Aufrufer (SevdeskPostboxDropSheet) laufen unveraendert weiter.",
+          "migration": "—"
+        },
+        {
+          "n": 3,
+          "title": "AuditEntry additiv um quelle/idempotenzKey erweitern",
+          "files": "Sources/MykilosKit/Domain/AuditEntry.swift, Sources/MykilosServices/Database/WidgetBoardRecord.swift (AuditRecord), Sources/MykilosServices/Database/GRDBDatabase.swift",
+          "change": "AuditEntry: zwei optionale Felder quelle:String?=nil, idempotenzKey:String?=nil; expliziter Decoder mit decodeIfPresent ?? nil. AuditRecord: zwei nullable Spalten + toDomain/from mappen. Migration v23_audit_checkin: ALTER TABLE auditEntries ADD COLUMN quelle/idempotenzKey (nullable).",
+          "breaking": "Additiv: init-Defaults + decodeIfPresent halten alle bestehenden ~15 AuditEntry-Aufrufer (AppState, KalkulationsEngine, CartStore, CashWidget, ProjektProvisioning) UND alte GRDB-Zeilen gueltig. Bestehender Cold-Start-Test auditEntryUeberlebtNeustart bleibt gruen (liest neue nullable Spalten als nil).",
+          "migration": "JA — v23_audit_checkin, Tabelle auditEntries, Spalten quelle+idempotenzKey (beide nullable TEXT). Nach v22 (aktuell hoechste)."
+        },
+        {
+          "n": 4,
+          "title": "AuditStore-Wrapper als CheckInAuditSink",
+          "files": "NEU Sources/MykilosServices/Wirbelsaeule/AuditStoreCheckInSink.swift",
+          "change": "struct/final class AuditStoreCheckInSink: CheckInAuditSink { func schreibe(_ entry) async throws { await MainActor.run { try store.append(entry) } } }. Duenner Wrapper um den bestehenden AuditStore — kein neuer Store, keine neue Persistenz.",
+          "breaking": "NICHTS: neuer Typ, kein Aufrufer beruehrt. AuditStore selbst unveraendert.",
+          "migration": "—"
+        },
+        {
+          "n": 5,
+          "title": "SevdeskPostboxCheckoutPort als erster echter CheckInAdapter verdrahten (Registry-Aufbau in AppState)",
+          "files": "Sources/MykilosApp/Data/AppState.swift (neuer computed checkInSpine), ggf. NEU Sources/MykilosApp/Wirbelsaeule/CheckInSpineFactory.swift",
+          "change": "PortRegistry mit allen 4 Ports fuellen (sevdesk/dokument/moodboard/firefly), via CheckoutPortAsCheckInAdapter in CheckInSpine haengen, AllowAllPortRights + AuditStoreCheckInSink injizieren. AppState.checkInSpine als Slot (nil bis Stores da).",
+          "breaking": "NICHTS: der bestehende Sevdesk-Live-Pfad (SevdeskPostboxDropSheet → AppState.sevdeskPostboxPort → port.execute) bleibt PARALLEL bestehen und unveraendert. Die Spine ist zunaechst nur zusaetzlich verfuegbar. Sevdesk-Regressionstests (SevdeskPostboxCheckoutPortTests) bleiben gruen.",
+          "migration": "—"
+        },
+        {
+          "n": 6,
+          "title": "ERSTER MIGRIERTER FLOW: offerImported (CashWidget) durch die Spine",
+          "files": "Sources/MykilosApp/Data/AppState.swift (neue Methode checkInOffer), Sources/MykilosWidgets/Kinds/CashWidget.swift",
+          "change": "CashWidget.confirmReview ruft nicht mehr direkt auditStore.append mit hartkodiertem local-user, sondern eine injizierte onConfirmCheckIn-Closure → AppState fuehrt CheckInSpine.bestaetigen mit actorUserID=AppState.actorUserID, quelle=\"drive-offer\". Der Audit-Write wandert aus dem Widget in die Spine (behebt Write-aus-View + local-user).",
+          "breaking": "Nicht-brechend gehalten: die Closure hat einen Default, der das ALTE Verhalten (direkter Audit) faehrt, falls Spine nil. Bestehender offerImported-Test (Existenz von .offerImported-Eintrag) bleibt gruen, weil die Spine denselben AuditEntry(.offerImported) erzeugt.",
+          "migration": "—"
+        },
+        {
+          "n": 7,
+          "title": "CartStore.warenkorbGesendet an Spine + try? zu throws",
+          "files": "Sources/MykilosServices/Airtable/CartStore.swift",
+          "change": "appendAudit: try? auditStore?.append (CartStore.swift:243) wird zu throws-Pfad ueber CheckInAuditSink; actorUserID bleibt der bereits echte CartStore.actorUserID. Sendevorgang selbst unveraendert (append-only, Pruefsummen-Idempotenz bleibt).",
+          "breaking": "Vorsicht: die Signatur von appendAudit/sendWarenkorb wird throwing — Aufrufer (WorkBasketEditSheet/WarenkorbWidget) muessen try bekommen. Additiv absichern: sendWarenkorb bleibt throws (war es schon), nur der interne Audit-Fehler wird nicht mehr geschluckt. WarenkorbWorkBasketBridgeTests/WorkBasketStoreTests pruefen — falls ein Test das stille Verschlucken erwartet, Test anpassen (das ist eine Verbesserung, kein Regress).",
+          "migration": "—"
+        },
+        {
+          "n": 8,
+          "title": "KalkulationsEngine.recordAdjustment an Spine + echter actorUserID",
+          "files": "Sources/MykilosServices/Kalkulation/KalkulationsEngine.swift, Aufrufer in AppState/AssistantToolRegistry",
+          "change": "local-user (KalkulationsEngine.swift:198) durch injizierten actorUserID ersetzen; Audit-Write ueber CheckInAuditSink statt direkt. quelle=\"kalkulation\".",
+          "breaking": "Nicht-brechend via Default: recordAdjustment bekommt optionalen actorUserID-Parameter (Default \"local-user\"), sodass Engine-Unit-Tests (KalkulationsEngineTests promoteSchreibtAuditEntry) ohne Aenderung gruen bleiben; die App reicht den echten Stempel durch.",
+          "migration": "—"
+        },
+        {
+          "n": 9,
+          "title": "Generische CheckInActionCard (ersetzt schrittweise die 4 duplizierten Cards)",
+          "files": "NEU Sources/MykilosWidgets/CheckInActionCard.swift",
+          "change": "Ein View, der aus CheckInVorschau rendert und einen geteilten Review-State (idle/laeuft/erfolg/fehler) haelt — ersetzt die 4x duplizierten CardPhase/Status. Zunaechst NUR fuer NEUE Flows verwendet; die bestehenden ContactActionCard/DraftActionCard/SevdeskPostboxDropSheet bleiben unangetastet.",
+          "breaking": "NICHTS: additiver View. Bestehende Cards bleiben, werden erst spaeter (nach GO, ausserhalb dieses Plans) einzeln ersetzt.",
+          "migration": "—"
+        }
+      ],
+      "testPlan": [
+        "COLD-START (Pflicht, Merge-Gate): checkInAuditUeberlebtNeustart in Tests/MykilosServicesTests — CheckInSpine.bestaetigen mit einem Fake-Adapter (kein Netz) schreibt via AuditStoreCheckInSink in GRDBDatabase(url:); NEUE AuditStore-Instanz auf derselben Datei laedt; der erzeugte AuditEntry inkl. neuer Felder quelle+idempotenzKey ist identisch (glatter Sekunden-timestamp wie WidgetBoardStoreTests.swift:107, um die Double-Rundung zu umgehen).",
+        "COLD-START Idempotenz: checkInIdempotentUeberZweiInstanzen — zweimal bestaetigen mit gleichem idempotenzSchluessel (istDuplikat beim zweiten Lauf) → nach Neustart genau EIN Audit-Record, kein Duplikat.",
+        "REGRESSION (beweist Nicht-Brechen): bestehende SevdeskPostboxCheckoutPortTests, WirbelsaeuleFoundationTests, WorkBasketEditingTests, WorkBasketSummenTests, WarenkorbWorkBasketBridgeTests, WorkBasketStoreTests, auditEntryUeberlebtNeustart, RecentActivity feedUeberlebtNeustart MUESSEN nach jedem Schritt unveraendert gruen bleiben — Testzahl nach jedem Schritt notieren.",
+        "SPINE-EINHEIT: vorschlagen() schreibt nie (Fake-Sink zaehlt 0 Writes nach vorschlagen); bestaetigen() schreibt genau 1 Audit; bei istDuplikat=true schreibt bestaetigen 0 weitere.",
+        "RECHTE-GATE: bestaetigen() wirft, wenn PortRightsProviding den adapterID nicht erlaubt (Fake-Rights ohne den Adapter) — beweist die zweifache Rechtepruefung, auch wenn heute AllowAllPortRights aktiv ist.",
+        "BRUECKE: CheckoutPortAsCheckInAdapter um einen Fake-CheckoutPort → vorschau/fuehreAus rufen preview/execute korrekt durch (kein Doppelaufruf, execute erst in fuehreAus).",
+        "MIGRATION v23: AuditRecord.toDomain liest eine alte Zeile OHNE quelle/idempotenzKey (nil) korrekt; from-init schreibt neue Zeile mit gesetzten Feldern — Rundtrip identisch.",
+        "actorUserID: nach Schritt 6/8 traegt ein Offer-/Kalkulations-CheckIn den echten AppState.actorUserID (nicht local-user) — Assert im App-Layer-Test bzw. Engine-Test mit injiziertem Stempel."
+      ],
+      "risks": [
+        {
+          "risk": "Audit-Schreiber-Widerspruch (Doku vs. Ist): jeder Flow (KalkulationsEngine:197, CashWidget:185, CartStore:237) schreibt sein Audit heute SELBST. Bei Migration entsteht Doppel-Audit, wenn der alte Direkt-Write nicht entfernt wird.",
+          "mitigation": "Pro migriertem Flow (Schritt 6/7/8) den alten direkten append im selben Schritt ENTFERNEN und durch den Spine-Pfad ersetzen — nicht additiv danebenlegen. Spine-Einheitstest 'bestaetigen schreibt genau 1 Audit' faengt Doppel-Writes."
+        },
+        {
+          "risk": "CheckInAuditSink async vs. AuditStore.append @MainActor+nicht-async: Signaturen passen nicht 1:1 (Spaeher 4).",
+          "mitigation": "Wrapper macht await MainActor.run { try store.append(entry) }. In Schritt 4 isoliert, mit eigenem Test abgedeckt, bevor Flows andocken."
+        },
+        {
+          "risk": "actorUserID bleibt Platzhalter bis Bewohner-/Identitaets-Schicht steht — die 'wer'-Invariante ist strukturell erfuellt, aber der Wert kann bis dahin 'local' sein (AppState.swift:135 Fallback).",
+          "mitigation": "Spine erzwingt das FELD (Pflicht, nie hartkodiert). Der konkrete Wert kommt aus AppState.actorUserID; sobald die Bewohner-Schicht steht, verbessert sich der Wert ohne Naht-Aenderung. Kein Blocker fuer den Spine-Bau."
+        },
+        {
+          "risk": "CartStore.appendAudit von try? auf throws umzustellen (Schritt 7) kann Aufrufer-Signaturen aendern und einen Test brechen, der das stille Verschlucken erwartet.",
+          "mitigation": "sendWarenkorb ist bereits throws; nur der interne Schlucker faellt weg. Vor Schritt 7 grep auf Aufrufer, betroffene Tests als Verbesserung anpassen (Fehler wird jetzt sichtbar), Testzahl dokumentieren."
+        },
+        {
+          "risk": "PortRightsProviding ist real nur AllowAllPortRights — das Rechte-Gate schraenkt heute nichts ein (No-Op).",
+          "mitigation": "Bewusst akzeptiert fuer V1; die Spine ruft die Pruefung trotzdem zweifach, damit der echte Provider (Track J3) spaeter ohne Naht-Aenderung greift. Rechte-Gate-Test nutzt einen Fake-Provider, um die Mechanik zu beweisen."
+        },
+        {
+          "risk": "Teil-Write-Reconciliation: bricht fuehreAus nach Beleg-Kopf vor allen Positionen ab, ist der Kopf da (Idempotenz-Hash), Positionen unvollstaendig — Vervollstaendigen ist nicht modelliert.",
+          "mitigation": "Fuer kleine Koerbe toleriert (Kopf-Hash verhindert Doppelanlage). Als bekannter Grenzfall dokumentieren; ein Wiederaufnahme-Schritt ist spaeter, ausserhalb dieses Plans. NICHT in Schritt 1-9 loesen."
+        },
+        {
+          "risk": "SevdeskPostboxCheckoutPort schreibt heute KEIN AuditEntry (nur DataFlowLogger:161) — beim Andocken erzeugt die Spine erstmals einen Audit fuer diesen Port (neues Verhalten, nicht nur Rename).",
+          "mitigation": "Bewusst: das ist eine gewollte Verbesserung (der Port bekommt endlich einen Audit-Trail). DataFlowLogger bleibt zusaetzlich. In Schritt 5 mit Test abdecken, dass genau EIN Audit + weiterhin der DataFlow-Log entsteht."
+        },
+        {
+          "risk": "toDomain verwirft ungueltige Zeilen still (compactMap, AuditStore.swift:31): ein spaeter unbekannter action-rawValue macht alte Eintraege unsichtbar.",
+          "mitigation": "Genau deshalb Variante B (quelle als offener String, action-Enum NUR minimal um checkInAusgefuehrt erweitern statt pro Adapter). Neue Herkuenfte brechen das Enum nicht."
+        }
+      ],
+      "openDecisions": [
+        "AuditEntry-Erweiterung: Variante B (optionale Felder quelle+idempotenzKey, action-Enum geschlossen halten) — EMPFOHLEN. Braucht Johannes' OK, weil es eine GRDB-Migration v23 auf der zentralen auditEntries-Tabelle ist (additiv/nullable, aber die Audit-Spur ist heilig).",
+        "Erster migrierter Flow: Empfehlung offerImported (CashWidget) als kleinster sicherster Beweis. Alternativ recordAdjustment (Kalkulation). Johannes waehlt, welcher zuerst umgeklemmt wird.",
+        "Sevdesk-Doppelpfad: soll der bestehende direkte SevdeskPostboxDropSheet-Pfad langfristig durch die Spine ERSETZT werden (dann verschwindet die zweite Checkout-UI), oder bleibt er als Live-Pfad und die Spine ist die neue Standardnaht fuer alle KUENFTIGEN Adapter? Das entscheidet, wie aggressiv Schritt 5+ umverdrahtet.",
+        "Reihenfolge-Abhaengigkeit: Spine ZUERST bauen ist ok, aber der echte Nutzerstempel haengt an der spaeteren Bewohner-/Identitaets-Schicht. Johannes bestaetigt, dass 'wer' vorerst = AppState.actorUserID (Google-Mail/Profilname/local) genuegt und die Bewohner-Schicht separat kommt.",
+        "Sollen read-only/oeffnen-nur-Karten (CalendarActionCard, KalkulationsSchaetzungCard — kein Write, kein Audit) ueberhaupt als CheckIn-Adapter gefuehrt werden, oder sind sie explizit AUSGENOMMEN (reine Anzeige)? Empfehlung: ausgenommen — CheckIn ist nur fuer schreibende/veraendernde Vorgaenge."
+      ],
+      "firstAdapter": "offerImported (CashWidget.confirmReview, CashWidget.swift:178-196) — der kleinste sichere Beweis der Naht. Begruendung: (1) Er schreibt heute schon EINEN AuditEntry(.offerImported) mit exakt den Feldern, die die Spine braucht (actorUserID/projectID/action/summary) — die Spine muss also nur denselben Eintrag ueber denselben AuditStore erzeugen, kein neues Persistenzverhalten. (2) Er hat den hartkodierten actorUserID 'local-user' (CashWidget.swift:186) UND schreibt aus einem View (Widgets-Layer) — beide Schwaechen behebt der Umzug in die Spine sichtbar, was den Wert der Naht sofort demonstriert. (3) Er ist idempotenz-freundlich: der Signaltext/Offer-Referenz gibt einen natuerlichen deterministischen idempotenzSchluessel her (kein Date()/UUID()). (4) Der bestehende Test prueft nur die Existenz eines .offerImported-Eintrags — die Spine erzeugt denselben, also bleibt der Test ohne Aenderung gruen (Nicht-Brechen bewiesen). Danach folgt recordAdjustment (Kalkulation) und warenkorbGesendet (CartStore, inkl. try?→throws-Fix). Der Sevdesk-Port ist NICHT der erste Adapter, obwohl reif — er hat keinen bestehenden Audit-Trail, das Andocken erzeugt also NEUES Verhalten und ist damit ein Schritt weiter, nicht der sicherste erste Beweis.\""
+    },
+    "critic": {
+      "verdict": "tragfähig-mit-auflagen",
+      "breaks": [
+        "STEP 8 BRICHT (Protokoll-Requirement, nicht nur Impl): recordAdjustment ist eine PROTOKOLL-Anforderung in KalkulationsEngineProviding.swift:19 (`func recordAdjustment(schaetzungsID:faktor:grund:lernen:) async throws`), NICHT nur eine Engine-Methode. Der Plan sagt 'recordAdjustment bekommt optionalen actorUserID-Parameter (Default local-user), sodass Engine-Unit-Tests grün bleiben' — das ist FALSCH: (a) Protokoll-Requirements können im Protokoll KEINEN Default-Wert tragen; (b) ändert man die Requirement-Signatur, brechen SOFORT alle Konformanzen: die Fakes in AssistantToolManifestTests.swift:86 und ConversationEngineTests.swift:448 (beide `func recordAdjustment(...lernen: Bool) async throws {}` ohne actorUserID) PLUS die Protokoll-Extension-Convenience KalkulationsEngineProviding.swift:31. Nicht-brechend geht NUR über eine ZUSÄTZLICHE Überladung (neuer Methodenname oder Extension-Overload), nicht über einen 'optionalen Parameter' an der bestehenden Requirement.",
+        "STEP 7 Signatur-Behauptung ungenau: Der Plan sagt appendAudit/sendWarenkorb werden 'throwing'. Real ist appendAudit (CartStore.swift:236) `@MainActor private func ... ` NICHT-throwing und schluckt via `try?` (Zeile 243); sendWarenkorbToAirtable (Zeile 99) ist BEREITS `async throws`. Macht man appendAudit throwing und propagiert den Fehler, ändert das das Erfolgsverhalten von sendWarenkorbToAirtable: ein bisher geschluckter Audit-Fehler wird jetzt zum harten Fehlschlag NACH bereits erfolgtem Airtable-Write (externer Effekt schon passiert). WarenkorbPanel.swift:811 und AppState.swift:900 rufen es in try-Kontext — kompiliert weiter, aber die Semantik (Airtable-Record geschrieben + trotzdem geworfen) ist ein neuer Zustand, den kein Test abdeckt.",
+        "COLD-START-Behauptung technisch schief: Der Plan verspricht einen Test mit 'GRDBDatabase(url:) … NEUE AuditStore-Instanz auf DERSELBEN DATEI'. Der bestehende Referenztest auditEntryUeberlebtNeustart (WidgetBoardStoreTests.swift:104) nutzt aber GRDBDatabase.inMemory() und dieselbe db-Instanz für storeA/storeB — kein Datei-Roundtrip. Ein echter Datei-basierter Test ist strenger und GUT, aber dann muss der Test eine temporäre Datei-URL anlegen+aufräumen; als 'gleiches Muster wie WidgetBoardStoreTests.swift:107' verkauft ist es NICHT dasselbe Muster."
+      ],
+      "missing": [
+        "Regressions-NETZ für den ersten Adapter fehlt real: Der Plan begründet die Wahl von offerImported (CashWidget) u.a. mit 'der bestehende Test prüft nur die Existenz eines .offerImported-Eintrags → bleibt grün'. Es gibt aber KEINEN Test, der CashWidget.confirmReview → AuditEntry(.offerImported) prüft. Die .offerImported-Vorkommen in Tests sind unabhängig (TimelineMergerTests:24/81 = Label-Mapping, RecentActivityTests:16/63 = Feed, AssistantEngineTests:25 = Insight→auditAction). Folge: die Migration von CashWidget hat NULL Regressionsschutz — der 'Nicht-Brechen bewiesen'-Claim ist unbelegt. FEHLT: ein neuer, gezielter Verhaltenstest für den CashWidget/Spine-Pfad VOR der Umverdrahtung.",
+        "Sendable/WorkBasket-Analyse fehlt vollständig: WorkBasket (WirbelsaeuleFoundation.swift:244) ist NICHT Sendable/Codable/Equatable (hält [any Pick]). Der Plan deklariert CheckInAdapter als `Sendable`-Protokoll mit `func vorschau/fuehreAus(_ g: CheckInGegenstand=WorkBasket) async throws`. Unter dem aktuellen Package (swift-tools-version 5.10, KEIN Swift-6-Mode/StrictConcurrency — Package.swift:1) ist das identisch zur bestehenden CheckoutPort-Toleranz und kompiliert. FEHLT aber die explizite Notiz, dass dieser Plan bei einem späteren Upgrade auf Swift-6-Language-Mode/StrictConcurrency reihenweise 'non-Sendable WorkBasket across async' erzeugt — genau wie CheckoutPort heute schon. Der Plan darf nicht implizieren, seine Sendable-Typen seien 'sauberer' als der Ist-Zustand; sie erben dieselbe Altlast.",
+        "Idempotenz-Invariante am Bestands-Audit NICHT durchsetzbar: Der Spine soll bei istDuplikat=true KEINEN zweiten Audit schreiben. Aber AuditStore.append (AuditStore.swift:38) hat KEINEN Uniqueness-Constraint auf idempotenzKey — die Idempotenz lebt allein in der Adapter-Logik (vorschau muss Duplikat erkennen). FEHLT: entweder ein UNIQUE-Index auf auditEntries.idempotenzKey (partial, WHERE NOT NULL, da Alt-Zeilen NULL sind) in Migration v23, ODER die explizite Aussage, dass Idempotenz NUR best-effort im Adapter liegt und ein Doppel-bestaetigen ohne Duplikat-Erkennung doch zwei Audits schreibt. Ohne DB-Constraint ist die 'genau EIN Record nach Neustart'-Zusage nicht hart.",
+        "Doppel-Audit-Risiko bei Sevdesk unterschätzt: SevdeskPostboxCheckoutPort schreibt heute KEIN AuditEntry (nur DataFlowLogger, verifiziert: nur `logger` an Zeile 37/161). Beim Andocken (Step 5) erzeugt die Spine erstmals einen Audit — der Plan nennt das korrekt. FEHLT aber der Hinweis, dass Step 5 den Port NUR 'zusätzlich verfügbar' macht (Doppelpfad), sodass solange der alte SevdeskPostboxDropSheet→sevdeskPostboxPort.execute-Pfad (AppState.swift:142) parallel lebt, KEIN Doppel-Audit entsteht (der alte Pfad auditiert ja nicht) — erst wenn Sevdesk WIRKLICH über die Spine läuft. Diese Reihenfolge-Abhängigkeit ist im openDecisions angerissen, aber nicht als harte Bau-Voraussetzung markiert.",
+        "AuditRecord-Migrations-Detail fehlt: Step 3 nennt WidgetBoardRecord.swift (AuditRecord) korrekt, aber toDomain (WidgetBoardRecord.swift:82) nutzt `compactMap`/guard und würde bei neuen nullable Spalten unverändert funktionieren NUR wenn from-init und toDomain BEIDE die neuen Spalten mappen. FEHLT die Auflage, dass die GRDB-Struct-Property-Reihenfolge/Codable-Keys exakt zu den ALTER-TABLE-Spaltennamen passen müssen (GRDB matcht per Spaltenname) — sonst lesen Alt-Zeilen zwar (NULL→nil), aber neue Schreibvorgänge könnten stumm scheitern."
+      ],
+      "verschaerfungen": [
+        "Step 8 umschreiben: recordAdjustment NICHT an der Protokoll-Requirement ändern. Stattdessen den actorUserID über den ENGINE-KONSTRUKTOR/State threaden (KalkulationsEngine hat bereits projektIDBySession als Session-State; analog einen actorUserID-Slot bzw. pro-Session-Stempel setzen), oder eine NEUE Requirement `recordAdjustment(..., actorUserID:)` mit einer Protokoll-Extension-Default, die auf die alte 4-Arg-Version zurückfällt — so bleiben die drei Fake-Konformanzen (AssistantToolManifestTests:86, ConversationEngineTests:448) und KalkulationsEngineTests:134/213 unverändert grün.",
+        "Step 7 präzisieren: appendAudit intern throwing machen, aber im Aufrufpfad NACH erfolgtem Airtable-Write den Audit-Fehler NICHT den sendWarenkorb-Erfolg umwerfen lassen — Muster wie AppState.createContact (AppState.swift:162): Audit-Fehler via os.Logger sichtbar machen, externen Erfolg beibehalten. Sonst neuer, ungetesteter Zustand 'Record da + Fehler geworfen'. Vor dem Umbau: grep-belegt sind genau 2 Aufrufer (WarenkorbPanel.swift:811, AppState.swift:900) — beide im try-Kontext, also compilesafe; die SEMANTIK ist das Risiko.",
+        "Vor Step 6 einen expliziten Verhaltenstest 'CashWidget-CheckIn erzeugt genau einen AuditEntry(.offerImported) mit AppState.actorUserID' schreiben (heute existiert KEINER) — erst dann migrieren, damit 'Nicht-Brechen' wirklich beweisbar ist statt behauptet.",
+        "Cold-Start-Test ehrlich als DATEI-basiert bauen (GRDBDatabase(url:) auf temporärer Datei, verifiziert existiert: GRDBDatabase.swift:13), NICHT als inMemory-Kopie von auditEntryUeberlebtNeustart deklarieren — und die neuen Felder quelle+idempotenzKey mit glattem Sekunden-timestamp (timeIntervalSince1970 ganzzahlig, wie WidgetBoardStoreTests:108) prüfen, um die Double-Rundung zu umgehen.",
+        "Migration v23_audit_checkin um einen PARTIAL UNIQUE INDEX auf idempotenzKey erweitern (`CREATE UNIQUE INDEX ... ON auditEntries(idempotenzKey) WHERE idempotenzKey IS NOT NULL`) — sonst ist die 'genau EIN Record nach Neustart'-Idempotenz-Zusage nur Adapter-best-effort und ein Bestands-Audit ohne Duplikat-Erkennung schreibt doch doppelt. Alt-Zeilen (NULL) bleiben durch die WHERE-Klausel gültig.",
+        "In den Plan explizit aufnehmen: WorkBasket ist NICHT Sendable (WirbelsaeuleFoundation.swift:244); die CheckIn-Sendable-Typen erben die bestehende CheckoutPort-Concurrency-Altlast und würden erst unter Swift-6-Mode/StrictConcurrency rot — kein Neubau-Vorteil hier, nur Gleichstand. Nicht als 'sauberer' verkaufen.",
+        "Reihenfolge härten: Step 5 (Sevdesk andocken) MUSS solange reiner Parallel-/Zusatzpfad bleiben, wie der alte SevdeskPostboxDropSheet→sevdeskPostboxPort.execute-Pfad (AppState.swift:142) lebt — und mit einem Test absichern, dass GENAU EIN Audit + weiterhin der DataFlow-Log entsteht, sobald wirklich über die Spine gegangen wird (Sevdesk hat heute nachweislich keinen Audit-Trail)."
+      ]
+    }
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Ist-Analyse"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Bauplan"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 3,
+      "title": "Kritik"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "ist:checkoutport-ist",
+      "phaseIndex": 1,
+      "phaseTitle": "Ist-Analyse",
+      "agentId": "a0cb4b596f5d23fdd",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783260657823,
+      "queuedAt": 1783260657814,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "KNOCHEN 1 — CheckoutPort: vollständige Kartierung (rein les…",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first, Multi-Target (App→Widgets→Design, Services→Kit; MykilosKit importiert NIE SwiftUI/GRDB; Widgets NIE GRDB; Schreibvorgänge NIE aus Views, nur über Stores). Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep). Ändere/committe NICHTS — das ist ein PLAN, kein Bau.\nZIEL: die CHECK-IN-Systematik …",
+      "lastProgressAt": 1783260806208,
+      "tokens": 122119,
+      "toolCalls": 17,
+      "durationMs": 148384,
+      "resultPreview": "{\"findings\":\"KNOCHEN 1 — CheckoutPort: vollständige Kartierung (rein lesend, alles am echten Code belegt)\\n\\n=== 1. WO DAS PROTOKOLL LIEGT ===\\nDas gesamte Wirbelsäule-Fundament (Pick → WorkBasket → CheckoutPort → PortRegistry) liegt in EINER Foundation-only Datei:\\n`Sources/MykilosKit/Domain/Wirbelsaeule/WirbelsaeuleFoundation.swift` (443 Zeilen, importiert AUSSCHLIESSLICH Foundation, §1-konform …"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "ist:actioncard-ist",
+      "phaseIndex": 1,
+      "phaseTitle": "Ist-Analyse",
+      "agentId": "a2e070f9a176ce4f0",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783260657829,
+      "queuedAt": 1783260657814,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "KNOCHEN 2 — ActionCard-Kartierung (alle Belege Datei:Zeile,…",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first, Multi-Target (App→Widgets→Design, Services→Kit; MykilosKit importiert NIE SwiftUI/GRDB; Widgets NIE GRDB; Schreibvorgänge NIE aus Views, nur über Stores). Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep). Ändere/committe NICHTS — das ist ein PLAN, kein Bau.\nZIEL: die CHECK-IN-Systematik …",
+      "lastProgressAt": 1783260908139,
+      "tokens": 134392,
+      "toolCalls": 27,
+      "durationMs": 250310,
+      "resultPreview": "{\"findings\":\"KNOCHEN 2 — ActionCard-Kartierung (alle Belege Datei:Zeile, rein lesend verifiziert)\\n\\n## Die zwei parallelen Bestätigungs-Welten\\nmykilOS hat HEUTE zwei getrennte, nicht vereinheitlichte Bestätigungs-Muster, die beide \\\"Vorschlag → menschliche Bestätigung → Aktion → Protokoll\\\" umsetzen — aber mit unterschiedlichen Datentypen, unterschiedlicher Audit-Kopplung und unterschiedlichem A…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "ist:auditentry-ist",
+      "phaseIndex": 1,
+      "phaseTitle": "Ist-Analyse",
+      "agentId": "aaeab4266d71c0c55",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783260657833,
+      "queuedAt": 1783260657814,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "KNOCHEN 3 — AuditEntry + AuditStore, vollständig kartiert i…",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first, Multi-Target (App→Widgets→Design, Services→Kit; MykilosKit importiert NIE SwiftUI/GRDB; Widgets NIE GRDB; Schreibvorgänge NIE aus Views, nur über Stores). Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep). Ändere/committe NICHTS — das ist ein PLAN, kein Bau.\nZIEL: die CHECK-IN-Systematik …",
+      "lastProgressAt": 1783260774220,
+      "tokens": 88028,
+      "toolCalls": 12,
+      "durationMs": 116387,
+      "resultPreview": "{\"findings\":\"KNOCHEN 3 — AuditEntry + AuditStore, vollständig kartiert im echten Code.\\n\\n## 1. AuditEntry — Fälle/Typen (Sources/MykilosKit/Domain/AuditEntry.swift:7-10)\\n`enum Action: String, Codable, Sendable` mit 10 Fällen:\\n`offerImported, draftCreated, draftSent, projectLinked, noteUpdated, estimateAdjusted, calibrationPromoted, contactCreated, driveFileUploaded, warenkorbGesendet` (Z8-9; le…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "ist:spine-vision",
+      "phaseIndex": 1,
+      "phaseTitle": "Ist-Analyse",
+      "agentId": "a4a1da5c6bd23ff6f",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783260657837,
+      "queuedAt": 1783260657814,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "## Die intendierte CHECK-IN-Spine (aus den drei Docs, gegen…",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first, Multi-Target (App→Widgets→Design, Services→Kit; MykilosKit importiert NIE SwiftUI/GRDB; Widgets NIE GRDB; Schreibvorgänge NIE aus Views, nur über Stores). Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep). Ändere/committe NICHTS — das ist ein PLAN, kein Bau.\nZIEL: die CHECK-IN-Systematik …",
+      "lastProgressAt": 1783260831312,
+      "tokens": 119416,
+      "toolCalls": 15,
+      "durationMs": 173475,
+      "resultPreview": "{\"findings\":\"## Die intendierte CHECK-IN-Spine (aus den drei Docs, gegen Ist-Code belegt)\\n\\n**Der Leitsatz (wörtlich, MASTER_ARCHITEKTUR_CHECKIN.md:9-12, BAUPLAN_FEATURES_2026-07-05.md:23-24):**\\n> „ich hab was → was/wohin/warum → verifizierter Review (okay/nicht okay) → Audit.\\\" Append-only, versioniert, idempotent, nie überschreiben/löschen, `throws`+SaveState, Cold-Start-safe. = „Versionskontr…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 5,
+      "label": "checkin-bauplan",
+      "phaseIndex": 2,
+      "phaseTitle": "Bauplan",
+      "agentId": "ad5bc802a07fb1b14",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783260908152,
+      "queuedAt": 1783260908141,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "DIE CHECKIN-NAHT — EINE dünne Klammer um die vier bestehend…",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first, Multi-Target (App→Widgets→Design, Services→Kit; MykilosKit importiert NIE SwiftUI/GRDB; Widgets NIE GRDB; Schreibvorgänge NIE aus Views, nur über Stores). Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep). Ändere/committe NICHTS — das ist ein PLAN, kein Bau.\nZIEL: die CHECK-IN-Systematik …",
+      "lastProgressAt": 1783261101508,
+      "tokens": 112827,
+      "toolCalls": 11,
+      "durationMs": 193356,
+      "resultPreview": "{\"spineDesign\":\"DIE CHECKIN-NAHT — EINE dünne Klammer um die vier bestehenden Knochen, kein Neubau.\\n\\nZIELORT (neu, Foundation-only): Sources/MykilosKit/Domain/Wirbelsaeule/CheckInSpine.swift. Importiert NUR Foundation (§-Modulregel wie WirbelsaeuleFoundation.swift:1). Kein SwiftUI, kein GRDB. Alle Wertetypen/Protokolle liegen hier; die schreibende Implementierung (AuditStore-Wrapper) liegt in My…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 6,
+      "label": "torwaechter-kritik",
+      "phaseIndex": 3,
+      "phaseTitle": "Kritik",
+      "agentId": "ae8709d55e9d11daf",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783261101514,
+      "queuedAt": 1783261101509,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "tragfähig-mit-auflagen",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first, Multi-Target (App→Widgets→Design, Services→Kit; MykilosKit importiert NIE SwiftUI/GRDB; Widgets NIE GRDB; Schreibvorgänge NIE aus Views, nur über Stores). Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep). Ändere/committe NICHTS — das ist ein PLAN, kein Bau.\nZIEL: die CHECK-IN-Systematik …",
+      "lastProgressAt": 1783261363956,
+      "tokens": 125066,
+      "toolCalls": 20,
+      "durationMs": 262442,
+      "resultPreview": "{\"verdict\":\"tragfähig-mit-auflagen\",\"breaks\":[\"STEP 8 BRICHT (Protokoll-Requirement, nicht nur Impl): recordAdjustment ist eine PROTOKOLL-Anforderung in KalkulationsEngineProviding.swift:19 (`func recordAdjustment(schaetzungsID:faktor:grund:lernen:) async throws`), NICHT nur eine Engine-Methode. Der Plan sagt 'recordAdjustment bekommt optionalen actorUserID-Parameter (Default local-user), sodass E…"
+    }
+  ],
+  "totalTokens": 701848,
+  "totalToolCalls": 102
+}
