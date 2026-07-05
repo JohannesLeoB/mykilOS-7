@@ -96,6 +96,29 @@ Fragebogen) — dann Stufe 1 bauen.** Nicht wieder verschieben, nicht adjazent b
 
 ---
 
+## 1½. 🧭 WISSENSSTAND — was IMMER mitläuft (Johannes: „das muss ich nie wieder durchkauen")
+
+Gehört zu JEDER Session dazu, nie neu erklären lassen:
+
+- **Die Vision / das Ziel (Nordstern):** mykilOS = Johannes' *gelebtes* Wissen (Projektmanagement, Team,
+  Daten, Usability) in EINE App gegossen, die die **Team-Arbeit am Projekt real verändert**. Bild-Rahmen:
+  „Haus mykilOS" (`docs/HAUS_GESAMTPLAN.md`, Gedächtnis `haus-mykilos-grundriss-metapher`) + Produkt-
+  Nordstern 2027 (`docs/PRODUKT_NORDSTERN_2027.md`). **Jede Session bringt uns dem ein Stück näher —
+  immer aufeinander aufbauen, nie bei null.**
+- **Der Satellit im Fernrohr:** iOS-App **„mykilOS mobile"** ist parallel in der Pipeline (Johannes
+  entwickelt sie selbst, `~/Claude/Projects/myMini/…`, Gedächtnis `mykilos-mobile-satellit-betreuung`).
+  Gleiche DNA (Check-in-Systematik, per-User-Keychain-Privacy, read-only Assistent). **Wichtig fürs
+  Login-Thema:** Identität muss über BEIDE Häuser gelten (Mac + iPhone = EIN Bewohner) — beim
+  Einstellungen-/User-Log-In-Bau mitdenken.
+- **Der DEV-Ordner (unser Austausch):** `~/Desktop/mykilOS-Feedback/FEEDBACK DEV/` — Johannes droppt dort
+  Screenshots, `_LOG.md` = Verbucht-Index. „Dein Ordner"/„Feedback-Ordner" = IMMER dieser. Erst auf
+  Signal lesen, nur Noch-nicht-Verbuchtes, je Bild ein Kommentar (Gedächtnis `feedback-screenshot-workflow-regel`).
+- **Die Basics stehen (nie wieder von vorn):** eindeutiger Versionsmarker je Build (11.1.0-alphaN,
+  hochzählen); Keychain-6×-Fix in alpha2 (⚠️ Verifikation offen); Header-Konsistenz getrackt (Item B,
+  „wenn free minute"); DMG vor jedem Limit; nach Code-Änderung immer neu bauen+starten.
+- **Der Plan:** `HYPERBUILD.md` (Brühwürfel, Gesamtstand) + DIESER Handoff (aktuelle Priorität) +
+  Task-Liste. Der Wissensstand trägt cross-Account über den **Git-Repo** (nicht `~/.claude`) — Task #11.
+
 ## 2. Ehrlicher Status — was DIESE Session real passiert ist
 
 ### Gebaut + committet (`feat/bewohner-oberflaeche`, 6 Commits vor origin/main, NICHT gepusht):
