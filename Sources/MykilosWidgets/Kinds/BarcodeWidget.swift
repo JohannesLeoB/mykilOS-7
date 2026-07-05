@@ -12,6 +12,7 @@ import MykilosDesign
 public struct BarcodeWidget: View {
     @State private var loader = BarcodeScanLoader()
     @State private var showScanner = false
+    @State private var showConfirm = false
 
     public init() {}
 
@@ -33,6 +34,13 @@ public struct BarcodeWidget: View {
                 onCode: { code in loader.record(code); showScanner = false },
                 onClose: { showScanner = false }
             )
+        }
+        .confirmationDialog("Kamera für den Barcode-Scan öffnen?",
+                            isPresented: $showConfirm, titleVisibility: .visible) {
+            Button("Kamera öffnen") { requestScan() }
+            Button("Abbrechen", role: .cancel) {}
+        } message: {
+            Text("Es werden keine Bilder gespeichert oder gesendet.")
         }
     }
 
@@ -61,7 +69,7 @@ public struct BarcodeWidget: View {
                 Text("Artikel-Barcode oder QR-Code mit der Kamera einlesen.")
                     .font(.mykSmall).foregroundStyle(MykColor.muted.color)
             }
-            Button(action: requestScan) {
+            Button(action: { showConfirm = true }) {
                 HStack(spacing: MykSpace.s3) {
                     Image(systemName: "barcode.viewfinder")
                     Text(loader.lastCode == nil ? "Scan starten" : "Erneut scannen")
