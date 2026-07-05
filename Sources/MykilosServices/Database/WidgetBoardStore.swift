@@ -55,6 +55,7 @@ public final class WidgetBoardStore {
             try ensureWidgetOnce(.warenkorb, size: .wide)
             // Nachzügler-Migration (2026-07-05): Barcode-Widget neu aufs Home-Board.
             try ensureWidgetOnce(.barcode, size: .medium)
+            try ensureWidgetOnce(.rechner, size: .medium)
         }
     }
 

@@ -225,10 +225,12 @@ struct WidgetBoardStoreTests {
         let storeB = WidgetBoardStore(boardID: "home", db: db) { WidgetBoardDefault.homeLayout }
         try storeB.load()
         #expect(storeB.instances.contains(where: { $0.kind == .barcode }))
+        #expect(storeB.instances.contains(where: { $0.kind == .rechner }))
 
-        // Session C: Neustart — Barcode bleibt persistent
+        // Session C: Neustart — beide bleiben persistent
         let storeC = WidgetBoardStore(boardID: "home", db: db) { WidgetBoardDefault.homeLayout }
         try storeC.load()
         #expect(storeC.instances.contains(where: { $0.kind == .barcode }))
+        #expect(storeC.instances.contains(where: { $0.kind == .rechner }))
     }
 }

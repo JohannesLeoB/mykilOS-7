@@ -39,6 +39,7 @@ extension WidgetKind {
         case .kalkulation:    "eurosign.square"
         case .warenkorb:      "cart"
         case .barcode:        "barcode.viewfinder"
+        case .rechner:        "plusminus"
         }
     }
 }

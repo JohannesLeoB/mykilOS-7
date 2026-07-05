@@ -186,6 +186,7 @@ extension WidgetKind {
         case .kalkulation:    .tasks
         case .warenkorb:      .cash
         case .barcode:        .drive
+        case .rechner:        .tasks
         }
     }
 }

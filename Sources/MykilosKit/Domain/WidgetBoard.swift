@@ -22,11 +22,12 @@ extension WidgetBoardDefault {
         WidgetInstance(kind: .recentActivity, size: .wide,   position: 3),
         WidgetInstance(kind: .clockodo,       size: .medium, position: 4),
         WidgetInstance(kind: .barcode,        size: .medium, position: 5),
+        WidgetInstance(kind: .rechner,        size: .medium, position: 6),
     ]}
 
     // Widget-Arten, die auf dem HEUTE-Board sinnvoll sind (haben eine echte View im
     // HomeBoardView-Dispatch). Basis für den Widget-Selektor der Heute-Ansicht.
     public static let homeSelectableKinds: [WidgetKind] = [
-        .focus, .notes, .projectFaves, .recentActivity, .clockodo, .barcode,
+        .focus, .notes, .projectFaves, .recentActivity, .clockodo, .barcode, .rechner,
     ]
 }
