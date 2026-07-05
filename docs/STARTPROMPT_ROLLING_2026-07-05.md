@@ -10,7 +10,7 @@ Du baust mykilOS weiter — autonom rollend durch den fertigen Bauplan, bis die 
 
 ZUERST lesen (in dieser Reihenfolge):
 1. HYPERBUILD.md                        — der Brühwürfel (ganze App auf einer Seite)
-2. docs/BAUPLAN_FEATURES_2026-07-05.md  — DER Plan: Tracks A–J, die 4 Fundamente, Airtable-Routen, Guardrails
+2. docs/BAUPLAN_FEATURES_2026-07-05.md  — DER Plan: Tracks A–K, die 4 Fundamente, Airtable-Routen, Guardrails
 3. CLAUDE.md                            — Eiserne Regeln
 
 Dann Pflicht-Gate-Checks: pwd (kanonischer Ordner) · git status · git branch ·
@@ -21,7 +21,7 @@ Stand bei Übergabe (2026-07-05, verifiziere selbst):
 - FERTIG: Kamera/Barcode-Widget (Track A + G1) · Taschenrechner Braun (H1). Mehrere Commits, Docs uncommitted.
 - OFFEN (Empfohlene Reihenfolge steht im Bauplan): Ingest-Fundament (G2 Barcode→Checkout, G5 Visitenkarte,
   G6 Kontaktselbstheilung) · Drag&Drop-Wirbelsäule (B) · Mini-Mode V1.1 (C) · View-Konsolidierung (D) ·
-  Fun-Widgets H2–H5 · Colour Picker (I) · User-/Settings-Ebenen (J) · Scaling + UI-Polish (E).
+  Fun-Widgets H2–H5 · Colour Picker (I) · User-/Settings-Ebenen (J) · Versand/DHL (K) · Scaling + UI-Polish (E).
 
 ARBEITSWEISE (autonom rollend):
 - Ein Track/Increment nach dem anderen. Je: strenger Plan → Code → swift build+test-Gate → Commit.

@@ -134,6 +134,20 @@ Rollen/Rechte/„sichtbare Bereiche" + Settings-Tiefe. Verbindet D1-Rechte-Schic
 - **J3 Rollen/Rechte/sichtbare Bereiche** (D1) — größerer Strang, Team-Entscheidung.
 Per-User-Isolation (Mail/Memos/Chat nie kreuzlesbar) + Alerts-dezent + Toggle je Quelle bleiben eisern.
 
+## Track K — Versand-/DHL-Widget (Johannes 2026-07-05)
+**Aus Kontakten + Artikeln + sonstigen Listen-Items direkt in DHL (oder andere Anbieter) ziehen**
+→ Sendung anlegen → **Sendungsnummer zurück in mykilOS** → Versand verbuchen. Das ist ein
+**Checkout-Port auf Fundament ①** (Pick/Drag&Drop) — Versand-Ziel statt Warenkorb. Increments:
+- **K1 VersandPort** (analog `SevdeskPostboxCheckoutPort`): Pick/WorkBasket (Empfänger-Kontakt +
+  Artikel/Paketinhalt) → Versand-Auftrag. Drag&Drop aus allen Katalogen (Fundament ① / Track B) als Eingang.
+- **K2 Sendungsnummer-Rückweg (Erfassen):** Tracking-Nr. kommt zurück → in den Graph, am Projekt sichtbar.
+- **K3 Versand verbuchen (Handeln):** Sendungs-Record (Empfänger/Inhalt/Tracking/Datum) → Airtable/Projekt,
+  Vorschlag→Bestätigung→Audit, **nie destruktiv**; Timeline-Marker „versendet".
+⚠️ **Externe I/O (Interior-Build-Charter):** DHL-Geschäftskundenportal-API (+ andere Carrier) = **Outer
+Limit** → sauberer **Adapter/Port + Credentials im Keychain** (nie roh, nie im Repo), Postbox-/
+Preview→Confirm-Disziplin wie sevDesk. **Carrier-neutral** ziehen (Nordstern: fremde Anbieter andockbar).
+Eigener größerer Integrations-Strang.
+
 ---
 
 ## Empfohlene Reihenfolge (step by step — du steuerst)
