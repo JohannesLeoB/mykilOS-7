@@ -17,6 +17,8 @@ public struct DateiKachel: View {
     public let file: GoogleDriveFile
     public var subtitle: String? = nil
     public var localURL: URL? = nil
+    /// Name des unmittelbaren Eltern-Ordners (Herkunft, D3). `nil` → keine Marke.
+    public var herkunftOrdner: String?
     public var side: CGFloat = 140
     public var isSelected: Bool = false
     public var onSelect: () -> Void = {}      // Einfachklick → anwählen
@@ -24,12 +26,14 @@ public struct DateiKachel: View {
     public var onOpen: (() -> Void)? = nil    // Hover-Button → extern öffnen
 
     public init(file: GoogleDriveFile, subtitle: String? = nil, localURL: URL? = nil,
+                herkunftOrdner: String? = nil,
                 side: CGFloat = 140, isSelected: Bool = false,
                 onSelect: @escaping () -> Void = {}, onPreview: @escaping () -> Void = {},
                 onOpen: (() -> Void)? = nil) {
         self.file = file
         self.subtitle = subtitle
         self.localURL = localURL
+        self.herkunftOrdner = herkunftOrdner
         self.side = side
         self.isSelected = isSelected
         self.onSelect = onSelect
@@ -50,6 +54,12 @@ public struct DateiKachel: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .frame(width: side)
+                // Herkunft (D3): Farbpunkt je Ordner-Kategorie + Ordnername als
+                // muted Mono-Chip (VERSAL). In engen Kacheln nur der Farbpunkt.
+                if herkunftOrdner != nil {
+                    HerkunftMarke(folderName: herkunftOrdner, punktNur: side < 130)
+                        .frame(width: side)
+                }
                 if let subtitle, side >= 130 {
                     Text(subtitle)
                         .font(.mykMono(8.5))
@@ -122,9 +132,13 @@ public struct DateiGalerieGrid: View {
         public let file: GoogleDriveFile
         public let subtitle: String?
         public let localURL: URL?
+        /// Name des unmittelbaren Eltern-Ordners (Herkunft, D3). `nil` → keine Marke.
+        public let herkunftOrdner: String?
         public var id: String { file.id }
-        public init(file: GoogleDriveFile, subtitle: String? = nil, localURL: URL? = nil) {
+        public init(file: GoogleDriveFile, subtitle: String? = nil, localURL: URL? = nil,
+                    herkunftOrdner: String? = nil) {
             self.file = file; self.subtitle = subtitle; self.localURL = localURL
+            self.herkunftOrdner = herkunftOrdner
         }
     }
 
@@ -155,7 +169,8 @@ public struct DateiGalerieGrid: View {
                 ForEach(eintraege) { eintrag in
                     DateiKachel(
                         file: eintrag.file, subtitle: eintrag.subtitle,
-                        localURL: eintrag.localURL, side: kachelSeite,
+                        localURL: eintrag.localURL, herkunftOrdner: eintrag.herkunftOrdner,
+                        side: kachelSeite,
                         isSelected: selektiert == eintrag.id,
                         onSelect: { selektiert = eintrag.id; onSelect?(eintrag) },
                         onPreview: { selektiert = eintrag.id; onPreview(eintrag) },
