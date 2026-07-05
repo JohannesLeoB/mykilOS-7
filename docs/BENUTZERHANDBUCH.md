@@ -591,6 +591,32 @@ Spart Kosten ohne Qualitätsverlust im Alltag. Logik: `AssistantModelRouter`.
 
 ---
 
+## Schlüssel-Inventar (Settings → Schlüssel-Inventar, 2026-07-05)
+
+**Was es tut:** Ein read-only Überblick über alle 6 Zugänge im Schlüsselbund
+(Google, Clockodo, ClickUp, Sevdesk, Airtable, Claude). Pro Zeile:
+Quellfarbe + Name · **persönlich/geteilt**-Badge · **Statuspunkt**
+(verbunden/nicht verbunden) · und — falls der hinterlegte Schlüssel zu einer
+**anderen/alten Identität** gehört statt zur aktiven — ein dezenter
+**„verwaist"-Hinweis** (Ocker, kein Alarm). So sieht man auf einen Blick,
+welche Schlüssel wirklich der aktuell angemeldeten Person gehören.
+
+- **persönlich:** Google, Clockodo, ClickUp, Claude (nutzer-eigen).
+- **geteilt:** Airtable, Sevdesk (teamweiter Zugang).
+
+**Wo:** Settings → Schlüssel-Inventar.
+
+**Voraussetzungen:** keine.
+
+**Einschränkungen / Sicherheit:** zeigt **ausschließlich Status + Metadaten** —
+**nie** einen Schlüssel-Wert, ein Token oder ein Passwort. Technisch liest das
+Inventar nur die Namen der Keychain-Einträge (`SecItemCopyMatching` mit
+`kSecReturnData: false`); kein Geheimnis verlässt jemals den Schlüsselbund. Das
+Inventar verändert nichts (read-only, kein Reparatur-Schreibzugriff in dieser
+Version).
+
+---
+
 ## Datenschutz-Grenzen zwischen Team-Mitgliedern
 
 **Was es tut:** mykilOS ist ein **persönliches Cockpit** — dein Assistent, deine Mail, deine

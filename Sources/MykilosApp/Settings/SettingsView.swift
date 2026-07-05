@@ -6,26 +6,28 @@ import MykilosServices
 
 // MARK: - SettingsCategory
 enum SettingsCategory: String, CaseIterable, Identifiable {
-    case profil, darstellung, verbindungen, privat, datenschutz, system
+    case profil, darstellung, verbindungen, schluesselInventar, privat, datenschutz, system
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .profil:       "Profil"
-        case .darstellung:  "Darstellung"
-        case .verbindungen: "Verbindungen"
-        case .privat:       "Privat"
-        case .datenschutz:  "Datenschutz"
-        case .system:       "System"
+        case .profil:             "Profil"
+        case .darstellung:        "Darstellung"
+        case .verbindungen:       "Verbindungen"
+        case .schluesselInventar: "Schlüssel-Inventar"
+        case .privat:             "Privat"
+        case .datenschutz:        "Datenschutz"
+        case .system:             "System"
         }
     }
     var icon: String {
         switch self {
-        case .profil:       "person.crop.circle"
-        case .darstellung:  "paintbrush"
-        case .verbindungen: "app.connected.to.app.below.fill"
-        case .privat:       "lock.shield"
-        case .datenschutz:  "hand.raised"
-        case .system:       "gearshape.2"
+        case .profil:             "person.crop.circle"
+        case .darstellung:        "paintbrush"
+        case .verbindungen:       "app.connected.to.app.below.fill"
+        case .schluesselInventar: "key"
+        case .privat:             "lock.shield"
+        case .datenschutz:        "hand.raised"
+        case .system:             "gearshape.2"
         }
     }
 }
@@ -168,6 +170,8 @@ struct SettingsView: View {
             clickUpSection
             sevdeskSection
             claudeSection
+        case .schluesselInventar:
+            KeychainInventoryView()
         case .privat:
             privateAreaSection
         case .datenschutz:
