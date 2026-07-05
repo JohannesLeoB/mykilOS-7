@@ -9,6 +9,15 @@ jobs:
     # den Swift-Compiler (error: fatalError) beim Kompilieren von MykilosServices.
     # Der Code wird gegen eine neuere macOS-SDK/Swift-Version entwickelt.
     runs-on: macos-15
+    env:
+      # 2026-07-05: der CI die gleiche Umgebung wie der Dev-Maschine geben (Berlin/CET,
+      # deutsche Locale), damit umgebungsabhängige Tests (Datum-Fälligkeit über
+      # Mitternacht, Währungsformat „9,99 €" mit geschütztem Leerzeichen) dasselbe
+      # Ergebnis liefern wie lokal. Sauberer wären umgebungsunabhängige Tests
+      # (fixe TimeZone/Locale im Code/Test) → eigener Qualitäts-Strang.
+      TZ: Europe/Berlin
+      LANG: de_DE.UTF-8
+      LC_ALL: de_DE.UTF-8
     steps:
       - uses: actions/checkout@v4
       - name: Swift version
