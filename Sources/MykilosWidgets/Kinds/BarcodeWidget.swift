@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import AppKit
 import MykilosKit
 import MykilosDesign
 
@@ -7,8 +8,13 @@ import MykilosDesign
 // Kamera-Barcode/QR-Scanner auf der Übersichtsseite. Liest einen Artikel-/
 // Produkt-Code über die Mac-Kamera ein — reine Erfassung, kein Schreiben.
 // v1: Scan → Code anzeigen + auswählbar. Artikel-Katalog-Lookup ist bewusst v2.
-// Kamera-Aufnahme in BarcodeScanner.swift (AVCaptureSession + Vision); der
-// eigentliche Scan ist ein Live-Gerät-Check (Kamera nicht unit-testbar).
+// Kamera-Aufnahme in BarcodeScanner.swift (AVCaptureSession + Vision).
+//
+// Kamera-Berechtigung wird IM Widget behandelt (nicht über die generische
+// permissionRequired-Chrome, die für API-Integrationen gedacht ist): bei
+// verweigerter/eingeschränkter Kamera eine kamera-spezifische Anleitung +
+// Direktknopf in die Systemeinstellungen. Braucht das Entitlement
+// com.apple.security.device.camera (Hardened Runtime) — siehe script/mykilOS.entitlements.
 public struct BarcodeWidget: View {
     @State private var loader = BarcodeScanLoader()
     @State private var showScanner = false
@@ -17,15 +23,10 @@ public struct BarcodeWidget: View {
     public init() {}
 
     public var body: some View {
-        WidgetContainer(
-            kind: .barcode,
-            sourceLabel: sourceLabel,
-            renderState: loader.renderState,
-            projectID: "home"
-        ) {
+        WidgetContainer(kind: .barcode, sourceLabel: sourceLabel, projectID: "home") {
             VStack(alignment: .leading, spacing: MykSpace.s5) {
                 header
-                scanContent
+                content
             }
         }
         .task { loader.refreshAuthorization() }
@@ -57,6 +58,33 @@ public struct BarcodeWidget: View {
     }
 
     @ViewBuilder
+    private var content: some View {
+        if loader.accessDenied {
+            permissionGuidance
+        } else {
+            scanContent
+        }
+    }
+
+    // Kamera vom System verweigert/eingeschränkt: klare Anleitung + Direktweg.
+    private var permissionGuidance: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s3) {
+            Text("Kamera-Zugriff nötig")
+                .font(.mykBody).foregroundStyle(MykColor.ink.color)
+            Text("Erlaube mykilOS die Kamera in den macOS-Systemeinstellungen, dann zurück ins Widget.")
+                .font(.mykSmall).foregroundStyle(MykColor.muted.color)
+            Button(action: openCameraSettings) {
+                HStack(spacing: MykSpace.s3) {
+                    Image(systemName: "gearshape")
+                    Text("Systemeinstellungen öffnen")
+                }
+                .font(.mykCaption).foregroundStyle(MykColor.drive.color)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
     private var scanContent: some View {
         VStack(alignment: .leading, spacing: MykSpace.s4) {
             if let code = loader.lastCode {
@@ -81,6 +109,12 @@ public struct BarcodeWidget: View {
         }
     }
 
+    private func openCameraSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     // Fragt Kamera-Berechtigung an und öffnet bei Erlaubnis das Scanner-Sheet.
     private func requestScan() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
@@ -89,11 +123,11 @@ public struct BarcodeWidget: View {
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 Task { @MainActor in
-                    if granted { showScanner = true } else { loader.markDenied() }
+                    if granted { showScanner = true } else { loader.refreshAuthorization() }
                 }
             }
         case .denied, .restricted:
-            loader.markDenied()
+            loader.refreshAuthorization()   // schaltet auf die Anleitung um
         @unknown default:
             break
         }
@@ -104,23 +138,15 @@ public struct BarcodeWidget: View {
 @MainActor
 @Observable
 private final class BarcodeScanLoader {
-    private(set) var renderState: WidgetRenderState = .content
+    private(set) var accessDenied = false
     private(set) var lastCode: String?
 
     func refreshAuthorization() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized, .notDetermined: renderState = .content
-        case .denied, .restricted:        renderState = .permissionRequired
-        @unknown default:                 renderState = .content
+        case .denied, .restricted: accessDenied = true
+        default:                   accessDenied = false
         }
     }
 
-    func record(_ code: String) {
-        lastCode = code
-        renderState = .content
-    }
-
-    func markDenied() {
-        renderState = .permissionRequired
-    }
+    func record(_ code: String) { lastCode = code }
 }

@@ -4,7 +4,7 @@ set -euo pipefail
 PRODUCT_NAME="mykilOS6"
 EXECUTABLE_NAME="mykilOS6"
 BUNDLE_ID="de.mykilos.mykilos6"
-APP_VERSION="10.0.0-alpha16"
+APP_VERSION="10.0.0-alpha17"
 # App-Bundle trägt die Versionsnummer im Namen, damit im Dock/Finder immer
 # eindeutig ist, welche Version läuft. BUNDLE_ID bleibt KONSTANT (sonst neuer
 # DB-/Keychain-Pfad → Datenverlust).
@@ -123,11 +123,12 @@ if [ -z "$SIGN_IDENTITY" ]; then
   fi
 fi
 
+ENTITLEMENTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/mykilOS.entitlements"
 if [ -n "$SIGN_IDENTITY" ]; then
-  /usr/bin/codesign --force --deep --options runtime --sign "$SIGN_IDENTITY" "$APP_BUNDLE" >/dev/null
+  /usr/bin/codesign --force --deep --options runtime --entitlements "$ENTITLEMENTS" --sign "$SIGN_IDENTITY" "$APP_BUNDLE" >/dev/null
   echo "Signiert mit stabiler Identität: $SIGN_IDENTITY." >&2
 else
-  /usr/bin/codesign --force --deep --sign - "$APP_BUNDLE" >/dev/null
+  /usr/bin/codesign --force --deep --entitlements "$ENTITLEMENTS" --sign - "$APP_BUNDLE" >/dev/null
   echo "Hinweis: Ad-hoc signiert. Für eine dauerhafte Keychain-Freigabe ohne erneute" >&2
   echo "  Prompts: Schlüsselbundverwaltung → Zertifikatsassistent → 'mykilOS Local" >&2
   echo "  Signing' (Codesignatur, selbstsigniert) anlegen, oder MYKILOS_SIGN_IDENTITY setzen." >&2
