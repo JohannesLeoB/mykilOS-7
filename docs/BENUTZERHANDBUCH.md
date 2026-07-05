@@ -588,6 +588,11 @@ Spart Kosten ohne Qualitätsverlust im Alltag. Logik: `AssistantModelRouter`.
 - **Private Area**: nutzer-eigene Credentials (Clockodo, perspektivisch weitere).
   Visuell getrennt von geteilten Integrationen.
 - **Cache leeren**: löscht lokale GRDB-Daten ohne App-Neuinstallation.
+- **Identitäts-Wiederfindung (2026-07-05):** Nach einem Zurücksetzen der lokalen Datenbank
+  **versucht** die App, deine bekannte Identität über deine Google-E-Mail (der Personalausweis)
+  wiederzufinden und daran anzuknüpfen, statt eine neue anzulegen — damit deine persönlichen
+  Schlüssel (Clockodo/ClickUp/… im Schlüsselbund) nicht verwaisen. Der Anker (E-Mail→Identität)
+  wird dafür zusätzlich im Schlüsselbund gespiegelt (trägt nur die Zuordnung, **kein** Geheimnis).
 
 ---
 

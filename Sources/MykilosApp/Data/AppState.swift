@@ -221,6 +221,15 @@ public final class AppState {
         // Non-fatal wie refreshUserInfoIfNeeded: schlägt der Schreibvorgang fehl,
         // läuft die Anreicherung beim nächsten Start erneut. Kein Crash.
         try? residentIdentity.save(merged)
+
+        // ORPHAN-REBIND (Teil B, 2026-07-05): den Anker (googleEmail → userID)
+        // ZUSÄTZLICH im Keychain spiegeln, damit er eine Löschung von db.sqlite
+        // (Neuinstallation/DB-Reset) überlebt. Beim nächsten Start findet
+        // ProfileStore.ensureUserID über diesen Keychain-Anker die ALTE stabile
+        // userID wieder und rebindet darauf, statt eine neue UUID zu vergeben.
+        // Non-fatal (try?): der GRDB-Anker oben ist der Master; der Keychain-
+        // Spiegel ist die zusätzliche Überlebensschicht. TRÄGT NIE EIN SECRET.
+        try? KeychainIdentityAnchorStore().save(userID: activeUserID, forEmail: email)
     }
 
     // MARK: - CheckIn-Spine (Wirbelsäule, die eine zentral auditierte Naht)
@@ -310,12 +319,30 @@ public final class AppState {
         // async in bootstrap(), zu spät für die Store-Konstruktion hier).
         // Erzeugt beim allerersten Start eine UUID und persistiert sie sofort;
         // danach bleibt sie stabil über Neustarts (siehe ProfileStore.ensureUserID()).
-        let userID = ProfileStore.ensureUserID(db: database)
+        let firstID = ProfileStore.ensureUserID(db: database)
         // Prozess-weit sichtbar machen: alle Default-Parameter-Konstruktionen
         // von KeychainXCredentialsStore/KeychainGoogleTokenStore (Dutzende
         // Call-Sites in AssistantTool.swift, TimelineTabView.swift, …) lösen
         // ihre userID künftig hierüber auf statt "local" zu bekommen.
-        CurrentUserContext.set(userID)
+        // Boden-Aufruf: firstID ist die frische/vorhandene UUID; der Kontext
+        // muss gesetzt sein, damit der Google-Token-Store unten die richtige
+        // per-User-Ablage liest.
+        CurrentUserContext.set(firstID)
+        // ORPHAN-REBIND (Teil A2, 2026-07-05): die verifizierte Google-Mail VOR
+        // der Store-Konstruktion aus dem Keychain hydratisieren (GoogleAuthService
+        // täte es unten synchron ohnehin — wir ziehen den Lookup schlank vor).
+        // Ist der Nutzer schon eingeloggt UND kennt der Personalausweis/Keychain-
+        // Anker zu dieser Mail eine ALTE stabile userID (typisch nach einem
+        // db.sqlite-Reset/Neuinstallation), rebindet ensureUserID DARAUF statt
+        // eine neue UUID zu vergeben — sonst verwaisten alle per-User-Keychain-
+        // Einträge. Ohne Login (kein loadUserInfo) → finalUserID == firstID
+        // (kein Rebind, Verhalten wie zuvor).
+        let hydratedEmail = try? KeychainGoogleTokenStore(userID: firstID).loadUserInfo()?.email
+        let finalUserID = ProfileStore.ensureUserID(db: database, googleEmail: hydratedEmail)
+        // ALLE per-User-Stores werden EINMAL mit der ENDGÜLTIGEN UUID gebaut —
+        // kein Doppel-Bau, kein Store zuerst mit firstID und dann nochmal.
+        CurrentUserContext.set(finalUserID)
+        let userID = finalUserID
         self.googleAuth = GoogleAuthService(tokenStore: KeychainGoogleTokenStore(userID: userID))
         self.clockodoAuth = ClockodoAuthService(
             credentialsStore: KeychainClockodoCredentialsStore(userID: userID))

@@ -70,8 +70,47 @@ public final class ProfileStore {
     //    Zuordnung).
     // Best-effort: schlägt die DB hier fehl, fällt auf "local" zurück statt
     // abzustürzen — Keychain-Services bekommen dann den bekannten Fallback-Suffix.
-    public static func ensureUserID(db: GRDBDatabase) -> String {
+    //
+    // ORPHAN-REBIND (Teil A, 2026-07-05): mit bekannter `googleEmail` (nach der
+    // Google-Hydration) wird ZUERST versucht, an die ALTE stabile userID zu
+    // rebinden statt bei einem DB-Reset/Neuinstallation eine frische UUID zu
+    // vergeben (die alle per-User-Keychain-Einträge des Nutzers verwaisen ließe).
+    // Anker-Quellen in Reihenfolge:
+    //   1. DB-Anker: ResidentIdentityStore.userID(forEmail:db:) (Personalausweis).
+    //   2. Keychain-Anker: KeychainIdentityAnchorStore (überlebt db.sqlite-Löschung).
+    // Nicht-Leer-Invariante HART: eine leere/whitespace-Mail führt NIE zu einem
+    // Rebind (ein leerer Anker wäre ein geteilter Rebind-Magnet). Volle Mail, nie
+    // die Domain. Der `googleEmail`-Default `nil` hält AppState.swift (Boden-Aufruf)
+    // + alle bestehenden Test-Call-Sites verhaltensidentisch.
+    public static func ensureUserID(
+        db: GRDBDatabase,
+        googleEmail: String? = nil,
+        anchorStore: any IdentityAnchorStoring = KeychainIdentityAnchorStore()
+    ) -> String {
         do {
+            // Rebind-Zweig GANZ AM ANFANG — nur mit nicht-leerer Mail.
+            if let email = googleEmail,
+               email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+                // 1. DB-Anker, 2. bei Miss Keychain-Anker (überlebt db.sqlite-Verlust).
+                // `try?` liefert String?? — mit flatMap auf String? geglättet.
+                let keychainAnchor = (try? anchorStore.userID(forEmail: email)).flatMap { $0 }
+                let anchoredUserID = ResidentIdentityStore.userID(forEmail: email, db: db)
+                    ?? keychainAnchor
+                if let alteUUID = anchoredUserID,
+                   alteUUID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+                    // Single-Row id="local" auf die alte UUID rebinden — nur schreiben,
+                    // wenn sie abweicht (kein unnötiger Write, keine neue Zeile).
+                    let existing = try db.read { dbConn in
+                        try ProfileRecord.fetchOne(dbConn, key: ProfileRecord.localID)
+                    }
+                    if existing?.userID != alteUUID {
+                        let base = existing ?? ProfileRecord(from: UserProfile.empty)
+                        let rebound = base.withUserID(alteUUID)
+                        try db.write { dbConn in try rebound.save(dbConn) }
+                    }
+                    return alteUUID
+                }
+            }
             if let existing = try db.read({ dbConn in
                 try ProfileRecord.fetchOne(dbConn, key: ProfileRecord.localID)
             }) {
