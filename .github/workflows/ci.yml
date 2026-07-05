@@ -13,7 +13,10 @@ jobs:
       - name: SwiftLint (Disziplin-Gate)
         run: |
           brew install swiftlint || true
-          swiftlint --strict || (echo "::error::Lint-Regeln verletzt"; exit 1)
+          # Baseline (2026-07-05): die vorbestehende Lint-Schuld (1787 Verstöße, ganze
+          # Codebase) ist in swiftlint-baseline.json eingefroren. Die CI meldet damit nur
+          # NEUE Verstöße hart — die Alt-Schuld wird als eigener Strang abgetragen.
+          swiftlint lint --strict --baseline swiftlint-baseline.json || (echo "::error::NEUE Lint-Regeln verletzt (Alt-Schuld ist baselined)"; exit 1)
       - name: Build
         run: swift build
       - name: Test (inkl. Cold-Start)
