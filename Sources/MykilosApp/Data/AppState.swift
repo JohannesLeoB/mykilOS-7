@@ -378,7 +378,11 @@ public final class AppState {
         // V10, Phase 1, Block C: geteilte GRDBDatabase durchreichen, wie alle
         // anderen Stores hier auch — kein eigener Persistenz-Pfad.
         self.workBaskets = WorkBasketStore(db: database)
-        let claudeCredentials = KeychainClaudeCredentialsStore()
+        // Explizite userID wie bei den 5 Geschwister-Stores (Google/Clockodo/ClickUp/
+        // Sevdesk/Airtable). Bestehende `.local`-Credentials (aus dem impliziten Default,
+        // als CurrentUserContext.current noch nil war) werden von loadWithMigration
+        // nachgezogen — die Verbindung bleibt erhalten.
+        let claudeCredentials = KeychainClaudeCredentialsStore(userID: userID)
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
         self.assistantLLM = ClaudeMessagesClient(credentialsStore: claudeCredentials)
         // Engine live: Baseline-Anker (eingebaut) + DeviceCatalog (lädt die echte

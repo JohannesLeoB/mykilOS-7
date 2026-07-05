@@ -119,4 +119,51 @@ struct PerUserKeychainServiceTests {
         #expect(email == "a@b.de")
         #expect(apiKey == nil)
     }
+
+    // MARK: - Migration aus dem ".local"-Fallback (Claude-Bug 2026-07-05)
+
+    @Test func migrationZiehtWertAusLocalFallbackNach() throws {
+        // Bug-Zustand: Credentials liegen unter com.mykilos6.claude.local, weil der
+        // Store zur Schreibzeit keine aktive userID sah.
+        let keychain = FakeKeychain()
+        try keychain.store("claude-key", service: "com.mykilos6.claude.local", account: "apiKey")
+
+        // Jetzt mit aktiver userID lesen → wird über die .local-Quelle gefunden.
+        let value = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "claude", userID: "aktive-uuid", account: "apiKey")
+
+        #expect(value == "claude-key")
+        // Nachgezogen unter den per-User-Service.
+        let neu = try keychain.load(service: "com.mykilos6.claude.aktive-uuid", account: "apiKey")
+        #expect(neu == "claude-key")
+        // Append-only: der .local-Eintrag bleibt bestehen.
+        let local = try keychain.load(service: "com.mykilos6.claude.local", account: "apiKey")
+        #expect(local == "claude-key")
+    }
+
+    @Test func aktiveLocalIdentitaetMigriertNichtAufSichSelbst() throws {
+        // Aktive userID ist selbst "local" (bzw. nil) → newService == localService.
+        // Der Wert wird direkt (Schritt 1) gefunden, KEINE Selbst-Migration, kein Extra-Write.
+        let keychain = FakeKeychain()
+        try keychain.store("claude-key", service: "com.mykilos6.claude.local", account: "apiKey")
+        let writesVorher = keychain.storeCallCount
+
+        let value = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "claude", userID: nil, account: "apiKey")
+
+        #expect(value == "claude-key")
+        #expect(keychain.storeCallCount == writesVorher) // kein Nachzieh-Write auf sich selbst
+    }
+
+    @Test func legacyHatVorrangVorLocalFallback() throws {
+        // Existieren BEIDE Migrationsquellen, gewinnt Legacy (Reihenfolge im Migrator).
+        let keychain = FakeKeychain()
+        try keychain.store("legacy-key", service: "com.mykilos6.claude", account: "apiKey")
+        try keychain.store("local-key", service: "com.mykilos6.claude.local", account: "apiKey")
+
+        let value = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "claude", userID: "aktive-uuid", account: "apiKey")
+
+        #expect(value == "legacy-key")
+    }
 }
