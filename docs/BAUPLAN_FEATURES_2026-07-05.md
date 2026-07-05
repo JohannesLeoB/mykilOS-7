@@ -210,6 +210,24 @@ hängt künftig **nur an mykilOS-eigenen Bases.** Zwei Phasen:
 - **Schaltet frei:** G9 (Artikel/Lager-Ingest schreibt in die eigene Base). **Braucht Daniel am Tisch**
   (Schreib-Übergabe/Business-Keys). Voller Strangler-Migrationsplan: `docs/AIRTABLE_ARCHITEKTUR.md` §4/§6/§8b.
 
+## Track M — Physische Muster-Bibliothek: QR Check-in/-out (Johannes 2026-07-05)
+Die **CHECK-IN-Systematik physisch gemacht** — reale Studio-Artikel (100.000e Materialmuster: Steinplatten,
+Hölzer, Griffe, Metalle …) mit **kleinem QR-/Barcode-Tag** versehen → per Kamera in Projekte ein-/auschecken.
+Der **greifbarste Beweis der CHECK-IN-Spine.**
+- **M1 Muster als Knoten:** jedes Muster = Objekt mit stabiler ID (QR-Tag, gedruckt), in eigener Muster-Base (Track L).
+- **M2 Scan → CHECK-IN-Menü (G8):** „In Projekt einchecken" (Muster/Material-Mood → Kundenprojekt zuordnen) ·
+  „Ausleihen (auschecken)" · „Zurück ins Studio (einchecken)".
+- **M3 Ausleihen erfasst Kontext:** wer · wohin · warum · bis wann → Muster gilt als „**fehlt im Studio**"
+  (berechnet aus dem jüngsten Auscheck-Event, mit Grund/Ort/Dauer). Rückgabe = einchecken.
+- **M4 Live-Bestand:** was ist da / unterwegs / projektzugeordnet — alles **append-only Bewegungen**
+  (Check-in/out-Events, Audit, nie überschreiben); aktueller Ort/Status = jüngstes Event.
+- **M5 Material-Moods:** mehrere Muster → Materialauswahl/Moodboard pro Projekt (verbindet mit Projekt-Material-Tab).
+- **M6 Dymo-Druck-Pfad:** QR-Tag-Druck **gelöst — Dymo-Etikettendrucker vorhanden.** mykilOS erzeugt
+  Muster-ID + QR → Druck via Dymo (v1: Export/Dymo Connect; später Dymo-SDK/-WebService direkt).
+- **🗓️ MONTAG-TESTLAUF (gemeinsam, live) — Hustadt-Gate des physischen Check-ins:** Tag drucken → scannen →
+  in Projekt einchecken → ausleihen (wer/wo/warum/wie lange) → „fehlt im Studio" prüfen → zurück einchecken.
+Voraussetzung offen: nur noch das **ID-Schema**. Schreib-Ziel = mykilOS-eigene Base (Track L). Kein Fremd-System-Write.
+
 ---
 
 ## Empfohlene Reihenfolge (step by step — du steuerst)
