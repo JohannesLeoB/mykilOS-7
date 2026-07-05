@@ -9,10 +9,14 @@ import MykilosServices
 public struct ContactsWidget: View {
     public let projectID: String
     public let contactsQuery: String?
+    /// Klick auf eine Mail-Adresse (2026-07-04) — der App-Layer öffnet ComposeMailView mit
+    /// vorausgefülltem Empfänger. `nil` = Klick tut nichts (Callback nicht injiziert).
+    public var onMailContact: ((String) -> Void)? = nil
 
-    public init(projectID: String, contactsQuery: String?) {
+    public init(projectID: String, contactsQuery: String?, onMailContact: ((String) -> Void)? = nil) {
         self.projectID = projectID
         self.contactsQuery = contactsQuery
+        self.onMailContact = onMailContact
     }
 
     @State private var loader = ContactsLoader()
@@ -59,7 +63,7 @@ public struct ContactsWidget: View {
     private var contactList: some View {
         VStack(spacing: 0) {
             ForEach(loader.contacts) { contact in
-                ContactRow(contact: contact)
+                ContactRow(contact: contact, onMailContact: onMailContact)
                 if contact.id != loader.contacts.last?.id {
                     Divider().overlay(MykColor.line.color.opacity(0.6))
                 }
@@ -114,6 +118,8 @@ private final class ContactsLoader {
 // MARK: - ContactRow
 private struct ContactRow: View {
     let contact: GoogleContact
+    var onMailContact: ((String) -> Void)? = nil
+    @State private var isHoveredOnEmail = false
 
     var body: some View {
         HStack(spacing: MykSpace.s4) {
@@ -124,7 +130,7 @@ private struct ContactRow: View {
                 .overlay(Text(initials).font(.mykMono(11)).foregroundStyle(.white))
             VStack(alignment: .leading, spacing: 2) {
                 Text(contact.displayName).font(.mykSmall).foregroundStyle(MykColor.ink.color)
-                Text(subtitle).font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+                subtitleView
             }
             Spacer()
         }
@@ -137,8 +143,35 @@ private struct ContactRow: View {
         return letters.isEmpty ? "?" : String(letters).uppercased()
     }
 
-    private var subtitle: String {
-        let parts = [contact.organization, contact.email].compactMap { $0 }
-        return parts.isEmpty ? "—" : parts.joined(separator: "  ·  ").uppercased()
+    // Mail-Adresse klickbar (2026-07-04): eigenes Element statt Teil eines Textstrings,
+    // damit sie einzeln antippbar ist. Organisation bleibt Klartext daneben.
+    @ViewBuilder
+    private var subtitleView: some View {
+        HStack(spacing: 4) {
+            if let org = contact.organization {
+                Text(org.uppercased()).font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+            }
+            if let email = contact.email {
+                if contact.organization != nil {
+                    Text("·").font(.mykMono(9.5)).foregroundStyle(MykColor.faint.color)
+                }
+                if let onMailContact {
+                    Button { onMailContact(email) } label: {
+                        Text(email.uppercased())
+                            .font(.mykMono(9.5))
+                            .foregroundStyle(MykColor.people.color)
+                            .underline(isHoveredOnEmail)
+                    }
+                    .buttonStyle(.plain)
+                    .onHover { isHoveredOnEmail = $0 }
+                    .help("Mail schreiben")
+                } else {
+                    Text(email.uppercased()).font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+                }
+            }
+            if contact.organization == nil && contact.email == nil {
+                Text("—").font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+            }
+        }
     }
 }

@@ -1,0 +1,311 @@
+{
+  "summary": "Kartiert die Ist-Identitäts-/Multi-User-Schicht von mykilOS und entwirft die fehlenden Bewohner-Layer (Personalausweis/Meldeadresse/Schlüssel) für echten Team-Betrieb. Read-only + Design.",
+  "agentCount": 6,
+  "logs": [
+    "Vermessung: 38 Facetten aus 5/5 Spähern",
+    "Entwurf fertig: 3 Soll-Layer, 7 offene Fragen"
+  ],
+  "result": {
+    "istZusammenfassung": "Die Bewohner-Schicht ist heute die am wenigsten ausgebaute Schicht des Hauses: Es gibt KEINEN kanonischen Personalausweis, der denselben Menschen über Google, Clockodo, ClickUp, Airtable und das lokale Profil zusammenhält — genau die vermutete Zersplitterung ist im Code belegt. Die einzige verbindende ID ist eine anonyme First-Run-UUID (UserProfile.userID), die ausschließlich in db.sqlite lebt, alle sechs Keychain-Services als Suffix bündelt, nach außen aber auf nichts zeigt und bei DB-Reset/Gerätewechsel eine neue UUID erzeugt (verwaist alle Secrets). Die einzige extern verifizierte Identität (Google-E-Mail) wird nie als Schlüssel persistiert (nur die Domain, teamweit gleich), und das einzige strukturierte Personen-Register (Airtable Clockodo-Nutzer) wird von keinem Swift-Code gelesen. Der Einzugs-Prozess (Onboarding-Wizard) endet, ohne den neuen Menschen irgendwo im Team zu melden oder seine externen Identitäten an einen Ausweis zu knüpfen.",
+    "facets": [
+      {
+        "facet": "Lokales Profil (UserProfile / userProfile-Tabelle)",
+        "whatExists": "Ein einziger Datensatz mit displayName, role, updatedAt und den optionalen Feldern clockodoUserID, googleDomain, userID. isComplete prüft NUR, ob displayName nicht leer ist; Rolle und alles andere sind optional. Bewusste V1-Vereinfachung: genau EIN lokales Profil je Gerät (Kommentar UserProfile.swift:2-6).",
+        "whereStored": "GRDB db.sqlite, Tabelle userProfile, feste Single-Row id='local' (ProfileRecord.localID). Migration v3_profile legt die Tabelle an (GRDBDatabase.swift:118), v5_profile_identity ergänzt clockodoUserID+googleDomain (Z.138-141), v22_user_identity ergänzt userID (Z.447-449). Datum als Double.",
+        "crossSystemLink": "NICHTS verknüpft dieses Profil mit einem echten Menschen über Systeme hinweg. displayName/role sind reiner Freitext, den der Nutzer im Wizard/Settings eintippt. Es ist eine lokale Notizzettel-Identität, kein System-of-Record.",
+        "gap": "Kein Feld bindet das Profil an die Airtable-'Clockodo-Nutzer'-Tabelle (die echte Team-Personenliste). displayName ist frei editierbar und kollidiert gegen keine kanonische Namensliste. Für echten Team-Betrieb fehlt die Bindung Profil↔Team-Mitglied-Record.",
+        "rulesTouched": "Per-User-Isolation (ein Profil je Gerät = V1-Annahme, nicht für echte Multi-User auf einem Gerät ausgelegt)."
+      },
+      {
+        "facet": "Stabile lokale userID (First-Run-UUID) — der De-facto-'Ausweis'",
+        "whatExists": "Eine beim ersten Profil-Load erzeugte UUID (UUID().uuidString). ensureUserID() hat drei Fälle: (a) keine Zeile → Platzhalterprofil (leerer Name) mit frischer UUID; (b) Zeile ohne userID (Bestand vor v22) → UUID einmalig nachziehen; (c) userID vorhanden → unverändert zurückgeben, NIE neu erzeugen. Bei DB-Fehler Fallback auf String 'local' statt Crash (ProfileStore.swift:73-96 verifiziert).",
+        "whereStored": "NUR in db.sqlite, Spalte userID der userProfile-Tabelle. Wird an KEIN externes System gemeldet, taucht in keiner Airtable-Tabelle und in keinem Token auf. AppState.init() ruft ensureUserID() synchron vor jeder Keychain-Store-Konstruktion auf und legt sie prozessweit via CurrentUserContext.set() ab (AppState.swift:206-220 verifiziert).",
+        "crossSystemLink": "Diese UUID ist der Suffix, an dem ALLE sechs Keychain-Services hängen: com.mykilos6.<service>.<userID> für google/clockodo/clickup/sevdesk/airtable/claude. Sie verknüpft aber nur GERÄT-LOKAL Profil↔Keychain — sie sagt NICHTS darüber, WELCHER Mensch das ist. Zwei Menschen = zwei UUIDs; derselbe Mensch auf zwei Geräten = ebenfalls zwei verschiedene UUIDs.",
+        "gap": "Existenzielle Fragilität (Orphan-Bug): Die UUID lebt ausschließlich in db.sqlite. Wird die db.sqlite gelöscht/zurückgesetzt (Neuinstallation, Gerätewechsel, App-Support-Löschung), erzeugt ensureUserID() eine NEUE UUID → alle Keychain-Einträge unter der alten UUID verwaisen still (bleiben liegen, werden nie wieder gelesen), der Nutzer sieht überall 'nicht verbunden' ohne Hinweis warum. Kein Backup, kein Re-Anchoring, keine Konsistenzprüfung userID↔vorhandene Keychain-Suffixe. Auch der DB-Fehler-Fallback 'local' kappt die Zuordnung und teilt allen denselben Namespace.",
+        "rulesTouched": "Keys nur Keychain (die UUID ist der Namespace für alle per-User-Services); Per-User-Isolation."
+      },
+      {
+        "facet": "Google-OAuth-Identität (currentGoogleUser / GoogleUserInfo)",
+        "whatExists": "Nach OAuth-Login liest GoogleUserInfoClient email + name vom Endpoint oauth2/v2/userinfo; GoogleUserInfo hält email + displayName, domain ist ein berechneter Suffix aus der E-Mail. GoogleAuthService cached currentUser und lädt es bei Bedarf nach (refreshUserInfoIfNeeded, B2-Fix). Sidebar/Settings zeigen Name + E-Mail read-only.",
+        "whereStored": "Keychain, Service com.mykilos6.google.<userID>, account 'userInfo' als JSON — NICHT in db.sqlite. Beim Start hydratisiert AppState currentUser aus dem Keychain bzw. lädt nach, wenn verbunden aber Cache leer (AppState.swift verifiziert).",
+        "crossSystemLink": "Das ist die EINZIGE Identität mit echtem externem Bezug (verifizierte E-Mail/Domain). Sie ist aber nur über den Keychain-Suffix <userID> lose ans Profil geklebt — kein UserProfile-Feld führt die Google-E-Mail als Schlüssel. actorUserID nimmt currentGoogleUser?.email, fällt sonst auf displayName, sonst 'local' zurück (AppState.swift:136 verifiziert) — drei verschiedene Identitätsbegriffe je nach Verbindungszustand.",
+        "gap": "Die Google-E-Mail — der beste Kandidat für einen echten Ausweis — wird NICHT als kanonische Identität persistiert. googleDomain landet nur ins Profil, wenn der Nutzer manuell in Settings 'Speichern' drückt (SettingsView.swift:369: existing?.googleDomain ?? currentGoogleUser?.domain verifiziert). Es gibt keinen automatischen Schreibpfad Login→Profil. Nur die Domain (teamweit gleich, taugt nicht zur Personen-Unterscheidung) wird gespeichert, nie die volle E-Mail.",
+        "rulesTouched": "Per-User-Isolation; kein Identitäts-Vortäuschen; Mail privat."
+      },
+      {
+        "facet": "Clockodo-Identität (clockodoUserID)",
+        "whatExists": "Optionales Freitext-Feld, im Wizard NICHT abgefragt (der Wizard reicht clockodoUserID nur unverändert durch, OnboardingWizardView.swift:242 verifiziert) — Eingabe nur in Settings über ein separates TextField 'Clockodo User-ID (optional)' (SettingsView.swift:771 verifiziert). Nirgends validiert, nirgends aus Clockodo abgefragt (kein /users- oder whoami-Call).",
+        "whereStored": "db.sqlite, userProfile.clockodoUserID (Migration v5_profile_identity). Clockodo-API-Credentials (E-Mail+apiKey) getrennt im Keychain com.mykilos6.clockodo.<userID>.",
+        "crossSystemLink": "KEIN automatischer Link. Die maßgebliche Wahrheit (Clockodo-User-ID + Entwurfs-Tabelle je Mensch, E-Mail als natürlicher Schlüssel) liegt LIVE in Airtable Clockodo-Nutzer (tblPbly2br8mR2kaU, laut Doku Johannes=421694 johannes@mykilos.com, Daniel=391057, Jilliana=391140, Frauke=391141). Grep bestätigt: kein Swift-Code liest diese Tabelle (tblPbly2br8mR2kaU / 'Clockodo-Nutzer' / 'Entwurf-Tabelle' → 0 Treffer).",
+        "gap": "Manuelle Doppelerfassung ohne Absicherung: Der Nutzer muss seine Clockodo-User-ID selbst kennen und korrekt abtippen; kein Lookup, kein Abgleich über die Google-E-Mail, kein Fehler bei Tippfehler/Leerlassen → die spätere Zeitbuchungs-Zuordnung (ClockodoDraftEntry.clockodoUserID-Filter) bricht still. Für Team-Betrieb fehlt: E-Mail (aus Google) → Airtable Clockodo-Nutzer suchen → clockodoUserID + Entwurfs-Tabelle automatisch übernehmen.",
+        "rulesTouched": "Clockodo read-only + Postbox (datensensitiv, per-User); Per-User-Isolation; Keys nur Keychain."
+      },
+      {
+        "facet": "ClickUp-Identität (Member/Assignee)",
+        "whatExists": "ClickUpClient kennt AssigneeEntity.username und liest assignee = entity.assignees?.first?.username NUR LESEND aus Task-JSON (ClickUpClient.swift:270 verifiziert). createTask sendet als Body ausschließlich name (+ optional content), NIE das native assignees-Feld (Kommentar Z.90-91 verifiziert). Kein Modell, das den lokalen Nutzer auf einen ClickUp-Member abbildet.",
+        "whereStored": "Nur flüchtig im gelesenen Task-JSON. Keine Persistenz einer ClickUp-Member-ID im Profil/GRDB/Mapping. ClickUp-API-Token im per-User-Keychain (com.mykilos6.clickup.<userID>).",
+        "crossSystemLink": "KEIN Link. Weder wird der lokale Mensch mit einem ClickUp-Member verbunden, noch gibt es (bewusst, Ghost-Regel) eine echte Assignee-Zuordnung. 'Zeige MIR meine Tasks' ist nicht auflösbar, weil die eigene ClickUp-Member-ID nirgends bekannt ist.",
+        "gap": "Für echten Team-Betrieb fehlt jede Zuordnung lokaler Mensch → ClickUp-Member als Lese-Mapping der eigenen Identität. (Das absichtliche Nicht-Zuweisen bleibt Regel, nicht Lücke.) Der Assignee-Schutz ist per Weglassen umgesetzt, nicht per zentralem Guard — ein künftiger Pfad, der assignees doch schreibt, würde nicht abgefangen.",
+        "rulesTouched": "Ghost-Persona (nur Testspace, nie echte Assignee); Aufgaben nur Mensch→Mensch; kein Identitäts-Vortäuschen."
+      },
+      {
+        "facet": "Airtable-Identität (Clockodo-Nutzer-Register + Ghost-Assignee)",
+        "whatExists": "In der Mastermind-Base appuVMh3KDfKw4OoQ liegt der einzige Ort, an dem reale Menschen als strukturierte Records existieren: Clockodo-Nutzer (tblPbly2br8mR2kaU, laut Doku 4 Records mit Name/E-Mail/Clockodo-ID/Entwurfs-Tabelle). Assignee-Zuweisungen laufen (wie ClickUp) nur über Ghost-Kürzel als Text, nie über native Collaborator-Felder.",
+        "whereStored": "Airtable Base appuVMh3KDfKw4OoQ, Tabelle Clockodo-Nutzer. Airtable-PAT im per-User-Keychain (com.mykilos6.airtable.<userID>). Nur doku-seitig gepflegt, außerhalb der App.",
+        "crossSystemLink": "Airtable IST der natürliche Personalausweis-Ort (E-Mail + Clockodo-ID + Name + Entwurfs-Tabelle in EINEM Record). Aber die App nutzt ihn NICHT als Identitäts-Auflöser — grep bestätigt: kein Swift-Code liest die Tabelle, um die lokale Identität zu füllen oder zu verankern. Der Record ist ein isolierter Steckbrief, den niemand an userID oder currentGoogleUser bindet.",
+        "gap": "Der beste Ausweis-Kandidat ist ungenutzt. Es fehlt der naheliegende Schritt: nach Google-Login die eigene E-Mail in Clockodo-Nutzer nachschlagen und den Record (clockodoUserID/Entwurfs-Tabelle/Anzeigename) als Anker ins lokale Profil spiegeln. Ohne das bleibt Airtable eine dritte, separate Identitäts-Insel.",
+        "rulesTouched": "Per-User-Isolation; Ghost-Persona; append-only (kein DELETE/Überschreiben); Aufgaben nur Mensch→Mensch."
+      },
+      {
+        "facet": "Keychain-Schicht (PerUserKeychainService + sanfte Legacy-Migration)",
+        "whatExists": "Zentrale Namensableitung für ALLE Secrets: perUser(base,userID) → 'com.mykilos6.<base>.<userID>', legacy(base) → 'com.mykilos6.<base>'. Sechs Basen: google/clockodo/airtable/clickup/sevdesk/claude. Leere/whitespace-userID fällt hart auf Suffix 'local' zurück. PerUserKeychainMigrator.loadWithMigration liest erst per-User, sonst Legacy → schreibt in per-User, löscht den alten Eintrag NIE (append-only). Reine Foundation-Logik, ohne echtes Keychain testbar (PerUserKeychainService.swift:49-108 verifiziert).",
+        "whereStored": "macOS Keychain, Service-Namen mit <userID>-Suffix; account je Secret (tokens, userInfo, clientID, clientSecret bei Google). Der userID-Suffix stammt aus db.sqlite via CurrentUserContext.",
+        "crossSystemLink": "Der userID-Suffix ist der EINZIGE reale technische Faden, der die Schlüssel EINES Menschen über alle sechs Systeme unter einem Suffix bündelt — die am weitesten entwickelte Stelle des Bewohner-Layers. Aber der Zusammenhalt ist rein namens-technisch (String-Suffix); es gibt kein Identitäts-Objekt dahinter, und nichts prüft, ob die userID zum Menschen passt, dessen Secrets dort liegen.",
+        "gap": "Legacy-Migration ist one-way und suffix-blind: sie zieht den Legacy-Wert in JEDE anfragende userID hoch (nicht user-gebunden) → auf einem geteilten Mac könnte User B beim ersten load den noch vorhandenen Legacy-Token von User A in sein eigenes Fach kopieren. Alter Eintrag wird nie gelöscht → alte geteilte Tokens bleiben unbegrenzt liegen. Fällt userID auf 'local' (leere UUID/DB-Fehler), teilen sich ALLE einen Namespace com.mykilos6.<service>.local — die Isolation bricht still zusammen.",
+        "rulesTouched": "Keys nur Keychain; Per-User-Isolation; append-only."
+      },
+      {
+        "facet": "Geteilte vs. persönliche Schlüssel — Modell kennt den Unterschied nicht",
+        "whatExists": "Alle sechs Integrationen sind technisch identisch per-User verdrahtet. Persönlich: Google-OAuth (echte externe Identität), Clockodo (datensensitiv, Private Area, SettingsView.swift:745-794). De-facto GETEILT, aber wie persönlich behandelt: Airtable-PAT (laut Team-Konten-Topologie ein einziger Tresor-Wert fürs ganze Team; Airtable hat Auto-Heal für vertauschtes PAT/Base-ID) und ggf. Claude-Key.",
+        "whereStored": "Keychain, je com.mykilos6.<service>.<userID>. Airtable: pat+baseID; Claude: apiKey+model; Google: tokens/clientID/clientSecret/userInfo; Clockodo: email/apiKey.",
+        "crossSystemLink": "Logikbruch: der Airtable-PAT ist der System-of-Record-Schlüssel (Airtable = Bus, der Kunde/Projekt/Menschen verknüpft), wird aber pro lokaler userID GETRENNT gespeichert, obwohl alle denselben Wert eintragen. Dieselbe geteilte Wahrheit liegt N-mal redundant unter N verschiedenen UUID-Suffixen.",
+        "gap": "Geteilte Schlüssel werden fälschlich wie persönliche behandelt: N Kopien desselben Werts, kein zentraler Tresor-Begriff im Code. Was 'geteilt' vs. 'persönlich' ist, steht nur in Doku/Memory, nicht im Modell — der Code kennt den Unterschied nicht.",
+        "rulesTouched": "Per-User-Isolation (hier überdehnt auf eigentlich geteilte Keys); Keys nur Keychain."
+      },
+      {
+        "facet": "Schlüssel-Übersicht / Inventar (existiert nicht)",
+        "whatExists": "Existiert NICHT als eigenes Artefakt. Der einzige Ort, der alle Schlüssel zusammen zeigt, ist die Settings-Seite als Reihe getrennter Sektionen (google/airtable/clickup/sevdesk/claude + Private-Area-Clockodo) plus eine integrationStatusSection mit Ampel-Lichtern pro Dienst. Kein Modell, das 'dieser Mensch hält diese N Schlüssel' repräsentiert.",
+        "whereStored": "Sources/MykilosApp/Settings/SettingsView.swift. Als offener Punkt explizit benannt in docs/HAUS_GESAMTPLAN.md:67 ('Schlüssel-Inventar = wer hält welche Credentials … Übersicht statt verstreut', verifiziert).",
+        "crossSystemLink": "Genau hier fehlt der Zusammenhalt sichtbar: die sechs Schlüssel eines Menschen sind über sechs unabhängige Settings-Sektionen verstreut, jede mit eigenem Verbinden/Trennen-Status. Nichts zeigt 'das sind alles MEINE Schlüssel' oder unterscheidet persönlich vs. geteilt.",
+        "gap": "Keine Schlüssel-Übersicht, kein persönlich-vs-geteilt-Label, kein Inventar. Der HAUS-Plan führt es explizit als noch-zu-bauen. Damit fehlt jede Stelle, die das Orphan-Risiko oder einen Suffix-Mismatch aufdecken könnte.",
+        "rulesTouched": "Per-User-Isolation; kein Identitäts-Vortäuschen (Zuordnung Mensch↔Schlüssel bleibt implizit)."
+      },
+      {
+        "facet": "Onboarding-Wizard (Einzug / Meldeadresse)",
+        "whatExists": "First-Run-Overlay mit 6 Schritten: welcome → profile (nur displayName Pflicht, role optional) → claude (Pflicht) → google (empfohlen, read-only, überspringbar) → optional (ClickUp/Clockodo/Airtable NUR Status-Anzeige, kein Setup) → done. essentialsConnected prüft NUR Claude (nicht Google). Profil-Save führt userID unverändert mit; clockodoUserID wird nur durchgereicht, nicht erhoben (OnboardingWizardView.swift:242 verifiziert).",
+        "whereStored": "Profil-Schritt schreibt über ProfileStore.save() in db.sqlite (Single-Row 'local'). Claude/Google-Credentials über die jeweiligen Auth-Services in den Keychain. Erst-Start-Flag via @AppStorage 'onboarding.hasCompleted'.",
+        "crossSystemLink": "KEINER. Der Wizard verdrahtet drei getrennte Silos (lokales Profil / Claude-Keychain / Google-OAuth) nebeneinander, ohne sie an einer gemeinsamen Person-ID zu verknüpfen. Ein Nutzer kann 'Johannes' eintippen und sich mit daniel@… anmelden; nichts prüft oder verknüpft das. Die optionalen Quellen werden im Wizard nicht einmal verbunden — nur angezeigt.",
+        "gap": "Der Einzug erzeugt keinen kanonischen Ausweis und meldet den Menschen NIRGENDS im Team. 'Fertig' heißt nur: lokales Profil + Claude-Key gesetzt. Google (einzige verifizierte Identitätsquelle) ist überspringbar → ein Nutzer kann 'startklar' sein ganz ohne verifizierbaren Ausweis. Kein Abgleich gegen die Team-Personenliste, kein 'Bist du dieser Team-Record?'-Schritt.",
+        "rulesTouched": "Per-User-Isolation; kein Identitäts-Vortäuschen; append-only (userID nie überschrieben)."
+      },
+      {
+        "facet": "Team-Register-Eintrag (der fehlende 'Einzug ins Melderegister')",
+        "whatExists": "NICHTS im App-Code. Es gibt keine registriere/registerUser/teamRegister-Logik, kein Schreiben des aktuellen Menschen nach Airtable (grep bestätigt 0 Treffer). bootstrap() lädt nur lokales Profil + synct Projekte/Kunden — kein Nutzer-Provisioning. Das Airtable Clockodo-Nutzer-Register wird ausschließlich manuell außerhalb der App gepflegt.",
+        "whereStored": "— (existiert nicht im Code). Das Register selbst liegt in Airtable appuVMh3KDfKw4OoQ / Clockodo-Nutzer, aber nur doku-seitig.",
+        "crossSystemLink": "Das ist die fehlende Klammer: kein Prozess verknüpft lokale userID ↔ Google-E-Mail ↔ Clockodo-User-ID ↔ Airtable-Nutzer-Record. Jeder Mensch ist über die fünf Systeme zersplittert, ohne einen Ort, der sie als denselben Menschen ausweist.",
+        "gap": "Ein neues Team-Mitglied, das heute mykilOS startet, legt ein rein lokales Profil an, hinterlegt seine Schlüssel manuell einzeln — und ist danach nirgends im Team gemeldet. Kein Mensch/kein System weiß von der neuen Installation. Provisionierung müsste komplett manuell im Airtable-Register nachgetragen und die Clockodo-User-ID von Hand verknüpft werden.",
+        "rulesTouched": "Per-User-Isolation; Ghost-Persona/kein Identitäts-Vortäuschen; Aufgaben nur Mensch→Mensch; append-only."
+      },
+      {
+        "facet": "Vorhandene Provisioning-Blaupause (Block D) — nur für Projekte, nie für Menschen",
+        "whatExists": "ProjektProvisioningService + ProvisioningLedger + ClickUp-Routing: idempotente, teilfehler-feste, gated Mehrsystem-Anlage (Drive+Airtable+ClickUp) mit find-or-create, Write-Shadow und Audit. ABER: provisioniert PROJEKTE, nicht MENSCHEN (gebaereTestProjekt/provisioniereEchtesProjekt).",
+        "whereStored": "MykilosKit/Domain/Provisioning.swift; MykilosServices/ProjektProvisioningService.swift + ProvisioningLedger.swift; GRDB v17_provisioning/v19_provisioning_clickup.",
+        "crossSystemLink": "Zeigt exakt, wie eine saubere Mehrsystem-Geburt aussieht (idempotent, teilfehler-fest, Ledger, gated) — genau dieses Muster fehlt für den Bewohner-Einzug. Für Projekte gebaut, für Menschen nie angewandt.",
+        "gap": "Die Blaupause für einen sauberen 'Einzug' existiert bereits, ist aber ausschließlich auf Projekte gemünzt. Ein analoger NutzerProvisioningService (lokales Profil + Airtable-Nutzer-Record + Clockodo-Verknüpfung + Schlüssel-Setup unter einer Person-ID) ist nicht gebaut. Der Bauplan liegt da, die Anwendung auf Bewohner fehlt.",
+        "rulesTouched": "append-only/Ledger-Idempotenz; gated Writes (nur TEST scharf); kein DELETE; Per-User-Isolation."
+      },
+      {
+        "facet": "Audit-Actor (actorUserID) — die eine produktive Nutzung des Ausweises",
+        "whatExists": "AuditEntry trägt ein Pflichtfeld actorUserID: String. Provisioning-Writes führen es explizit mit; der DataFlow-Logger im Assistenten-Tool-Loop loggt Tool-Calls mit actorUserID 'assistant' (trennt Mensch-Handlung von KI-Tool-Call). AppState.actorUserID = currentGoogleUser?.email ?? displayName ?? 'local' (AppState.swift:136 verifiziert).",
+        "whereStored": "GRDB (AuditStore) + DataFlow-Handbuch (Airtable tblaUVftka0GvXzeU) via DataFlowLogger. Wert aus lokaler Identität bzw. Literal 'assistant'.",
+        "crossSystemLink": "actorUserID ist der Versuch, jede Schreibhandlung an EINEN Bewohner-Ausweis zu heften — die konsequenteste produktive Nutzung des Ausweises. 'assistant' trennt sauber Mensch von KI.",
+        "gap": "actorUserID ist ein freier String ohne referenzielle Bindung an UserProfile.userID oder eine externe Identität — nichts erzwingt, dass der geloggte Actor derselbe Mensch ist wie der Google-/Clockodo-Actor der ausgelösten externen Weiche. Der Wert wechselt zudem je nach Verbindungszustand (E-Mail/displayName/'local'). Audit-Trail bleibt gerätelokal → keine team-übergreifende, verifizierbare Actor-Kette.",
+        "rulesTouched": "Per-User-Isolation (eigener Audit-Trail); Aufgaben nur Mensch→Mensch (Nachweisbarkeit)."
+      },
+      {
+        "facet": "Single-Login-Frage & ~8 Keychain-Prompts (Einzugs-Reibung) + toter Anker-Link",
+        "whatExists": "Johannes wollte EINEN Login statt ~8 Keychain-Freigaben. Diagnose (Plan): Root Cause ist nicht 7 getrennte Services, sondern die ad-hoc Code-Signatur (codesign --sign -) → neuer Hash pro Build → macOS fragt neu. Sofort-Fix: selbstsigniertes 'mykilOS Local Signing'-Zertifikat. Optionen A/B/C (App-Lock / echtes SSO / verschlüsselter Vault) nur als Plan, keine Umsetzung.",
+        "whereStored": "docs/_archiv/IDENTITY_LOGIN_PLAN.md (ins Archiv verschoben — verifiziert). build_and_run.sh sucht die Signing-Identität.",
+        "crossSystemLink": "Die Einzugs-Reibung aus UX-Sicht: ein neuer Bewohner muss heute jede Integration einzeln freigeben; es gibt keinen Einzugs-Login, der alle Sub-Logins bündelt — dieselbe fehlende Ausweis-Klammer.",
+        "gap": "Ein echter Single-Login/Master-Ausweis ist offen und blockiert auf eine Johannes-Entscheidung (A/B/C); B wäre ein Architekturbruch (Backend, gegen local-first). Zusätzlich Anker-Drift/toter Link: CLAUDE.md:109 verlinkt docs/IDENTITY_LOGIN_PLAN.md (aktiv), die Datei liegt aber nur noch in docs/_archiv/ (verifiziert) — Verstoß gegen die Free-Climber-Anker-Regel.",
+        "rulesTouched": "Keys nur Keychain; Per-User-Isolation; local-first (kein Sync-Backend)."
+      },
+      {
+        "facet": "Der fehlende kanonische Personalausweis (Kernbefund)",
+        "whatExists": "Es gibt KEINEN. Kein Typ, keine Tabelle, kein Feld hält die Aussage 'dieser Google-Account = diese Clockodo-ID = dieser ClickUp-Member = dieser Airtable-Record = dieses lokale Profil = ein Mensch'. UserProfile ist das nächstgelegene Gefäß, sammelt aber nur drei lose, teils leere Felder (clockodoUserID freihand, googleDomain nur Domain, userID anonyme UUID) — ohne die volle Google-E-Mail als Schlüssel und ohne jede externe ID-Verknüpfung.",
+        "whereStored": "Verstreut über fünf Orte ohne gemeinsamen Schlüssel: userID+clockodoUserID+googleDomain in GRDB userProfile; volle Google-Identität nur im Keychain-Cache (nicht in GRDB); Clockodo-Wahrheit in Airtable; ClickUp/Airtable-Member nur flüchtig im JSON.",
+        "crossSystemLink": "Exakt die vermutete Zersplitterung — dieselbe Fragmentierung wie bei Kunde/Projekt, nur für Menschen. Die einzige verbindende ID (userID) ist eine bedeutungslose Zufalls-UUID, die nach innen (Keychain-Suffix) verknüpft, nach außen auf nichts zeigt. Die natürliche Personen-ID (Google-E-Mail) wird nie als Schlüssel persistiert. Der einzige strukturierte Personen-Record (Airtable Clockodo-Nutzer) wird nie gelesen. Die Ebenen berühren sich nirgends im Code.",
+        "gap": "Für echten Team-Betrieb fehlt eine Identitäts-Auflösungsschicht: (1) volle Google-E-Mail als kanonischen Schlüssel ins Profil persistieren; (2) nach Login E-Mail → Airtable Clockodo-Nutzer auflösen und clockodoUserID/Entwurfs-Tabelle/Name automatisch übernehmen; (3) userID stabil an diese externe Identität binden statt als isolierte Zufalls-UUID; (4) EIN Ausweis-Typ, der alle Handles trägt. Bis dahin ist derselbe Mensch fünf getrennte, nur im Kopf verbundene Identitäten.",
+        "rulesTouched": "Per-User-Isolation; kein Identitäts-Vortäuschen; Ghost-Persona; Keys nur Keychain; append-only."
+      },
+      {
+        "facet": "Team-Grundmodell 'Persönliches Cockpit, geteilte Instrumente' + Datenschutz-Mauern",
+        "whatExists": "Festgelegtes V1-Modell (docs/MYKILOS_6_TEAM_MODELL.md): local-first, kein Sync-Backend. Jeder Bewohner hat sein eigenes mykilOS; geteilt wird NUR über externe Systeme (Drive/ClickUp/Kalender/Airtable), die App hält davon nur Referenzen. Dazu die eiserne Mauer (CLAUDE.md, Johannes 2026-07-02): Mail, Memos/Notizen und Assistent-Chat-Verlauf PRIVAT, nie teamweit kreuzlesbar; Clockodo datensensitiv, nur Private Area; kein Identitäts-Vortäuschen bei Kolleg:innen-Ansprache.",
+        "whereStored": "Konzept-Doku docs/MYKILOS_6_TEAM_MODELL.md + CLAUDE.md (Absolute Regeln). Umgesetzt als: lokales GRDB pro Gerät, Airtable als geteilte Registry, per-User Keychain, per-User Google-OAuth.",
+        "crossSystemLink": "Das Modell verknüpft denselben Menschen ABSICHTLICH nicht über ein zentrales Backend; Kohärenz entsteht nur dadurch, dass jeder mit seiner eigenen externen Identität auf dieselben Systeme schaut. Die Datenschutz-Regel zieht bewusst Mauern zwischen die Bewohner — der Ausweis darf nie so gebaut werden, dass er private Rohinhalte über die Mauer trägt.",
+        "gap": "Genau die Kern-Hypothese als bewusste V1-Grenze deklariert (Team-Sync = Zukunfts-'Akt 6', Backend nötig), nicht als gelöste Aufgabe. Realer Restrisikopunkt: geteilte/aggregierte Wissensschichten (Studio-Wissen/Slack-Brain, künftiges Assistent-Tagebuch) — dort ist heute NICHT per Compiler/Schema erzwungen, dass keine Rohzitate aus Mail/Memo/Chat landen; es ist eine Design-Voraussetzung, die per Hand mitgedacht werden muss.",
+        "rulesTouched": "Per-User-Isolation; local-first; geteilte Wissensschichten nie mit Rohinhalten aus privaten Quellen; kein Identitäts-Vortäuschen."
+      }
+    ],
+    "sollLayers": [
+      {
+        "layer": "Personalausweis",
+        "wasEsLoest": "Schließt den Kernbefund: derselbe Mensch ist heute über Google/Clockodo/ClickUp/Airtable/lokales Profil zersplittert, ohne einen Datensatz, der alle Handles als EINEN Menschen ausweist. Gleichzeitig behebt es den Orphan-Bug (userID lebt nur in db.sqlite → Reset verwaist alle Keychain-Secrets).",
+        "entwurf": "EIN kanonischer Identitäts-Datensatz 'Bewohner-Ausweis' (ResidentIdentity), local-first als GRDB-Master (neue Tabelle, additive Migration), der neben der bestehenden First-Run-userID die HANDLES aller Systeme trägt: googleEmail (voll, als kanonischer natürlicher Schlüssel — nicht nur die Domain), clockodoUserID, clockodoEntwurfsTabelle, clickUpMemberID (read-only aus assignees), airtableRecordID (Clockodo-Nutzer-Record). Der Ausweis wird beim Google-Login automatisch angereichert: Login → volle E-Mail persistieren → Airtable Clockodo-Nutzer per E-Mail-Lookup auflösen (read-only) → clockodoUserID/Entwurfs-Tabelle/Anzeigename übernehmen statt Handeingabe. Gegen den Reset-Bug: die googleEmail wird als Wiederanker-Schlüssel gespiegelt — beim Start prüft ensureUserID, ob zur aktuellen Google-E-Mail bereits Keychain-Suffixe existieren, und bindet die neue Session an die alte Identität, statt still zu verwaisen. Airtable Clockodo-Nutzer bleibt System-of-Record für die Team-Personenliste; GRDB-Ausweis ist der lokale Spiegel.",
+        "respektiertRegeln": "local-first (GRDB-Master, Airtable nur read-only Auflöser, kein neues Backend); Keys nur Keychain (der Ausweis trägt HANDLES/IDs, NIE Secrets — Tokens bleiben im Keychain); append-only (Airtable-Register nie überschreiben/löschen, nur lesen); kein Identitäts-Vortäuschen (der Ausweis ist Anzeige/Bündelung, keine Handlungsvollmacht); Per-User-Isolation (ein Ausweis je Bewohner, private Handles bleiben privat).",
+        "prioritaet": "hoch",
+        "aufwand": "mittel — neue GRDB-Tabelle + additive Migration, ein read-only Airtable-Lookup (E-Mail → Clockodo-Nutzer), ein Anreicherungs-Hook im Google-Login-Pfad; kein UI-Umbau nötig für V1."
+      },
+      {
+        "layer": "Meldeadresse",
+        "wasEsLoest": "Schließt den fehlenden 'Einzug ins Melderegister': heute endet der Wizard, ohne den Menschen im Team zu melden oder seine externen Identitäten an einen Ausweis zu knüpfen; Google (einzige verifizierte Quelle) ist überspringbar, clockodoUserID wird gar nicht erhoben.",
+        "entwurf": "Ein NutzerProvisioning-Fluss analog zur bereits vorhandenen ProjektProvisioningService-Blaupause (idempotent, teilfehler-fest, Ledger, gated), aber auf Menschen gemünzt: Wizard-Schritt 'Ausweis' NACH Google-Login → zeigt die aufgelöste Identität ('Du bist Johannes, johannes@mykilos.com, Clockodo 421694 — stimmt das?') → bei Bestätigung wird der Bewohner-Ausweis lokal geschrieben UND (opt-in, gated) sein Airtable-Nutzer-Record find-or-create bzw. verknüpft. Google wird im Wizard von 'überspringbar' auf 'für den Ausweis empfohlen' angehoben (essentialsConnected um Identitäts-Check ergänzen, ohne Google hart zu erzwingen). Automatisierbar: E-Mail-Lookup, Handle-Übernahme, Ledger-Idempotenz. Manuell/gated bleibt: das tatsächliche Anlegen/Verknüpfen eines Airtable-Team-Records (nur mit Bestätigung, append-only).",
+        "respektiertRegeln": "append-only/Ledger-Idempotenz (find-or-create, kein DELETE); gated Writes (Airtable-Register-Schreiben nur opt-in mit Bestätigung, nie als Nebeneffekt); Aufgaben nur Mensch→Mensch (der Einzug meldet den Menschen selbst, weist niemandem etwas zu); kein Identitäts-Vortäuschen (Bestätigungs-Schritt macht die Identität explizit); local-first (lokaler Ausweis zuerst, Airtable-Spiegel nachrangig).",
+        "prioritaet": "hoch",
+        "aufwand": "mittel — ein neuer Wizard-Schritt + Wiederverwendung des vorhandenen Provisioning-/Ledger-Musters; der gated Airtable-Write ist der einzige heiklere Teil und braucht Johannes-Freigabe."
+      },
+      {
+        "layer": "Schlüssel-Inventar",
+        "wasEsLoest": "Schließt die fehlende Schlüssel-Übersicht (heute sechs verstreute Settings-Sektionen, kein 'das sind alles MEINE Schlüssel', keine Unterscheidung privat vs. geteilt, keine Stelle die Token-Verwaisung oder Suffix-Mismatch aufdeckt). Adressiert auch die falsche Behandlung des geteilten Airtable-PAT als persönlich.",
+        "entwurf": "Eine Schlüssel-Inventar-Ansicht (read-only Dashboard, aus dem bestehenden Ausweis + Keychain-Status abgeleitet, kein neuer Speicher): listet je Bewohner alle sechs Schlüssel mit Status (verbunden/getrennt), Herkunft und einem klaren Label PRIVAT (Google/Clockodo — Private Area) vs. GETEILT (Airtable-PAT, ggf. Claude). Der geteilt/persönlich-Unterschied wird ins Modell gehoben (ein Enum-Flag am Keychain-Base statt nur in Doku). Gegen Verwaisung: eine Konsistenzprüfung, die die aktive userID gegen die tatsächlich im Keychain vorhandenen Suffixe abgleicht und einen Hinweis zeigt, wenn Secrets unter einer alten/anderen UUID liegen (Orphan-Erkennung) — plus ein sichtbarer Warnhinweis statt stillem 'nicht verbunden'.",
+        "respektiertRegeln": "Per-User-Isolation (Inventar zeigt nur die EIGENEN Schlüssel, nie fremde); Keys nur Keychain (Inventar liest Status/Metadaten, NIE Secret-Werte, nie in Logs); Clockodo nur Private Area (bleibt visuell abgesetzt); kein Identitäts-Vortäuschen (macht die Zuordnung Mensch↔Schlüssel endlich explizit statt implizit); local-first.",
+        "prioritaet": "mittel",
+        "aufwand": "klein–mittel — überwiegend eine Ansicht über vorhandene Auth-Status + ein Flag am Keychain-Base; die Orphan-Konsistenzprüfung ist der einzige neue Logik-Teil."
+      }
+    ],
+    "offeneFragen": [
+      "Personalausweis-Heimat: GRDB-Master local-first (mein Vorschlag) ODER Airtable-Team-Register als System-of-Record ODER beides mit Airtable als Wahrheit + GRDB als Spiegel? Das entscheidet, wo die kanonische Person-ID wirklich lebt.",
+      "Soll ein echtes Team-Mitglieder-Register in Airtable angelegt/gepflegt werden (über die bestehende Clockodo-Nutzer-Tabelle hinaus), und darf die App beim Einzug — gated, opt-in, append-only — einen Nutzer-Record dort find-or-create/verknüpfen? Heute liest KEIN Code diese Tabelle.",
+      "Umgang mit dem userID/DB-Reset-Orphan-Bug: reicht die Wiederanker-Strategie über die Google-E-Mail (Session an alte Identität rebinden), oder willst du eine explizite Backup-/Wiederherstellungs-Route für die userID? Ohne Google-Login gibt es keinen externen Anker.",
+      "Google im Onboarding: von 'überspringbar' auf faktisch-nötig-für-den-Ausweis anheben? Das kollidiert mit dem heutigen 'startklar ohne verifizierbare Identität', ist aber die Voraussetzung für automatische Identitäts-Auflösung.",
+      "Geteilter Airtable-PAT: soll der Code den Unterschied geteilt-vs-persönlich endlich kennen (ein zentraler Tresor-Begriff für den PAT) oder bewusst weiter N-mal redundant per userID gespeichert bleiben?",
+      "Multi-User auf EINEM Gerät: bleibt die V1-Annahme 'ein Profil je Gerät' bestehen, oder soll der Ausweis-Layer mehrere Bewohner pro Installation vorsehen (betrifft die Single-Row 'local' und die Legacy-Migration, die heute suffix-blind ist)?",
+      "Toter Anker-Link (sofort, unabhängig): CLAUDE.md:109 verweist auf docs/IDENTITY_LOGIN_PLAN.md, die Datei liegt aber nur in docs/_archiv/ — soll der Link auf den Archiv-Pfad umgebogen oder der Plan reaktiviert werden?"
+    ]
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Vermessung"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Entwurf"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "bewohner:ist-lokal",
+      "phaseIndex": 1,
+      "phaseTitle": "Vermessung",
+      "agentId": "a75ae7e524f2bc055",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783258827495,
+      "queuedAt": 1783258827487,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first Team-App. Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep/Bash lesend/MCP read-only). Ändere/committe/pushe NICHTS.\nMetapher (Johannes): das System ist ein HAUS, die Team-Mitglieder sind seine BEWOHNER. Jeder Bewohner\nbraucht: einen PERSONALAUSWEIS (kanonische Identität, die denselben Men…",
+      "lastProgressAt": 1783258978758,
+      "tokens": 106426,
+      "toolCalls": 21,
+      "durationMs": 151263,
+      "resultPreview": "{\"facets\":[{\"facet\":\"Lokales Profil (UserProfile / userProfile-Tabelle)\",\"whatExists\":\"Ein einziger Datensatz mit displayName, role, updatedAt sowie optionalen Feldern clockodoUserID, googleDomain, userID. UserProfile.isComplete prüft nur, ob displayName nicht leer ist — Rolle und alles andere sind optional. Bewusste V1-Vereinfachung: EIN lokales Profil je Gerät (Kommentar UserProfile.swift:4-6).\"…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "bewohner:schluessel-keychain",
+      "phaseIndex": 1,
+      "phaseTitle": "Vermessung",
+      "agentId": "a6f9e9ea7d0b7b680",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783258827496,
+      "queuedAt": 1783258827487,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first Team-App. Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep/Bash lesend/MCP read-only). Ändere/committe/pushe NICHTS.\nMetapher (Johannes): das System ist ein HAUS, die Team-Mitglieder sind seine BEWOHNER. Jeder Bewohner\nbraucht: einen PERSONALAUSWEIS (kanonische Identität, die denselben Men…",
+      "lastProgressAt": 1783258986231,
+      "tokens": 104805,
+      "toolCalls": 24,
+      "durationMs": 158734,
+      "resultPreview": "{\"facets\":[{\"facet\":\"Keychain-Namensschema (PerUserKeychainService)\",\"whatExists\":\"Zentrale Namensableitung fuer ALLE Secrets: perUser(base, userID) -> \\\"com.mykilos6.<base>.<userID>\\\", legacy(base) -> \\\"com.mykilos6.<base>\\\". Sechs Basen: google, clockodo, airtable, clickup, sevdesk, claude. Leere/whitespace-userID faellt hart auf Suffix \\\"local\\\" zurueck (verhindert kaputten Service-String \\\"com…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "bewohner:identitaet-ueber-systeme",
+      "phaseIndex": 1,
+      "phaseTitle": "Vermessung",
+      "agentId": "ae5397d7bf0ae21f4",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783258827496,
+      "queuedAt": 1783258827488,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first Team-App. Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep/Bash lesend/MCP read-only). Ändere/committe/pushe NICHTS.\nMetapher (Johannes): das System ist ein HAUS, die Team-Mitglieder sind seine BEWOHNER. Jeder Bewohner\nbraucht: einen PERSONALAUSWEIS (kanonische Identität, die denselben Men…",
+      "lastProgressAt": 1783258974351,
+      "tokens": 101502,
+      "toolCalls": 18,
+      "durationMs": 146854,
+      "resultPreview": "{\"facets\":[{\"facet\":\"Lokales Profil — die stabile Nutzer-ID (userID)\",\"whatExists\":\"UserProfile.userID: eine First-Run-UUID, die beim ersten Profil-Load EINMAL erzeugt und danach nie mehr geändert wird (ProfileStore.ensureUserID). Sie ist die einzige technisch stabile, geräteinterne Identität. Dazu displayName + role (Freitext). Genau EINE Zeile mit fixer id='local' — bewusst ein Profil pro Gerät …"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "bewohner:team-mauern",
+      "phaseIndex": 1,
+      "phaseTitle": "Vermessung",
+      "agentId": "ad8f6eac332d27e56",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783258827497,
+      "queuedAt": 1783258827488,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first Team-App. Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep/Bash lesend/MCP read-only). Ändere/committe/pushe NICHTS.\nMetapher (Johannes): das System ist ein HAUS, die Team-Mitglieder sind seine BEWOHNER. Jeder Bewohner\nbraucht: einen PERSONALAUSWEIS (kanonische Identität, die denselben Men…",
+      "lastProgressAt": 1783259022337,
+      "tokens": 105688,
+      "toolCalls": 18,
+      "durationMs": 194840,
+      "resultPreview": "{\"facets\":[{\"facet\":\"Team-Grundmodell „Persönliches Cockpit, geteilte Instrumente\\\"\",\"whatExists\":\"Festgelegtes V1-Modell (docs/MYKILOS_6_TEAM_MODELL.md): kein Sync-Backend, local-first. Jeder Bewohner hat sein eigenes mykilOS auf seinem Mac — eigenes Layout, eigene Notizen, eigene Google-Identität. Geteilt wird NUR über die externen Systeme (Drive/ClickUp/Kalender/Airtable), die App hält davon nu…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 5,
+      "label": "bewohner:einzug-onboarding",
+      "phaseIndex": 1,
+      "phaseTitle": "Vermessung",
+      "agentId": "a0b4b958287ddbef2",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783258827497,
+      "queuedAt": 1783258827488,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first Team-App. Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep/Bash lesend/MCP read-only). Ändere/committe/pushe NICHTS.\nMetapher (Johannes): das System ist ein HAUS, die Team-Mitglieder sind seine BEWOHNER. Jeder Bewohner\nbraucht: einen PERSONALAUSWEIS (kanonische Identität, die denselben Men…",
+      "lastProgressAt": 1783258977038,
+      "tokens": 110642,
+      "toolCalls": 15,
+      "durationMs": 149541,
+      "resultPreview": "{\"facets\":[{\"facet\":\"First-Run-Wizard (der eigentliche „Einzug\\\")\",\"whatExists\":\"Overlay-Karte OnboardingWizardView mit 6 linearen Schritten: welcome → profile (Anzeigename Pflicht, Rolle optional) → claude (Pflicht, sonst „Assistent stumm\\\") → google (empfohlen, read-only) → optional (ClickUp/Clockodo/Airtable nur als Status-Anzeige) → done. Getriggert nur wenn onboarding.hasCompleted==false UND …"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 6,
+      "label": "bewohner-entwurf",
+      "phaseIndex": 2,
+      "phaseTitle": "Entwurf",
+      "agentId": "afac0818561105c45",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783259022351,
+      "queuedAt": 1783259022339,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Die Bewohner-Schicht ist heute die am wenigsten ausgebaute …",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first Team-App. Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep/Bash lesend/MCP read-only). Ändere/committe/pushe NICHTS.\nMetapher (Johannes): das System ist ein HAUS, die Team-Mitglieder sind seine BEWOHNER. Jeder Bewohner\nbraucht: einen PERSONALAUSWEIS (kanonische Identität, die denselben Men…",
+      "lastProgressAt": 1783259264155,
+      "tokens": 115698,
+      "toolCalls": 6,
+      "durationMs": 241804,
+      "resultPreview": "{\"istZusammenfassung\":\"Die Bewohner-Schicht ist heute die am wenigsten ausgebaute Schicht des Hauses: Es gibt KEINEN kanonischen Personalausweis, der denselben Menschen über Google, Clockodo, ClickUp, Airtable und das lokale Profil zusammenhält — genau die vermutete Zersplitterung ist im Code belegt. Die einzige verbindende ID ist eine anonyme First-Run-UUID (UserProfile.userID), die ausschließlic…"
+    }
+  ],
+  "totalTokens": 644761,
+  "totalToolCalls": 102
+}

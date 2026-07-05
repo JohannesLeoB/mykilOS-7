@@ -450,6 +450,49 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v23_audit_checkin (CheckIn-Spine) — der zentral auditierte Check-in bekommt
+        // zwei additive, nullable Spalten auf der HEILIGEN auditEntries-Tabelle:
+        //   quelle        — offene Herkunft ("drive-offer"/"kalkulation"/"warenkorb"/…)
+        //   idempotenzKey — deterministischer Dedup-Schlüssel
+        // Beide nullable → bestehende Zeilen bleiben gültig (lesen als NULL → nil).
+        // PLUS ein PARTIAL UNIQUE INDEX auf idempotenzKey, der die Idempotenz HART macht:
+        // ein zweiter Check-in mit gleichem Key kann nicht durchrutschen. Die WHERE-Klausel
+        // schont Alt-Zeilen (idempotenzKey IS NULL) — beliebig viele NULL sind erlaubt.
+        migrator.registerMigration("v23_audit_checkin") { db in
+            try db.alter(table: "auditEntries") { t in
+                t.add(column: "quelle", .text)
+                t.add(column: "idempotenzKey", .text)
+            }
+            try db.execute(sql: """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_auditEntries_idempotenzKey
+                ON auditEntries(idempotenzKey)
+                WHERE idempotenzKey IS NOT NULL
+                """)
+        }
+
+        // v24_resident_identity ("Personalausweis") — der local-first Identitäts-
+        // Anker: die verifizierte Google-Mail als kanonischer Primary Key plus
+        // reine Handles/IDs zu den externen Systemen (Clockodo/ClickUp/Airtable).
+        // Eigene Tabelle (NICHT Spalten an userProfile): userProfile ist die
+        // Single-Row id="local" (was der Mensch tippt); residentIdentity ist
+        // mail-indiziert (was extern verifiziert/aufgelöst ist) und braucht den
+        // O(1)-Lookup nach googleEmail für den Orphan-Wiederanker.
+        // Rein additive CREATE TABLE (Muster v13/v15/v21) → keine bestehende
+        // Zeile/Tabelle berührt, kein bestehender Pfad verändert. TRÄGT NIE EIN
+        // SECRET — nur Referenzen/Handles.
+        migrator.registerMigration("v24_resident_identity") { db in
+            try db.create(table: "residentIdentity") { t in
+                t.column("googleEmail", .text).primaryKey()
+                t.column("userID", .text).notNull()
+                t.column("displayName", .text)
+                t.column("clockodoUserID", .text)
+                t.column("clockodoEntwurfsTabelle", .text)
+                t.column("clickUpMemberID", .text)
+                t.column("airtableRecordID", .text)
+                t.column("updatedAt", .double).notNull()
+            }
+        }
+
         return migrator
     }
 

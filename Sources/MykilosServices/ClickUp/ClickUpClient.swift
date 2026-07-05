@@ -1,4 +1,5 @@
 import Foundation
+import MykilosKit
 
 // MARK: - ClickUpTask
 // Eine offene Aufgabe aus der im Projekt verlinkten ClickUp-Liste
@@ -11,15 +12,61 @@ public struct ClickUpTask: Identifiable, Equatable, Sendable {
     public var dueDate: Date?
     public var assignee: String?
     public var isUrgent: Bool
+    /// Custom Field `project_phase` (Testspace, per Task) — falls auf dieser Aufgabe gesetzt.
+    public var projectPhase: ClickUpProjectPhase?
 
     public init(id: String, name: String, status: String,
-                dueDate: Date? = nil, assignee: String? = nil, isUrgent: Bool = false) {
+                dueDate: Date? = nil, assignee: String? = nil, isUrgent: Bool = false,
+                projectPhase: ClickUpProjectPhase? = nil) {
         self.id = id
         self.name = name
         self.status = status
         self.dueDate = dueDate
         self.assignee = assignee
         self.isUrgent = isUrgent
+        self.projectPhase = projectPhase
+    }
+}
+
+// MARK: - ClickUpProjectPhase (2026-07-04)
+// Das Custom Field `project_phase` (Testspace `90128024109`, verifiziert per
+// `clickup_get_custom_fields`) — 7 Stufen, feiner als mykilOS' 5-stufiger
+// Lebenszyklus-Stepper (`ProjectLifecycleStage`). Read-only Abgleich, siehe
+// docs/CLICKUP_PROJEKT_MAPPING.md §2: „Abgleich mit Lebenszyklus-Stepper … kein
+// Auto-Write in beide Richtungen" — ClickUp sagt nur, mykilOS schreibt nie zurück,
+// und der Nutzer setzt seine Stufe weiterhin selbst im Stepper.
+public enum ClickUpProjectPhase: Int, CaseIterable, Sendable, Equatable {
+    case briefing = 0
+    case planung = 1
+    case angebot = 2
+    case bestellung = 3
+    case ausfuehrung = 4
+    case abschluss = 5
+    case service = 6
+
+    public var label: String {
+        switch self {
+        case .briefing:   "Briefing"
+        case .planung:    "Planung"
+        case .angebot:    "Angebot"
+        case .bestellung: "Bestellung"
+        case .ausfuehrung: "Ausführung"
+        case .abschluss:  "Abschluss"
+        case .service:    "Service"
+        }
+    }
+
+    /// Grobe Abbildung auf die 5-stufige mykilOS-Sicht: Bestellung fällt unter Ausführung
+    /// (Beschaffung läuft parallel zur Umsetzung), Service unter Abschluss (Nachbetreuung
+    /// eines bereits abgeschlossenen Projekts).
+    public var mykilosStage: ProjectLifecycleStage {
+        switch self {
+        case .briefing:    .akquise
+        case .planung:     .planung
+        case .angebot:     .angebot
+        case .bestellung, .ausfuehrung: .ausfuehrung
+        case .abschluss, .service:      .abschluss
+        }
     }
 }
 
@@ -34,6 +81,24 @@ public enum ClickUpError: Error, Sendable, Equatable {
 // MARK: - ClickUpFetching
 public protocol ClickUpFetching: Sendable {
     func tasks(listID: String) async throws -> [ClickUpTask]
+}
+
+// MARK: - ClickUpTaskWriting (2026-07-04)
+// Interaktive Write-Basics FÜR DEN NUTZER (nicht das automatische Provisioning oben):
+// Aufgabe anlegen, Status ändern/erledigt markieren. EISERNE REGELN (nicht verhandelbar):
+//   - KI weist NIE zu ([[aufgaben-nur-mensch-zu-mensch-regel]]) — es gibt hier bewusst KEINE
+//     assignee-Methode. Eine simulierte Zuweisung ist nur ein Text-Marker (Ghost-Kürzel im
+//     `content`/Beschreibungsfeld), NIE das native ClickUp-`assignees`-Feld.
+//   - Entwicklung/Test NUR im Testspace `90128024109` ([[clickup-ghost-persona-rule]]) — dieser
+//     Client selbst kennt keinen Space und erzwingt das nicht technisch; die aufrufende Stelle
+//     ist dafür verantwortlich, in dieser Phase nur Testspace-Listen-IDs zu übergeben.
+public protocol ClickUpTaskWriting: Sendable {
+    /// Legt eine Aufgabe an. `content` ist die Beschreibung (ClickUp-Feld `content`) — Träger für
+    /// einen optionalen Ghost-Kürzel-Marker ("Zugewiesen (simuliert): Jo"), NIE ein echtes Feld.
+    func createTask(listID: String, name: String, content: String?) async throws -> String
+    /// Setzt den Status einer Aufgabe (Statuswerte sind pro Liste konfiguriert — der Aufrufer
+    /// kennt sie aus den bereits geladenen `ClickUpTask.status`-Werten der Liste).
+    func setStatus(taskID: String, status: String) async throws
 }
 
 // MARK: - ClickUpProjectProvisioning
@@ -54,7 +119,7 @@ public protocol ClickUpProjectProvisioning: Sendable {
 // MARK: - ClickUpClient
 // Liest die offenen Aufgaben einer ClickUp-Liste des verbundenen Accounts.
 // Auth: Personal-API-Token direkt im Authorization-Header (kein "Bearer").
-public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning {
+public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning, ClickUpTaskWriting {
     private let credentialsStore: ClickUpCredentialsStoring
     private let session: URLSession
     private let baseURL = "https://api.clickup.com/api/v2"
@@ -138,6 +203,47 @@ public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning {
         return newID
     }
 
+    // MARK: - Interaktive Write-Basics (ClickUpTaskWriting, 2026-07-04)
+
+    public func createTask(listID: String, name: String, content: String? = nil) async throws -> String {
+        guard let credentials = try? credentialsStore.load() else { throw ClickUpError.notConnected }
+        guard let url = Self.buildCreateTaskURL(baseURL: baseURL, listID: listID) else {
+            throw ClickUpError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(credentials.apiToken, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        var body: [String: String] = ["name": name]
+        if let content, content.isEmpty == false { body["content"] = content }
+        request.httpBody = try JSONEncoder().encode(body)
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw ClickUpError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw ClickUpError.httpError(http.statusCode) }
+        guard let newID = try Self.parseCreatedID(from: data) else { throw ClickUpError.decodingFailed }
+        return newID
+    }
+
+    public func setStatus(taskID: String, status: String) async throws {
+        guard let credentials = try? credentialsStore.load() else { throw ClickUpError.notConnected }
+        guard let url = Self.buildUpdateTaskURL(baseURL: baseURL, taskID: taskID) else {
+            throw ClickUpError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue(credentials.apiToken, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(["status": status])
+        let (_, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw ClickUpError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw ClickUpError.httpError(http.statusCode) }
+    }
+
+    static func buildUpdateTaskURL(baseURL: String, taskID: String) -> URL? {
+        let encoded = taskID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? taskID
+        return URL(string: "\(baseURL)/task/\(encoded)")
+    }
+
     // MARK: - Reine, testbare Bausteine (kein Netzwerk/Keychain)
 
     static func buildTasksURL(baseURL: String, listID: String) -> URL? {
@@ -155,18 +261,27 @@ public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning {
         do {
             let decoded = try JSONDecoder().decode(ClickUpTasksResponse.self, from: data)
             return decoded.tasks.map { entity in
-                ClickUpTask(
+                let phaseIndex = entity.customFields?.first(where: { $0.name == "project_phase" })?.value
+                return ClickUpTask(
                     id: entity.id,
                     name: entity.name,
                     status: entity.status?.status ?? "",
                     dueDate: Self.date(fromEpochMillis: entity.dueDate),
                     assignee: entity.assignees?.first?.username,
-                    isUrgent: entity.priority?.priority?.lowercased() == "urgent"
+                    isUrgent: entity.priority?.priority?.lowercased() == "urgent",
+                    projectPhase: phaseIndex.flatMap(ClickUpProjectPhase.init(rawValue:))
                 )
             }
         } catch {
             throw ClickUpError.decodingFailed
         }
+    }
+
+    /// Die am weitesten fortgeschrittene `project_phase` unter den geladenen Aufgaben — der
+    /// pragmatische „Stand des Projekts laut ClickUp"-Signal, solange keine einzelne Task als
+    /// Projekt-Meister-Datensatz existiert. `nil`, wenn keine Aufgabe das Feld gesetzt hat.
+    public static func projectPhase(from tasks: [ClickUpTask]) -> ClickUpProjectPhase? {
+        tasks.compactMap(\.projectPhase).max(by: { $0.rawValue < $1.rawValue })
     }
 
     // ClickUp liefert due_date als Epoch-Millisekunden-String (oder null).
@@ -231,13 +346,31 @@ private struct ClickUpTaskEntity: Decodable {
     var dueDate: String?
     var priority: PriorityEntity?
     var assignees: [AssigneeEntity]?
+    var customFields: [CustomFieldEntity]?
 
     enum CodingKeys: String, CodingKey {
         case id, name, status, priority, assignees
         case dueDate = "due_date"
+        case customFields = "custom_fields"
     }
 
     struct StatusEntity: Decodable { var status: String? }
     struct PriorityEntity: Decodable { var priority: String? }
     struct AssigneeEntity: Decodable { var username: String? }
+
+    // Custom Fields sind je nach Feldtyp heterogen (Bool/String/Int/null) — uns interessiert
+    // hier nur `project_phase` (drop_down → `value` ist der Orderindex der Option als Int).
+    // Andere Feldtypen tolerant überspringen (nil), statt das ganze Parsing zu brechen.
+    struct CustomFieldEntity: Decodable {
+        var name: String
+        var value: Int?
+
+        private enum CodingKeys: String, CodingKey { case name, value }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            name = try container.decode(String.self, forKey: .name)
+            value = try? container.decode(Int.self, forKey: .value)
+        }
+    }
 }

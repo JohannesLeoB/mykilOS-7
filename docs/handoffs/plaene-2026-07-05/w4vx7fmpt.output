@@ -1,0 +1,269 @@
+{
+  "summary": "Nicht-brechender Implementierungs-Bauplan für den Personalausweis (ResidentIdentity, local-first GRDB-Master, @mykilos.com-Mail als Schlüssel, read-only Airtable-Enrich, Orphan-Bug-Wiederanker). Read-only, kein Code.",
+  "agentCount": 5,
+  "logs": [
+    "Ist-Touchpoints: 3/3 kartiert",
+    "Bauplan: 10 Schritte, erster: Schritte 1-5 als eine sichere, rein additive Einheit: Reside",
+    "Kritik: tragfähig-mit-auflagen · 3 Bruchstellen · 3 Lücken"
+  ],
+  "result": {
+    "plan": {
+      "design": "PERSONALAUSWEIS (ResidentIdentity) — Option 1, local-first, read-only Airtable-Enrich, Orphan-Wiederanker. Alles am echten Code belegt (Datei:Zeile). Nicht-brechend + Cold-Start-fest.\n\n=== 1. ResidentIdentity — Domain-Typ (MykilosKit, Foundation-only) ===\nNeuer Typ Sources/MykilosKit/Domain/ResidentIdentity.swift, Form 1:1 wie UserProfile.swift:7-42 (public struct, Equatable/Sendable/Codable, alle Felder public var, Default-nil-Init):\n  - googleEmail: String   → KANONISCHER SCHLÜSSEL (nicht optional; der Ausweis existiert nur, wenn eine verifizierte Mail vorliegt). Voll (johannes@mykilos.com), NICHT nur die Domain (heute wird laut Facet nur googleDomain persistiert, UserProfile.swift:13).\n  - userID: String        → Brücke zur bestehenden First-Run-UUID/Keychain-Suffixen (ProfileStore.ensureUserID, ProfileStore.swift:73-94). Nicht optional: ein Ausweis ohne userID kann keine Keychain-Suffixe verankern.\n  - displayName: String?  → Anzeigename aus Airtable Clockodo-Nutzer (optional, tolerant).\n  - clockodoUserID: String?      → Handle (heute manuell abgetippt, SettingsView.swift:771; künftig read-only aufgelöst).\n  - clockodoEntwurfsTabelle: String?  → Airtable-Entwurf-Tabellen-ID (fldsoeQHWDmbBt7FM laut Doku).\n  - clickUpMemberID: String?     → optional, read-only, für V1 leer lassbar (keine Quelle verdrahtet).\n  - airtableRecordID: String?    → Clockodo-Nutzer-Record-ID (aus _airtableRecordID, AirtableClient.swift:405/420).\n  - updatedAt: Date       → gespiegelt als Double (timeIntervalSince1970, exakt wie ProfileRecord.swift:27).\nNIEMALS ein Secret-Feld (kein Token/PAT/apiKey) — harte Regel „Ausweis trägt HANDLES/IDs, nie Secrets\". Tokens bleiben im per-User-Keychain (KeychainAirtableCredentialsStore com.mykilos6.airtable.<userID>).\n\n=== 2. Speicherort — NEUE GRDB-Tabelle via additive Migration v24 (NICHT Spalten an userProfile) ===\nNächste freie Nummer verifiziert = v24 (letzte registriert: v23_audit_checkin, GRDBDatabase.swift:461; danach return migrator Z.473).\nmigrator.registerMigration(\"v24_resident_identity\") { db in try db.create(table: \"residentIdentity\") { t in\n    t.column(\"googleEmail\", .text).primaryKey()   // kanonischer Schlüssel = Primary Key → Wiederanker-Lookup „gibt es zu dieser Mail schon einen Ausweis?\" ist ein O(1)-fetchOne(key:)\n    t.column(\"userID\", .text).notNull()\n    t.column(\"displayName\", .text)\n    t.column(\"clockodoUserID\", .text)\n    t.column(\"clockodoEntwurfsTabelle\", .text)\n    t.column(\"clickUpMemberID\", .text)\n    t.column(\"airtableRecordID\", .text)\n    t.column(\"updatedAt\", .double).notNull()\n}}\nRein additive CREATE-TABLE (Muster wie v13/v15/v21) → keine bestehende Zeile berührt, kein bestehender Pfad verändert → alle 1011 Tests bleiben grün. Begründung eigene Tabelle statt userProfile-Spalten: (a) userProfile ist die Single-Row id=\"local\" mit fixem Key (ProfileRecord.swift:11) — Zweckentfremdung für einen mail-indizierten Lookup; (b) Trennung „was der Nutzer tippt\" (displayName/role Freitext, isComplete prüft nur displayName UserProfile.swift:39-41) von „was extern verifiziert/aufgelöst ist\"; (c) der Wiederanker braucht Query nach googleEmail, nicht Single-Row-Zugriff.\n\n=== 3. ResidentIdentityRecord + ResidentIdentityStore (MykilosServices) ===\n- ResidentIdentityRecord (Codable, FetchableRecord, PersistableRecord) — 1:1 Form wie ProfileRecord.swift: databaseTableName=\"residentIdentity\", updatedAt als Double (timeIntervalSince1970), init(from:)/toDomain().\n- ResidentIdentityStore (@MainActor @Observable) — 1:1 Form wie ProfileStore.swift:10-49: init(db: GRDBDatabase); load() throws (fetchOne key: googleEmail); save(_:) throws mit sichtbarem SaveState (.saving/.saved/.failed) — EINZIGER Schreibweg (throws + SaveState, harte Persistenz-Regel, ProfileStore.swift:31-44). Nutzt GRDBDatabase.read/write (GRDBDatabase.swift:34/39).\n- Plus statische ensureUserID-ANALOGIE für den Lookup: static func userID(forEmail:db:) -> String? (fetchOne key: email → record?.userID), best-effort do/catch → nil (Muster ProfileStore.swift:74-93).\n\n=== 4. Anreicherungs-Fluss (App-Layer, nach dem Login-/Hydrations-Punkt) ===\nEIN zentraler @MainActor-Hook AppState.enrichResidentIdentity() async. Aufgerufen NACH dem bestehenden googleAuth.refreshUserInfoIfNeeded()-Task in bootstrap() (AppState.swift:476-480) — dort koexistieren erstmals geladenes Profil UND currentGoogleUser (Facet: „der natürliche Hook-Ort im App-Layer\"). Ablauf:\n  1. guard let email = googleAuth.currentUser?.email, !email.isEmpty else { return }  (currentGoogleUser, AppState.swift:132)\n  2. Airtable read-only Lookup via neuen ClockodoNutzerLoader (Weg A, s.u.) → mapResidentIdentity(from:matchingEmail: email).\n  3. Merge (Airtable-Handles NUR wenn nicht-leer; local-first: der GRDB-Master bleibt autoritativ, Airtable ist nur Auflöser). userID = die bereits aktive CurrentUserContext-UUID (PerUserKeychainService.swift, gesetzt AppState.swift:262).\n  4. try? residentIdentity.save(ausweis) — non-fatal wie das bestehende refreshUserInfoIfNeeded-Muster (nicht-fatal, Facet).\nactorUserID (AppState.swift:135-137) bleibt UNANGETASTET für V1 — liest weiter currentGoogleUser?.email zur Laufzeit, Fallback-Kette identisch → kein Testbruch.\n\n=== 5. Airtable-READ (Weg A — KEIN Client-Umbau, Facet-Empfehlung) ===\n- Neuer ClockodoNutzerLoader (@MainActor @Observable, Sources/MykilosServices/Airtable/), 1:1 nach AirtableContactsLoader.swift:9-72: LoadState idle/loading/content/empty/notConnected/error, ruft das BESTEHENDE fetchRecords(baseID:\"appuVMh3KDfKw4OoQ\", table:\"tblPbly2br8mR2kaU\") (AirtableFetching, AirtableClient.swift:62). KEINE neue Protokoll-Methode → alle Fake-Clients bleiben grün (kein filterByFormula — Tabelle hat ~4-5 Zeilen).\n- Neue reine Funktion AirtableClient.mapResidentIdentity(from records:matchingEmail:) neben mapContacts (AirtableClient.swift:416). Tolerantes compactMap-Muster (mapContacts Z.417-435): case-insensitiver E-Mail-Vergleich, mehrere Feldnamen-Kandidaten ([\"E-Mail\",\"Email\",\"E-Mail-Adresse\"]); clockodoUserID via anyStringValue ODER numberValue (kommt als number oder string, wie Customer.clockodoID AirtableClient.swift:408); Entwurf-Tabelle/Anzeigename optional; fehlt Feld/Zeile → nil bzw. Handle leer, KEIN Crash, KEIN verworfener Record.\nPAT-Zufluss: keiner neu — der per-User-PAT aus KeychainAirtableCredentialsStore (com.mykilos6.airtable.<userID>) wird bereits von AirtableClient() geladen. Ausweis trägt kein Token (Regel erfüllt).\n\n=== 6. Orphan-Wiederanker (Kernauftrag) ===\nZweistufig, weil ensureUserID (ProfileStore.swift:73) SYNCHRON in AppState.init() VOR jedem Keychain-Store läuft (AppState.swift:257) und die Google-Mail dort noch NICHT kennt (currentUser wird erst mit googleAuth Z.263 hydratisiert):\n  - Stufe 1 (Orphan-Fix in ensureUserID): additiver optionaler Parameter static func ensureUserID(db:googleEmail:String?=nil) -> String. Neuer Fall VOR den heutigen Fällen (vor ProfileStore.swift:75): ist googleEmail übergeben UND existiert in residentIdentity ein Record mit dieser Mail + nicht-leerer userID → dessen userID zurückgeben (Wiederanker) und die userProfile-Zeile falls nötig daran rebinden (withUserID, ProfileRecord.swift:35). Default nil hält ALLE bestehenden Aufrufer grün (AppState.swift:257 kompiliert unverändert, Verhalten identisch bis der Aufrufer die Mail nachreicht).\n  - Stufe 2 (Persistenz der Mail als Anker): der enrichResidentIdentity-Hook (Punkt 4) schreibt googleEmail→userID in residentIdentity. Ab da überlebt der Anker jeden Prozess-Neustart, solange db.sqlite lebt.\nWIRKUNG: DB-Zeile userProfile gelöscht/zurückgesetzt, aber residentIdentity-Zeile vorhanden (bzw. beim allerersten Aufruf-nach-Login mit Mail) → ensureUserID(…, googleEmail:) findet die alte userID → dieselben Keychain-Suffixe com.mykilos6.<base>.<alteUUID> bleiben gültig, statt still zu verwaisen. REST-FALL (beide Tabellen im selben db.sqlite → ein Reset trifft beide): dann ist der überlebende Keychain-userInfo-Cache der letzte Anker — bewusst NICHT in diesem Schritt gelöst (würde MykilosServices-Kopplung ProfileStore→TokenStore einführen). Als offener Punkt notiert, nicht V1-blockierend.",
+      "buildSteps": [
+        {
+          "n": 1,
+          "title": "Domain-Typ ResidentIdentity (MykilosKit)",
+          "files": "NEU Sources/MykilosKit/Domain/ResidentIdentity.swift",
+          "change": "public struct ResidentIdentity (Equatable/Sendable/Codable), Felder googleEmail:String (Schlüssel), userID:String, displayName/clockodoUserID/clockodoEntwurfsTabelle/clickUpMemberID/airtableRecordID:String?, updatedAt:Date. Init mit Default-nil-Optionals. Form 1:1 wie UserProfile.swift:7-42. KEIN Secret-Feld.",
+          "migration": "keine",
+          "breaking": "nein — reiner neuer Typ, importiert nichts (Foundation-only), kein bestehender Aufrufer berührt"
+        },
+        {
+          "n": 2,
+          "title": "GRDB-Migration v24_resident_identity",
+          "files": "Sources/MykilosServices/Database/GRDBDatabase.swift (vor 'return migrator' Z.473, nach v23-Block)",
+          "change": "migrator.registerMigration(\"v24_resident_identity\"): db.create(table:\"residentIdentity\") mit googleEmail .text primaryKey, userID .text notNull, updatedAt .double notNull, restliche Handle-Spalten .text nullable.",
+          "migration": "v24_resident_identity — additive CREATE TABLE (Muster v13/v15/v21). Nächste freie Nummer verifiziert.",
+          "breaking": "nein — CREATE TABLE berührt keine bestehende Zeile/Tabelle; alle 1011 Tests laufen den Migrator unverändert durch"
+        },
+        {
+          "n": 3,
+          "title": "ResidentIdentityRecord (GRDB-Persistenz)",
+          "files": "NEU Sources/MykilosServices/Database/ResidentIdentityRecord.swift",
+          "change": "struct ResidentIdentityRecord (Codable, FetchableRecord, PersistableRecord), databaseTableName=\"residentIdentity\", updatedAt als Double (timeIntervalSince1970), init(from:)/toDomain(). 1:1 Form wie ProfileRecord.swift:9-51.",
+          "migration": "keine (nutzt v24)",
+          "breaking": "nein — neuer interner Typ, kein Aufrufer"
+        },
+        {
+          "n": 4,
+          "title": "ResidentIdentityStore (@MainActor @Observable)",
+          "files": "NEU Sources/MykilosServices/Database/ResidentIdentityStore.swift",
+          "change": "init(db:GRDBDatabase); load() throws (fetchOne key: googleEmail); save(_:) throws mit sichtbarem SaveState — einziger Schreibweg. Plus static func userID(forEmail:db:) -> String? (best-effort do/catch→nil). Form 1:1 wie ProfileStore.swift:10-49/73-94.",
+          "migration": "keine",
+          "breaking": "nein — neuer Store, wird noch nirgends instanziiert"
+        },
+        {
+          "n": 5,
+          "title": "COLD-START-TEST ResidentIdentityStore",
+          "files": "NEU Tests/MykilosServicesTests/ResidentIdentityStoreTests.swift",
+          "change": "ausweisUeberlebtNeustart: schreiben(storeA) → neue Instanz(storeB, selbe inMemory-DB) → lesen → identisch (Muster ProfileStoreTests.swift:9-22). Plus leereDatenbankLiefertNil + userID(forEmail:) Treffer/kein-Treffer.",
+          "migration": "keine",
+          "breaking": "nein — nur Test-Zuwachs; grün, weil Store additiv"
+        },
+        {
+          "n": 6,
+          "title": "mapResidentIdentity + ClockodoNutzerLoader (read-only Airtable, Weg A)",
+          "files": "Sources/MykilosServices/Airtable/AirtableClient.swift (neue static func neben mapContacts Z.416); NEU Sources/MykilosServices/Airtable/ClockodoNutzerLoader.swift",
+          "change": "mapResidentIdentity(from:matchingEmail:) — tolerantes compactMap, case-insensitiver Mail-Vergleich, Feldnamen-Kandidaten, clockodoUserID via anyStringValue|numberValue. Loader 1:1 wie AirtableContactsLoader.swift, ruft BESTEHENDES fetchRecords(baseID:table:) — KEINE neue Protokoll-Methode.",
+          "migration": "keine",
+          "breaking": "nein — kein fetchRecords/buildListURL/AirtableFetching-Vertrag geändert → alle Fake-Clients unberührt, kein filterByFormula"
+        },
+        {
+          "n": 7,
+          "title": "Reiner Unit-Test mapResidentIdentity",
+          "files": "NEU Tests/MykilosServicesTests/ResidentIdentityMapperTests.swift",
+          "change": "Treffer / kein-Treffer / fehlendes clockodo-Feld → Handle nil kein Crash / User-ID als number wie als string (Muster wie mapContacts-Toleranz).",
+          "migration": "keine",
+          "breaking": "nein — nur Test-Zuwachs"
+        },
+        {
+          "n": 8,
+          "title": "ensureUserID um optionalen Wiederanker-Parameter erweitern (Orphan-Fix Stufe 1)",
+          "files": "Sources/MykilosServices/Database/ProfileStore.swift:73",
+          "change": "Signatur → static func ensureUserID(db:GRDBDatabase, googleEmail:String? = nil) -> String. Neuer Fall VOR Z.75: wenn googleEmail!=nil und residentIdentity-Record mit dieser Mail + nicht-leerer userID existiert → dessen userID zurückgeben und userProfile ggf. daran rebinden (withUserID).",
+          "migration": "keine",
+          "breaking": "nein — Default nil hält AppState.swift:257 und alle bestehenden ensureUserID-Aufrufe/Tests (ProfileStoreTests.swift:47-126) verhaltensidentisch"
+        },
+        {
+          "n": 9,
+          "title": "ORPHAN-WIEDERANKER-TEST",
+          "files": "Tests/MykilosServicesTests/ProfileStoreTests.swift (neuer @Test)",
+          "change": "orphanWiederankerRebindetStattZuVerwaisen: (1) residentIdentity mit googleEmail+alterUUID schreiben; (2) userProfile-Zeile leeren/neue DB simulieren; (3) ensureUserID(db:, googleEmail: gleicheMail) → #expect ergibt alte UUID, nicht frische. Plus Kontroll-Test: ohne googleEmail bleibt Verhalten wie heute (frische UUID).",
+          "migration": "keine",
+          "breaking": "nein — additiver Test"
+        },
+        {
+          "n": 10,
+          "title": "AppState verdrahten: ResidentIdentityStore + enrichResidentIdentity()-Hook",
+          "files": "Sources/MykilosApp/Data/AppState.swift",
+          "change": "(a) let residentIdentity = ResidentIdentityStore(db: database) im init (nahe chat/profile-Konstruktion ~Z.250); (b) neue @MainActor func enrichResidentIdentity() async: guard currentGoogleUser?.email → ClockodoNutzerLoader.load() → mapResidentIdentity → try? residentIdentity.save; (c) Aufruf im bootstrap()-Task NACH refreshUserInfoIfNeeded (AppState.swift:476-480). Optional: ensureUserID(db:, googleEmail:) Aufruf bleibt für V1 wie heute (Mail zur init-Zeit noch nicht da) — Stufe 1 greift ab dem Moment, wo die App die Mail nachreicht.",
+          "migration": "keine",
+          "breaking": "nein — rein additiver Store + neuer Hook; actorUserID (Z.135-137) unangetastet; bestehende bootstrap-Pfade unverändert"
+        }
+      ],
+      "testPlan": [
+        "COLD-START (Pflicht): ResidentIdentityStoreTests.ausweisUeberlebtNeustart — ResidentIdentity(googleEmail,userID,clockodoUserID,updatedAt) via storeA.save → neue Instanz storeB auf derselben GRDBDatabase.inMemory() → storeB.load() → #expect(storeB.identity == identity) bitgenau (Muster ProfileStoreTests.swift:9-22).",
+        "ORPHAN-WIEDERANKER (Pflicht): ProfileStoreTests.orphanWiederankerRebindetStattZuVerwaisen — residentIdentity mit googleEmail='johannes@mykilos.com' + fester alterUUID schreiben; userProfile-Zeile fehlt (frische/geleerte DB, simulierter Reset); ensureUserID(db:, googleEmail:'johannes@mykilos.com') → #expect == alterUUID (nicht UUID(uuidString:)!=neu). Kontroll: ensureUserID(db:) ohne Mail → weiterhin frische UUID (kein Verhaltensbruch).",
+        "leereDatenbankLiefertNil für ResidentIdentityStore (load() ohne Zeile → identity==nil, kein Fehler).",
+        "MAPPER-Toleranz: mapResidentIdentity — (a) Treffer per Mail → clockodoUserID/Entwurf-Tabelle/Anzeigename gesetzt; (b) kein Mail-Treffer → nil; (c) Zeile ohne clockodo-Feld → Ausweis ohne Handle, kein Crash, nicht verworfen; (d) Clockodo-User-ID als number UND als string beide korrekt (anyStringValue|numberValue).",
+        "MAPPER Feldnamen-Kandidaten: E-Mail-Feld unter 'E-Mail' vs 'Email' → beide matchen case-insensitive.",
+        "REGRESSION: voller swift test — 1011 Tests bleiben grün (kein bestehender Pfad geändert; nur additive Typen/Migration/Store/Hook + Default-nil-Parameter).",
+        "MANUELLER LIVE-CHECK (kein Unit-Test, Tests nutzen kein echtes Keychain/Netzwerk): erster echter Lauf gegen tblPbly2br8mR2kaU verifiziert die REALEN Feldnamen (E-Mail/Clockodo-User-ID/Entwurf-Tabelle) — bei Abweichung nur die Kandidatenliste in mapResidentIdentity nachziehen."
+      ],
+      "firstStep": "Schritte 1-5 als eine sichere, rein additive Einheit: ResidentIdentity-Domaintyp (MykilosKit) + Migration v24_resident_identity + ResidentIdentityRecord + ResidentIdentityStore + Cold-Start-Test. Kein Aufrufer, kein bestehender Pfad berührt, kein Airtable, kein Hook — nur neue Dateien + eine additive CREATE-TABLE-Migration. swift build && swift test muss danach 1012 Tests grün zeigen (1011 + neuer Cold-Start-Test). Das ist der Boden, auf dem alles Weitere (Airtable-Enrich, Wiederanker) grün aufsetzt.",
+      "openForJohannes": [],
+      "risks": [
+        {
+          "risk": "Airtable-Feldnamen von Clockodo-Nutzer (tblPbly2br8mR2kaU) sind unverifiziert — kein Swift-Code liest die Tabelle heute (grep 0 Treffer). Realer Name 'E-Mail' vs 'Email' etc. könnte den Lookup ins Leere laufen lassen.",
+          "mitigation": "mapResidentIdentity probiert mehrere Feldnamen-Kandidaten tolerant (['E-Mail','Email','E-Mail-Adresse']); fehlt das Feld → Handle nil, kein Crash. Realer Name beim ersten Live-Lauf gegen die echte Tabelle verifizieren und ggf. nur die Kandidatenliste nachziehen. Der lokale GRDB-Master bleibt autoritativ, Airtable ist nur Anreicherung."
+        },
+        {
+          "risk": "Rest-Orphan-Fall: liegen residentIdentity UND userProfile in derselben db.sqlite, trifft ein DB-Reset beide → der Mail-Wiederanker in der DB ist selbst verloren.",
+          "mitigation": "Bewusst NICHT in V1 gelöst (würde Kopplung ProfileStore→TokenStore einführen). Letzter überlebender Anker ist dann der Keychain-userInfo-Cache (com.mykilos6.google.<userID>/userInfo, überlebt DB-Reset). Als offener Punkt notiert; Stufe-1-Wiederanker deckt den häufigeren Fall (residentIdentity überlebt, userProfile-Zeile weg) bereits ab."
+        },
+        {
+          "risk": "ensureUserID-Signaturänderung könnte einen bestehenden Aufrufer/Test brechen.",
+          "mitigation": "Reiner Default-nil-Zusatzparameter (googleEmail: String? = nil) — AppState.swift:257 und alle 5 ensureUserID-Tests (ProfileStoreTests.swift:47-126) kompilieren und verhalten sich identisch. Verifiziert durch vollen swift test."
+        },
+        {
+          "risk": "Enrich-Hook läuft im bootstrap-Hintergrund-Task; currentUser ist beim Aufruf evtl. noch nil (refreshUserInfoIfNeeded ist selbst async in eigenem Task, AppState.swift:477).",
+          "mitigation": "enrichResidentIdentity() guardet auf currentGoogleUser?.email und ist non-fatal (try?, Muster wie refreshUserInfoIfNeeded); läuft beim nächsten Start erneut. Kein Datenverlust, kein Crash — nur verzögerte Anreicherung, was für einen Spiegel akzeptabel ist."
+        }
+      ]
+    },
+    "critic": {
+      "verdict": "tragfähig-mit-auflagen",
+      "breaks": [
+        "KEIN Kompilier-/Testbruch: ensureUserID(db:googleEmail:String?=nil) ist rein additiv — der einzige Source-Aufrufer (AppState.swift:257) und alle 5 Test-Aufrufer (ProfileStoreTests.swift:47/54/61/78/109) nutzen die Ein-Arg-Form und bleiben verhaltensidentisch grün. Verifiziert.",
+        "LOGISCHER Defekt (kein Testbruch, aber Feature-Lücke): Der Stufe-1-Orphan-Rebind in ensureUserID ist in V1 UNERREICHBAR. Der einzige Aufrufer AppState.swift:257 läuft im init VOR der Konstruktion von googleAuth (AppState.swift:263) — googleEmail ist am einzigen Call-Site zwingend nil, der neue Rebind-Zweig feuert nie. Die tatsächliche Orphan-Absicherung kommt allein aus Stufe 2 (enrich-Hook persistiert die Mail); die ensureUserID-Signaturänderung liefert in V1 null Laufzeitnutzen. Der Plan deklariert sie dennoch als Kern-Orphan-Fix — irreführend.",
+        "RACE (non-fatal, aber Plan-Text falsch): Der enrich-Hook 'NACH refreshUserInfoIfNeeded (AppState.swift:476-480)' läuft NICHT garantiert nach dem UserInfo-Refresh — refreshUserInfoIfNeeded() steckt in einem fire-and-forget Task {} (AppState.swift:477). Sequentieller Code danach sieht currentUser evtl. noch nil. Durch guard non-fatal (greift beim nächsten Start), aber die Plan-Beschreibung der Reihenfolge stimmt nicht."
+      ],
+      "missing": [
+        "COLD-START-BIT-EXAKTHEITS-FALLE: ResidentIdentityRecord spiegelt ProfileRecord.updatedAt als timeIntervalSince1970 (Double). CLAUDE.md's eigene Akt-2-Lehre sagt ausdrücklich: nur timeIntervalSinceReferenceDate ist über die Unix-Epoche bitgenau roundtrip-sicher, timeIntervalSince1970 verliert Sub-Sekunden-Präzision. Der bestehende ProfileStore-Cold-Start-Test umgeht das durch runde Integer-Timestamps (1_800_000_000). Der versprochene 'bitgenaue' ResidentIdentity-Cold-Start-Test MUSS denselben Ganzsekunden-Trick nutzen oder er flakt — diese geerbte Randbedingung fehlt im Plan.",
+        "LEER-MAIL-ANKER-GUARD fehlt an der Persistenz-Grenze: Der Primary Key googleEmail verhindert Kollision zweier VERSCHIEDENER Menschen (volle Mail, nie Domain — verifiziert GoogleUserInfoClient.swift:55). Aber er verhindert NICHT, dass eine einzelne googleEmail=''-Zeile zum geteilten Rebind-Magneten wird (gleiche Fehlerklasse wie der 'local'-Keychain-Fallback). Der enrich-guard (!email.isEmpty) deckt nur den Schreibpfad; der Rebind-Lookup und der DB-Schreibweg brauchen ihre EIGENE Nicht-Leer-Zusicherung, sonst kann ein leerer Schlüssel je nach Aufrufreihenfolge doch einsickern.",
+        "Kein expliziter Nachweis, dass residentIdentity und userProfile im SELBEN db.sqlite liegen (tun sie — eine GRDBDatabase, GRDBDatabase.swift:21). Damit ist der 'Rest-Orphan-Fall' (ein Reset trifft BEIDE Tabellen, der Mail-Anker in der DB ist selbst weg) der HÄUFIGSTE reale Reset-Fall (Neuinstallation/App-Support-Löschung löscht die ganze Datei), nicht der seltene. Der Plan stuft ihn als Rand-/Rest-Fall ein — das unterschätzt die Häufigkeit. Der überlebende Keychain-userInfo-Cache (com.mykilos6.google.<userID>/userInfo) ist dann der einzige Anker, und der hängt selbst am userID-Suffix, das ohne DB-Zeile unbekannt ist. Der Plan löst V1 damit primär den SELTENEREN Fall (nur userProfile weg, residentIdentity überlebt)."
+      ],
+      "verschaerfungen": [
+        "ensureUserID-Rebind in V1 NICHT einbauen (Schritt 8) oder klar als reine Vorrüstung ohne V1-Wirkung kennzeichnen. Da der einzige Call-Site nie eine Mail übergibt, ist der Zweig toter Code — entweder weglassen (schlanker, Datenhygiene-Regel) oder AppState so umbauen, dass NACH googleAuth-Hydration (currentUser aus Keychain, synchron verfügbar via GoogleAuthService.init:35!) ein ZWEITER ensureUserID(db:, googleEmail:)-Aufruf erfolgt und ggf. rebindet. Nur dann greift Stufe 1 real.",
+        "Cold-Start-Test-Timestamp auf Ganzsekunden festnageln (z.B. Date(timeIntervalSince1970: 1_800_000_000)) und im Test kommentieren, WARUM (timeIntervalSince1970-Präzisionsverlust). Sonst intermittierender Rotbruch.",
+        "Nicht-leer-Invariante hart ziehen: googleEmail NIEMALS als '' schreiben und im Rebind-Lookup email.trimmed.isEmpty==false erzwingen — an BEIDEN Stellen (save + rebind-fetch), nicht nur im enrich-guard. Ein leerer Primary Key ist ein geteilter Anker = derselbe Namespace-Kollaps wie der 'local'-Fallback.",
+        "mapResidentIdentity: Feld-Kandidaten-Toleranz wie mapContacts (case-insensitiver Mail-Vergleich, ['E-Mail','Email','E-Mail-Adresse'], clockodoUserID via anyStringValue|numberValue) beibehalten — ABER einen expliziten Unit-Test ergänzen, der eine Zeile MIT passender Mail aber OHNE clockodo-Feld liefert und beweist: Ausweis wird NICHT verworfen (compactMap darf nicht auf fehlendes Handle nil-en). Der Plan nennt das, aber der reale mapContacts verwirft nur bei fehlendem Namen — hier ist der Schlüssel die Mail, also muss die guard-Bedingung explizit auf Mail-Treffer stehen, nie auf Handle-Präsenz.",
+        "Rest-Orphan-Fall (ganze db.sqlite weg) als bewusst offenen, aber HÄUFIGEN Punkt dokumentieren, nicht als Rand-Fall verharmlosen — inkl. Notiz, dass der Keychain-userInfo-Cache ohne bekannten userID-Suffix nicht wiederauffindbar ist. Das ist ehrlicher gegenüber Johannes' erklärtem Ziel 'Gerätewechsel darf Secrets nicht verwaisen lassen'."
+      ]
+    }
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Ist-Touchpoints"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Bauplan"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 3,
+      "title": "Kritik"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "ist:identity-ist",
+      "phaseIndex": 1,
+      "phaseTitle": "Ist-Touchpoints",
+      "agentId": "af8e473498927d777",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783264323313,
+      "queuedAt": 1783264323306,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "TOUCHPOINT 1 — LOKALER IDENTITÄTS-KERN (Ist-Kartierung, all…",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first, Multi-Target (MykilosKit NUR Foundation, kein SwiftUI/GRDB; Widgets nie GRDB; Schreibvorgänge nie aus Views, nur über Stores). Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep). Ändere/committe NICHTS — das ist ein PLAN, kein Bau.\nENTSCHEIDUNG (Johannes): Personalausweis = **Option 1, loc…",
+      "lastProgressAt": 1783264472477,
+      "tokens": 108600,
+      "toolCalls": 18,
+      "durationMs": 149163,
+      "resultPreview": "{\"findings\":\"TOUCHPOINT 1 — LOKALER IDENTITÄTS-KERN (Ist-Kartierung, alles am echten Code belegt)\\n\\n== 1. Wie/wo entsteht die userID ==\\n- Typ-Ebene: `UserProfile.userID: String?` (UserProfile.swift:19), optional NUR wegen additivem Rollout; Kommentar Z.14-18: \\\"IMMER beim ersten Profil-Load erzeugt und danach nie mehr geändert\\\".\\n- Erzeugung: `ProfileStore.ensureUserID(db:) -> String` (ProfileS…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "ist:google-hook",
+      "phaseIndex": 1,
+      "phaseTitle": "Ist-Touchpoints",
+      "agentId": "a2182abbacc9d1455",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783264323318,
+      "queuedAt": 1783264323306,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "TOUCHPOINT 2 — Google-Login-Anreicherungs-Punkt. Alle Stell…",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first, Multi-Target (MykilosKit NUR Foundation, kein SwiftUI/GRDB; Widgets nie GRDB; Schreibvorgänge nie aus Views, nur über Stores). Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep). Ändere/committe NICHTS — das ist ein PLAN, kein Bau.\nENTSCHEIDUNG (Johannes): Personalausweis = **Option 1, loc…",
+      "lastProgressAt": 1783264426106,
+      "tokens": 106996,
+      "toolCalls": 12,
+      "durationMs": 102788,
+      "resultPreview": "{\"findings\":\"TOUCHPOINT 2 — Google-Login-Anreicherungs-Punkt. Alle Stellen am echten Code verifiziert.\\n\\n=== DIE ZWEI EINSPEISE-STELLEN (Login vs. Hydration) ===\\n\\n(1) FRISCHER LOGIN — GoogleAuthService.startAuthorization(), Sources/MykilosServices/Google/GoogleAuthService.swift:92-96. Nach erfolgreichem Token-Tausch wird userInfo in einem non-fatalen do{}-Block geholt und gesetzt: fetchUserInfo…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "ist:airtable-read",
+      "phaseIndex": 1,
+      "phaseTitle": "Ist-Touchpoints",
+      "agentId": "a3a2c89777fe1f19c",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783264323321,
+      "queuedAt": 1783264323307,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "TOUCHPOINT 3 — Airtable-READ-Pfad (Clockodo-Nutzer, tblPbly…",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first, Multi-Target (MykilosKit NUR Foundation, kein SwiftUI/GRDB; Widgets nie GRDB; Schreibvorgänge nie aus Views, nur über Stores). Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep). Ändere/committe NICHTS — das ist ein PLAN, kein Bau.\nENTSCHEIDUNG (Johannes): Personalausweis = **Option 1, loc…",
+      "lastProgressAt": 1783264421592,
+      "tokens": 102605,
+      "toolCalls": 8,
+      "durationMs": 98270,
+      "resultPreview": "{\"findings\":\"TOUCHPOINT 3 — Airtable-READ-Pfad (Clockodo-Nutzer, tblPbly2br8mR2kaU in appuVMh3KDfKw4OoQ)\\n\\n## Was READ-seitig existiert (belegt)\\n- Lese-Protokoll: `AirtableFetching.fetchRecords(baseID:table:)` — Sources/MykilosServices/Airtable/AirtableClient.swift:61-63.\\n- Einzige Implementierung: `AirtableClient.fetchRecords` — AirtableClient.swift:227-253. Paginiert (pageSize=100, offset-Loo…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "personalausweis-bauplan",
+      "phaseIndex": 2,
+      "phaseTitle": "Bauplan",
+      "agentId": "a7eebf7807d803d61",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783264472486,
+      "queuedAt": 1783264472478,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "PERSONALAUSWEIS (ResidentIdentity) — Option 1, local-first,…",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first, Multi-Target (MykilosKit NUR Foundation, kein SwiftUI/GRDB; Widgets nie GRDB; Schreibvorgänge nie aus Views, nur über Stores). Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep). Ändere/committe NICHTS — das ist ein PLAN, kein Bau.\nENTSCHEIDUNG (Johannes): Personalausweis = **Option 1, loc…",
+      "lastProgressAt": 1783264696470,
+      "tokens": 118089,
+      "toolCalls": 19,
+      "durationMs": 223984,
+      "resultPreview": "{\"design\":\"PERSONALAUSWEIS (ResidentIdentity) — Option 1, local-first, read-only Airtable-Enrich, Orphan-Wiederanker. Alles am echten Code belegt (Datei:Zeile). Nicht-brechend + Cold-Start-fest.\\n\\n=== 1. ResidentIdentity — Domain-Typ (MykilosKit, Foundation-only) ===\\nNeuer Typ Sources/MykilosKit/Domain/ResidentIdentity.swift, Form 1:1 wie UserProfile.swift:7-42 (public struct, Equatable/Sendable…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 5,
+      "label": "torwaechter-kritik",
+      "phaseIndex": 3,
+      "phaseTitle": "Kritik",
+      "agentId": "aeac7aa151923061b",
+      "model": "claude-opus-4-8",
+      "state": "done",
+      "startedAt": 1783264696484,
+      "queuedAt": 1783264696473,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "tragfähig-mit-auflagen",
+      "promptPreview": "KONTEXT: mykilOS — macOS/SwiftUI local-first, Multi-Target (MykilosKit NUR Foundation, kein SwiftUI/GRDB; Widgets nie GRDB; Schreibvorgänge nie aus Views, nur über Stores). Kanonischer Ordner: \"/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6\".\nREIN LESEND (Read/Grep). Ändere/committe NICHTS — das ist ein PLAN, kein Bau.\nENTSCHEIDUNG (Johannes): Personalausweis = **Option 1, loc…",
+      "lastProgressAt": 1783264855142,
+      "tokens": 115069,
+      "toolCalls": 19,
+      "durationMs": 158658,
+      "resultPreview": "{\"verdict\":\"tragfähig-mit-auflagen\",\"breaks\":[\"KEIN Kompilier-/Testbruch: ensureUserID(db:googleEmail:String?=nil) ist rein additiv — der einzige Source-Aufrufer (AppState.swift:257) und alle 5 Test-Aufrufer (ProfileStoreTests.swift:47/54/61/78/109) nutzen die Ein-Arg-Form und bleiben verhaltensidentisch grün. Verifiziert.\",\"LOGISCHER Defekt (kein Testbruch, aber Feature-Lücke): Der Stufe-1-Orphan…"
+    }
+  ],
+  "totalTokens": 551359,
+  "totalToolCalls": 76
+}

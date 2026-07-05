@@ -13,6 +13,13 @@ am Ende aktualisiert, damit nichts in einzelnen Handoffs verloren geht.
 > Dieses Dokument wächst kontinuierlich durch verschiedene Sessions und
 > Koordinations-Runden. Mehr Einträge als erwartet = normal, kein Handlungsbedarf.
 
+> **🌟 PRODUKT-NORDSTERN 2027:** Die große strategische Richtung (vertikaler,
+> voll-gehosteter Studio-Werkzeugkasten · Mac Mothership / iOS Satellit / iPad Worker ·
+> Abo mit gemeterter KI · Airtable hinter neutraler Naht) liegt eigenständig in
+> [PRODUKT_NORDSTERN_2027.md](PRODUKT_NORDSTERN_2027.md). Grundhaltung: weiterbauen wie
+> bisher, nichts Bestehendes ändern — aber jede neue Naht so ziehen, dass fremde
+> Bestandssysteme später andocken können.
+
 **Format:** Jeder Eintrag hat Status, Quelle (wann/wodurch entstanden) und
 Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 - 💡 **Idee** — nur angedacht, noch nicht bewertet/entschieden
@@ -20,6 +27,212 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 - 🚧 **Begonnen** — teilweise umgesetzt
 - ✅ **Erledigt** — umgesetzt, bleibt hier als Historie mit Verweis stehen
 - ❌ **Verworfen** — bewusst nicht weiterverfolgt, mit Begründung
+
+---
+
+## Nachtrag 2026-07-05 — Sevdesk als möglicher „Nummernboss" (Zukunft)
+
+- 💡 **Sevdesk als konsolidierter Nummernboss** (Johannes, 2026-07-05): *Wenn* wir irgendwann
+  alle Nummernkreise (Kunden-, Projekt-, Beleg-Nr.) auf **ein** führendes System ziehen, wäre der
+  akribische „Buchhalter von nebenan" der natürliche Kandidat für die *eine* Nummern-Wahrheit.
+  **Späteres Kapitel**, nicht jetzt. Auch dann **nur über den Briefkasten** (append-only, nie
+  direkt) — Sevdesk bleibt Nachbar, kein integriertes System. Baut auf dem bestehenden
+  Nummernkreis-Design (heute schon: Belege + Debitoren = Sevdesk-Master) + der Briefkasten-Regel
+  auf. Rückkanal-/Feedback-Design bewusst offen (Johannes entscheidet später).
+
+- 💡 **Settings-Ebene im macOS-System-Settings-Stil** (Johannes, 2026-07-05, Screenshot-Anlehnung):
+  die „fertige" Benutzer-Einstellungsebene soll aussehen wie macOS System Settings — ruhige
+  gruppierte Sektionen, Status-Badges, Chevrons — aber mit UNSEREN echten Kategorien. **Mapping:**
+  Apple-Account-Header → Identität/Personalausweis (✅ `ResidentIdentity` gebaut); Datenschutz &
+  Sicherheit → Integrationen (Google/Airtable/ClickUp/Clockodo/Sevdesk/Claude) + Datenschutz-Toggles;
+  Erscheinungsbild → Darstellung (Hell/Dunkel/Auto ✅ + CI-Akzent); Benutzer:innen & Gruppen →
+  Team/Bewohner + Hausmeister(Admin); Netzwerk (grün/rot) → Schlüssel-Inventar (verbunden/verwaist,
+  Orphan-Erkennung); Familie → gemeinsame Räume (Drive/Projekte/Kataloge). Die Settings-Ebene ist die
+  **natürliche Heimat der Bewohner-Schicht** (Personalausweis ✅, Schlüssel-Inventar + Meldeadresse
+  designt). Anregung, kein Maximal-Bau ([[design-nordstern-minimal]]); Mockup auf Abruf.
+
+---
+
+## Nachtrag 2026-07-04 (Nacht) — DEV-Feedback (Johannes, Screenshots, „drop→check→erklär")
+
+Fünf Punkte aus Johannes' Screenshot-Feedback-Runde. Grundhaltung: alle fünf sind machbar
+(Johannes' Einschätzung), 1/3/4a/5 klein-mittel, 2 mittel, 4b groß (aber Wirbelsäule-gestützt).
+Gilt Interior-Build-Charter (nur innen, Airtable = Outer Limit).
+
+- 💡 **Kontakte als Kachel-/Galerie-Ansicht** (Sammlungs-Ansicht-Standard wie Dateien/Angebote):
+  Liste⇄Galerie mit Zoom-Slider + Vorschau. PLUS **Kontaktbild pro Kontakt**, Toggle (an/aus/
+  eigenes): lokal = User-Upload-Wunsch; global = Google-Contacts-Foto falls vorhanden; sonst
+  individuell; **Standard = Icon** (aktuelles Personen-Icon). Kontakte kommen aus Airtable
+  (904 Kontakte).
+- 💡 **Aufgaben als Widget-Katalog** (statt leerer Liste): ClickUp-Aufgaben-View-Widget ·
+  Termine+Aufgaben-Widget · Notizen/eigene Memos · Dropdown-Feld für WhatsApp / fremde
+  Nachrichten-Apps. (ClickUp-Regeln beachten: Testspace-only, nie echte Assignees/
+  Notifications.)
+- 💡 **Warenkörbe auf den Sammlungs-Ansicht-Standard** ziehen (Liste⇄Galerie/Kachel mit Zoom +
+  Vorschau + volles Instrumentarium: Suche/Filter/Sortierung/Quellzeile/Renderstates) — wie die
+  anderen Kataloge.
+- 💡 **(Bug)** Im globalen Angebote-Modul: Positionen im „Positionen herauslösen"-Sheet lassen
+  sich **nicht picken / nicht in den Warenkorb ziehen** — Fix. **(Feature, groß)** **GLOBALES
+  Drag & Drop**: Items aus ALLEN Katalogen (Kontakte/Artikel/Lager/Zeichnungen/Positionen …) per
+  Ziehen in den Checkout/Warenkorb. Fundament existiert: die Wirbelsäule (Pick → WorkBasket →
+  CheckoutPort).
+- 💡 **Layout-Drift beheben**: uneinheitliche Ausrichtung/Abstände (z.B. Kataloge/Angebote/
+  Alle-Angebote nicht bündig) — Polish-Sweep, gegen Screenshots prüfen (siehe Regel
+  „UI-Layout-Drift/Quer-Wirkung").
+- 💡 **Barcode + QR einlesen** im Übersichts-Ansichtsbereich (Heute/Übersicht). Liest Artikel
+  per Barcode **oder QR-Code** ein → Artikel-Erkennung/-Zuordnung (Katalog „Artikel/Shop" bzw.
+  „Lager"). Passt zur Interior-Build-Charter (Eingang → sauberes I/O → Airtable als Outer Limit;
+  nie Daniels Base überschreiben). Machbarkeit: macOS-Kamera/AVFoundation bzw. eingehende Scans;
+  Job = Barcode/QR → Artikel-Lookup.
+- 💡 **Visitenkarten-Scan → Kontakt anlegen.** Visitenkarte scannen (Kamera/Foto, OCR) →
+  automatisch neuer Kontakt (Name/Firma/Mail/Telefon). Greift in die Kontakte-Bild-Idee (Punkt 1):
+  gescannte Karte = Kontakt MIT Foto. Airtable-Kontakte als Ziel (nie destruktiv). Interior-Build-
+  Charter beachten.
+- 💡 **Mail-Metadaten → Kontext-Vorerfassung + Drive-Ablage-Vorschlag.** Aus den Metadaten
+  eingehender Mails (Absender, Betreff, Projekt-/Belegnummern im Text, Anhänge) den **Kontext
+  vorerfassen** → daraus bei Dateiablage ein **Vorschlag, in welchen Drive-Projektordner** der
+  Anhang gehört. Vorschlag, kein Auto-Write; Drive bleibt read-only heilig (Ablage nur zu
+  ausdrücklich bestätigtem Ziel). Fundament: bestehender Gmail-Cache + Projekt-Routing (Airtable).
+  Passt zur Interior-Build-Charter (sauberes I/O, Airtable = Outer Limit).
+- 💡 **Universeller Checkout — alles ist pickbar/bündelbar/checkoutbar.** Nicht nur Artikel/
+  Positionen: auch **Kontakte in den Warenkorb und an Projekte „checkouten"**. Grundsatz: ALLES
+  aus allen Katalogen/Listen (Kontakte/Artikel/Dateien/Zeichnungen/Positionen/Material …)
+  auswählen, bündeln, checkouten. = die universelle Wirbelsäule (Pick → WorkBasket →
+  CheckoutPort) über alle `CatalogMatrix`-Typen ausrollen. Verbindet sich mit „globales Drag &
+  Drop" (siehe DEV-Feedback Punkt 4b).
+- 💡 **Kontakte aus Mail-Signaturen aufnehmen.** Aus den Signaturen eingehender Mails
+  Kontaktdaten extrahieren (Name/Firma/Position/Tel/Mail/Adresse) → neuer oder aktualisierter
+  Kontakt. Verwandt mit „Mail-Metadaten → Kontext" + „Visitenkarten-Scan". Vorschlag/Bestätigung,
+  kein Auto-Write.
+- 💡 **Kontakte an Projekte verknüpfen.** Kontakte direkt Projekten zuordnen (Beziehung Kontakt
+  ↔ Projekt), sichtbar auf beiden Seiten. Airtable als SoR (nie destruktiv).
+- 💡 **Universelles Gruppieren/Sortieren/Zuordnen/Vereinzeln/Kontextualisieren.**
+  Querschnitts-Prinzip: ALLES im System soll sich jederzeit zueinander gruppieren, sortieren,
+  zuordnen, vereinzeln und kontextualisieren lassen — ein durchgängiges Beziehungs-/
+  Kontext-Modell über alle Daten & Listen (Kontakte/Projekte/Artikel/Belege/Aufgaben/Dateien).
+  Fundament für viele obige Punkte. Interior-Build-Charter: nur innen, Airtable = Outer Limit.
+- 💡 **Timeline erkennt Meilenstein-Marker.** Die Timeline-Ansicht in den Projekt-Detailseiten
+  soll Marker automatisch erkennen: „Auftragsbestätigung", „Angebot verschickt", „Rechnung",
+  „Bestellung" usw. (aus Belegen/Drive-Dateinamen/Status). Wichtig — macht die Timeline zur
+  echten Projekt-Chronik. Read-only-Erkennung, kein Schreiben.
+
+---
+
+## Nachtrag 2026-07-04 (Nacht) — Roundtable: externe KI-Bros sandboxen + Slack Tag-0 (Johannes)
+
+Vision „alle an einen Tisch": jede spezialisierte KI auf ihrem Stuhl, koordiniert über EIN
+Rückgrat (Git-Repo + Airtable-SoR), gegated am Torwächter (PR/Mensch). Kein Bro besitzt die
+Wahrheit. Eigene fokussierte Sessions, NICHT in einem vollen Fenster:
+
+- 💡 **ClickUp-Bro sandboxen (Setup).** Testspace `90128024109` sauber strukturieren (Ordner/Listen
+  nach Projekt/Lebenszyklus, einheitliche Status + Custom Fields, Ghost-Persona-Konvention) +
+  Konventionen-Doc, an dem die ClickUp-KI sich ausrichtet. **HART:** Testspace-only, nie echte
+  Assignees/Notifications, KI weist nie Menschen zu ([[clickup-ghost-persona-rule]]). Offen:
+  Johannes' Job-Definition (einsortieren? taggen? fällige hochholen?).
+- 💡 **Airtable-Bro sandboxen (Setup).** SoR (`appuVMh3KDfKw4OoQ`) NICHT umbauen (App liest feste
+  Tabellen/Felder → Bruch-Gefahr). Stattdessen: dedizierte Sandbox-Fläche + „AI-Leitfaden"
+  (Konventionen + NO-GOs: nie löschen/überschreiben, nie SoR-Felder, nie Daniels Base
+  `appdxTeT6bhSBmwx5`). Offen: Job-Definition (kategorisieren? dedupen? Feldvorschläge?).
+- 💡 **Slack → „Tag 0" nahtlos ziehen, mit Handshake.** Slack-History/aktueller Stand als
+  Anfangs-Seed ins Rückgrat (Projekte/Aufgaben/Wissen), im Handshake mit dem integrierten Slack-
+  Agenten. „Tag 0" = ein sauberer, verankerter Startzustand statt verstreutem Chat-Verlauf.
+  Slack = weitere Speiche, koordiniert über Spine/Gate, nie destruktiv in die SoR. (Slack-Brain
+  169 Projekte als Wissen ist schon Präzedenz — [[bootcamp-online-push]].)
+
+**Grundregel für alle drei:** Autonom = IN DER SANDBOX. SoR + echte Daten + echte Menschen bleiben
+gegated (Torwächter-Modell). Bros kriegen einen Zaun-Spielplatz, nie Schlüssel zur Wahrheit.
+
+---
+
+## Nachtrag 2026-07-04 — Mini-Mode (VERRIEGELTE Spec, Johannes)
+
+> ⚠️ **Korrektur:** Der Ultracode-Workflow vom 2026-07-04 baute versehentlich ein **Menüleisten-
+> `NSStatusItem`** (Commit `7eb9a67`, `Sources/MykilosApp/MiniMode/`). Das ist die **falsche Form** —
+> Johannes' Mini-Mode ist ein **schwebendes Icon-Sidebar-Fenster**, kein Menüleisten-Zähler. Der
+> Commit war **superseded**. ✅ **Erledigt durch Commit `9ce2b9b` (selbentags)** — die Menüleisten-
+> Variante wurde durch die schwebende Icon-Sidebar ersetzt; kein `NSStatusItem`-Restcode mehr im
+> Repo, kein Revert mehr nötig. Lehre: Mini-Mode-*Konzept* vor dem Bau zurückspiegeln — nicht
+> direkt einen Workflow drauf loslassen.
+
+- 🎯 **Mini-Mode — schwebende Icon-Sidebar-Presence (verriegelt 2026-07-04, Design mit Johannes
+  im Dialog + interaktivem Mockup durchgespielt).** Kern-Use-Case: **an-lassen, während man in
+  einem anderen Vollbild-Programm arbeitet** (z. B. Vectorworks zeichnen). „Oh, da kam was rein" +
+  „ich geh mal schnell ins Projekt", ohne die Vollansicht aufzumachen.
+
+  **Was es ist:** die App geschrumpft auf **nur die eingeklappte Icon-Sidebar** (kein
+  Inhaltsfenster) — ein schmales, **schwebendes, immer-obenauf, fokus-neutrales** Fenster
+  (`NSPanel` `.floating` + `.nonactivatingPanel` + `collectionBehavior` inkl. `.canJoinAllSpaces`
+  + `.fullScreenAuxiliary`, damit es **über Vollbild-Spaces** erscheint), das man in eine Ecke legt.
+  Stiehlt nie den Fokus — man zeichnet weiter.
+
+  **Aktivierung (Klick-Dauer-Geste):** einmalig in Settings → Ansichts-Optionen einschalten. Dann
+  über den **mykilOS-Button oben links** (der auch die Sidebar ein/ausblendet): **kurzer Klick =
+  Sidebar schmal/breit; Halten ~2 s = Mini-Mode.** Beim Halten füllt sich ein **Ring** um den
+  Button (Fortschritt sichtbar) + Button pulst; **früher loslassen = Abbruch**. Kein Versehen.
+  Wenn Mini-Mode in Settings AUS ist, ist der Button ein ganz normaler Sidebar-Toggle (niemand
+  merkt was). 3-Zustand-Prinzip: **springen, nicht durchzyklen.**
+
+  **Alert-Modell (Korrektur nach Live-Test 2026-07-05, Johannes): schlank — Puls → Klick-zur-
+  Sache. Hover-Summary-Karte GESTRICHEN** (war Stufe 2 des ursprünglichen Drei-Stufen-Modells —
+  „nervt eher" im Live-Test des schwebenden Icon-Streifens).
+  1. **Puls (push):** das **betroffene Icon selbst pulsiert langsam orange** (`MykColor.brand`,
+     bzw. Farbmode) — „sehr langsames Feuerwehr-Licht". Ein Signal sagt *beides*: „hey" UND
+     „welches Modul". Kein Ganz-Fenster-Puls (Doppel-Puls vermeiden). **Abschaltbar pro Quelle.**
+  2. **Klick-zur-Sache (commit) — kein Hover mehr dazwischen:** ein **normaler Klick ins Mini**
+     öffnet die App **direkt dort, wo es brennt** (die relevante/pulsende Stelle) — im normalen
+     Mode oder auf dem anderen Desktop. Kein Zwischenschritt, keine Vorschau-Karte.
+     - Klick auf ein **pulsierendes Modul-Icon** → rein in *das* Modul, an die brennende Stelle.
+     - Klick auf das **Logo** → zurück zur **letzten großen Ansicht** (wo man war).
+
+  **V1.1-Änderungsvermerk:** Das gebaute Mini-Mode (Commit `9ce2b9b`) hat noch die alte
+  Hover-Summary verdrahtet. **Folge-Änderung (V1.1, noch zu bauen):** Hover-Karte entfernen +
+  Klick-zur-brennenden-Stelle verdrahten (Klick-Handler muss die pulsende Quelle auflösen und
+  gezielt dorthin navigieren, statt nur die App zu öffnen).
+
+  **Datenquellen (LEAN):** verdichtet aus bestehenden `AppState`-Stores + Signal-/Mediator-System
+  (`StudioContext`), nur lokale Caches + laufende Loops — **KEINE neuen API-Polls**. Aufgaben =
+  lokale Assistent-Aufgaben (ClickUp hätte Poll gebraucht). Kalender/Mail brauchen einen lokalen
+  Cache-Store (heute nicht da) → bis dahin ehrlich „(bald)".
+
+  **Leitplanken:** Alerts-dezent + Toggle je Quelle (Settings→Datenschutz) · Puls abschaltbar,
+  „langsam" evtl. einstellbar · Per-User-Datenschutz · Token-Disziplin · Modulgrenzen ·
+  WindowGuard muss das schwebende Panel korrekt behandeln (`canBecomeMain`-Filter, 2026-07-04
+  schon geschärft). **Aufwand:** substanziell (schwebendes Panel + Halte-Geste + Per-Icon-Puls-
+  Alerts + Hover-Summary am Signalstrom) — eigene fokussierte Session, frisch bauen.
+
+---
+
+## Nachtrag 2026-07-04 — Config-driven statt hardcoded (3 Stränge, Nordstern-Anzahlung)
+
+Aus dem Strategie-Gespräch 2026-07-04 (siehe [PRODUKT_NORDSTERN_2027.md](PRODUKT_NORDSTERN_2027.md) §
+„Config-driven statt hardcoded"). Gemeinsames Muster aller drei: *was heute im Code festverdrahtet
+ist, in ein editierbares/wählbares Config-Objekt heben* — genau der Muskel, den 2027 (fremde Studios
+andocken, White-Label) braucht.
+
+- 💡 **Ordner-Schema-Editor (die Drive-Orga ins Cockpit holen).** Ziel: die nächste, optimierte
+  Projekt-Ordnerstruktur kommt von UNS. Ist-Stand (Code geprüft 2026-07-04): `ProjektProvisioning-
+  Service` legt Bäume schon idempotent an (Schema als Parameter `plan.schema`, heute hartkodiert
+  `.v1`); `PlanCollector` klassifiziert lose Drive-Ordner/Dateien bereits per Schlüsselwort in unsere
+  Kategorien (= Struktur als Linse). **Zu bauen:** (1) `.v1` → editierbares/versioniertes
+  `FolderSchema v2` + visueller Finder-artiger Baum-Editor + Token-Benennung `{Jahr}_{Nr:3}_{Kunde}`
+  + Live-Vorschau; (2) Mapping-Linse Ordner→kanonisch (Archiv-Übersetzung-Gerüst existiert).
+  **Leitplanke:** Alt bleibt physisch unangetastet (externe Daten heilig) — Struktur als Vertrag/
+  Linse, nie physischer Umzug. Neue Projekte landen kanonisch. Schwere: neue Projekte 🟢 leicht,
+  Alt-Daten-Linse 🟡 mittel/iterativ. Kandidat für eigene kleine Session.
+- 💡 **Look-only Theme-System (wählbare UI-Styles).** Nutzer wählt „mykilOS Standard / Editorial /
+  …". **Scope-Grenze (Johannes 2026-07-04): nur der LOOK, kein Layout** — Farben, Font, Radien,
+  Spacing (=Dichte), Logos, Icons. Kein Panel-/View-Umbau. Farben/Fonts/Radien/Spacing sind schon
+  Tokens (`MykColor`/`MykSpace`/`MykRadius`/Typography) → Theme = anderer Wertesatz. **Zu bauen:**
+  `MykTheme`-Struct + Token-Auflösung liest aktives Theme (Rainbow Mode beweist Laufzeit-Switch
+  schon) + Logo-Slot + leichte semantische Icon-Ebene + Style-Picker in Settings→Darstellung mit
+  Live-Vorschau + Persistenz (perspektivisch Mandanten-/User-Config → Premium-White-Label).
+  Fallstrick: WCAG-Kontrast pro Theme; „Farbe als Sprache" bewusst opferbar. Schwere: Plumbing 🟢
+  eine Session, schöne Themes = Design-Iteration.
+- 💡 **CI/Editorial als erstes echtes Theme.** Die öffentliche mykilOS-Website-CI (Screenshot
+  2026-07-04) als Theme: reines Weiß/hartes Schwarz, Radien 0, Grotesk/Mono VERSAL gespreizt,
+  monochrom (Quellfarben weg), keine Ornamentik, bild-first/randlos. Perfekter Gegenpol zum warmen
+  Standard-Look → Beweis, dass ein Theme alle Achsen (nicht nur Palette) umfassen muss. Optional:
+  visuelles „Standard vs. Editorial"-Mockup (HTML-Artifact) vor dem Bau.
 
 ---
 
@@ -240,6 +453,29 @@ heutigem Stand.
 
 ## Nachtrag 2026-07-02 spät — 🏆 MEGA-Funktion: Angebots-Positionen-Extraktion (Johannes) — FLAGGSCHIFF-USE-CASE der Wirbelsäule
 
+**✅ Status 2026-07-04: LIVE, in beiden Angebote-Ansichten (Projekt-Tab + globale „Alle
+Angebote").** Mechanismus wurde beim Bau pragmatisch abgewandelt (automatische Kandidaten-
+Extraktion mit Selbstbeweis-Konfidenz statt manuellem Rechteck-Klick, siehe „PDF-Positions v1" /
+`OfferPositionsSheet`) — Verifikation bleibt aber genauso menschlich: Kandidat sehen → prüfen →
+„In Warenkorb" bestätigen, kein Blind-Import. **Zwei Fixes heute:** (1) war nur im Rechtsklick-
+Kontextmenü versteckt „Positionen herauslösen" → jetzt zusätzlich als sichtbarer Button an
+jeder PDF-Zeile. (2) **Bugfix:** in der globalen „Alle Angebote"-Ansicht landeten herausgelöste
+Positionen im flüchtigen, session-lokalen `WarenkorbState` (Katalog/Lager-Picker-Rest) statt im
+echten, persistenten Projekt-Warenkorb (`WorkBasketStore`) — sie verschwanden beim Neustart und
+tauchten im Warenkorb-Widget nie auf. Jetzt schreiben beide Ansichten in denselben echten Korb.
+
+**Nachtrag 2026-07-04 spät (Johannes-Feedback: „Positionstexte, Art no, alle Infos"):**
+Extraktor erkennt jetzt Art.-Nr. (`OfferPositionExtractor.artikelnummer(in:)`, Muster am echten
+Alt-Korpus verifiziert: „Art.-Nr. 155.01.595" etc., 5 neue Tests). „In Warenkorb" trägt jetzt
+ALLE Infos in `PickSnapshot.attribute`: Art.-Nr., voller Original-Positionstext, Quelldatei,
+Seite, Richtung — gemeinsamer Helper `positionsAttribute(...)` in beiden Angebote-Ansichten.
+**Motivation von Johannes:** eine Position vom Tischler-Angebot „schnappen" und mit vollen
+Daten Richtung sevDesk-Postbox weiterreichen können. **Ehrlich offen:** der sevDesk-Postbox-
+`CheckoutPort` existiert technisch noch nicht (nur `DokumentPort`/`MoodboardPort`/
+`FireflyPromptPort` + das `CheckoutPort`-Protokoll) — das ist ein eigener, noch zu bauender
+Strang (siehe [[sevdesk-adapter-briefkasten-rule]]). Die Positions-Daten liegen jetzt aber
+vollständig im Warenkorb bereit, sobald dieser Port gebaut wird.
+
 **Kein Nebenfeature — das ist der End-to-End-Beweis, dass die ganze S10-Wirbelsäule trägt.**
 
 **⚠️ KORRIGIERTES Mechanismus-Modell (Johannes, 2026-07-02 — ersetzt die erste Fassung):**
@@ -438,8 +674,12 @@ verbalen Wünsche waren noch nicht sauber verankert und werden hiermit festgehal
   mit Nummernkreis-/Vermatschungs-Warnung direkt in der App.
 - 💡 **Meilenstein-Statusbar mit Monatsangaben** im Projekt-Hero oder als Widget (der
   Lebenszyklus-Stepper ist erledigt, die Datums-/Monats-Variante fehlt noch).
-- 📋 **Mail SENDEN (nicht nur Entwurf) + Nachrichten-Aktionen** (gelesen/Stern/Archiv). NO-GO in
-  MEMORY aufgehoben; als Session S3 (Assistent Schreib-Ausbau) verankert. Braucht `gmail.send`.
+- **✅ Mail SENDEN (Free-Climber-Anker-Fund 2026-07-04, war veraltet):** längst live —
+  `MailClientView` → `appState.sendMail` → `GoogleGmailClient.sendMessage`, mit
+  Bestätigungs-Gate (`showSendConfirm` in `ComposeMailView`). Nur im eigenständigen
+  Mail-Client-Modul injiziert (`onSend:`), NICHT in Ad-hoc-Compose-Sheets aus anderen Tabs
+  (bewusst, siehe Kommentar in `ComposeMailView.swift`). **Noch offen:** Nachrichten-Aktionen
+  (gelesen/Stern/Archiv/Löschen).
 
 ---
 
@@ -502,19 +742,114 @@ Dienstleistungen/Lager); Checkout = Router in beliebige Ziele (DBs/Moodboard/Lis
 Dokumente/Templates). Vereint Formulare-Ebene + Geräteliste + Moodboard + Angebot.
 → **docs/WARENKORB_CHECKOUT.md**
 
+#### 💡 Futurefeature (Johannes 2026-07-04) — Checkout per Drag & Drop als „visualisierter Weg"
+Warenkorb **direkt aus dem gewählten Checkout heraus draggen** und auf die **richtige Ziel-App/
+-Funktion droppen** → **Bestätigungsdialog** → Ausführung. Kein Menü-Ausklappen, sondern man
+**sieht die Route** vom Korb zum Ziel (der „visualisierte Weg"). Fügt sich nahtlos in die
+bestehende **Ports-Architektur** ein: jeder `CheckoutPort` (Dokument/sevDesk/Moodboard/VW-Plankopf
+…) ist ein Drop-Ziel, der Bestätigungsdialog = `preview()`, das Fallenlassen = `execute()`. Also
+eine **visuelle Oberfläche über `PortRegistry`**, kein neues Subsystem. UI-Schicht, später.
+
+#### 💡 Futurefeature (Johannes 2026-07-04) — Text-Bausteine aus PDF via Picker-/Warenkorb-Logik
+Textblöcke aus PDFs mit **derselben Picker-/Warenkorb-Mechanik** ernten wie die Angebots-
+Positionen-Extraktion (§ Nachtrag 2026-07-02, PDF → Positionen → Warenkorb) — nur gemünzt auf
+**Textbausteine** statt Preis-Positionen. Ergebnis: ein `textbausteine`-Pick-Matrix-Korb, der die
+Leer-Templates speist (verknüpft mit dem Textbausteine-Katalog oben, Z. 46-47). Verwandt mit dem
+VW-Plankopf-Strang: die Geräte-/Material-Textblöcke des Plankopfs sind genau solche Bausteine.
+
+#### 🚧 ClickUp-Basics IN der App (Johannes 2026-07-04: „Aufgaben anlegen, zuweisen, erledigt markieren")
+**Status 2026-07-04:** Backend + isolierte Test-Werkbank live. `ClickUpClient` hat jetzt
+`ClickUpTaskWriting` (Aufgabe anlegen mit optionalem `content`, Status setzen) — 4 neue Tests,
+923 Tests grün. UI: **`ClickUpTestWerkbankView`** in Settings → ClickUp (erscheint nur bei
+verbundenem Konto) — schreibt AUSSCHLIESSLICH in die Sandbox-Liste „KUE-2026-014 Küche Müller
+TEST" (`901218940344`) im Testspace `90128024109`. Aufgabe anlegen + Ghost-Kürzel-Text-Marker
+(kein natives Assignee-Feld) + Status per Menü ändern. **Noch offen/zu verifizieren:** Claude
+kann die native macOS-UI nicht selbst klicken — Johannes probiert einmal live in Settings aus,
+dann Entscheidung über Wiring in die echte projekt-gebundene `TasksWidget` (Ghost→echt, eigene
+Freigabe nötig). Ursprüngliche Analyse: `TasksWidget` war rein READ; `ClickUpClient.createTask`
+(2-Arg) existiert(e) nur für `ProjektProvisioningService` (automatische Listen-Anlage), kein
+Nutzerpfad — das bleibt unverändert, die neue `createTask(listID:name:content:)` ist ein
+separater Overload. **Bau mit
+harten Regel-Leitplanken (nicht verhandelbar):**
+- **KI weist NIE zu** ([[aufgaben-nur-mensch-zu-mensch-regel]]): die App ist Werkzeug, der
+  MENSCH ist Auftraggeber/Absender. Kein Auto-Assign, kein KI-erzeugter Task „an" jemanden.
+- **Ghost-Persona-Regel** ([[clickup-ghost-persona-rule]]): Entwicklung/Test NUR im Testspace
+  `90128024109`, NIE echte Assignee-ID (löst reale Notifikation aus!), simulierte Zuweisung nur
+  als Kürzel (Jo/Da/Fra/Sen/Jil) im Text. Ghost→echt erst auf Johannes' ausdrückliche Freigabe.
+- **Baubar davon SICHER jetzt:** Task anlegen (im Testspace), Status ändern / erledigt markieren
+  (kein Assignment nötig), Kommentar. `ClickUpClient` braucht Write-Methoden (createTask/
+  updateStatus) + der PAT ist per-User ([[team-konten-topologie]]).
+- Verwandt: `mykilos8-clickup-orchestration` (vertagt), `vor-rollout-bereinigung-ordner-clickup`.
+
+#### ✅ Galerie-Flug (Johannes 2026-07-04: „durch alle Dateien fliegen, blättern, Diashowen")
+Finder-/QuickLook-Inspo (macOS-Screenshots im Feedback-Ordner) → Ausbaustufe des
+Sammlungs-Ansicht-Standards. Live in **Material-Tab + Dateien-Tab** (2026-07-04):
+1. ✅ **Ansichts-Switch Liste ⇄ Galerie** (Material-Tab, Dateien-Tab). Zeichnungs-Katalog/
+   Angebote-Tab noch offen.
+2. ✅ **Mouseover:** Anheben+Schatten (MykMotion) + Quick-Action „extern öffnen".
+3. ✅ **Blättern:** `DocumentViewerView` nimmt jetzt eine Sammlung + Startindex
+   (`DocumentViewerItem`) — ←/→ (Header-Pfeile oder Pfeiltasten) blättert ohne zu schließen.
+   Alter Einzeldatei-Init bleibt als Komfort-Wrapper, bestehende Aufrufer unverändert.
+4. ✅ **Diashow:** Leertaste oder Play-Button startet Auto-Advance (3,5 s, wrapt am Ende zum
+   Anfang), Leertaste/Klick pausiert wieder.
+5. ✅ **Echte Mini-Thumbnails** (`ThumbnailStore`: `QLThumbnailGenerator` lokal, Drive
+   `thumbnailLink` remote, NSCache LRU). **Fix 2026-07-04:** Drive-Link trug fix `=s220` →
+   matschig bei großen Kacheln; jetzt dynamisch auf Zielgröße hochskaliert (gedeckelt 1600px).
+6. ✅ **Kachelgröße stufenlos wie Finder** (`KachelGroessenSlider`, `@AppStorage`, pro Tab
+   gemerkt).
+7. ✅ **Finder-Selektion** (Johannes 2026-07-04): Einfachklick wählt an (oranger Ring),
+   Leertaste ODER Doppelklick öffnet die volle Fenster-Vorschau — `DateiGalerieGrid`
+   `.onKeyPress(.space)`.
+8. ✅ **Hero-Bild-Konsistenz** (Johannes 2026-07-04): Favoriten-Mini-Karten
+   (`ProjectFavoritesWidget`) zeigten nur den Archetyp-Gradient, nie das echte Hero-Bild —
+   jetzt gleiche Fokus-Fill-Logik wie `ProjectCard`.
+Klein & schön (Nordstern). Live-Feedback von Johannes beim Bau erwünscht.
+
+#### 💡 Spielwiese (Johannes 2026-07-04, Nacht) — Heuler + Rainbow/Freaky-Friday-Mode
+- **Heuler:** ein bewusst LAUTER, theatralischer Alert (Brüllbrief-Stil) für selbst
+  gewählte Dinge („wenn X passiert, schrei mich an"). Spannung zur Eisernen Regel
+  „Alerts dezent" → Auflösung: strikt **opt-in, nur an sich selbst**, pro Alert einzeln
+  scharf gestellt — Selbst-Beschallung erlaubt, Fremd-Beschallung nie.
+- **✅ Rainbow Mode (2026-07-04):** Toggle in Settings → Darstellung. Kein zweites Palette-Set —
+  ein Hue-Shift (+0.42) auf jeden `MykColor`-Token direkt in `adaptive()`, liest live aus
+  `UserDefaults` (`ui.rainbowMode`), `.id(rainbowMode)` am App-Root erzwingt sofortigen
+  Full-Redraw. 928 Tests grün (kein neuer Testtarget nötig — reine Visualebene wie der Rest
+  der Tokens-Datei). „Freaky Friday" als eigenes zweites Palette-Set nicht gebaut (YAGNI —
+  der Hue-Shift liefert denselben Spaßfaktor architektonisch billiger).
+- **Boss-Button 🥹 (Johannes, 2026-07-04 Nacht):** DER eine große Knopf. Lesart A
+  „Feierabend-Ritual": ein Druck → Backup jetzt (backup_local_data.sh), Save-States
+  geprüft, Status-Einzeiler „alles sicher, gute Nacht". Lesart B „Chef-Moment":
+  kontextbewusster Knopf, der das gerade Wichtigste auslöst (Tages-Fokus, dringendster
+  Hinweis). Auslegung entscheidet Johannes beim Bau — ein Knopf, ein gutes Gefühl.
+
 ### 💡 UI-Batch 2026-07-02 (aus Screenshot-Runde)
-- **Kontakte klickbar:** Klick auf Mail-Adresse → „Mail schreiben?" → Entwurf im Assistenten-
-  Mail-Fenster öffnen. (klein, jetzt baubar)
-- **Kontakte-Widget (Projekt-Übersicht):** klickbar/zuweisbar/editierbar machen (heute tot).
-  **Entschieden (Johannes 2026-07-02):** Datenquelle wird Airtable (nicht mehr read-only Google).
-  Vorgelagerter Daten-Job: **Google-Kontakte → Airtable importieren**, dabei auf **Dubletten**
-  prüfen und **Datensatz-Vollständigkeit** validieren. Einträge mit **nur Name** (ohne Mail/
-  Telefon/Web) werden **fallengelassen und als UNVOLLSTÄNDIG markiert**. Danach zeigt das
-  Projekt-Widget projekt-zugewiesene Airtable-Kontakte → klick/zuweis/editier/Mail.
+- **✅ Kontakte klickbar (2026-07-04):** Mail-Adresse im Kontakte-Widget (Projekt-Übersicht) ist
+  jetzt ein eigenes klickbares Element (Hover-Unterstreichung) → öffnet `ComposeMailView` mit
+  vorausgefülltem Empfänger. Callback-Injektion `onMailContact` (Widgets→App-Grenze, gleiches
+  Muster wie `onAttachFilesToMailDraft`), Sheet + Identifiable-Wrapper `MailComposeTarget` in
+  `ProjectWidgetBoardView`. Bewusst schlank: `contacts: []` an ComposeMailView (kein Airtable-
+  Kontaktbestand hier verfügbar) — der interne „weiteren Kontakt wählen"-Picker bleibt leer,
+  Haupt-Use-Case (direkt an diese Adresse) funktioniert vollständig. 928 Tests grün.
+- **🚧 Kontakte-Widget (Projekt-Übersicht) → Airtable-Migration (Schritt 1 gebaut, 2026-07-04):**
+  Vorgelagerter Daten-Job jetzt live buildbar: **Settings → Google → „Kontakte-Import"**
+  (`ContactsImportView`) — Vorschau lädt ALLE Google-Kontakte (neue `GoogleContactsClient.
+  listAllContacts()`, paginiert über `people.connections.list`, anders als das Query-basierte
+  `searchContacts`) + bestehenden Airtable-Bestand, `ContactImportPlanner` (rein, 7 Tests)
+  entscheidet je Kontakt: **neu anlegen** / **Dublette** (Mail- oder Telefon-Treffer, normalisiert)
+  / **verworfen** (weder Mail noch Telefon — kein „Web"-Feld bei Google-Kontakten verfügbar,
+  daher nur die zwei Kriterien statt der ursprünglich drei). Bestätigung schreibt über den
+  bestehenden `AppState.writeAirtableContact(.create)`-Pfad, ein Kontakt nach dem anderen,
+  mit Audit + DataFlowLogger (`GOOGLE_CONTACTS_TO_AIRTABLE_IMPORT`, Handbuch-Eintrag gesetzt).
+  **Warum nicht von mir automatisch ausgeführt:** Claude Code hat keinen Zugriff auf die echte
+  Google-OAuth-Session der laufenden App — nur Johannes kann den Button selbst klicken (Vorschau
+  ansehen, dann bestätigen). **Noch offen (Schritt 2):** Das Projekt-Widget selbst liest weiterhin
+  live von Google (`ContactsWidget`/`contactsQuery`) — die Umstellung auf die kuratierte
+  `Kundenkontakte`-Tabelle (Projekt-Zuordnung, `Projekt`-Textfeld) + klick/zuweis/editier im
+  Widget kommt erst, NACHDEM der Import gelaufen ist und echte Daten zum Zuordnen da sind.
 - **Teamkalender-Widget** in der Projekt-Übersicht: Teamtermine farbcodiert (Button-Farbe),
   Klick → Detail-Vorschau + editierbares Menü. Braucht Kalender-Schreibpfad.
-- **Mail: Senden** fehlt (nur Entwürfe) — Fähigkeit + Bestätigungs-Gate; braucht `gmail.send`-
-  Re-Consent (M2). Auch Nachrichten-Aktionen (gelesen/Stern/Archiv/Löschen) fehlen.
+- **✅ Mail: Senden** — siehe Korrektur oben (Nachtrag 2026-07-02, Zeile ~452): längst live in
+  `MailClientView`. Nachrichten-Aktionen (gelesen/Stern/Archiv/Löschen) fehlen weiterhin.
 - **✅ erledigt (2026-07-02) — Preisliste:** Klick-Detail-Vorschau pro Produkt. Klick auf
   einen Artikel (Zeile/Kachel) im Shop → Detail-Sheet (großes Bild klickbar, Bezeichnung,
   Art.-Nr./Kategorie, EK/VK/**Marge %**, Lager-Hinweis, „In den Warenkorb"). `ArtikelDetailSheet`.
@@ -528,9 +863,11 @@ Dokumente/Templates). Vereint Formulare-Ebene + Geräteliste + Moodboard + Angeb
   Zeichentool (mit Maus zeichnen). Bestehendes Feld ist laut Johannes „klein, unpraktisch,
   unvollständig". Ergebnisbild soll automatisch im Projekt-Drive-Ordner abgelegt werden.
   Braucht ein Canvas-Zeichenwerkzeug (SwiftUI `Canvas`/`PencilKit`-artig) + Export→Drive-Upload.
-- **Kataloge → Warenkörbe:** „UNGENÜGENDE BEARBEITUNGS- UND ANSICHTS-/VORSCHAU-/
-  Editierfunktionen" — die Liste zeigt nur Metadaten, kein Öffnen/Editieren/Vorschauen der
-  Positionen. **Der „Wiederherstellen"-Button ist tot** (Button ohne Funktion, klar markiert).
+- **✅ Korrigiert (2026-07-04, war veraltet):** „Der Wiederherstellen-Button ist tot" — stimmt
+  nicht mehr. `WebshopTabs.swift` zeigt Vorschau (read-only, ändert nie den aktiven Warenkorb)
+  UND Wiederherstellen (`onWiederherstellen` → `WarenkorbSheetKontext(previewOnly: false)`)
+  sauber getrennt und funktionsfähig — offenbar zwischen 2026-07-02 (Ersteintrag) und heute
+  gefixt, ohne dass diese Zeile aktualisiert wurde. Free-Climber-Anker-Nachtrag.
 - **✅ erledigt (2026-07-02) — Warenkorb-Widget auf der Projekt-Detailseite:** `WidgetKind.warenkorb`
   ist live im Übersicht-Board (Position 6, wide). `WarenkorbWidget` zeigt den **aktuellsten
   gespeicherten Warenkorb des Projekts** (Match über Bezeichnung: Projektnummer/-name, weil das

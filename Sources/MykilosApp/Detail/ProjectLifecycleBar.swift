@@ -14,6 +14,10 @@ struct ProjectLifecycleBar: View {
     let project: Project
     @Environment(AppState.self) private var appState
     @State private var openTaskCount: Int?
+    // ClickUp-Phasen-Abgleich (2026-07-04, docs/CLICKUP_PROJEKT_MAPPING.md §2): read-only
+    // Signal aus dem Custom Field `project_phase` — nie Auto-Write in eine Richtung, der
+    // Nutzer setzt seine Stufe weiterhin selbst im Stepper.
+    @State private var clickUpPhase: ClickUpProjectPhase?
 
     private var currentStage: ProjectLifecycleStage {
         appState.projectLifecycle.stage(for: project.projectNumber)
@@ -97,12 +101,19 @@ struct ProjectLifecycleBar: View {
     // MARK: KPI-Zeile
     private var kpiRow: some View {
         HStack(spacing: MykSpace.s6) {
-            kpi("ZEIT", zeitText)
+            // ZEIT nur wenn aussagekräftig (Polish 2026-07-04: „ZEIT 0 h" wirkte
+            // unfertig) — gebuchte Stunden > 0 ODER ein Zielkontingent gesetzt.
+            if let z = zeitText { kpi("ZEIT", z) }
             if addendaCount > 0 { kpi("NACHTRÄGE", "\(addendaCount)") }
             if let n = openTaskCount { kpi("AUFGABEN", "\(n)") }
             if isUserSet == false {
                 Text("Stufe abgeleitet · tippen zum Setzen")
                     .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+            }
+            if let clickUpPhase, clickUpPhase.mykilosStage != currentStage {
+                Text("ClickUp sagt: \(clickUpPhase.label)")
+                    .font(.mykMono(9)).foregroundStyle(MykColor.tasks.color)
+                    .help("Custom Field project_phase aus der verknüpften ClickUp-Liste weicht ab — mykilOS schreibt nicht automatisch, tippe selbst auf die passende Stufe.")
             }
             Spacer()
         }
@@ -117,14 +128,16 @@ struct ProjectLifecycleBar: View {
 
     private var addendaCount: Int { appState.registry.addenda(of: project).count }
 
-    private var zeitText: String {
+    /// `nil`, wenn weder Zeit gebucht noch ein Ziel gesetzt ist → KPI entfällt ganz.
+    private var zeitText: String? {
         let gebucht = appState.timer.gebuchteStunden(for: project.projectNumber)
+        let ziel = appState.timer.zielkontingent(for: project.projectNumber)?.zielStunden
         let g = gebucht.formatted(.number.precision(.fractionLength(0...1)))
-        if let ziel = appState.timer.zielkontingent(for: project.projectNumber)?.zielStunden, ziel > 0 {
+        if let ziel, ziel > 0 {
             let z = ziel.formatted(.number.precision(.fractionLength(0...1)))
             return "\(g)/\(z) h"
         }
-        return "\(g) h"
+        return gebucht > 0 ? "\(g) h" : nil
     }
 
     // MARK: Aktionen
@@ -135,11 +148,13 @@ struct ProjectLifecycleBar: View {
     private func loadOpenTasks() async {
         guard let listID = project.links.clickUpListID, listID.isEmpty == false else {
             openTaskCount = nil
+            clickUpPhase = nil
             return
         }
         let client = ClickUpClient()
         if let tasks = try? await client.tasks(listID: listID) {
             openTaskCount = tasks.count
+            clickUpPhase = ClickUpClient.projectPhase(from: tasks)
         }
     }
 }

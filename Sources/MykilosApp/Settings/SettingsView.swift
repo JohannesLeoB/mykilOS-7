@@ -6,24 +6,32 @@ import MykilosServices
 
 // MARK: - SettingsCategory
 enum SettingsCategory: String, CaseIterable, Identifiable {
-    case profil, darstellung, verbindungen, privat, system
+    // Stufe 2, Etappe 1 (2026-07-05): Reihenfolge in privat→geteilt-Bändern
+    // (Nutzer-Mentalmodell: erst ich/meine Darstellung + Schlüssel, dann Geteiltes,
+    // dann System). rawValues unverändert → @AppStorage-Persistenz bleibt gültig.
+    // `.profil` steht oben (wird in Etappe 2 zum Personalausweis-Header).
+    case profil, darstellung, privat, schluesselInventar, verbindungen, datenschutz, system
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .profil:       "Profil"
-        case .darstellung:  "Darstellung"
-        case .verbindungen: "Verbindungen"
-        case .privat:       "Privat"
-        case .system:       "System"
+        case .profil:             "Profil"
+        case .darstellung:        "Darstellung"
+        case .verbindungen:       "Integrationen"
+        case .schluesselInventar: "Schlüssel-Inventar"
+        case .privat:             "Privat"
+        case .datenschutz:        "Datenschutz"
+        case .system:             "System"
         }
     }
     var icon: String {
         switch self {
-        case .profil:       "person.crop.circle"
-        case .darstellung:  "paintbrush"
-        case .verbindungen: "app.connected.to.app.below.fill"
-        case .privat:       "lock.shield"
-        case .system:       "gearshape.2"
+        case .profil:             "person.crop.circle"
+        case .darstellung:        "paintbrush"
+        case .verbindungen:       "app.connected.to.app.below.fill"
+        case .schluesselInventar: "key"
+        case .privat:             "lock.shield"
+        case .datenschutz:        "hand.raised"
+        case .system:             "gearshape.2"
         }
     }
 }
@@ -31,6 +39,11 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
 // MARK: - SettingsView
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
+    // Item D (2026-07-05): globaler Drive-Sync über alle aktiven Projekt-Ordner an
+    // EINEM Ort (Parent-I/O). Der StudioContext ist app-weit injiziert (MykilOS6App).
+    @Environment(StudioContext.self) private var context
+    @State private var driveSyncing = false
+    @State private var driveSyncResult: String?
     @State private var diagnosticsCopied = false
     @State private var profileName: String = ""
     @State private var profileRole: String = ""
@@ -166,8 +179,12 @@ struct SettingsView: View {
             clickUpSection
             sevdeskSection
             claudeSection
+        case .schluesselInventar:
+            KeychainInventoryView()
         case .privat:
             privateAreaSection
+        case .datenschutz:
+            miniModeSection
         case .system:
             diagnoseSection
             SchaltzentrumView()
@@ -178,6 +195,7 @@ struct SettingsView: View {
     // Per-Nutzer-Wahl (AppStorage `ui.appearance`) — dieselbe Quelle wie die Scene
     // in MykilOS6App. Nicht mehr stur nach System.
     @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
+    @AppStorage("ui.rainbowMode") private var rainbowMode = false
 
     private var darstellungSection: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
@@ -194,8 +212,38 @@ struct SettingsView: View {
             .frame(maxWidth: 360, alignment: .leading)
             // UI-Polish (2026-07-02, Johannes): Erklärtext entfernt — der Umschalter
             // erklärt sich selbst, das Verhalten steht im Benutzerhandbuch.
+
+            Toggle(isOn: $rainbowMode) {
+                Label("Rainbow Mode 🌈", systemImage: "paintpalette")
+                    .font(.mykSmall)
+            }
+            .toggleStyle(.switch)
+
+            Divider().overlay(MykColor.line.color)
+
+            // Mini-Mode Opt-in (Ansichts-Option). Default aus — bewusste Entscheidung.
+            Text("MINI-MODE")
+                .font(.mykMono(10)).tracking(1.5)
+                .foregroundStyle(MykColor.muted.color)
+            Toggle(isOn: $miniModeViewEnabled) {
+                Label("Mini-Mode erlauben", systemImage: "rectangle.trailinghalf.inset.filled.arrow.trailing")
+                    .font(.mykSmall)
+            }
+            .toggleStyle(.switch)
+            Text("Wenn aktiv: den mykilOS-Button oben links ~2 s HALTEN schrumpft die App "
+                 + "auf ein schmales, schwebendes Icon-Rail, das über Vollbild-Programmen "
+                 + "(z. B. Vectorworks) obenauf bleibt und nie den Fokus stiehlt. Klick aufs "
+                 + "Logo im Rail holt die volle App zurück. Ist der Schalter aus, bleibt der "
+                 + "Button ein reiner Sidebar-Umschalter.")
+                .font(.mykMono(9.5))
+                .foregroundStyle(MykColor.muted.color)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
+
+    // Mini-Mode-Opt-in — MUSS mit MiniModeUserPrefs.enabledKey übereinstimmen (der
+    // MiniModeController liest exakt diesen UserDefaults-Schlüssel). Default aus.
+    @AppStorage("ui.miniMode.enabled") private var miniModeViewEnabled = false
 
     // MARK: - Identität
 
@@ -413,7 +461,7 @@ struct SettingsView: View {
 
     // MARK: - Google
 
-    private var googleSection: some View {
+    @ViewBuilder private var googleSection: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
             Text("Google Workspace")
                 .font(.mykHeadline)
@@ -438,8 +486,57 @@ struct SettingsView: View {
             Text("Nur Lesezugriff (Drive-Metadaten, Kalender, Gmail, Kontakte) — keine Schreibrechte.")
                 .font(.mykMono(9.5))
                 .foregroundStyle(MykColor.faint.color)
+            if appState.googleAuth.status == .connected {
+                Divider().overlay(MykColor.line.color)
+                driveSyncRow
+            }
         }
         .settingsCard()
+
+        if appState.googleAuth.status == .connected && appState.airtableAuth.status == .connected {
+            ContactsImportView()
+        }
+    }
+
+    // Item D (2026-07-05): der EINE globale Drive-Sync über alle aktiven Projekt-Ordner
+    // (Parent-I/O: gehört zu Google/Drive). Ersetzt die verstreuten „Jetzt prüfen"-Leisten
+    // in Heute + Dateien-Tab. Nutzt exakt dieselbe Logik wie der 300s-Hintergrund-Loop.
+    private var driveSyncRow: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s2) {
+            HStack(spacing: MykSpace.s4) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .foregroundStyle(MykColor.drive.color)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Drive-Ordner synchronisieren")
+                        .font(.mykBody).foregroundStyle(MykColor.ink.color)
+                    Text("Prüft alle aktiven Projekt-Ordner in einem Durchgang.")
+                        .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+                }
+                Spacer()
+                Button(driveSyncing ? "Synchronisiert…" : "Jetzt synchronisieren") {
+                    Task { await syncAllDrive() }
+                }
+                .font(.mykMono(10))
+                .foregroundStyle(driveSyncing ? MykColor.muted.color : MykColor.drive.color)
+                .buttonStyle(.plain)
+                .disabled(driveSyncing)
+            }
+            if let driveSyncResult {
+                Text(driveSyncResult)
+                    .font(.mykMono(9.5))
+                    .foregroundStyle(MykColor.muted.color)
+            }
+        }
+    }
+
+    private func syncAllDrive() async {
+        driveSyncing = true
+        driveSyncResult = nil
+        let count = await appState.pollAllActiveProjectsForOffers(into: context)
+        driveSyncResult = count > 0
+            ? "Fertig · \(count) neue Belege gefunden."
+            : "Fertig · keine neuen Belege."
+        driveSyncing = false
     }
 
     private var googleStatusText: String {
@@ -543,7 +640,7 @@ struct SettingsView: View {
 
     // MARK: - ClickUp
 
-    private var clickUpSection: some View {
+    @ViewBuilder private var clickUpSection: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
             Text("ClickUp Aufgaben")
                 .font(.mykHeadline)
@@ -566,6 +663,10 @@ struct SettingsView: View {
                 .foregroundStyle(MykColor.faint.color)
         }
         .settingsCard()
+
+        if appState.clickUpAuth.status == .connected {
+            ClickUpTestWerkbankView()
+        }
     }
 
     private var clickUpStatusText: String {
@@ -680,6 +781,24 @@ struct SettingsView: View {
         do { try appState.claudeAuth.disconnect(); claudeApiKey = ""; claudeModel = ClaudeAuthService.defaultModel }
         catch { claudeError = "Trennen fehlgeschlagen: \(error)" }
     }
+
+    // MARK: - Datenschutz → Mini-Mode
+    // Master-Schalter (Puls an/aus) + je ein Schalter pro Aufmerksamkeits-Quelle. Alle
+    // default = an; die Schlüssel MÜSSEN mit MiniModeDefaults / MiniModeSource.defaultsKey
+    // übereinstimmen (der MiniModeStore/MiniModeRailView liest exakt diese UserDefaults).
+    // Dezent + jederzeit abschaltbar (eiserne Alerts-Regel): Master aus → kein Orange-Puls
+    // im Mini-Rail, keine Quelle wird mehr gelesen.
+    // `miniModeSection` selbst lebt in SettingsView+MiniMode.swift (swiftlint file_length) —
+    // die @AppStorage-Properties bleiben hier, weil Extensions keine stored properties
+    // hinzufügen dürfen; daher ohne `private`, damit die Extension-Datei im selben
+    // Modul darauf zugreifen kann (kein externes Modul sieht diesen Typ von außen anders
+    // an als vorher — SettingsView ist ohnehin `internal`/nicht public).
+    @AppStorage("privacy.miniMode.enabled")  var miniModeEnabled = true
+    @AppStorage("privacy.miniMode.calendar") var miniModeCalendar = true
+    @AppStorage("privacy.miniMode.tasks")    var miniModeTasks = true
+    @AppStorage("privacy.miniMode.mail")     var miniModeMail = true
+    @AppStorage("privacy.miniMode.timer")    var miniModeTimer = true
+    @AppStorage("privacy.miniMode.signals")  var miniModeSignals = true
 
     // MARK: - Private Area (Clockodo — datensensitiv)
 
@@ -929,7 +1048,7 @@ struct SettingsView: View {
 }
 
 // MARK: - View-Extension: einheitliche Karten-Formatierung
-private extension View {
+extension View {
     func settingsCard() -> some View {
         self
             .padding(MykSpace.s6)

@@ -18,11 +18,19 @@ public struct WarenkorbWidget: View {
     public let store: WorkBasketStore
     public let projectID: String        // Projektnummer (JJJJ-NNN)
     public let projektName: String?     // Menschlicher Projektname
+    /// Optionaler sevDesk-Postbox-Port. Fehlt er (z. B. in Previews), erscheint die
+    /// Postbox-Drop-Aktion im Edit-Sheet nicht.
+    public let postboxPort: SevdeskPostboxCheckoutPort?
+    /// Wer den Drop auslöst (Handshake/„Importiert-von").
+    public let actorUserID: String
 
-    public init(store: WorkBasketStore, projectID: String, projektName: String? = nil) {
+    public init(store: WorkBasketStore, projectID: String, projektName: String? = nil,
+                postboxPort: SevdeskPostboxCheckoutPort? = nil, actorUserID: String = "local") {
         self.store = store
         self.projectID = projectID
         self.projektName = projektName
+        self.postboxPort = postboxPort
+        self.actorUserID = actorUserID
     }
 
     @State private var basket: WorkBasket?
@@ -58,7 +66,9 @@ public struct WarenkorbWidget: View {
         .task(id: projectID) { reload() }
         .sheet(isPresented: $showEdit) {
             if let basket {
-                WorkBasketEditSheet(store: store, basket: basket, onClose: {
+                WorkBasketEditSheet(store: store, basket: basket,
+                                    postboxPort: postboxPort, actorUserID: actorUserID,
+                                    onClose: {
                     showEdit = false
                     reload()
                 })

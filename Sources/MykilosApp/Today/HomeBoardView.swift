@@ -70,6 +70,8 @@ struct HomeBoardView: View {
         case "clockodo":     ClockodoWidget()
         case "recentActivity": RecentActivityWidget()
         case "notes":        NotesWidget(projectID: "home", noteStore: noteStore)
+        case "barcode":      BarcodeWidget()
+        case "rechner":      RechnerWidget()
         default:             EmptyView()
         }
     }

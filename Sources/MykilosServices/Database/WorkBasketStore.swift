@@ -225,6 +225,60 @@ public final class WorkBasketStore {
         return try await speichere(basket)
     }
 
+    /// Hängt eine (z. B. aus einem Angebots-PDF herausgelöste) Position als neuen
+    /// `BasicPick` an den jüngsten WorkBasket des Projekts an — oder legt einen neuen
+    /// an, wenn keiner existiert. Lokale Bearbeitung (gleiche ID, `speichere`
+    /// überschreibt); die Airtable-seitige Versionierung bleibt davon unberührt.
+    /// EK/VK trägt der Aufrufer bei (aus der Angebotsrichtung).
+    // Serialisierungs-Flag gegen Lost-Update (Ultra-Review 2026-07-04): weil
+    // `speichere` suspendiert (await), können zwei schnelle Aufrufe auf dem MainActor
+    // beide den ALTEN Korb lesen und der zweite den ersten überschreiben. Der
+    // Spin-Wait (Task.yield, MainActor-isoliert) macht Lesen→Anhängen→Speichern atomar.
+    private var anhaengenLaeuft = false
+
+    @discardableResult
+    public func fuegePositionHinzu(
+        projektNummer: String,
+        bezeichnung: String,
+        menge: Int,
+        ekEinzel: Double?,
+        vkEinzel: Double?,
+        objektID: String,
+        attribute: [String: String] = [:]
+    ) async throws -> WorkBasket {
+        while anhaengenLaeuft { await Task.yield() }
+        anhaengenLaeuft = true
+        defer { anhaengenLaeuft = false }
+        let pick = BasicPick(
+            matrix: .artikel,
+            objektID: CatalogObjectID(objektID),
+            snapshot: PickSnapshot(bezeichnung: bezeichnung, menge: max(1, menge),
+                                   ekEinzel: ekEinzel, vkEinzel: vkEinzel, attribute: attribute))
+        let vorhandene = try alle(projektNummer: projektNummer)
+        if var basket = vorhandene.max(by: { $0.erstellt < $1.erstellt }) {
+            // Idempotent (Ultra-Review-Fix): gleiche objektID → Menge erhöhen statt
+            // Duplikat anhängen (der globale WarenkorbState-Pfad macht es genauso).
+            if let idx = basket.picks.firstIndex(where: { ($0 as? BasicPick)?.objektID == CatalogObjectID(objektID) }),
+               let alt = basket.picks[idx] as? BasicPick {
+                let s = alt.snapshot
+                basket.picks[idx] = BasicPick(
+                    matrix: alt.matrix, objektID: alt.objektID,
+                    snapshot: PickSnapshot(bezeichnung: s.bezeichnung, menge: s.menge + max(1, menge),
+                                           ekEinzel: s.ekEinzel, vkEinzel: s.vkEinzel, attribute: s.attribute),
+                    inhalt: alt.inhalt)
+            } else {
+                basket.picks.append(pick)
+            }
+            return try await speichere(basket)
+        }
+        let neu = WorkBasket(
+            id: WorkBasketID("WK-\(projektNummer)-\(UUID().uuidString.prefix(8))"),
+            projektNummer: projektNummer,
+            inhaltsArt: .artikel,
+            picks: [pick])
+        return try await speichere(neu)
+    }
+
     // MARK: Lesen — Cold-Start-safe
 
     /// Lädt einen WorkBasket per ID (inkl. seiner Picks, positionsgeordnet). `nil`, wenn nicht vorhanden.

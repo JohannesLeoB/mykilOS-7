@@ -64,8 +64,27 @@ public enum MykColor {
             let r: CGFloat = CGFloat((hex >> 16) & 0xFF) / 255
             let g: CGFloat = CGFloat((hex >> 8) & 0xFF) / 255
             let b: CGFloat = CGFloat(hex & 0xFF) / 255
-            return NSColor(red: r, green: g, blue: b, alpha: 1)
+            var color = NSColor(red: r, green: g, blue: b, alpha: 1)
+            if rainbowModeEnabled { color = Self.hueRotated(color) }
+            return color
         })
+    }
+
+    // MARK: - Rainbow Mode (Easter Egg, 2026-07-04)
+    // Settings → Darstellung → „Rainbow Mode". Architektonisch billig, weil die Palette
+    // hier zentral ist: EIN Hue-Shift auf jeden Token, kein zweites Palette-Set, kein
+    // UI-Umbau. Liest direkt aus UserDefaults (billiger Dictionary-Lookup, kein Caching
+    // nötig) — dieselbe Quelle, in die `@AppStorage("ui.rainbowMode")` schreibt.
+    private static var rainbowModeEnabled: Bool {
+        UserDefaults.standard.bool(forKey: "ui.rainbowMode")
+    }
+
+    private static func hueRotated(_ color: NSColor) -> NSColor {
+        guard let rgb = color.usingColorSpace(.deviceRGB) else { return color }
+        var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0, alpha: CGFloat = 0
+        rgb.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+        let shifted = (hue + 0.42).truncatingRemainder(dividingBy: 1.0)
+        return NSColor(hue: shifted, saturation: saturation, brightness: brightness, alpha: alpha)
     }
 }
 

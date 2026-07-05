@@ -12,11 +12,16 @@ public struct TimelineItem: Identifiable, Sendable, Equatable {
     public let subtitle: String?
     public let source: TimelineSource
     public let webViewLink: String?
+    /// Für Drive-/Angebots-Ereignisse: die zugrundeliegende Datei — trägt die
+    /// In-App-Vorschau (Sammlungs-Ansicht-Standard). `nil` bei Kalender/Audit.
+    public let driveFile: GoogleDriveFile?
 
     public init(id: String, date: Date, title: String, subtitle: String?,
-                source: TimelineSource, webViewLink: String?) {
+                source: TimelineSource, webViewLink: String?,
+                driveFile: GoogleDriveFile? = nil) {
         self.id = id; self.date = date; self.title = title
         self.subtitle = subtitle; self.source = source; self.webViewLink = webViewLink
+        self.driveFile = driveFile
     }
 }
 
@@ -62,7 +67,8 @@ public enum TimelineMerger {
             if let nr = offer.belegNummer { subtitle += " · \(nr)" }
             items.append(TimelineItem(
                 id: "offer:\(offer.file.id)", date: date, title: offer.file.name,
-                subtitle: subtitle, source: .offer, webViewLink: offer.file.webViewLink))
+                subtitle: subtitle, source: .offer, webViewLink: offer.file.webViewLink,
+                driveFile: offer.file))
         }
 
         // Drive-Dateien: Ordner, datumslose und bereits als Angebot gezeigte überspringen.
@@ -71,7 +77,8 @@ public enum TimelineMerger {
                   offerFileIDs.contains(file.id) == false else { continue }
             items.append(TimelineItem(
                 id: "drive:\(file.id)", date: date, title: file.name,
-                subtitle: file.typeLabel, source: .drive, webViewLink: file.webViewLink))
+                subtitle: file.typeLabel, source: .drive, webViewLink: file.webViewLink,
+                driveFile: file))
         }
 
         // Kalender (kommende Termine).

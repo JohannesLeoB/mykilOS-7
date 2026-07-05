@@ -29,6 +29,10 @@ struct OffersTabView: View {
     @State private var loader = OffersLoader()
     @State private var searchText = ""
     @State private var sortByDate = true   // true = neueste zuerst, false = Name A–Z
+    // Galerie-Flug: Liste ⇄ Galerie + Kachelgröße (pro Ansicht gemerkt).
+    @AppStorage("angebote.galerie") private var galerieAn = false
+    @AppStorage("angebote.kachel") private var kachelSeiteRaw: Double = 150
+    @State private var viewerFile: GoogleDriveFile?
 
     @State private var vorschauStore = AngebotsVorschauStore()
     @State private var vorschauMeldung: String?
@@ -47,6 +51,16 @@ struct OffersTabView: View {
         .padding(.horizontal, MykSpace.s9)
         .padding(.top, MykSpace.s7)
         .padding(.bottom, 64)   // Platz für SaveStateBar
+        .sheet(item: $viewerFile) { file in
+            let items = galerieEintraege.map { eintrag in
+                DocumentViewerItem(
+                    file: eintrag.file, localURL: eintrag.localURL,
+                    remoteContent: { try? await GoogleDriveClient().downloadContent(fileID: eintrag.file.id) })
+            }
+            let startIndex = items.firstIndex(where: { $0.id == file.id }) ?? 0
+            DocumentViewerView(items: items, initialIndex: startIndex, onClose: { viewerFile = nil })
+                .frame(minWidth: 820, minHeight: 680)
+        }
     }
 
     private var driveBelege: some View {
@@ -59,7 +73,16 @@ struct OffersTabView: View {
             VStack(alignment: .leading, spacing: MykSpace.s5) {
                 header
                 if case .content = loader.renderState { searchAndSort }
-                columns
+                if galerieAn {
+                    DateiGalerieGrid(
+                        eintraege: galerieEintraege, kachelSeite: kachelSeite,
+                        onPreview: { viewerFile = $0.file },
+                        onOpen: { LocalDriveRootResolver.shared.openFile(
+                            localURL: $0.localURL,
+                            fallbackURL: $0.file.webViewLink.flatMap { URL(string: $0) }) })
+                } else {
+                    columns
+                }
             }
         }
     }
@@ -170,6 +193,8 @@ struct OffersTabView: View {
                 .font(.mykSmall)
                 .textFieldStyle(.plain)
             Spacer()
+            if galerieAn { KachelGroessenSlider(kachelSeite: kachelSeite) }
+            ansichtsToggle
             Button {
                 sortByDate.toggle()
             } label: {
@@ -193,6 +218,45 @@ struct OffersTabView: View {
         return sortByDate
             ? base.sorted { ($0.file.modifiedAt ?? .distantPast) > ($1.file.modifiedAt ?? .distantPast) }
             : base.sorted { $0.file.name.localizedCompare($1.file.name) == .orderedAscending }
+    }
+
+    private var kachelSeite: Binding<CGFloat> {
+        Binding(get: { CGFloat(kachelSeiteRaw) }, set: { kachelSeiteRaw = Double($0) })
+    }
+
+    // Alle sichtbaren Belege (eingehend + ausgehend) flach als Galerie-Einträge.
+    private var galerieEintraege: [DateiGalerieGrid.Eintrag] {
+        let ein = filtered(loader.incoming).map { (offer: $0, dir: "eingehend") }
+        let aus = filtered(loader.outgoing).map { (offer: $0, dir: "ausgehend") }
+        return (ein + aus).map { pair in
+            DateiGalerieGrid.Eintrag(
+                file: pair.offer.file,
+                subtitle: "\(pair.offer.type.label) · \(pair.dir)",
+                localURL: LocalDriveRootResolver.shared.localURL(
+                    forFileID: pair.offer.file.id, fileName: pair.offer.file.name,
+                    inProjectFolderID: driveFolderID ?? "", explicitProjectPath: driveFolderPath))
+        }
+    }
+
+    // Liste ⇄ Galerie (Finder-Stil-Segment).
+    private var ansichtsToggle: some View {
+        HStack(spacing: 0) {
+            toggleTaste(aktiv: galerieAn == false, icon: "list.bullet") { galerieAn = false }
+            toggleTaste(aktiv: galerieAn, icon: "square.grid.2x2") { galerieAn = true }
+        }
+        .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.card.color)
+            .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1)))
+    }
+
+    private func toggleTaste(aktiv: Bool, icon: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.mykCaption)
+                .foregroundStyle(aktiv ? MykColor.paper.color : MykColor.muted.color)
+                .padding(.horizontal, MykSpace.s3).padding(.vertical, MykSpace.s2)
+                .background(aktiv ? MykColor.ink.color : Color.clear)
+        }
+        .buttonStyle(.plain)
     }
 
     private var refreshButton: some View {
@@ -223,6 +287,9 @@ struct OffersTabView: View {
                 title: "Eingehende Angebote",
                 offers: filtered(loader.incoming),
                 folderFound: loader.incomingFolderFound,
+                eingehend: true,
+                projektNummer: projectID,
+                workBasketStore: workBasketStore,
                 projectFolderID: driveFolderID,
                 projectFolderPath: driveFolderPath
             )
@@ -231,6 +298,9 @@ struct OffersTabView: View {
                 title: "Ausgehende Angebote",
                 offers: filtered(loader.outgoing),
                 folderFound: loader.outgoingFolderFound,
+                eingehend: false,
+                projektNummer: projectID,
+                workBasketStore: workBasketStore,
                 projectFolderID: driveFolderID,
                 projectFolderPath: driveFolderPath
             )
@@ -245,6 +315,9 @@ private struct OfferColumn: View {
     let title: String
     let offers: [ClassifiedOffer]
     let folderFound: Bool
+    var eingehend: Bool = true
+    var projektNummer: String = ""
+    var workBasketStore: WorkBasketStore? = nil
     var projectFolderID: String? = nil
     var projectFolderPath: String? = nil
 
@@ -286,6 +359,9 @@ private struct OfferColumn: View {
             VStack(spacing: 0) {
                 ForEach(offers) { offer in
                     OfferRow(file: offer.file, meta: offer,
+                             eingehend: eingehend,
+                             projektNummer: projektNummer,
+                             workBasketStore: workBasketStore,
                              projectFolderID: projectFolderID,
                              projectFolderPath: projectFolderPath)
                     if offer.id != offers.last?.id {
@@ -351,11 +427,21 @@ private struct VorschauZeile: View {
 private struct OfferRow: View {
     let file: GoogleDriveFile
     var meta: ClassifiedOffer? = nil
+    var eingehend: Bool = true
+    var projektNummer: String = ""
+    var workBasketStore: WorkBasketStore? = nil
     var projectFolderID: String? = nil
     var projectFolderPath: String? = nil
 
+    @Environment(AppState.self) private var appState
     @State private var showPreview = false
+    @State private var showPositions = false
     @State private var resolvedLocalURL: URL?
+
+    // Positions-Extraktion nur für echte PDFs anbieten.
+    private var isPDF: Bool {
+        file.mimeType == "application/pdf" || (file.name as NSString).pathExtension.lowercased() == "pdf"
+    }
 
     // Belegnummer + Version als kompakte Kennung (z.B. "2026-0151 · v3").
     private var metaLine: String? {
@@ -434,9 +520,32 @@ private struct OfferRow: View {
                 }
             }
             .buttonStyle(.plain)
+
+            // Flaggschiff-Feature sichtbar statt nur im Rechtsklick-Menü versteckt
+            // (Johannes-Feedback 2026-07-04: nicht auffindbar).
+            if isPDF {
+                Button {
+                    showPositions = true
+                } label: {
+                    Label("Positionen", systemImage: "text.line.first.and.arrowtriangle.forward")
+                        .font(.mykMono(9.5))
+                        .foregroundStyle(MykColor.paper.color)
+                        .padding(.horizontal, MykSpace.s3)
+                        .padding(.vertical, 4)
+                        .background(MykColor.cash.color)
+                        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+                }
+                .buttonStyle(.plain)
+                .help("Positionen aus diesem PDF-Angebot herauslösen und in den Warenkorb legen")
+                .accessibilityLabel("Positionen aus PDF herauslösen")
+            }
         }
         .padding(.vertical, MykSpace.s3)
         .contextMenu {
+            if isPDF {
+                Button("Positionen herauslösen") { showPositions = true }
+                Divider()
+            }
             Button("Im Finder zeigen") {
                 if let local = resolveLocalURL() {
                     LocalDriveRootResolver.shared.revealInFinder(localURL: local)
@@ -447,6 +556,34 @@ private struct OfferRow: View {
             if let link = file.webViewLink, let url = URL(string: link) {
                 Button("Im Browser öffnen") { NSWorkspace.shared.open(url) }
             }
+        }
+        .sheet(isPresented: $showPositions) {
+            OfferPositionsSheet(
+                file: file,
+                onTake: workBasketStore.map { store in
+                    { (paged: OfferPositionPDFReader.PagedPosition, index: Int) in
+                        let p = paged.position
+                        let preis = p.netPrice.map { ($0 as NSDecimalNumber).doubleValue }
+                        Task {
+                            // Fehler nicht stumm schlucken (Ultra-Review): der WorkBasketStore
+                            // macht ihn über seinen SaveState im Warenkorb-Widget sichtbar.
+                            do {
+                                try await store.fuegePositionHinzu(
+                                    projektNummer: projektNummer,
+                                    bezeichnung: p.title.isEmpty ? file.name : p.title,
+                                    menge: max(1, Int((p.quantity ?? 1).rounded())),   // runden statt abschneiden (Ultra-Review)
+                                    ekEinzel: eingehend ? preis : nil,
+                                    vkEinzel: eingehend ? nil : preis,
+                                    objektID: "\(file.id)-\(paged.pageNumber)-\(index)",
+                                    attribute: positionsAttribute(p, quelle: file.name, seite: paged.pageNumber, eingehend: eingehend))
+                            } catch {
+                                MykLog.lifecycle.error("Warenkorb-Anhängen fehlgeschlagen: \(String(describing: error), privacy: .public)")
+                            }
+                        }
+                    }
+                },
+                learningStore: appState.learningStore,
+                onClose: { showPositions = false })
         }
     }
 }

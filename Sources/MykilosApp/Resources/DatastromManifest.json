@@ -1,5 +1,12 @@
 [
   {
+    "integrationID": "GOOGLE_CONTACTS_TO_AIRTABLE_IMPORT",
+    "name": "Google-Kontakte → Airtable-Import (Vorschau)",
+    "system": "Google",
+    "direction": "READ",
+    "link": "mykilos://datastream/GOOGLE_CONTACTS_TO_AIRTABLE_IMPORT"
+  },
+  {
     "integrationID": "AIRTABLE_KUNDEN_PROJEKTE",
     "name": "Airtable Kunden & Projekte",
     "system": "Airtable",
@@ -64,10 +71,17 @@
   },
   {
     "integrationID": "DRIVE_MATERIAL_TAB",
-    "name": "Drive Material-Tab",
+    "name": "Drive Material-Tab (Schema-Ordner: Pläne bis Präsentation)",
     "system": "Google Drive",
     "direction": "READ",
     "link": "mykilos://datastream/DRIVE_MATERIAL_TAB"
+  },
+  {
+    "integrationID": "DRIVE_ALL_PLANS",
+    "name": "Zeichnungen & Pläne (global, alle Projekte)",
+    "system": "Google Drive",
+    "direction": "READ",
+    "link": "mykilos://datastream/DRIVE_ALL_PLANS"
   },
   {
     "integrationID": "GMAIL_SEARCH",
@@ -348,5 +362,12 @@
     "system": "Airtable",
     "direction": "WRITE",
     "link": "mykilos://datastream/KALKULATION_PDF_IMPORT"
+  },
+  {
+    "integrationID": "SEVDESK_POSTBOX_DROP",
+    "name": "sevDesk-Postbox: Positions-Drop (Einweg, append-only)",
+    "system": "Airtable",
+    "direction": "WRITE",
+    "link": "mykilos://datastream/SEVDESK_POSTBOX_DROP"
   }
 ]

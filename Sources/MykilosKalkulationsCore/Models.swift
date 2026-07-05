@@ -1,6 +1,6 @@
 import Foundation
 
-public enum ComponentType: String, Codable, CaseIterable, Equatable {
+public enum ComponentType: String, Codable, CaseIterable, Equatable, Sendable {
     case baseCabinetRun = "base_cabinet_run"
     case island
     case tallCabinetBlock = "tall_cabinet_block"

@@ -206,4 +206,59 @@ struct GoogleContactsClientTests {
             #expect(error as? GoogleContactsError == .notConnected)
         }
     }
+
+    // MARK: - listAllContacts (Google→Airtable-Import, 2026-07-04)
+
+    @Test func connectionsURLOhnePageTokenBeimErstenAufruf() {
+        let url = GoogleContactsClient.buildConnectionsURL(
+            baseURL: "https://people.googleapis.com/v1/people/me/connections", pageToken: nil)
+        let components = url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+        let items = Dictionary(uniqueKeysWithValues: (components?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        #expect(items["personFields"] == "names,emailAddresses,phoneNumbers,organizations")
+        #expect(items["pageSize"] == "200")
+        #expect(items["pageToken"] == nil)
+    }
+
+    @Test func connectionsURLTraegtPageTokenWeiter() {
+        let url = GoogleContactsClient.buildConnectionsURL(
+            baseURL: "https://people.googleapis.com/v1/people/me/connections", pageToken: "abc123")
+        let components = url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+        let items = Dictionary(uniqueKeysWithValues: (components?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        #expect(items["pageToken"] == "abc123")
+    }
+
+    @Test func parseConnectionsPageDekodiertUndLiefertNextPageToken() throws {
+        let json = """
+        {
+          "connections": [
+            { "resourceName": "people/1", "names": [{ "displayName": "Anna Meyer" }],
+              "emailAddresses": [{ "value": "anna@example.com" }] }
+          ],
+          "nextPageToken": "next1"
+        }
+        """
+        let page = try GoogleContactsClient.parseConnectionsPage(from: Data(json.utf8))
+        #expect(page.contacts.count == 1)
+        #expect(page.contacts[0].displayName == "Anna Meyer")
+        #expect(page.nextPageToken == "next1")
+    }
+
+    @Test func parseConnectionsPageLetzteSeiteHatKeinNextPageToken() throws {
+        let json = """
+        { "connections": [ { "resourceName": "people/2", "names": [{ "displayName": "Bert Weck" }] } ] }
+        """
+        let page = try GoogleContactsClient.parseConnectionsPage(from: Data(json.utf8))
+        #expect(page.contacts.count == 1)
+        #expect(page.nextPageToken == nil)
+    }
+
+    @Test func listAllContactsWirftNotConnectedOhneToken() async {
+        let client = GoogleContactsClient(tokenProvider: ThrowingTokenProvider(error: GoogleOAuthError.httpError(400)))
+        do {
+            _ = try await client.listAllContacts()
+            Issue.record("sollte werfen")
+        } catch {
+            #expect(error as? GoogleContactsError == .notConnected)
+        }
+    }
 }

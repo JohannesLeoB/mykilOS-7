@@ -29,9 +29,17 @@ struct SidebarView: View {
     var onExitSettings: () -> Void = {}
     // mykilOS 8, Block B: Klick auf die Aktiv-Timer-Pille öffnet den globalen Check-in.
     @Binding var timerCheckInRequested: Bool
+    // Mini-Mode: Halte-Geste am mykilOS-Button (~2 s) startet den Mini-Mode. Der Aufrufer
+    // prüft selbst das Opt-in (MiniModeUserPrefs) — ist es aus, feuert das Closure ins Leere
+    // und der Button bleibt ein reiner Sidebar-Toggle.
+    var onEnterMiniMode: () -> Void = {}
     @Environment(AppState.self) private var appState
     @State private var profileHovered = false
     @State private var brandHovered = false
+    // Halte-Geste-Zustand: Fortschritt 0…1 des Füll-Rings + der laufende Timer-Task.
+    @State private var holdProgress: CGFloat = 0
+    @State private var holdTask: Task<Void, Never>?
+    @State private var holdFired = false
     @State private var appShortcuts = AppShortcutStore()
 
     var body: some View {
@@ -59,34 +67,101 @@ struct SidebarView: View {
     // im Breitmodus — es ist unser eigenes Markenzeichen, keine Lizenzfrage (anders
     // als die Schrift-Dateien, siehe Typography.swift). Kompakt-Modus behält den
     // orangen Marken-Chip (die Wortmarke ist zu breit für ein 26pt-Quadrat).
+    // Kurzer Klick = Sidebar schmal/breit (bzw. im Settings-Modus zurück zur Navigation).
+    // HALTEN ~2 s = Mini-Mode: ein Füll-Ring läuft um den Chip + der Chip pulst; früher
+    // loslassen bricht ab. Kein `Button` + zusätzliche Gesture (die konkurrieren ums
+    // Hit-Testing) — ein reines gestengesteuertes View, das selbst zwischen Tap und Hold
+    // unterscheidet.
     private var brand: some View {
-        Button {
-            if settingsMode {
-                // Im Settings-Modus togglet der MYKILOS-Button zurück zur normalen Sidebar.
-                withAnimation(.easeInOut(duration: 0.2)) { onExitSettings() }
-            } else {
-                withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) { isCompact.toggle() }
+        HStack(spacing: 11) {
+            brandChip
+            if !isCompact {
+                // 2026-07-05 (Johannes): Wortmarke war „gaaaanz mini klein" → deutlich
+                // größer (20→27), balanciert den 34pt-Chip. Passt in die 212pt-Sidebar
+                // (SVG skaliert aspektgetreu, Spacer fängt die Restbreite).
+                MykWordmark()
+                    .frame(height: 27)
+                Spacer()
             }
-        } label: {
-            HStack(spacing: 11) {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(MykColor.brand.color)
-                    .frame(width: 34, height: 34)
-                    .scaleEffect(brandHovered ? 1.08 : 1.0)
-                if !isCompact {
-                    MykWordmark()
-                        .frame(height: 20)
-                    Spacer()
+        }
+        .padding(.leading, isCompact ? 0 : MykSpace.s3)
+        .frame(maxWidth: .infinity, alignment: isCompact ? .center : .leading)
+        .contentShape(Rectangle())
+        .onHover { brandHovered = $0 }
+        .gesture(brandHoldGesture)
+        .help(settingsMode ? "Zurück zur Navigation" : (isCompact ? "Sidebar ausklappen · Halten für Mini-Mode" : "Sidebar einklappen · Halten für Mini-Mode"))
+        .accessibilityLabel(settingsMode ? "Zurück zur Navigation" : (isCompact ? "Sidebar ausklappen" : "Sidebar einklappen"))
+    }
+
+    private var brandChip: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(MykColor.brand.color)
+                .frame(width: 34, height: 34)
+                // Pulsieren während des Haltens (zusätzlich zum Hover-Scale).
+                .scaleEffect(holdProgress > 0 ? 1.0 + 0.06 * holdProgress : (brandHovered ? 1.08 : 1.0))
+            // Füll-Ring: läuft im Uhrzeigersinn voll, während gehalten wird.
+            if holdProgress > 0 {
+                Circle()
+                    .trim(from: 0, to: holdProgress)
+                    .stroke(MykColor.paper.color, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 42, height: 42)
+            }
+        }
+        .frame(width: 42, height: 42)
+    }
+
+    // MARK: Halte-Geste
+    // DragGesture(minimumDistance: 0) als Presse-Tracker: onChanged startet den Halte-Timer
+    // beim ersten Kontakt, onEnded entscheidet zwischen kurzem Klick (Toggle) und
+    // abgebrochenem/vollendetem Halten. Erreicht der Timer 1.0, feuert er selbst den
+    // Mini-Mode und markiert holdFired, damit onEnded nicht zusätzlich den Klick auslöst.
+    private var brandHoldGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { _ in
+                if holdTask == nil { startHoldTimer() }
+            }
+            .onEnded { _ in
+                let fired = holdFired
+                cancelHoldTimer()
+                if !fired { handleShortClick() }
+            }
+    }
+
+    private func handleShortClick() {
+        if settingsMode {
+            withAnimation(.easeInOut(duration: 0.2)) { onExitSettings() }
+        } else {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) { isCompact.toggle() }
+        }
+    }
+
+    private func startHoldTimer() {
+        holdFired = false
+        holdTask = Task { @MainActor in
+            let steps = 60          // ~2 s bei 33 ms Schritten
+            let stepNanos: UInt64 = 33_000_000
+            for step in 1...steps {
+                try? await Task.sleep(nanoseconds: stepNanos)
+                if Task.isCancelled { return }
+                withAnimation(.linear(duration: 0.033)) {
+                    holdProgress = CGFloat(step) / CGFloat(steps)
                 }
             }
-            .padding(.leading, isCompact ? 0 : MykSpace.s3)
-            .frame(maxWidth: .infinity, alignment: isCompact ? .center : .leading)
-            .contentShape(Rectangle())
+            if !Task.isCancelled {
+                holdFired = true
+                onEnterMiniMode()
+                // Ring nach dem Auslösen zurückfedern.
+                withAnimation(.easeOut(duration: 0.2)) { holdProgress = 0 }
+            }
         }
-        .buttonStyle(.plain)
-        .onHover { brandHovered = $0 }
-        .help(settingsMode ? "Zurück zur Navigation" : (isCompact ? "Sidebar ausklappen" : "Sidebar einklappen"))
-        .accessibilityLabel(settingsMode ? "Zurück zur Navigation" : (isCompact ? "Sidebar ausklappen" : "Sidebar einklappen"))
+    }
+
+    private func cancelHoldTimer() {
+        holdTask?.cancel()
+        holdTask = nil
+        withAnimation(.easeOut(duration: 0.15)) { holdProgress = 0 }
     }
 
     // MARK: Navigations-Items. Normal: App-Module (ohne Settings). Im Settings-Modus:

@@ -4,7 +4,7 @@ set -euo pipefail
 PRODUCT_NAME="mykilOS6"
 EXECUTABLE_NAME="mykilOS6"
 BUNDLE_ID="de.mykilos.mykilos6"
-APP_VERSION="10.0.0-alpha4"
+APP_VERSION="11.0.0"
 # App-Bundle trägt die Versionsnummer im Namen, damit im Dock/Finder immer
 # eindeutig ist, welche Version läuft. BUNDLE_ID bleibt KONSTANT (sonst neuer
 # DB-/Keychain-Pfad → Datenverlust).
@@ -33,7 +33,7 @@ APP_VERSION="10.0.0-alpha4"
 # Konsolidierungs-Session (Doku-Wahrheit + toter Code + Prompt-Caching).
 APP_NAME="mykilOS $APP_VERSION"
 DISPLAY_NAME="mykilOS $APP_VERSION"
-BUILD_VERSION="22"
+BUILD_VERSION="31"
 MIN_SYSTEM_VERSION="14.0"
 APP_ICON="AppIcon.icns"
 
@@ -90,6 +90,7 @@ done
 /usr/bin/plutil -insert LSMinimumSystemVersion -string "$MIN_SYSTEM_VERSION" "$INFO_PLIST"
 /usr/bin/plutil -insert NSPrincipalClass -string "NSApplication" "$INFO_PLIST"
 /usr/bin/plutil -insert NSHumanReadableCopyright -string "Copyright MYKILOS" "$INFO_PLIST"
+/usr/bin/plutil -insert NSCameraUsageDescription -string "mykilOS liest Artikel-Barcodes und QR-Codes über die Kamera ein (Barcode-Widget). Es werden keine Bilder gespeichert oder gesendet." "$INFO_PLIST"
 /usr/bin/plutil -insert LSMultipleInstancesProhibited -bool true "$INFO_PLIST"
 /usr/bin/plutil -insert MykGitCommit -string "$GIT_COMMIT" "$INFO_PLIST"
 /usr/bin/plutil -insert MykGitBranch -string "$GIT_BRANCH" "$INFO_PLIST"
@@ -122,11 +123,12 @@ if [ -z "$SIGN_IDENTITY" ]; then
   fi
 fi
 
+ENTITLEMENTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/mykilOS.entitlements"
 if [ -n "$SIGN_IDENTITY" ]; then
-  /usr/bin/codesign --force --deep --options runtime --sign "$SIGN_IDENTITY" "$APP_BUNDLE" >/dev/null
+  /usr/bin/codesign --force --deep --options runtime --entitlements "$ENTITLEMENTS" --sign "$SIGN_IDENTITY" "$APP_BUNDLE" >/dev/null
   echo "Signiert mit stabiler Identität: $SIGN_IDENTITY." >&2
 else
-  /usr/bin/codesign --force --deep --sign - "$APP_BUNDLE" >/dev/null
+  /usr/bin/codesign --force --deep --entitlements "$ENTITLEMENTS" --sign - "$APP_BUNDLE" >/dev/null
   echo "Hinweis: Ad-hoc signiert. Für eine dauerhafte Keychain-Freigabe ohne erneute" >&2
   echo "  Prompts: Schlüsselbundverwaltung → Zertifikatsassistent → 'mykilOS Local" >&2
   echo "  Signing' (Codesignatur, selbstsigniert) anlegen, oder MYKILOS_SIGN_IDENTITY setzen." >&2

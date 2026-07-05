@@ -118,11 +118,32 @@ private struct TimelineRow: View {
         }
     }
 
+    @State private var showViewer = false
+
+    // Vorschau nur für echte Dateien (Drive/Angebot), nicht für Google-Native-Formate.
+    private var previewFile: GoogleDriveFile? {
+        guard let f = item.driveFile, f.isFolder == false,
+              f.mimeType.hasPrefix("application/vnd.google-apps") == false else { return nil }
+        return f
+    }
+
+    private func remoteContent() -> (@Sendable () async -> Data?)? {
+        guard let f = previewFile else { return nil }
+        let fileID = f.id
+        return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
+    }
+
+    private func openFallback() {
+        if let link = item.webViewLink, let url = URL(string: link) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     var body: some View {
         Button {
-            if let link = item.webViewLink, let url = URL(string: link) {
-                NSWorkspace.shared.open(url)
-            }
+            // Sammlungs-Ansicht-Standard: Datei-Ereignisse öffnen die In-App-
+            // Vorschau; alles andere (Kalender/Audit/Google-native) den Link.
+            if previewFile != nil { showViewer = true } else { openFallback() }
         } label: {
             HStack(alignment: .top, spacing: MykSpace.s4) {
                 Image(systemName: icon)
@@ -151,6 +172,17 @@ private struct TimelineRow: View {
         }
         .buttonStyle(.plain)
         .padding(.vertical, MykSpace.s3)
+        .contextMenu {
+            if previewFile != nil { Button("Vorschau") { showViewer = true } }
+            if item.webViewLink != nil { Button("Im Browser öffnen") { openFallback() } }
+        }
+        .sheet(isPresented: $showViewer) {
+            if let f = previewFile {
+                DocumentViewerView(file: f, localURL: nil, remoteContent: remoteContent(),
+                                   onClose: { showViewer = false })
+                    .frame(minWidth: 820, minHeight: 680)
+            }
+        }
     }
 }
 

@@ -10,45 +10,48 @@ import MykilosKit
 // Phase 4 (2026-06-30): „Warenkörbe" hinzugekommen; „Geräte"-Tab entfernt
 //   (DeviceCatalog/CSV bleibt für KalkulationsEngine.geraetepreis).
 enum KatalogTab: String, CaseIterable, Identifiable {
-    case artikel, lager, warenkörbe, angebote, kontakte, notizen, aufgaben
+    case artikel, lager, warenkörbe, angebote, zeichnungen, kontakte, notizen, aufgaben
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .artikel:    "Artikel / Shop"
-        case .lager:      "Lager"
-        case .warenkörbe: "Warenkörbe"
-        case .angebote:   "Angebote"
-        case .kontakte:   "Kontakte"
-        case .notizen:    "Notizen"
-        case .aufgaben:   "Aufgaben"
+        case .artikel:     "Artikel / Shop"
+        case .lager:       "Lager"
+        case .warenkörbe:  "Warenkörbe"
+        case .angebote:    "Angebote"
+        case .zeichnungen: "Zeichnungen & Pläne"
+        case .kontakte:    "Kontakte"
+        case .notizen:     "Notizen"
+        case .aufgaben:    "Aufgaben"
         }
     }
     var icon: String {
         switch self {
-        case .artikel:    "cart"
-        case .lager:      "archivebox"
-        case .warenkörbe: "cart.fill"
-        case .angebote:   "doc.text"
-        case .kontakte:   "person.2"
-        case .notizen:    "note.text"
-        case .aufgaben:   "checklist"
+        case .artikel:     "cart"
+        case .lager:       "archivebox"
+        case .warenkörbe:  "cart.fill"
+        case .angebote:    "doc.text"
+        case .zeichnungen: "pencil.and.ruler"
+        case .kontakte:    "person.2"
+        case .notizen:     "note.text"
+        case .aufgaben:    "checklist"
         }
     }
     var accent: MykColor {
         switch self {
-        case .artikel:    .tasks
-        case .lager:      .drive
-        case .warenkörbe: .cash
-        case .angebote:   .cash
-        case .kontakte:   .people
-        case .notizen:    .personal
-        case .aufgaben:   .tasks
+        case .artikel:     .tasks
+        case .lager:       .drive
+        case .warenkörbe:  .cash
+        case .angebote:    .cash
+        case .zeichnungen: .drive
+        case .kontakte:    .people
+        case .notizen:     .personal
+        case .aufgaben:    .tasks
         }
     }
 
     static var defaultOrder: [KatalogTab] {
-        [.artikel, .lager, .warenkörbe, .angebote, .kontakte, .notizen, .aufgaben]
+        [.artikel, .lager, .warenkörbe, .angebote, .zeichnungen, .kontakte, .notizen, .aufgaben]
     }
 }
 
@@ -300,6 +303,8 @@ struct KatalogeView: View {
             WarenkorbListeTab(warenkorb: warenkorb, store: warenkorbListeStore)
         case .angebote:
             GlobalOffersView()
+        case .zeichnungen:
+            GlobalPlansView()
         case .kontakte: KontakteKatalogTab()
         case .notizen:  NotizenKatalogTab()
         case .aufgaben: AufgabenKatalogTab()

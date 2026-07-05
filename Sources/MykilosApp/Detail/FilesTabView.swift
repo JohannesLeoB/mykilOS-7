@@ -110,21 +110,85 @@ final class DriveTreeStore {
         node.isExpanded = false
     }
 
-    // Flache Liste aller sichtbaren Knoten mit Tiefe — wird jedes Mal neu
+    // Flache Liste aller sichtbaren Knoten mit Tiefe + Name des unmittelbaren
+    // Eltern-Ordners (Herkunft, D3; `nil` auf Wurzelebene). Wird jedes Mal neu
     // berechnet, sobald isExpanded sich ändert (Observable greift automatisch).
-    var visibleRows: [(node: DriveTreeNode, depth: Int)] {
-        var result: [(DriveTreeNode, Int)] = []
-        func walk(_ nodes: [DriveTreeNode], depth: Int) {
+    var visibleRows: [VisibleRow] {
+        var result: [VisibleRow] = []
+        func walk(_ nodes: [DriveTreeNode], depth: Int, parentName: String?) {
             for node in nodes {
-                result.append((node, depth))
+                result.append(VisibleRow(node: node, depth: depth, parentName: parentName))
                 if node.isExpanded, let children = node.children {
-                    walk(children, depth: depth + 1)
+                    walk(children, depth: depth + 1, parentName: node.file.name)
                 }
             }
         }
-        walk(rootNodes, depth: 0)
+        walk(rootNodes, depth: 0, parentName: nil)
         return result
     }
+
+    // Lädt die Kinder eines Ordners, OHNE ihn im Baum aufzuklappen (`isExpanded`
+    // bleibt unberührt). Speist die Galerie-Ansicht, ohne die Liste zu verändern.
+    private func loadChildren(_ node: DriveTreeNode) async {
+        guard node.file.isFolder, node.children == nil, !node.isLoading else { return }
+        node.isLoading = true
+        do {
+            let items = try await client.listFolder(folderID: node.file.id)
+            node.children = items.map { DriveTreeNode(file: $0) }
+        } catch {
+            node.children = []
+        }
+        node.isLoading = false
+    }
+
+    // „Durch alle Dateien fliegen": lädt rekursiv alle Unterordner (begrenzte Tiefe,
+    // damit tiefe Archivbäume die App nicht fluten). Read-only.
+    func expandAll(maxDepth: Int = 6) async {
+        func walk(_ nodes: [DriveTreeNode], depth: Int) async {
+            guard depth < maxDepth else { return }
+            for node in nodes where node.file.isFolder {
+                await loadChildren(node)
+                if let children = node.children { await walk(children, depth: depth + 1) }
+            }
+        }
+        await walk(rootNodes, depth: 0)
+    }
+
+    // Alle geladenen Dateien (Ordner ausgeschlossen), flach — mit lokalem URL-Hinweis
+    // für das Thumbnail und dem Namen des unmittelbaren Eltern-Ordners (Herkunft, D3).
+    // `parentName == nil` für Dateien direkt im Projekt-Wurzelordner. Basis der
+    // Galerie-Kacheln.
+    var alleDateien: [DateiEintrag] {
+        var result: [DateiEintrag] = []
+        func walk(_ nodes: [DriveTreeNode], parentName: String?) {
+            for node in nodes {
+                if node.file.isFolder {
+                    if let children = node.children { walk(children, parentName: node.file.name) }
+                } else {
+                    result.append(DateiEintrag(file: node.file,
+                                               localURL: localURL(for: node.file),
+                                               parentName: parentName))
+                }
+            }
+        }
+        walk(rootNodes, parentName: nil)
+        return result
+    }
+}
+
+// MARK: - Zeilen-Modelle (Herkunft, D3)
+// Kleine benannte Träger statt großer Tupel — je ein sichtbarer Baum-Knoten bzw.
+// eine flache Galerie-Datei, jeweils mit dem Namen ihres Eltern-Ordners.
+struct VisibleRow {
+    let node: DriveTreeNode
+    let depth: Int
+    let parentName: String?
+}
+
+struct DateiEintrag {
+    let file: GoogleDriveFile
+    let localURL: URL?
+    let parentName: String?
 }
 
 // MARK: - FilesTabView
@@ -135,6 +199,14 @@ struct FilesTabView: View {
     var driveFolderPath: String? = nil
 
     @State private var store = DriveTreeStore()
+    // Galerie-Flug: „durch alle Dateien fliegen, gekachelt" — pro Nutzer gemerkt.
+    @AppStorage("dateien.tab.galerie") private var galerieAn = false
+    @AppStorage("dateien.tab.kachel") private var kachelSeiteRaw: Double = 150
+    @State private var viewerFile: GoogleDriveFile?
+
+    private var kachelSeite: Binding<CGFloat> {
+        Binding(get: { CGFloat(kachelSeiteRaw) }, set: { kachelSeiteRaw = Double($0) })
+    }
 
     var body: some View {
         WidgetContainer(
@@ -145,7 +217,9 @@ struct FilesTabView: View {
         ) {
             VStack(spacing: 0) {
                 statusBar
-                if case .content = store.renderState { treeContent }
+                if case .content = store.renderState {
+                    if galerieAn { galerieContent } else { treeContent }
+                }
             }
         }
         .task(id: driveFolderID) {
@@ -162,32 +236,82 @@ struct FilesTabView: View {
         }
     }
 
-    // MARK: Status bar
+    // MARK: Controls bar
+    // 2026-07-05 (Johannes, Item D): die Drive-„geprüft"/„Jetzt prüfen"-Chrome hier
+    // entfernt (der globale Sync lebt jetzt zentral in Einstellungen → Integrationen →
+    // Google, Parent-I/O-Prinzip). Der Dateien-Tab lädt seinen Ordner beim Öffnen
+    // ohnehin frisch (.task). Übrig bleiben nur die Ansichts-Controls.
     private var statusBar: some View {
         HStack(spacing: MykSpace.s4) {
-            Circle()
-                .fill(MykColor.muted.color.opacity(0.45))
-                .frame(width: 7, height: 7)
-            if let lastChecked = store.lastChecked {
-                Text("Zuletzt geprüft: \(lastChecked.formatted(.dateTime.hour().minute()))")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.muted.color)
-            } else {
-                Text("Drive-Ordner noch nicht geprüft")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.muted.color)
-            }
             Spacer()
-            Button("Jetzt prüfen") {
-                Task { await store.load(folderID: driveFolderID) }
-            }
-            .font(.mykMono(10))
-            .foregroundStyle(MykColor.drive.color)
-            .buttonStyle(.plain)
+            if galerieAn { KachelGroessenSlider(kachelSeite: kachelSeite) }
+            ansichtsUmschalter
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s3)
         .background(MykColor.line.color.opacity(0.18))
+    }
+
+    // Liste (Finder-Baum) ⇄ Galerie (Kachel-Flug durch alle Dateien).
+    private var ansichtsUmschalter: some View {
+        Picker("", selection: $galerieAn) {
+            Image(systemName: "list.bullet").tag(false)
+            Image(systemName: "square.grid.2x2").tag(true)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(width: 78)
+        .help("Liste oder Galerie")
+    }
+
+    // MARK: Galerie
+    // Eine Quelle der Wahrheit für Grid + Viewer-Blättern — gleiche Reihenfolge, gleiche Indizes.
+    private var galerieEintraege: [DateiGalerieGrid.Eintrag] {
+        store.alleDateien.map {
+            DateiGalerieGrid.Eintrag(file: $0.file, subtitle: $0.file.typeLabel,
+                                     localURL: $0.localURL, herkunftOrdner: $0.parentName)
+        }
+    }
+
+    private var galerieViewerItems: [DocumentViewerItem] {
+        galerieEintraege.map {
+            DocumentViewerItem(file: $0.file, localURL: $0.localURL, remoteContent: galerieRemoteContent(for: $0.file))
+        }
+    }
+
+    @ViewBuilder private var galerieContent: some View {
+        let eintraege = galerieEintraege
+        Group {
+            if eintraege.isEmpty {
+                VStack(spacing: MykSpace.s4) {
+                    ProgressView().controlSize(.small)
+                    Text("Lade alle Dateien …")
+                        .font(.mykMono(10))
+                        .foregroundStyle(MykColor.muted.color)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.top, MykSpace.s9)
+            } else {
+                DateiGalerieGrid(
+                    eintraege: eintraege, kachelSeite: kachelSeite,
+                    onPreview: { viewerFile = $0.file },
+                    onOpen: { store.revealInFinder(for: $0.file) })
+                .padding(.horizontal, MykSpace.s6)
+            }
+        }
+        .task(id: galerieAn) { if galerieAn { await store.expandAll() } }
+        .sheet(item: $viewerFile) { file in
+            let items = galerieViewerItems
+            let startIndex = items.firstIndex(where: { $0.id == file.id }) ?? 0
+            DocumentViewerView(items: items, initialIndex: startIndex, onClose: { viewerFile = nil })
+                .frame(minWidth: 820, minHeight: 680)
+        }
+    }
+
+    private func galerieRemoteContent(for file: GoogleDriveFile) -> (@Sendable () async -> Data?)? {
+        guard file.isFolder == false else { return nil }
+        let fileID = file.id
+        return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
     }
 
     // MARK: Tree
@@ -197,7 +321,8 @@ struct FilesTabView: View {
                 columnHeader
                 Divider().overlay(MykColor.line.color)
                 ForEach(store.visibleRows, id: \.node.id) { row in
-                    DriveTreeRow(node: row.node, depth: row.depth, store: store)
+                    DriveTreeRow(node: row.node, depth: row.depth,
+                                 parentName: row.parentName, store: store)
                     Divider().overlay(MykColor.line.color.opacity(0.4))
                 }
             }
@@ -230,6 +355,8 @@ struct FilesTabView: View {
 private struct DriveTreeRow: View {
     let node: DriveTreeNode
     let depth: Int
+    /// Name des unmittelbaren Eltern-Ordners (Herkunft, D3; `nil` auf Wurzelebene).
+    let parentName: String?
     let store: DriveTreeStore
 
     @State private var isHovered = false
@@ -264,6 +391,11 @@ private struct DriveTreeRow: View {
         return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
     }
 
+    // Herkunfts-Kategorie aus dem Eltern-Ordnernamen (nil = keine bekannte Kategorie).
+    private var herkunftKategorie: DriveFolderCategory? {
+        DriveFolderCategory.category(forFolderName: parentName)
+    }
+
     private var rowContent: some View {
         HStack(spacing: 0) {
             // Einrückung
@@ -288,6 +420,18 @@ private struct DriveTreeRow: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Herkunft (D3): dezenter Farbpunkt der Eltern-Ordner-Kategorie —
+            // „Farbe ist Sprache". Nur für Dateien mit erkannter Kategorie; sonst
+            // nichts (keine Sackgasse). Der Ordnername steht im Baum bereits als
+            // Eltern-Zeile, daher hier nur der Punkt, kein Text-Chip.
+            if node.file.isFolder == false, let category = herkunftKategorie {
+                Circle()
+                    .fill(category.markeColor)
+                    .frame(width: 6, height: 6)
+                    .padding(.trailing, MykSpace.s3)
+                    .help("Herkunft: \(parentName ?? "") · \(category.chipLabel)")
+            }
 
             // Cloud-Sync-Icon
             Image(systemName: "arrow.down.circle")

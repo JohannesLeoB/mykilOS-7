@@ -19,6 +19,13 @@ public struct WarenkorbItem: Codable, Sendable, Equatable, Identifiable {
     public let vkNetto: Double?
     /// Herkunft der Position: "manuell", "katalog", "kalkulation", etc.
     public let quelle: String
+    /// Volle Daten-Fidelität (Johannes-Grundsatz, EISERN): freie Zusatzfelder einer
+    /// aufgenommenen Position, die das schlanke Kernmodell strukturell nicht trägt —
+    /// z. B. bei aus einem Angebots-PDF herausgelösten Positionen der Originaltext,
+    /// die Seite, die Richtung (eingehend/ausgehend), die Konfidenz-Ampel, Einzel-/
+    /// Gesamtpreis, Listenpreis und die Quell-Datei/Belegreferenz. Additiv & nicht-
+    /// brechend (default leer); wandert bis in den `PickSnapshot.attribute`/Checkout mit.
+    public let attribute: [String: String]
 
     public var id: String { "\(artikelnummer)-\(menge)-\(bezeichnung)" }
 
@@ -42,7 +49,8 @@ public struct WarenkorbItem: Codable, Sendable, Equatable, Identifiable {
         menge: Int,
         ekNetto: Double? = nil,
         vkNetto: Double? = nil,
-        quelle: String
+        quelle: String,
+        attribute: [String: String] = [:]
     ) {
         self.artikelRecordID = artikelRecordID
         self.bezeichnung = bezeichnung
@@ -51,6 +59,27 @@ public struct WarenkorbItem: Codable, Sendable, Equatable, Identifiable {
         self.ekNetto = ekNetto
         self.vkNetto = vkNetto
         self.quelle = quelle
+        self.attribute = attribute
+    }
+
+    // Cold-Start-Toleranz (EISERN „Assistent-Gedächtnis = Codable"): `attribute` ist neu.
+    // Alte, ohne dieses Feld persistierte Warenkorb-JSONs (Airtable-Positionen, lokale
+    // Caches) MÜSSEN weiter dekodieren — daher `decodeIfPresent ?? [:]` statt eines
+    // harten Keys, der bestehende Daten unlesbar machen würde.
+    private enum CodingKeys: String, CodingKey {
+        case artikelRecordID, bezeichnung, artikelnummer, menge, ekNetto, vkNetto, quelle, attribute
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.artikelRecordID = try c.decodeIfPresent(String.self, forKey: .artikelRecordID)
+        self.bezeichnung = try c.decode(String.self, forKey: .bezeichnung)
+        self.artikelnummer = try c.decode(String.self, forKey: .artikelnummer)
+        self.menge = try c.decode(Int.self, forKey: .menge)
+        self.ekNetto = try c.decodeIfPresent(Double.self, forKey: .ekNetto)
+        self.vkNetto = try c.decodeIfPresent(Double.self, forKey: .vkNetto)
+        self.quelle = try c.decode(String.self, forKey: .quelle)
+        self.attribute = try c.decodeIfPresent([String: String].self, forKey: .attribute) ?? [:]
     }
 }
 

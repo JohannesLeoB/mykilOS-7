@@ -1,6 +1,6 @@
 # mykilOS 6 — Benutzerhandbuch
 
-**Stetige Mitschrift aller Funktionen. Stand: 2026-07-03 · Version 10.0.0-alpha4**
+**Stetige Mitschrift aller Funktionen. Stand: 2026-07-04 · Version 10.0.0-alpha14**
 Jede neue Funktion wird hier beim Build dokumentiert. Dieses Dokument ist kein
 Abschlussdokument — es wächst mit der App.
 
@@ -43,9 +43,42 @@ auf Nummer, Titel oder Kundenname; Prefix-Treffer stehen oben). **Enter** oder *
 
 ---
 
+## Mini-Mode (schwebende Icon-Sidebar) — 2026-07-04
+
+**Was es tut:** Schrumpft mykilOS auf **nur die eingeklappte Icon-Sidebar** (kein Inhaltsfenster) —
+ein schmales, **schwebendes, immer-obenauf, fokus-neutrales** Fenster, das du in eine Ecke legst,
+**auch über einem Vollbild-Programm** (z. B. während du in Vectorworks zeichnest). Es stiehlt nie
+den Fokus. Gedacht als „oh, da kam was rein" + „ich geh mal schnell ins Projekt", ohne die
+Vollansicht aufzumachen.
+
+**Wo zu finden / Bedienung:**
+- **Einschalten:** Einstellungen → Darstellung → „Mini-Mode" (Standard: aus).
+- **Aktivieren:** den **mykilOS-Button oben links** (der auch die Sidebar ein/ausblendet)
+  **~2 Sekunden gedrückt halten** — ein Ring füllt sich als Fortschritt, früher loslassen bricht
+  ab. **Kurzer Klick** bleibt der normale Sidebar-schmal/breit-Toggle.
+- **Alerts:** kommt etwas Wichtiges rein, **pulsiert das betroffene Icon selbst langsam orange**
+  (offene Aufgaben → Assistent-Icon, offene Signale → Heute-Icon). *(Kein Hover-Flyout mehr —
+  das Mouseover-Fenster wurde auf Wunsch entfernt, 2026-07-05.)*
+- **Zurück:** **Modul-Icon klicken** → rein in das Modul · **Logo oder freie Streifen-Fläche
+  klicken** → zurück zur letzten großen Ansicht (die ganze Satellit-Fläche öffnet die App).
+- **Steuerbar:** Puls + je Quelle abschaltbar in Einstellungen → Datenschutz.
+
+**Voraussetzungen:** keine — liest ausschließlich aus bereits geladenen lokalen Daten (Timer,
+Signale, Aufgaben), **startet keine eigenen Netzwerk-Abrufe** (lean).
+
+**Einschränkungen (ehrlich):**
+- **Aufgaben** = lokale Assistent-Aufgaben (nicht ClickUp — das hätte einen Extra-Abruf gebraucht).
+- **Mail-** und **Kalender-Puls** sind vorbereitet, aber noch ohne Wert („bald") — es fehlt ein
+  lokaler Cache, aus dem ohne neuen Abruf gelesen werden könnte.
+- **Live noch abzunehmen (Johannes):** ob das Fenster tatsächlich über einem Vollbild-Space
+  schwebt, das 2-Sekunden-Halten sich gut anfühlt und der Orange-Puls ruhig wirkt — das zeigt erst
+  der echte Mac. Auf Multi-Monitor-Setups erscheint es zunächst am Hauptbildschirm.
+
+---
+
 ## Heute-Board
 
-**Was es tut:** Übersicht über den aktuellen Arbeitstag — Signal-Strip, Drive-Ordner-Status,
+**Was es tut:** Übersicht über den aktuellen Arbeitstag — Signal-Strip,
 offene Aufgaben und Kalender-Ereignisse auf einen Blick.
 
 **Wo:** Sidebar → Heute (⌘1)
@@ -55,8 +88,11 @@ offene Aufgaben und Kalender-Ereignisse auf einen Blick.
   Selektor — Heute-Widgets (Fokus-Liste, Notiz, Projekt-Favoriten, Letzte Aktivität,
   Zeiterfassung) frei **ein-/ausblenden** und in der **Größe** wählen (Klein/Mittel/Breit/Voll).
   Dieselbe Mechanik wie in der Projekt-Übersicht; Reihenfolge per Drag im Board.
-- **DriveFolderRefreshBar**: zeigt wann der Drive-Ordner zuletzt geprüft wurde.
-  "Jetzt prüfen" erzwingt einen sofortigen Poll aller aktiven Projektordner auf neue Angebots-PDFs.
+- **Drive-Synchronisation (2026-07-05, Item D):** Die früheren verstreuten „Jetzt prüfen"-
+  Leisten (Heute-Board + Projekt-Dateien-Tab) sind entfernt. Der **eine** globale Sync über
+  alle aktiven Projekt-Ordner sitzt jetzt zentral in **Einstellungen → Integrationen → Google →
+  „Drive-Ordner synchronisieren"** (Parent-I/O-Prinzip). Der Dateien-Tab lädt seinen Ordner
+  beim Öffnen ohnehin frisch; der Hintergrund-Poll (alle 5 Min) läuft unverändert weiter.
 - **Signal-Strip**: zeigt Signale aus dem aktuellen Projektkontext (z.B. neue Angebote erkannt).
 - **Favoriten**: angepinnte Projekte als Schnellzugriff (Stern auf einer Projektkarte/im
   Detail-Header). Leer, bis du das erste Projekt anpinnst.
@@ -91,6 +127,22 @@ offene Aufgaben und Kalender-Ereignisse auf einen Blick.
 
 **Was es tut:** Zeigt alle Informationen und Werkzeuge eines Projekts.
 
+### Lebenszyklus-Stepper (unter dem Hero)
+Fünf antippbare Stufen: Akquise → Planung → Angebot → Ausführung → Abschluss. Ohne manuelles
+Setzen wird die Stufe ehrlich abgeleitet (gebuchte Zeit → mindestens „Planung", Archiv-Status →
+„Abschluss", sonst „Akquise") und zeigt „Stufe abgeleitet · tippen zum Setzen". Ein Klick auf
+eine Stufe setzt sie fest (lokal, pro Nutzer). KPI-Zeile daneben: Zeit, Nachträge, offene
+ClickUp-Aufgaben (nur wenn eine Liste verknüpft ist).
+
+**ClickUp-Phasen-Abgleich (2026-07-04):** Ist eine ClickUp-Liste verknüpft und hat mindestens
+eine Aufgabe das Custom Field `project_phase` gesetzt (7 Stufen: Briefing/Planung/Angebot/
+Bestellung/Ausführung/Abschluss/Service — feiner als die 5 mykilOS-Stufen), erscheint bei
+Abweichung ein dezenter Hinweis „ClickUp sagt: Ausführung". **Kein Auto-Write in beide
+Richtungen:** mykilOS schreibt nie nach ClickUp zurück und übernimmt die ClickUp-Stufe nie
+automatisch — der Nutzer entscheidet weiterhin selbst per Tippen auf die passende Stufe.
+Herangezogen wird die am weitesten fortgeschrittene gesetzte Phase unter den Aufgaben der
+Liste (kein einzelner „Projekt-Meister"-Datensatz nötig).
+
 **Tabs:**
 
 ### Übersicht
@@ -104,6 +156,12 @@ Popover zum Selbst-Konfigurieren: pro Widget-Art ein **Ein/Aus-Schalter** (aus =
 Position/Größe bleiben erhalten) und — wenn sichtbar — eine **Größenwahl** (Klein/Mittel/Breit/
 Voll). Änderungen greifen sofort (SaveState). Reihenfolge weiterhin per Drag im Board.
 
+**Kontakte-Widget:** Google-Kontakte, gefiltert über die Projekt-Suchanfrage
+(`Project.links.contactsQuery`). Read-only Anzeige — **Klick auf die Mail-Adresse (2026-07-04)**
+öffnet einen vorbefüllten Entwurf (ComposeMailView), kein Auto-Versand. Noch nicht editierbar/
+zuweisbar (das ist eine größere, eigenständige Migration auf die Airtable-Kontakttabelle,
+weiterhin offen — siehe Backlog).
+
 **Warenkorb-Widget (V10, Block E — 2026-07-03):** Zeigt jetzt den **lokal am Projekt
 gespeicherten Warenkorb** (WorkBasket, GRDB/local-first) statt der Airtable-Kopie —
 **eine editierbare Quelle der Wahrheit**. Positionen (Menge × Bezeichnung · Art.-Nr. · VK)
@@ -113,6 +171,18 @@ mit sichtbarem SaveState. Bestätigte (eingefrorene) Warenkörbe sind nicht edit
 (Zustand „BESTÄTIGT"). Der Projekt-Warenkorb entsteht automatisch über den Intake-Fragebogen.
 Der frühere Airtable-Versandpfad (globaler Session-Warenkorb im Kataloge-Modul) bleibt
 unverändert bestehen. *Wo:* Projekt → Übersicht. *Voraussetzung:* keine (lokal).
+
+**In sevDesk-Postbox droppen (2026-07-04):** Im Warenkorb-„Bearbeiten"-Panel gibt es jetzt
+den Knopf **„In sevDesk-Postbox"**. Er legt die Positionen des Warenkorbs als **Vorschlag** in
+den Airtable-Einweg-Briefkasten (Tabellen `Postbox-Beleg` + `Postbox-Position`) — ein Mensch
+baut daraus in sevDesk den echten Beleg. Ein Bestätigungs-Fenster zeigt zuerst eine Vorschau
+(Beleg-Typ wählbar: Angebot/Rechnung/Gutschrift/Lieferschein/Auftragsbestätigung) samt Netto-
+Gegenprobe; geschrieben wird erst auf Knopfdruck. **mykilOS stellt keinen Beleg aus.**
+**sevDesk hat die Hoheit über Mengen, Margen und Steuer** — die Zahlen sind ein Vorschlag,
+es wird keine Brutto-/Steuersumme und keine Belegnummer geschrieben. Append-only: ein zweiter
+identischer Drop legt nichts Neues an (Idempotenz). *Wo:* Projekt → Übersicht → Warenkorb →
+Bearbeiten → „In sevDesk-Postbox". *Voraussetzung:* Airtable verbunden; Warenkorb mit Positionen.
+*Einschränkung:* schreibt in die mykilOS-Postbox, **nie** direkt nach sevDesk.
 
 **Cash-Widget — „Kalkuliert (Warenkorb)" (V10, Block H — 2026-07-03):** Das Cash-Widget zeigt
 zusätzlich eine schlanke Zeile mit der **kalkulierten Warenkorb-Summe** dieses Projekts
@@ -160,6 +230,18 @@ Optionaler Vorrang: ein expliziter Pfad in Airtable `driveFolderPath`.
 **Voraussetzung:** Google-Konto verbunden (Settings → Google); für lokale Vorschau
 zusätzlich Google Drive für Desktop mit materialisiertem (heruntergeladenem) Ordner.
 
+**Galerie-Ansicht (Galerie-Flug — 2026-07-04):** Segment-Umschalter oben rechts (Liste ⇄
+Galerie) lädt alle Unterordner rekursiv (Tiefe max. 6) und zeigt jede Datei als Kachel mit
+echtem Mini-Thumbnail (`ThumbnailStore`: lokal via `QLThumbnailGenerator`, sonst Drive-
+Vorschaulink). Finder-Slider für Kachelgröße, pro Nutzer gemerkt. **Finder-Bedienung:**
+Einfachklick wählt eine Kachel an (oranger Ring), **Leertaste oder Doppelklick** öffnet die
+volle Fenster-Vorschau; der Hover-Button öffnet extern im Finder. Read-only wie die Liste.
+
+**Blättern + Diashow (im geöffneten Viewer):** ←/→ (Pfeiltasten oder Header-Pfeile) wechselt
+zur nächsten/vorherigen Datei derselben Galerie, ohne das Fenster zu schließen. Leertaste
+(oder der Play-Button) startet eine Diashow — wechselt automatisch alle 3,5 s weiter, wrapt am
+Ende zurück zum Anfang; nochmal Leertaste/Klick pausiert.
+
 ### Angebote
 Zwei Spalten — eingehende (`05 …`) und ausgehende (`04 …`) Belege —, rekursiv
 gesammelt und nach Dokumenttyp gruppiert. Es werden nur echte Beleg-Dateitypen
@@ -170,6 +252,42 @@ echtes PDF: lokal materialisiert per PDFKit, sonst per read-only Drive-Download
 (`downloadContent`) — **nicht** im Browser. **Öffnen** (Klick auf den Namen) startet
 lokal-zuerst die macOS-Vorschau, nur ohne lokale Datei den Browser-Fallback.
 Rechtsklick → **„Im Finder zeigen"**. Read-only — nie Schreiben.
+
+**Positionen herauslösen — jetzt mit Art.-Nr. + vollen Infos im Warenkorb (2026-07-04):**
+Der Extraktor erkennt jetzt auch die Herstellerartikelnummer im Positionstext
+(„Art.-Nr. 155.01.595", „Art.Nr.502.73.902" — Muster am echten Alt-Korpus verifiziert),
+zeigt sie auf der Karte, und **„In Warenkorb" nimmt jetzt ALLE Infos mit**: Art.-Nr., der
+volle Original-Positionstext, Quelldatei, Seite und Richtung (eingehend/ausgehend) landen
+als Attribute am Pick — nicht nur Bezeichnung und Preis. Sichtbar im Warenkorb-Widget
+(Art.-Nr. unter der Bezeichnung). Der **Drop in die sevDesk-Postbox** ist seit 2026-07-04
+gebaut (`SevdeskPostboxCheckoutPort` + „In sevDesk-Postbox"-Knopf im Warenkorb-Bearbeiten-Panel,
+siehe oben) — die Positions-Attribute (Art.-Nr./Original-Text/Richtung) landen dabei vollständig
+in der `Postbox-Position`-Tabelle.
+
+**Positionen herauslösen (PDF-Positions v1 — 2026-07-04, Button seit 2026-07-04 sichtbar):**
+Ein Klick auf den **„Positionen"**-Knopf an jeder Angebots-**PDF**-Zeile (auch per Rechtsklick →
+„Positionen herauslösen" erreichbar) öffnet ein Sheet, das die Datei read-only liest und die
+einzelnen Positionen als Karten zeigt — mit **Selbstbeweis-Ampel** (🟢 grün = Menge × Einzelpreis
+= Gesamt geht arithmetisch auf; 🟠 amber = Preis da, Rechnung nicht prüfbar), Seiten-Verweis,
+erkanntem Rabatt-Listenpreis und aufklappbarem Originaltext. Die Extraktion nutzt
+`OfferPositionExtractor` (Zwei-Pass: Positions-Anker → Block → Felder; an 815 echten
+Alt-Positionen zu 98,8 % validiert). Ein Klick auf **„In Warenkorb"** legt die Position in den
+**echten, persistenten Projekt-Warenkorb** (`WorkBasketStore`, GRDB, append-only, überlebt
+Neustart; eingehendes Lieferanten-Angebot → EK-Preis, ausgehend → VK; Menge aus der Position; ein
+Klick = Bestätigung, ein zweiter erhöht die Menge). Funktioniert identisch in **beiden**
+Angebote-Ansichten (Projekt-Angebote-Tab + globales „Alle Angebote"-Modul) — beide schreiben in
+denselben Korb des jeweiligen Projekts. Nichts wird geschrieben außer der bestätigten
+Warenkorb-Position.
+
+**Lern-Loop — Positionen als Preis-Wissen (2026-07-04):** Im Positions-Sheet merkt der Button
+**„Als Preis-Wissen vormerken"** die (grün/amber, nicht-alternativen) Positionen als lokale
+**Kandidaten** vor — noch **ohne** Wirkung. Über **„Freigeben →"** öffnet sich das Review
+(`PriceKnowledgeReviewView`): dort gibt der Mensch **jede Position einzeln** als aktiven
+Preis-Anker frei. **Erst die Freigabe** macht sie schätz-wirksam — ab dann berücksichtigt die
+KalkulationsEngine sie (als dritter Anker-Kanal neben Seed-Korpus und Airtable-Angeboten).
+Alles **lokal** in `learning.sqlite` (kein externer Write), **append-only**, **review-gated**:
+nichts landet ohne menschlichen Klick im Preis-Gedächtnis. Die Belegreferenz eines Ankers ist
+bewusst neutral (keine Summen-/MwSt-Begriffe → Carryforward-sicher).
 
 **„Zum Angebot" — Kalkulations-Vorschau (V10, Block G — 2026-07-03):** Oben im Angebote-Tab
 erzeugt der Knopf **„Zum Angebot"** aus dem am Projekt gespeicherten Warenkorb ein
@@ -190,7 +308,25 @@ Termin salbei, Audit pflaume). Klick auf eine Datei/ein Angebot öffnet den Link
 Read-only. Eine kaputte Quelle leert den Tab nicht (die übrigen werden trotzdem gezeigt).
 
 ### Material
-Zeigt Drive-Unterordner `05 Material` (tolerant per Name gematcht).
+Zeigt die Plan-/Zeichnungs-Schema-Ordner des Projekts (Pläne, Werkszeichnung, Renderings,
+Vorplanung, Layouts, Präsentation) — dieselbe Quelle wie der globale Katalog „Zeichnungen &
+Pläne", nur auf das eine Projekt gefiltert. **Volles Sammlungs-Instrumentarium** (seit
+2026-07-03): Kategorie-Filter · Typ-Filter (PDF/Bilder) · Sortierung (Datum/Name) ·
+Volltextsuche, und die Dateien stehen **in Spalten je Kategorie** nebeneinander. Klick aufs
+Datei-Icon öffnet eine **In-App-Vorschau** (PDF/Bild direkt, Vollvorschau möglich); Klick auf
+den Namen öffnet die Datei lokal (macOS-Vorschau) bzw. im Browser. Read-only.
+
+**Galerie-Ansicht:** gleicher Liste-⇄-Galerie-Umschalter wie im Dateien-Tab (Kachel-Grid,
+echte Thumbnails, Finder-Slider, Einfachklick anwählen/Leertaste-Vorschau) — pilotiert hier
+zuerst (2026-07-04), seither auch im Dateien-Tab.
+
+**Galerie-Ausrollen (2026-07-04):** Der Liste-⇄-Galerie-Umschalter + Leertaste→Vollbild
+(mit Blättern/Diashow) ist jetzt auch im **Angebote-Tab (Projekt)**, im **globalen Angebote-Modul**
+und im **Zeichnungs-Katalog** verfügbar — überall dasselbe Instrumentarium (Sammlungs-Ansicht-
+Standard). **Mail-Anhänge:** die Vorschau öffnet weiterhin per Klick, blättert jetzt aber mit
+←/→ und Leertaste durch **alle Anhänge derselben Nachricht**. Der **Timeline-Tab** bleibt bewusst
+Liste-only (heterogen: Dateien + Termine + Audit — eine Galerie würde die Chronologie zerreißen).
+Alle großen Vorschauen passen sich jetzt in den verfügbaren Rahmen ein (Skalierungs-Fix).
 
 ---
 
@@ -286,8 +422,22 @@ Ebenfalls hier: verbundene Dienste (Google, Airtable, ClickUp, Clockodo, Sevdesk
 
 ### Kataloge (⌘8)
 **Umsortierbare Unter-Tabs** (Tab mit der Maus ziehen → Reihenfolge wird gemerkt,
-`@AppStorage`): Artikel/Shop, Lager, Warenkörbe, Angebote, Kontakte, Notizen, Aufgaben.
+`@AppStorage`): Artikel/Shop, Lager, Warenkörbe, Angebote, Zeichnungen & Pläne, Kontakte,
+Notizen, Aufgaben.
 Oben rechts: **+ Neues Projekt** (Fragebogen) und der **Warenkorb-Badge** (Positionszahl).
+
+- **Zeichnungen & Pläne** (neu 2026-07-03) — die gesammelte Planungs- und Zeichnungs-
+  Bibliothek über **alle** Projekte mit Drive-Ordner. Sammelt automatisch die PDFs/Bilder
+  aus den Schema-Unterordnern jedes Projekts: `01 Pläne` (unter `01 INFOS`),
+  `08 Werkszeichnung`, `Renderings`, `Vorplanung | Screenshots`, `Layouts` — Ordnernamen
+  werden tolerant erkannt (Groß-/Kleinschreibung, Umlaut-Schreibweisen). **Links** die
+  Projektliste ("Alle Zeichnungen" oder ein Projekt), **rechts** entweder die globale Liste
+  mit Kategorie-Sektionen (Kategorie-Filter, Sortierung Datum/Projekt/Kategorie/Name,
+  Volltextsuche) oder die Schema-Ordner-Ansicht des gewählten Projekts (identisch zum
+  Material-Tab). Read-only — Klick aufs Icon öffnet die In-App-Vorschau, Klick auf den Namen
+  die Datei lokal/im Browser; nichts wird geschrieben.
+  Voraussetzung: Google Drive verbunden. Präsentationsmaterial (03 PRÄSENTATION) erscheint
+  bewusst NUR im Material-Tab des Projekts, nicht im globalen Katalog.
 
 - **Artikel / Shop** — der Live-Artikelkatalog (Airtable-Base `appdxTeT6bhSBmwx5`, ~13.419
   Records), clientseitig durch-/filterbar (Bezeichnung/Hersteller/Art.-Nr., Kategorie- und
@@ -301,6 +451,16 @@ Oben rechts: **+ Neues Projekt** (Fragebogen) und der **Warenkorb-Badge** (Posit
   zuerst; Filter Aktuell/Archiviert). **Vorschau** (Auge-Icon) öffnet die Positionen read-only,
   **ohne** den aktiven Warenkorb zu verändern; **Wiederherstellen** lädt sie zurück in den
   aktiven Warenkorb. Editieren der Mengen passiert im Warenkorb-Panel (Badge oben rechts).
+- **Positionen aus einem Angebot in den Warenkorb (Fix 2026-07-05)** — in Kataloge/Angebote ein
+  **eingehendes** Angebot öffnen → **„Positionen herauslösen"** löst die erkannten PDF-Positionen
+  heraus → **„In Warenkorb"** legt eine Position in den aktiven Warenkorb (Zähler steigt, Panel
+  öffnet sich). *(Vorher blieb der Korb leer — Picker und sichtbares Panel schrieben/lasen zwei
+  verschiedene Körbe; jetzt derselbe.)* **Volle Daten-Fidelität:** jede übernommene Position trägt
+  ALLE Felder bis in den Checkout — Menge · Preis · Kategorie · Originaltext · Seite · Status
+  (selbstbewiesen/prüfen) · Quell-PDF · ID (nichts wird abgeschnitten). *Voraussetzung:* Angebots-PDF
+  mit erkannten Positionen. *Einschränkung:* die Zusatzfelder wandern mit, werden im Warenkorb-Panel
+  aber (noch) nicht alle **angezeigt** (sichtbar bleiben Bezeichnung/Menge/EK/VK) — reiner UI-Ausbau,
+  offen.
 - **Kontakte** — das geteilte **Airtable-Kontaktverzeichnis** (Mastermind-Base, Tabelle
   „Kontakte"): Kunden, Lieferanten, Handwerker, Architekt/Planer, Team. Sortier- und filterbar
   (Kategorie + Freitext über Name/Firma/Projekt). **Zeile klicken** → Detailkarte: alle Felder
@@ -381,6 +541,14 @@ Verbindet Drive, Kalender, Kontakte und Gmail über ein einziges OAuth-Login
 Scopes: Drive (read-only Metadaten), Calendar (read), Contacts (read),
 Gmail (read Metadaten+Snippet), UserInfo (E-Mail + Profil).
 
+**Kontakte-Import (2026-07-04):** Erscheint hier, sobald Google UND Airtable verbunden sind.
+**Vorgang:** „Vorschau laden" holt alle Google-Kontakte + den bestehenden Airtable-Bestand und
+zeigt, wie viele neu angelegt / als Dublette übersprungen (Mail oder Telefon stimmt bereits) /
+als unvollständig verworfen (weder Mail noch Telefon) würden. Erst „N Kontakte anlegen"
+schreibt wirklich — ein Kontakt nach dem anderen, mit Audit. **Voraussetzung:** beide Konten
+verbunden. **Wiederholbar** — bereits vorhandene Kontakte werden beim nächsten Lauf erneut als
+Dublette erkannt, nie doppelt angelegt.
+
 ### Airtable
 Personal Access Token (PAT) + Base-ID. Liest `Kunden` und `Projekte` aus
 `appuVMh3KDfKw4OoQ`. Sync bei App-Start und manuell über Force-Poll-Button.
@@ -423,6 +591,37 @@ Spart Kosten ohne Qualitätsverlust im Alltag. Logik: `AssistantModelRouter`.
 - **Private Area**: nutzer-eigene Credentials (Clockodo, perspektivisch weitere).
   Visuell getrennt von geteilten Integrationen.
 - **Cache leeren**: löscht lokale GRDB-Daten ohne App-Neuinstallation.
+- **Identitäts-Wiederfindung (2026-07-05):** Nach einem Zurücksetzen der lokalen Datenbank
+  **versucht** die App, deine bekannte Identität über deine Google-E-Mail (der Personalausweis)
+  wiederzufinden und daran anzuknüpfen, statt eine neue anzulegen — damit deine persönlichen
+  Schlüssel (Clockodo/ClickUp/… im Schlüsselbund) nicht verwaisen. Der Anker (E-Mail→Identität)
+  wird dafür zusätzlich im Schlüsselbund gespiegelt (trägt nur die Zuordnung, **kein** Geheimnis).
+
+---
+
+## Schlüssel-Inventar (Settings → Schlüssel-Inventar, 2026-07-05)
+
+**Was es tut:** Ein read-only Überblick über alle 6 Zugänge im Schlüsselbund
+(Google, Clockodo, ClickUp, Sevdesk, Airtable, Claude). Pro Zeile:
+Quellfarbe + Name · **persönlich/geteilt**-Badge · **Statuspunkt**
+(verbunden/nicht verbunden) · und — falls der hinterlegte Schlüssel zu einer
+**anderen/alten Identität** gehört statt zur aktiven — ein dezenter
+**„verwaist"-Hinweis** (Ocker, kein Alarm). So sieht man auf einen Blick,
+welche Schlüssel wirklich der aktuell angemeldeten Person gehören.
+
+- **persönlich:** Google, Clockodo, ClickUp, Claude (nutzer-eigen).
+- **geteilt:** Airtable, Sevdesk (teamweiter Zugang).
+
+**Wo:** Settings → Schlüssel-Inventar.
+
+**Voraussetzungen:** keine.
+
+**Einschränkungen / Sicherheit:** zeigt **ausschließlich Status + Metadaten** —
+**nie** einen Schlüssel-Wert, ein Token oder ein Passwort. Technisch liest das
+Inventar nur die Namen der Keychain-Einträge (`SecItemCopyMatching` mit
+`kSecReturnData: false`); kein Geheimnis verlässt jemals den Schlüsselbund. Das
+Inventar verändert nichts (read-only, kein Reparatur-Schreibzugriff in dieser
+Version).
 
 ---
 
@@ -574,7 +773,8 @@ Fehlermeldung, Dauer-ms, Zusammenfassung.
 | `DRIVE_POLL_OFFERS` | Angebots-PDF-Watcher | READ | Intervall (60s) + manuell | read-only | Baseline-Semantik: erster Poll meldet nichts. Handshake nur bei echtem Treffer. `isOffer` = Typ-Whitelist (PDF/Bild/Mail, kein ZIP/.numbers) **plus** Angebots-/Rechnungs-Schlüsselwort. |
 | `DRIVE_FILES_TAB` | Dateien-Tab (Finder-Baum) | READ | onDemand (Tab öffnen) | read-only | Nur Metadaten (Name/Typ/Datum/Größe). `drive.metadata.readonly` Scope. |
 | `DRIVE_OFFERS_TAB` | Angebote-Tab | READ | onDemand (Tab öffnen) | read-only | Gleiche Erkennungslogik wie `DriveOfferWatcher.detectOffers`. Typ-Whitelist (`isAcceptedOfferFileType`, EINE Quelle der Wahrheit): nur PDF/Bild/Mail, ZIP/.numbers werden ausgefiltert. |
-| `DRIVE_MATERIAL_TAB` | Material-Tab | READ | onDemand (Tab öffnen) | read-only | Tolerant per Ordnername gematcht (`05 Material` o.ä.). |
+| `DRIVE_MATERIAL_TAB` | Material-Tab (Schema-Ordner) | READ | onDemand (Tab öffnen) | read-only | Seit 2026-07-03 verallgemeinert: zeigt alle 6 Schema-Ordner (Pläne/Werkszeichnung/Renderings/Vorplanung/Layouts/Präsentation), `PlanCollector` (tolerantes Diakritik-Matching, BFS bis Tiefe 3). Vorher nur `03 PRÄSENTATION`. Seit 2026-07-03 (Sammlungs-Ansicht-Standard) auf den Stand des globalen Katalogs gezogen: Kategorie-/Typ-Filter, Sortierung (Datum/Name), Volltextsuche, Spalten je Kategorie, In-App-Datei-Vorschau (`FilePreviewView`). |
+| `DRIVE_ALL_PLANS` | Zeichnungen & Pläne (global) | READ | onDemand (Kataloge-Tab) | read-only | Aggregiert die Schema-Ordner-Dateien ALLER Projekte mit Drive-Ordner (`AllPlansCollector`, begrenzt nebenläufig, gleiche `PlanCollector`-Logik wie der Material-Tab). Eigene Typ-Whitelist: nur PDF+Bilder (keine Mail-Formate). Kategorie-Sektionen + Filter/Sortierung/Suche. Präsentation bleibt draußen. Neu 2026-07-03. |
 | `DRIVE_ASSISTANT_LIST` | Drive-Ordner-Listing (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `list_drive_folder`. Nur Metadaten, nie Dateiinhalte. Eigene Weiche (Mandate E). |
 | `DRIVE_OFFERS_FIND` | Angebote-Suche (Assistent) | READ | onDemand (Tool-Call) | read-only | Assistenten-Tool `find_offers` über `OffersCollector` (rekursiv, klassifiziert). Findet 04/05 auch verschachtelt in „01 INFOS"; global per Projektname auflösbar (S2). Ergebnisse erscheinen als **anklickbare** Karte mit In-App-Vorschau (S22, reine UI — keine eigene Weiche). |
 | `DRIVE_ALL_OFFERS` | Alle Angebote (global) | READ | onDemand (Button „Alle Angebote") | read-only | Aggregiert die 04/05-Belege ALLER Projekte mit Drive-Ordner (`AllOffersCollector`, begrenzt nebenläufig). **Zweispaltig** nach Richtung (Eingehend/Ausgehend), pro Typ gruppiert, **Kategorie-Filter** + Suche (Name/Projekt/Belegnummer). Jede Zeile trägt ihre echte Projektzuordnung. Gleiche `OffersCollector`-Logik + Typ-Whitelist (PDF/Bild/Mail; ZIP/.numbers raus) wie der Projekt-Tab. Klick → In-App-Vorschau. S23 (MYKILOS 7), Ausbau 2026-07-02. |

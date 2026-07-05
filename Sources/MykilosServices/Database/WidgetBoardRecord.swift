@@ -69,6 +69,11 @@ struct AuditRecord: Codable, FetchableRecord, PersistableRecord {
     var projectID:   String
     var action:      String
     var summary:     String
+    // Additiv (CheckIn-Spine, v23): nullable Spalten. GRDB matcht per Spaltenname —
+    // die Property-Namen `quelle`/`idempotenzKey` müssen EXAKT den ALTER-TABLE-
+    // Spaltennamen der v23-Migration entsprechen, sonst schlägt der Rundtrip stumm fehl.
+    var quelle:        String?
+    var idempotenzKey: String?
 
     init(from entry: AuditEntry) {
         self.id          = entry.id.uuidString
@@ -77,6 +82,8 @@ struct AuditRecord: Codable, FetchableRecord, PersistableRecord {
         self.projectID   = entry.projectID
         self.action      = entry.action.rawValue
         self.summary     = entry.summary
+        self.quelle        = entry.quelle
+        self.idempotenzKey = entry.idempotenzKey
     }
 
     var toDomain: AuditEntry? {
@@ -88,7 +95,9 @@ struct AuditRecord: Codable, FetchableRecord, PersistableRecord {
             actorUserID: actorUserID,
             projectID: projectID,
             action: action,
-            summary: summary
+            summary: summary,
+            quelle: quelle,
+            idempotenzKey: idempotenzKey
         )
     }
 }

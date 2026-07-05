@@ -15,7 +15,7 @@ import GRDB
 // nie berührt — diese DB hält nur Nutzer-Writes.
 public final class LearningDatabase: Sendable {
     /// Aktuelle Schemaversion (entspricht der höchsten registrierten Migration).
-    public static let schemaVersion = 4
+    public static let schemaVersion = 5
 
     private let queue: DatabaseQueue
 
@@ -231,6 +231,26 @@ public final class LearningDatabase: Sendable {
         migrator.registerMigration("v4_offer_date") { db in
             try db.alter(table: "airtable_offer_sync") { t in
                 t.add(column: "offerDate", .text)   // ISO/Freitext-Datum aus Airtable, NULL erlaubt
+            }
+        }
+
+        // v5 — Lokale PDF-extrahierte Positionen als Anker-KANDIDATEN (PDF-Positions
+        // Lern-Loop). Rein lokal, additiv. `recordID` eindeutig → Dedup beim Re-Import.
+        // Aktiv wird eine Position erst über eine ReviewAction (.releaseAsActiveAnchor),
+        // exakt wie beim Airtable-Pfad — das Gate lebt in `review_actions`.
+        migrator.registerMigration("v5_pdf_extracted_positions") { db in
+            try db.create(table: "pdf_extracted_positions") { t in
+                t.autoIncrementedPrimaryKey("pk")
+                t.column("recordID", .text).notNull().unique(onConflict: .ignore)
+                t.column("sourceFile", .text).notNull()
+                t.column("pageNumber", .integer).notNull()
+                t.column("title", .text).notNull()
+                t.column("componentType", .text).notNull()
+                t.column("netPrice", .text).notNull()          // Decimal als TEXT (volle Präzision)
+                t.column("unit", .text).notNull()
+                t.column("quantity", .double).notNull()
+                t.column("confidence", .double).notNull()
+                t.column("extractedAt", .text).notNull()
             }
         }
 

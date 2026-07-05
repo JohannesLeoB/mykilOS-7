@@ -44,10 +44,17 @@ public protocol GoogleContactsFetching: Sendable {
     /// admin-geteilte Domain-Kontakte (kontounabhängig). Default-Impl wirft, damit
     /// bestehende Fakes unberührt bleiben — der echte Client überschreibt sie.
     func searchDirectory(query: String?) async throws -> [GoogleContact]
+    /// ALLE Kontakte des verbundenen Accounts (Google-Kontakte→Airtable-Import, 2026-07-04) —
+    /// anders als `searchContacts` (Query-basiert, People-API-Suchindex) paginiert das über
+    /// `people.connections.list`. Default-Impl wirft, damit bestehende Fakes unberührt bleiben.
+    func listAllContacts() async throws -> [GoogleContact]
 }
 
 public extension GoogleContactsFetching {
     func searchDirectory(query: String?) async throws -> [GoogleContact] {
+        throw GoogleContactsError.invalidResponse
+    }
+    func listAllContacts() async throws -> [GoogleContact] {
         throw GoogleContactsError.invalidResponse
     }
 }
@@ -70,6 +77,7 @@ public struct GoogleContactsClient: GoogleContactsFetching, GoogleContactsWritin
     private let baseURL = "https://people.googleapis.com/v1/people:searchContacts"
     private let createURL = "https://people.googleapis.com/v1/people:createContact"
     private let directoryURL = "https://people.googleapis.com/v1/people:searchDirectoryPeople"
+    private let connectionsURL = "https://people.googleapis.com/v1/people/me/connections"
 
     public init(
         tokenProvider: GoogleAccessTokenProviding = GoogleAccessTokenProvider(),
@@ -121,6 +129,33 @@ public struct GoogleContactsClient: GoogleContactsFetching, GoogleContactsWritin
         guard let http = response as? HTTPURLResponse else { throw GoogleContactsError.invalidResponse }
         guard (200...299).contains(http.statusCode) else { throw GoogleContactsError.httpError(http.statusCode) }
         return try Self.parseDirectory(from: data)
+    }
+
+    // MARK: - Alle Kontakte (Google→Airtable-Import, 2026-07-04)
+
+    /// Paginiert `people.connections.list` durch — anders als `searchContacts` KEIN
+    /// Query-Suchindex, sondern die vollständige Kontaktliste des Accounts. `pageSize=200`
+    /// pro Runde, folgt `nextPageToken`, bis Google keinen mehr liefert.
+    public func listAllContacts() async throws -> [GoogleContact] {
+        guard let accessToken = try? await tokenProvider.validAccessToken() else {
+            throw GoogleContactsError.notConnected
+        }
+        var all: [GoogleContact] = []
+        var pageToken: String?
+        repeat {
+            guard let url = Self.buildConnectionsURL(baseURL: connectionsURL, pageToken: pageToken) else {
+                throw GoogleContactsError.invalidResponse
+            }
+            var request = URLRequest(url: url)
+            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else { throw GoogleContactsError.invalidResponse }
+            guard (200...299).contains(http.statusCode) else { throw GoogleContactsError.httpError(http.statusCode) }
+            let page = try Self.parseConnectionsPage(from: data)
+            all.append(contentsOf: page.contacts)
+            pageToken = page.nextPageToken
+        } while pageToken != nil
+        return all
     }
 
     private func warmup(accessToken: String) async {
@@ -267,6 +302,38 @@ public struct GoogleContactsClient: GoogleContactsFetching, GoogleContactsWritin
         }
     }
 
+    static func buildConnectionsURL(baseURL: String, pageToken: String?) -> URL? {
+        var components = URLComponents(string: baseURL)
+        var items = [
+            URLQueryItem(name: "personFields", value: "names,emailAddresses,phoneNumbers,organizations"),
+            URLQueryItem(name: "pageSize", value: "200"),
+        ]
+        if let pageToken, pageToken.isEmpty == false {
+            items.append(URLQueryItem(name: "pageToken", value: pageToken))
+        }
+        components?.queryItems = items
+        return components?.url
+    }
+
+    static func parseConnectionsPage(from data: Data) throws -> (contacts: [GoogleContact], nextPageToken: String?) {
+        do {
+            let decoded = try JSONDecoder().decode(GoogleConnectionsResponse.self, from: data)
+            let contacts = (decoded.connections ?? []).map { person in
+                GoogleContact(
+                    id: person.resourceName ?? UUID().uuidString,
+                    displayName: person.names?.first?.displayName ?? "(ohne Namen)",
+                    email: person.emailAddresses?.first?.value,
+                    phone: person.phoneNumbers?.first?.value,
+                    organization: person.organizations?.first?.name,
+                    givenName: person.names?.first?.givenName,
+                    familyName: person.names?.first?.familyName)
+            }
+            return (contacts, decoded.nextPageToken)
+        } catch {
+            throw GoogleContactsError.decodingFailed
+        }
+    }
+
     static func parseContacts(from data: Data) throws -> [GoogleContact] {
         do {
             let decoded = try JSONDecoder().decode(GoogleContactsSearchResponse.self, from: data)
@@ -294,6 +361,11 @@ private struct GoogleContactsSearchResponse: Decodable {
 
 private struct GoogleDirectoryResponse: Decodable {
     var people: [GoogleContactsPerson]?
+}
+
+private struct GoogleConnectionsResponse: Decodable {
+    var connections: [GoogleContactsPerson]?
+    var nextPageToken: String?
 }
 
 private struct GoogleContactsSearchResult: Decodable {

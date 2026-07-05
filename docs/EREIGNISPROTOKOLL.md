@@ -30,6 +30,34 @@ nie dauerhafter Arbeitsort.
 
 ---
 
+## 2026-07-04 · Claude Code — sevDesk-Postbox, Galerie-Ausrollen, Mini-Mode
+
+```
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Branch: feat/plaene-katalog
+Build:  ✅ swift build grün
+Tests:  ✅ 962 grün (126 Suites)
+```
+
+**Vormittag:** Galerie-Flug in Dateien-/Material-Tab (Liste⇄Galerie, Blättern/Diashow, echte
+Thumbnails). PDF-Positions Art.-Nr.-Extraktion + „In Warenkorb" trägt alle Infos. ClickUp
+Write-Basics + Test-Werkbank (nur Sandbox-Liste) + read-only Phasen-Abgleich. Kontakte-Airtable-
+Migration Schritt 1 (Import-Vorschau in Settings). Rainbow Mode Easter Egg. Handoff:
+`docs/handoffs/HANDOFF_GALERIE_CLICKUP_KONTAKTE_2026-07-04.md`.
+
+**Abend:** sevDesk-Postbox LIVE — `SevdeskPostboxCheckoutPort` (append-only Positions-Drop aus
+dem Warenkorb, Preview→Confirm-Gate, Objekt-Hash-Idempotenz, kein `try?` im Schreibpfad) + UI-
+Wiring (`SevdeskPostboxDropSheet`, sevDesk-BOSSMODE-Warnung, Doppel-Ausführung übers UI gesperrt).
+Skalierungs-Fix im `DocumentViewerView` (große Bilder/PDFs skalieren jetzt auf den Rahmen — global,
+weil alle Oberflächen denselben Viewer nutzen). Galerie-Flug auf ALLE Oberflächen + Mail ausgerollt.
+Mini-Mode: schwebende, immer-obenauf Icon-Sidebar-Presence (Opt-in in Settings, Default aus; Puls-
+Alerts pro Quelle dezent+abschaltbar, Hover-Karte, 2-Sek-Halten am Logo). Eine zuvor am selben Tag
+gebaute Menüleisten-Variante (`7eb9a67`) wurde noch am selben Abend durch die schwebende Variante
+ersetzt (`9ce2b9b`) — kein `NSStatusItem`-Restcode. Abend-Block ist NUR in `PROZESS_LESSONS.md`
+protokolliert (kein eigener Handoff). LEAN gewahrt: kein neuer API-Poll.
+
+---
+
 ## 2026-07-01 · Claude Code (Opus 4.8, Ultracode) — mykilOS 8 Block C: Identität + Nomenklatur (S2)
 
 ```

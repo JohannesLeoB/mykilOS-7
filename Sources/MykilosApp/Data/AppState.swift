@@ -22,6 +22,10 @@ public final class AppState {
     public let chat:       ChatStore
     public let conversation: ConversationEngine
     public let profile:    ProfileStore
+    // Personalausweis (ResidentIdentity): local-first Identitäts-Anker (verifizierte
+    // Google-Mail als kanonischer Schlüssel + reine Handles zu externen Systemen).
+    // GRDB-Master ist autoritativ; Airtable reichert read-only an. TRÄGT NIE EIN SECRET.
+    public let residentIdentity: ResidentIdentityStore
     // Schaltzentrum-Logbuch: jeder externe Datensync hinterlässt hier einen
     // Handshake (lokal + Airtable-Spiegel). Siehe DataFlowLogger.
     public let dataFlow:   DataFlowLogger
@@ -97,6 +101,9 @@ public final class AppState {
     // DeviceCatalog, falls die echte Preisbuch-CSV in Application-Support liegt
     // (sonst nil-Lookup). Echter Seed-/Korpus-Provider folgt separat.
     public let kalkulationsEngine: any KalkulationsEngineProviding
+    // Lern-Loop: dieselbe learning.sqlite wie die Engine — die UI liest hier die
+    // PDF-Positions-Kandidaten (vormerken/freigeben), die Engine liest die Anker.
+    public let learningStore: LearningStore
 
     // S4: vom Assistenten verwaltete Notizen (lokal, persistent).
     public let assistantNotes: AssistantNotesStore
@@ -133,6 +140,14 @@ public final class AppState {
         googleAuth.currentUser?.email ?? profile.profile?.displayName ?? "local"
     }
 
+    // sevDesk-Postbox-CheckoutPort (append-only Positions-Drop). Leichter Struct,
+    // Credentials kommen zur Laufzeit aus dem Keychain (AirtableClient) — daher als
+    // Computed-Property statt gespeicherter Instanz. Datenstrom-Log über dataFlow.
+    public var sevdeskPostboxPort: SevdeskPostboxCheckoutPort {
+        SevdeskPostboxCheckoutPort(
+            airtableCreate: AirtableClient(), airtableFetch: AirtableClient(), logger: dataFlow)
+    }
+
     // S9: legt einen vom Nutzer BESTÄTIGTEN Kontakt via People API an + Audit.
     // Wird der AssistantChatView als `onCreateContact` injiziert — der Widgets-Layer
     // kennt keinen Schreib-Client. Erst die Bestätigung an der Karte ruft das hier.
@@ -155,6 +170,122 @@ public final class AppState {
             MykLog.contacts.error("Audit für Kontaktanlage fehlgeschlagen: \(String(describing: error), privacy: .public)")
         }
         return .created(contact.displayName)
+    }
+
+    // MARK: - Personalausweis-Anreicherung (ResidentIdentity)
+
+    /// Reichert den Personalausweis local-first an: verankert die verifizierte
+    /// Google-Mail auf die aktive stabile userID und spiegelt die read-only aus
+    /// Airtable Clockodo-Nutzer aufgelösten Handles hinein.
+    ///
+    /// - Kanonischer Schlüssel = die volle verifizierte Google-Mail. Ohne Mail
+    ///   (noch nicht hydratisiert) passiert nichts — der nächste Start ruft
+    ///   erneut auf (non-fatal, Muster wie refreshUserInfoIfNeeded).
+    /// - GRDB-Master ist autoritativ: Airtable-Handles werden nur übernommen,
+    ///   wenn sie nicht-leer sind (überschreiben nie einen bestehenden Wert mit nil).
+    /// - userID = die bereits aktive CurrentUserContext-UUID (actorUserID bleibt
+    ///   unangetastet). TRÄGT NIE EIN SECRET.
+    public func enrichResidentIdentity() async {
+        guard let email = currentGoogleUser?.email,
+              email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else { return }
+
+        // Bestehenden Ausweis laden (local-first Master).
+        try? residentIdentity.loadByEmail(email)
+        let existing = residentIdentity.identity
+
+        // Read-only Airtable-Anreicherung (non-fatal — Loader kapselt alle Fehler).
+        let loader = ClockodoNutzerLoader()
+        await loader.load(matchingEmail: email)
+        let fetched = loader.handles
+
+        // Merge: nicht-leere Airtable-Handles gewinnen, sonst bleibt der bestehende
+        // Master-Wert. userID = aktive stabile UUID (CurrentUserContext).
+        func pick(_ new: String?, _ old: String?) -> String? {
+            if let new, new.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false { return new }
+            return old
+        }
+        // Aktive stabile UUID (in AppState.init via ensureUserID gesetzt); der
+        // "local"-Fallback ist derselbe wie in ensureUserID, falls sie fehlt.
+        let activeUserID = CurrentUserContext.current ?? existing?.userID ?? "local"
+        let merged = ResidentIdentity(
+            googleEmail: email,
+            userID: activeUserID,
+            displayName: pick(fetched?.displayName, existing?.displayName),
+            clockodoUserID: pick(fetched?.clockodoUserID, existing?.clockodoUserID),
+            clockodoEntwurfsTabelle: pick(fetched?.clockodoEntwurfsTabelle, existing?.clockodoEntwurfsTabelle),
+            clickUpMemberID: pick(fetched?.clickUpMemberID, existing?.clickUpMemberID),
+            airtableRecordID: pick(fetched?.airtableRecordID, existing?.airtableRecordID),
+            updatedAt: Date()
+        )
+
+        // Non-fatal wie refreshUserInfoIfNeeded: schlägt der Schreibvorgang fehl,
+        // läuft die Anreicherung beim nächsten Start erneut. Kein Crash.
+        try? residentIdentity.save(merged)
+
+        // ORPHAN-REBIND (Teil B, 2026-07-05): den Anker (googleEmail → userID)
+        // ZUSÄTZLICH im Keychain spiegeln, damit er eine Löschung von db.sqlite
+        // (Neuinstallation/DB-Reset) überlebt. Beim nächsten Start findet
+        // ProfileStore.ensureUserID über diesen Keychain-Anker die ALTE stabile
+        // userID wieder und rebindet darauf, statt eine neue UUID zu vergeben.
+        // Non-fatal (try?): der GRDB-Anker oben ist der Master; der Keychain-
+        // Spiegel ist die zusätzliche Überlebensschicht. TRÄGT NIE EIN SECRET.
+        try? KeychainIdentityAnchorStore().save(userID: activeUserID, forEmail: email)
+        // ORPHAN-REBIND (Teil D / Option A): die Mail zusätzlich SUFFIX-LOS ablegen,
+        // damit sie nach einem db.sqlite-Reset OHNE bekannte userID wiederbeschaffbar
+        // ist (der Mail→userID-Anker oben ist per Mail indexiert — ohne die Mail
+        // greift er nicht). Non-fatal, kein Secret.
+        try? KeychainIdentityAnchorStore().saveLastEmail(email)
+    }
+
+    // MARK: - CheckIn-Spine (Wirbelsäule, die eine zentral auditierte Naht)
+
+    /// Die CheckIn-Spine mit dem nativen Offer-Review-Adapter, verdrahtet auf den
+    /// bestehenden AuditStore (über den dünnen AuditStoreCheckInSink) und
+    /// AllowAllPortRights. Zentral, damit kein Widget das Audit „vergessen" kann und
+    /// der Nutzerstempel (actorUserID) sowie die Herkunft (quelle) IMMER gesetzt sind.
+    public var checkInSpine: CheckInSpine {
+        CheckInSpine(
+            adapter: [OfferReviewCheckInAdapter()],
+            rechte: AllowAllPortRights(alleBekanntenPorts: [OfferReviewCheckInAdapter.portID]),
+            audit: AuditStoreCheckInSink(store: audit)
+        )
+    }
+
+    /// „Angebot in Review übernehmen" durch die Spine. Ersetzt den früheren
+    /// direkten `auditStore.append` im CashWidget (Write-aus-View + hartkodierter
+    /// „local-user" behoben): der echte `actorUserID` und `quelle="drive-offer"`
+    /// landen im Audit, und der PARTIAL UNIQUE INDEX auf `idempotenzKey` macht ein
+    /// Doppel-Import idempotent (zweiter Klick → kein zweiter Eintrag).
+    ///
+    /// Rückgabe: `true` = übernommen (oder bereits vorhanden → idempotent erfolgreich).
+    /// Wird dem CashWidget als `onConfirmOffer`-Closure injiziert.
+    public func checkInOffer(projectID: String, label: String) async -> Bool {
+        let gegenstand = WorkBasket(
+            id: WorkBasketID("offer-\(projectID)"),
+            projektNummer: projectID,
+            inhaltsArt: .dokumente
+        )
+        let absicht = CheckInAbsicht(
+            adapterID: OfferReviewCheckInAdapter.portID,
+            ziel: PortZiel(kind: "review", parameter: ["angebotLabel": label]),
+            begruendung: "Angebot in Review übernommen: \(label)",
+            actorUserID: actorUserID,
+            projektNummer: projectID,
+            quelle: "drive-offer"
+        )
+        do {
+            _ = try await checkInSpine.bestaetigen(gegenstand, absicht)
+            return true
+        } catch {
+            // Idempotenz-Kollision (gleicher Key schon da) = fachlich Erfolg: das
+            // Angebot ist bereits in Review. Alles andere ist ein echter Fehler.
+            let already = audit.entries.contains {
+                $0.projectID == projectID && $0.action == .offerImported
+            }
+            if already { return true }
+            MykLog.contacts.error("CheckIn Angebot fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            return false
+        }
     }
 
     // MARK: Navigations-Brücke
@@ -185,6 +316,7 @@ public final class AppState {
         self.audit = AuditStore(db: database)
         self.favorites = FavoritesStore(db: database)
         self.profile = ProfileStore(db: database)
+        self.residentIdentity = ResidentIdentityStore(db: database)
         let chatStore = ChatStore(db: database)
         self.chat = chatStore
         // V10 Folge-Block A: stabile lokale userID VOR den Keychain-AuthServices
@@ -192,12 +324,36 @@ public final class AppState {
         // async in bootstrap(), zu spät für die Store-Konstruktion hier).
         // Erzeugt beim allerersten Start eine UUID und persistiert sie sofort;
         // danach bleibt sie stabil über Neustarts (siehe ProfileStore.ensureUserID()).
-        let userID = ProfileStore.ensureUserID(db: database)
+        let firstID = ProfileStore.ensureUserID(db: database)
         // Prozess-weit sichtbar machen: alle Default-Parameter-Konstruktionen
         // von KeychainXCredentialsStore/KeychainGoogleTokenStore (Dutzende
         // Call-Sites in AssistantTool.swift, TimelineTabView.swift, …) lösen
         // ihre userID künftig hierüber auf statt "local" zu bekommen.
-        CurrentUserContext.set(userID)
+        // Boden-Aufruf: firstID ist die frische/vorhandene UUID; der Kontext
+        // muss gesetzt sein, damit der Google-Token-Store unten die richtige
+        // per-User-Ablage liest.
+        CurrentUserContext.set(firstID)
+        // ORPHAN-REBIND (Teil A2, 2026-07-05): die verifizierte Google-Mail VOR
+        // der Store-Konstruktion aus dem Keychain hydratisieren (GoogleAuthService
+        // täte es unten synchron ohnehin — wir ziehen den Lookup schlank vor).
+        // Ist der Nutzer schon eingeloggt UND kennt der Personalausweis/Keychain-
+        // Anker zu dieser Mail eine ALTE stabile userID (typisch nach einem
+        // db.sqlite-Reset/Neuinstallation), rebindet ensureUserID DARAUF statt
+        // eine neue UUID zu vergeben — sonst verwaisten alle per-User-Keychain-
+        // Einträge. Ohne Login (kein loadUserInfo) → finalUserID == firstID
+        // (kein Rebind, Verhalten wie zuvor).
+        // Teil D (Option A): Mail ZUERST aus dem suffixlosen "letzte Mail"-Slot
+        // (überlebt einen db.sqlite-Reset, weil ohne userID-Suffix ablegt), DANN
+        // Fallback auf die userID-gebundene Userinfo (greift, wenn kein Reset war
+        // bzw. der Slot noch leer ist). So feuert der Rebind auch für den häufigen
+        // Fall "etablierter Nutzer, db.sqlite zurückgesetzt, Keychain intakt".
+        let hydratedEmail = (try? KeychainIdentityAnchorStore().loadLastEmail())
+            ?? (try? KeychainGoogleTokenStore(userID: firstID).loadUserInfo()?.email)
+        let finalUserID = ProfileStore.ensureUserID(db: database, googleEmail: hydratedEmail)
+        // ALLE per-User-Stores werden EINMAL mit der ENDGÜLTIGEN UUID gebaut —
+        // kein Doppel-Bau, kein Store zuerst mit firstID und dann nochmal.
+        CurrentUserContext.set(finalUserID)
+        let userID = finalUserID
         self.googleAuth = GoogleAuthService(tokenStore: KeychainGoogleTokenStore(userID: userID))
         self.clockodoAuth = ClockodoAuthService(
             credentialsStore: KeychainClockodoCredentialsStore(userID: userID))
@@ -260,7 +416,11 @@ public final class AppState {
         // V10, Phase 1, Block C: geteilte GRDBDatabase durchreichen, wie alle
         // anderen Stores hier auch — kein eigener Persistenz-Pfad.
         self.workBaskets = WorkBasketStore(db: database)
-        let claudeCredentials = KeychainClaudeCredentialsStore()
+        // Explizite userID wie bei den 5 Geschwister-Stores (Google/Clockodo/ClickUp/
+        // Sevdesk/Airtable). Bestehende `.local`-Credentials (aus dem impliziten Default,
+        // als CurrentUserContext.current noch nil war) werden von loadWithMigration
+        // nachgezogen — die Verbindung bleibt erhalten.
+        let claudeCredentials = KeychainClaudeCredentialsStore(userID: userID)
         self.claudeAuth = ClaudeAuthService(credentialsStore: claudeCredentials)
         self.assistantLLM = ClaudeMessagesClient(credentialsStore: claudeCredentials)
         // Engine live: Baseline-Anker (eingebaut) + DeviceCatalog (lädt die echte
@@ -274,7 +434,9 @@ public final class AppState {
         let kalkulationsEngine = KalkulationsEngine(
             provider: CompositeAnchorProvider(
                 primary: BrainSeedProvider(),
-                learned: LearnedAnchorProvider(store: learningStore)
+                learned: LearnedAnchorProvider(store: learningStore),
+                // Lern-Loop: lokal review-bestätigte PDF-Positionen als dritter Anker-Kanal.
+                pdfLearned: PDFLearnedAnchorProvider(store: learningStore)
             ),
             learningStore: learningStore,
             deviceCatalog: DeviceCatalog.loadDefault(),
@@ -288,6 +450,7 @@ public final class AppState {
             dataFlowLogger: dataFlow
         )
         self.kalkulationsEngine = kalkulationsEngine
+        self.learningStore = learningStore
         let notes = AssistantNotesStore(db: database)
         self.assistantNotes = notes
         let tasks = AssistantTasksStore(db: database)
@@ -408,10 +571,16 @@ public final class AppState {
 
         // B2-Fix: wenn Google verbunden aber kein UserInfo gecacht (z. B. Login vor S17),
         // einmal im Hintergrund nachladen — non-fatal, Sidebar zeigt Name ohne Flackern.
+        // Danach (im selben Task, nach dem Refresh) den Personalausweis anreichern,
+        // damit currentUser?.email garantiert hydratisiert ist bevor enrich guardet.
         if googleAuth.status == .connected, googleAuth.currentUser == nil {
             Task {
                 await googleAuth.refreshUserInfoIfNeeded()
+                await enrichResidentIdentity()
             }
+        } else if googleAuth.currentUser != nil {
+            // UserInfo ist bereits gecacht (dieser Session-Login) → direkt anreichern.
+            Task { await enrichResidentIdentity() }
         }
 
         guard airtableAuth.status == .connected else { return }

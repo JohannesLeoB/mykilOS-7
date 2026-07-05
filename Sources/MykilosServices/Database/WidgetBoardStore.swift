@@ -53,6 +53,9 @@ public final class WidgetBoardStore {
             // waren, hätten es sonst nie bekommen. Eigener, einmaliger Marker je
             // Board — respektiert spätere User-Entfernung (Marker bleibt gesetzt).
             try ensureWidgetOnce(.warenkorb, size: .wide)
+            // Nachzügler-Migration (2026-07-05): Barcode-Widget neu aufs Home-Board.
+            try ensureWidgetOnce(.barcode, size: .medium)
+            try ensureWidgetOnce(.rechner, size: .medium)
         }
     }
 

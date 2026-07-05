@@ -43,6 +43,51 @@ struct WorkBasketStoreTests {
         )
     }
 
+    // MARK: PDF-Positions Teil 2 — Position anhängen (Cold-Start)
+
+    @Test func fuegePositionHinzuLegtNeuenKorbAnUndUeberlebtNeustart() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let storeA = WorkBasketStore(db: db)
+        // Kein Korb vorhanden → neuer wird angelegt.
+        let basket = try await storeA.fuegePositionHinzu(
+            projektNummer: "2026-015", bezeichnung: "Küchenarbeitsplatte Granit",
+            menge: 1, ekEinzel: 5911.70, vkEinzel: nil, objektID: "file1-p1-0")
+        #expect(basket.picks.count == 1)
+
+        // Neustart: neue Instanz, selbe DB
+        let storeB = WorkBasketStore(db: db)
+        let geladen = try storeB.alle(projektNummer: "2026-015")
+        #expect(geladen.count == 1)
+        #expect(geladen[0].picks.count == 1)
+        #expect(geladen[0].picks[0].snapshot.bezeichnung == "Küchenarbeitsplatte Granit")
+        #expect(geladen[0].picks[0].snapshot.ekEinzel == 5911.70)
+    }
+
+    @Test func fuegePositionHinzuIstIdempotentProObjektID() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let store = WorkBasketStore(db: db)
+        try await store.fuegePositionHinzu(projektNummer: "2026-015", bezeichnung: "Platte",
+                                           menge: 1, ekEinzel: 100, vkEinzel: nil, objektID: "f-p1-0")
+        // Zweiter Klick auf DIESELBE Position → Menge erhöhen, kein Duplikat.
+        try await store.fuegePositionHinzu(projektNummer: "2026-015", bezeichnung: "Platte",
+                                           menge: 1, ekEinzel: 100, vkEinzel: nil, objektID: "f-p1-0")
+        let korb = try store.alle(projektNummer: "2026-015").max(by: { $0.erstellt < $1.erstellt })
+        #expect(korb?.picks.count == 1)
+        #expect(korb?.picks.first?.snapshot.menge == 2)
+    }
+
+    @Test func fuegePositionHinzuHaengtAnBestehendenKorbAn() async throws {
+        let db = try GRDBDatabase.inMemory()
+        let store = WorkBasketStore(db: db)
+        try await store.speichere(machBasket(projekt: "2026-020"))   // 2 Picks
+        try await store.fuegePositionHinzu(
+            projektNummer: "2026-020", bezeichnung: "Griffleiste",
+            menge: 5, ekEinzel: 12, vkEinzel: nil, objektID: "f-p2-3")
+        let korb = try store.alle(projektNummer: "2026-020").max(by: { $0.erstellt < $1.erstellt })
+        #expect(korb?.picks.count == 3)
+        #expect(korb?.picks.last?.snapshot.menge == 5)
+    }
+
     // MARK: 1. Kern: WorkBasket überlebt Neustart (Kopf + Picks)
 
     @Test func workBasketUeberlebtNeustart() async throws {

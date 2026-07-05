@@ -70,7 +70,9 @@ Versuche verlaufen im Sande — genau dafür gibt es den Safe State.
 
 - **Ein Repo:** `origin` = github.com/JohannesLeoB/**mykilOS-7** (privat). mykilOS-6 ist
   **archiviert** (Remote `mykilos6-archive`, read-only). Kein zweites aktives Repo.
-- `main` steht auf `v7.0.0` (e629e84). Tag liegt in `origin` + Archiv + als GitHub-Release.
+- Tag `v7.0.0` (e629e84) liegt in `origin` + Archiv + als GitHub-Release — die unantastbare
+  Rückfallebene. `main` entwickelt sich seit 2026-07-03 per PR weiter (erster Merge:
+  PR #2 → `6699dc6`); weiterhin gilt: nur über PR auf `main`.
 - **NIE** den Tag verschieben/löschen, **NIE** `main` force-pushen, **NIE** direkt auf `main`.
 - Neue Arbeit nur auf Branches (`release/7.5`, `feat/…`, `experiment/…`), signiert (SSH).
 - Frisch aufrufen: `./script/recall_safe_state.sh` (separater Worktree) oder `git checkout v7.0.0`.
@@ -104,9 +106,9 @@ für alles, was angedacht aber noch nicht entschieden/umgesetzt ist. Anders
 als die Handoffs unten (die sind abgeschlossene Session-Protokolle) ist das
 hier der dauerhafte Sammelort für offene Ideen, egal in welcher Session sie
 entstanden sind. Zwei thematische Vertiefungen liegen daneben:
-[docs/IDENTITY_LOGIN_PLAN.md](docs/IDENTITY_LOGIN_PLAN.md) (Keychain-Prompts,
+[docs/_archiv/IDENTITY_LOGIN_PLAN.md](docs/_archiv/IDENTITY_LOGIN_PLAN.md) (Keychain-Prompts,
 Single-Login-Frage) und
-[docs/ASSISTANT_CAPABILITIES_PLAN.md](docs/ASSISTANT_CAPABILITIES_PLAN.md)
+[docs/_archiv/ASSISTANT_CAPABILITIES_PLAN.md](docs/_archiv/ASSISTANT_CAPABILITIES_PLAN.md)
 (voller Such-/Schreib-Ausbau des Assistenten — Mail, Kalender, Drive,
 Notizen, Clockodo, Kontakte, Bilder, Angebote).
 
@@ -339,6 +341,11 @@ ist bitgenau roundtrip-sicher).
 - Eine Session = ein kleiner PR = ein Handoff (`docs/handoffs/HANDOFF_AKT{n}_S{m}.md`).
 - CI ist Merge-Gate: roter Build/Test = kein Merge.
 - Keine parallelen Worktrees.
+- **Abschlussbericht (Johannes, 2026-07-04):** Am Ende jeder Session einen kurzen,
+  ehrlichen Eintrag an [docs/erfahrungstraeger/PROZESS_LESSONS.md](docs/erfahrungstraeger/PROZESS_LESSONS.md)
+  anhängen (append-only, neueste oben) — was schiefging, was gut lief, Kommunikations-
+  Beobachtungen. Kein Ersatz für den Session-Handoff (der bleibt technisch/inhaltlich),
+  sondern die Meta-Ebene der Zusammenarbeit. Gilt account-übergreifend.
 
 ---
 

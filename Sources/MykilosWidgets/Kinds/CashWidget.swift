@@ -19,19 +19,26 @@ public struct CashWidget: View {
     // Block H: optionale Quelle für die „kalkuliert"-Zeile (WorkBasket-Summe). Nil im
     // Home-/Nicht-Projekt-Kontext → Zeile bleibt aus, sevDesk-Verhalten unverändert.
     public let workBasketStore: WorkBasketStore?
+    // CheckIn-Spine (Wirbelsäule): „Angebot in Review übernehmen" läuft über diese
+    // injizierte Closure (AppState.checkInOffer) statt eines direkten auditStore.append
+    // aus dem View mit hartkodiertem „local-user". Rückgabe: true = übernommen.
+    // Default nil → alter Direkt-Pfad bleibt für ungewiredte Kontexte (nicht-brechend).
+    public let onConfirmOffer: ((_ projectID: String, _ label: String) async -> Bool)?
 
     public init(
         projectID: String,
         sevdeskRef: String?,
         budget: Double?,
         auditStore: AuditStore? = nil,
-        workBasketStore: WorkBasketStore? = nil
+        workBasketStore: WorkBasketStore? = nil,
+        onConfirmOffer: ((_ projectID: String, _ label: String) async -> Bool)? = nil
     ) {
         self.projectID = projectID
         self.sevdeskRef = sevdeskRef
         self.budget = budget
         self.auditStore = auditStore
         self.workBasketStore = workBasketStore
+        self.onConfirmOffer = onConfirmOffer
     }
 
     @Environment(StudioContext.self) private var context
@@ -172,11 +179,34 @@ public struct CashWidget: View {
         return "Drive-PDF erkannt."
     }
 
-    // Bestätigung läuft über AuditStore.append(...) statt nur lokalen @State —
-    // Schreibvorgänge kommen nie aus Views direkt, sondern über den Store, und
-    // überleben jetzt einen Neustart (siehe .task(id: projectID) oben).
+    // Reines Angebots-Label (ohne Markdown) — stabiler Idempotenz-Anker für die Spine.
+    private var angebotLabel: String {
+        if case .reviewSuggested(_, let label) = reviewSignal { return label }
+        return "Eingangsangebot"
+    }
+
+    // Bestätigung läuft bevorzugt über die CheckIn-Spine (AppState.checkInOffer):
+    // zentraler Audit, echter actorUserID, quelle="drive-offer", harte Idempotenz.
+    // Schreibvorgänge kommen nie aus dem View direkt. Nur wenn KEINE Spine-Closure
+    // injiziert ist (ungewiredter Kontext), fällt es auf den alten AuditStore-Pfad
+    // zurück — kein Doppel-Audit, immer genau EINER der beiden Wege.
     private func confirmReview() {
         auditError = nil
+        if let onConfirmOffer {
+            let pid = projectID
+            let label = angebotLabel
+            Task {
+                let erfolg = await onConfirmOffer(pid, label)
+                if erfolg {
+                    withAnimation(.easeInOut(duration: 0.25)) { reviewAccepted = true }
+                } else {
+                    auditError = "Konnte nicht gespeichert werden."
+                }
+            }
+            return
+        }
+        // Fallback (keine Spine): alter Direkt-Pfad. Bewusst nur hier, damit ungewiredte
+        // Kontexte (Previews/Tests ohne AppState) weiter funktionieren.
         guard let auditStore else {
             withAnimation(.easeInOut(duration: 0.25)) { reviewAccepted = true }
             return

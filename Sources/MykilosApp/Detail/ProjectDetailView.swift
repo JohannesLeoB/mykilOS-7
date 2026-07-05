@@ -221,6 +221,8 @@ private struct ProjectWidgetBoardView: View {
     // Rest LEER (Spacer) statt zu dehnen. Kein Grid mehr → kein "unlimited"-Regressionsrisiko.
     @State private var boardWidth: CGFloat = 0
     @State private var showWidgetSelector = false
+    // Kontakte-Widget: Klick auf Mail-Adresse → ComposeMailView (2026-07-04).
+    @State private var composeMailTarget: MailComposeTarget?
 
     var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
@@ -244,6 +246,9 @@ private struct ProjectWidgetBoardView: View {
             }
         )
         .opacity(boardWidth > 0 ? 1 : 0)   // ein Frame unsichtbar, bis die Breite gemessen ist
+        .sheet(item: $composeMailTarget) { target in
+            ComposeMailView(contacts: [], prefilledTo: target.id)
+        }
     }
 
     // Schlanke Leiste über dem Board: Widget-Selektor öffnen (selbst-konfigurierbar).
@@ -314,13 +319,16 @@ private struct ProjectWidgetBoardView: View {
         switch instance.kind {
         case .drive:     DriveWidget(projectID: projectID, driveFolderID: driveFolderID)
         case .tasks:     TasksWidget(projectID: projectID, clickUpListID: clickUpListID)
-        case .contacts:  ContactsWidget(projectID: projectID, contactsQuery: contactsQuery)
-        case .cash:      CashWidget(projectID: projectID, sevdeskRef: sevdeskRef, budget: budget, auditStore: auditStore, workBasketStore: appState.workBaskets)
+        case .contacts:  ContactsWidget(projectID: projectID, contactsQuery: contactsQuery,
+                                        onMailContact: { composeMailTarget = MailComposeTarget(id: $0) })
+        case .cash:      CashWidget(projectID: projectID, sevdeskRef: sevdeskRef, budget: budget, auditStore: auditStore, workBasketStore: appState.workBaskets,
+                                    onConfirmOffer: { pid, label in await appState.checkInOffer(projectID: pid, label: label) })
         case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: calendarQuery)
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)
         case .assistant: ProjectAssistantChatWidget(projectID: projectID, driveFolderID: driveFolderID, clickUpListID: clickUpListID)
         case .mail:      MailWidget(projectID: projectID, mailQuery: mailQuery)
-        case .warenkorb: WarenkorbWidget(store: appState.workBaskets, projectID: projectID, projektName: projektName)
+        case .warenkorb: WarenkorbWidget(store: appState.workBaskets, projectID: projectID, projektName: projektName,
+                                         postboxPort: appState.sevdeskPostboxPort, actorUserID: appState.actorUserID)
         default:         EmptyView()
         }
     }
@@ -384,4 +392,11 @@ private struct TabButton: View {
         .buttonStyle(.plain)
         .onHover { hovering in withAnimation(.easeInOut(duration: 0.12)) { isHovered = hovering } }
     }
+}
+
+// MARK: - MailComposeTarget
+// Identifiable-Wrapper für den Sheet-Trigger — Klick auf eine Kontakt-Mail-Adresse öffnet
+// ComposeMailView mit dieser Adresse vorausgefüllt (2026-07-04).
+private struct MailComposeTarget: Identifiable {
+    let id: String
 }

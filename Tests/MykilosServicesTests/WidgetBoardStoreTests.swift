@@ -203,4 +203,102 @@ struct WidgetBoardStoreTests {
         try store.load()
         #expect(store.instances.count == countAfterFirst)
     }
+
+    // MARK: Barcode-Widget landet per Nachzügler-Migration aufs Home-Board + überlebt Neustart
+    // Beweist die 2026-07-05-Migration: ein bestehendes Home-Board (Vor-Barcode-Stand)
+    // bekommt das neue Barcode-Widget ergänzt und behält es über Neustarts.
+    @Test func barcodeLandetAufHomeBoardUndUeberlebtNeustart() throws {
+        let db = try GRDBDatabase.inMemory()
+        // Session A: altes Home-Board OHNE Barcode
+        let altHome: [WidgetInstance] = [
+            WidgetInstance(kind: .focus,          size: .wide,   position: 0),
+            WidgetInstance(kind: .notes,          size: .medium, position: 1),
+            WidgetInstance(kind: .projectFaves,   size: .full,   position: 2),
+            WidgetInstance(kind: .recentActivity, size: .wide,   position: 3),
+            WidgetInstance(kind: .clockodo,       size: .medium, position: 4),
+        ]
+        let storeA = WidgetBoardStore(boardID: "home", db: db) { altHome }
+        try storeA.load()
+        #expect(storeA.instances.contains(where: { $0.kind == .barcode }) == false)
+
+        // Session B: App aktualisiert — homeLayout enthält jetzt .barcode → Migration ergänzt
+        let storeB = WidgetBoardStore(boardID: "home", db: db) { WidgetBoardDefault.homeLayout }
+        try storeB.load()
+        #expect(storeB.instances.contains(where: { $0.kind == .barcode }))
+        #expect(storeB.instances.contains(where: { $0.kind == .rechner }))
+
+        // Session C: Neustart — beide bleiben persistent
+        let storeC = WidgetBoardStore(boardID: "home", db: db) { WidgetBoardDefault.homeLayout }
+        try storeC.load()
+        #expect(storeC.instances.contains(where: { $0.kind == .barcode }))
+        #expect(storeC.instances.contains(where: { $0.kind == .rechner }))
+    }
+
+    // MARK: Vom User ENTFERNTES Nachzügler-Widget kommt NICHT zurück (Marker bleibt)
+    // Kern-Vertrag von ensureWidgetOnce: die Migration ergänzt ein Widget genau
+    // EINMAL je Board (Marker "<boardID>#<kind>"). Entfernt der User es danach,
+    // darf ein späterer load() es nicht wieder anhängen — sonst wäre die
+    // User-Entscheidung folgenlos. Bisher ungetestet.
+    @Test func entferntesNachzueglerWidgetKommtNichtZurueck() throws {
+        let db = try GRDBDatabase.inMemory()
+        // Session A: altes Home-Board OHNE Rechner (Vor-Migrations-Stand).
+        let altHome: [WidgetInstance] = [
+            WidgetInstance(kind: .focus,        size: .wide,   position: 0),
+            WidgetInstance(kind: .notes,        size: .medium, position: 1),
+            WidgetInstance(kind: .projectFaves, size: .full,   position: 2),
+        ]
+        let storeA = WidgetBoardStore(boardID: "home", db: db) { altHome }
+        try storeA.load()
+        #expect(storeA.instances.contains(where: { $0.kind == .rechner }) == false)
+
+        // Session B: App aktualisiert → homeLayout enthält .rechner → Migration ergänzt.
+        let storeB = WidgetBoardStore(boardID: "home", db: db) { WidgetBoardDefault.homeLayout }
+        try storeB.load()
+        let rechner = try #require(storeB.instances.first(where: { $0.kind == .rechner }))
+        // User entfernt den Rechner bewusst.
+        try storeB.remove(id: rechner.id)
+        #expect(storeB.instances.contains(where: { $0.kind == .rechner }) == false)
+
+        // Session C: Neustart — der Rechner darf NICHT zurückkommen (Marker gesetzt).
+        let storeC = WidgetBoardStore(boardID: "home", db: db) { WidgetBoardDefault.homeLayout }
+        try storeC.load()
+        #expect(storeC.instances.contains(where: { $0.kind == .rechner }) == false)
+
+        // Und noch ein Neustart — bleibt stabil weg.
+        let storeD = WidgetBoardStore(boardID: "home", db: db) { WidgetBoardDefault.homeLayout }
+        try storeD.load()
+        #expect(storeD.instances.contains(where: { $0.kind == .rechner }) == false)
+    }
+
+    // MARK: Auch das canonicalLayout-Reconcile respektiert User-Entfernung
+    // Gegenstück auf Projekt-Board-Ebene: SOBALD der einmalige Reconcile gelaufen
+    // ist (Marker "<boardID>" gesetzt), bleibt ein vom User entferntes kanonisches
+    // Widget entfernt. Wichtige Nuance des Ist-Verhaltens: der Reconcile läuft
+    // erst beim ZWEITEN Öffnen (das Erst-Öffnen seedet nur das Default-Layout und
+    // setzt noch keinen Marker) — deshalb hier erst zweimal öffnen, dann entfernen.
+    @Test func entferntesKanonischesWidgetKommtNichtZurueck() throws {
+        let db = try GRDBDatabase.inMemory()
+        // Erst-Öffnen: seedet canonicalLayout (records leer → if-Zweig, kein Marker).
+        let storeSeed = WidgetBoardStore(boardID: "proj_ME-24", db: db) {
+            WidgetBoardDefault.canonicalLayout
+        }
+        try storeSeed.load()
+
+        // Zweit-Öffnen: records vorhanden → reconcileCanonicalWidgetsOnce setzt den
+        // Marker. Ab jetzt sind User-Entfernungen dauerhaft.
+        let storeA = WidgetBoardStore(boardID: "proj_ME-24", db: db) {
+            WidgetBoardDefault.canonicalLayout
+        }
+        try storeA.load()
+        let cash = try #require(storeA.instances.first(where: { $0.kind == .cash }))
+        try storeA.remove(id: cash.id)
+        #expect(storeA.instances.contains(where: { $0.kind == .cash }) == false)
+
+        // Neustart mit demselben canonicalLayout — Cash darf NICHT zurückkommen.
+        let storeB = WidgetBoardStore(boardID: "proj_ME-24", db: db) {
+            WidgetBoardDefault.canonicalLayout
+        }
+        try storeB.load()
+        #expect(storeB.instances.contains(where: { $0.kind == .cash }) == false)
+    }
 }

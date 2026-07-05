@@ -19,6 +19,8 @@ public enum WidgetKind: String, Codable, CaseIterable, Sendable {
     case mail           // E-Mails · Pflaume
     case kalkulation    // Schätz-Brain · Ocker
     case warenkorb      // Projekt-Warenkorb · Tiefblau
+    case barcode        // Barcode-Scanner (Kamera) · Terrakotta
+    case rechner        // Taschenrechner (Braun-angelehnt) · Ocker
     // Akt 3+: sevdesk…
 }
 

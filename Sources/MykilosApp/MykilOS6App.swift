@@ -13,10 +13,19 @@ struct MykilOS6App: App {
     enum BootPhase { case ready(AppState); case failed(message: String, dbPath: String) }
     @State private var phase: BootPhase
     @State private var context = StudioContext()
+    // Mini-Mode: schwebendes, fokus-neutrales NSPanel mit der eingeklappten Icon-Sidebar
+    // (immer-obenauf über Vollbild-Spaces). Reine AppKit-Fenster-Infrastruktur, imperativ
+    // über einen @Observable-Controller verwaltet (kein SwiftUI-Scene-Objekt). Wird erst mit
+    // AppState/StudioContext verdrahtet, sobald der Boot fertig ist. Opt-in in Settings.
+    @State private var miniMode = MiniModeController()
     @Environment(\.scenePhase) private var scenePhase
     // Hell/Dunkel/Auto (2026-07-02): per-Nutzer-Wahl statt System-Zwang.
     @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
     private var appearance: AppAppearance { AppAppearance.from(appearanceRaw) }
+    // Rainbow Mode (Easter Egg, 2026-07-04): Toggle sitzt in UserDefaults (MykColor liest
+    // direkt daraus), `.id(rainbowMode)` erzwingt einen kompletten Redraw der Baumstruktur
+    // beim Umschalten — gleiches Reaktivitätsmuster wie `appearanceRaw` oben.
+    @AppStorage("ui.rainbowMode") private var rainbowMode = false
 
     init() {
         // Single-Instance-Guard: läuft bereits eine andere Instanz, diese aktivieren
@@ -47,6 +56,7 @@ struct MykilOS6App: App {
                 // Per-Nutzer-Wahl treibt die gesamte App-Darstellung; nil (=auto)
                 // folgt weiter dem System.
                 .preferredColorScheme(appearance.preferredColorScheme)
+                .id(rainbowMode)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1340, height: 860)
@@ -70,10 +80,15 @@ struct MykilOS6App: App {
     private var rootView: some View {
         switch phase {
         case .ready(let appState):
-            ContentView()
+            ContentView(miniMode: miniMode)
                 .environment(appState)
                 .environment(context)
                 .task { await appState.bootstrap() }
+                // Mini-Mode: sobald der AppState bereit ist, den Controller mit den
+                // bestehenden Stores + der geteilten StudioContext-Instanz verdrahten
+                // (kein neuer Poll, nur Lesen aus Caches). Startet das Panel NICHT — das
+                // löst erst die Halte-Geste am Sidebar-Button aus (Opt-in vorausgesetzt).
+                .task { miniMode.attach(appState: appState, context: context) }
                 // Beim Wechsel in den Hintergrund / vor App-Quit (macOS geht über
                 // .background) alle ungespeicherten Notizen sichern — sonst kann
                 // Cmd-Q eine im Debounce-Fenster hängende Eingabe verlieren.
@@ -192,7 +207,14 @@ private struct SidebarCollapsedKey: FocusedValueKey {
 private struct PaletteOpenKey: FocusedValueKey {
     typealias Value = Binding<Bool>
 }
+private struct PriceReviewOpenKey: FocusedValueKey {
+    typealias Value = Binding<Bool>
+}
 extension FocusedValues {
+    var priceReviewOpen: Binding<Bool>? {
+        get { self[PriceReviewOpenKey.self] }
+        set { self[PriceReviewOpenKey.self] = newValue }
+    }
     var activeModule: Binding<AppModule>? {
         get { self[ActiveModuleKey.self] }
         set { self[ActiveModuleKey.self] = newValue }
@@ -209,6 +231,9 @@ extension FocusedValues {
 
 // MARK: - ContentView
 struct ContentView: View {
+    // Mini-Mode-Controller (schwebendes Panel). Injiziert von der App-Wurzel, damit er die
+    // Boot-Anbindung teilt. Klick-Ziele im Rail routen über onSelectModule zurück hierher.
+    let miniMode: MiniModeController
     @State private var module: AppModule = .today
     // Settings-Sidebar-Modus: gewählte Kategorie + letztes Nicht-Settings-Modul (Rückkehr).
     @State private var settingsCategory: SettingsCategory = .profil
@@ -225,6 +250,9 @@ struct ContentView: View {
     @State private var showFreshnessBanner = true
     // ⌘K Command-Palette (S5): globaler Fuzzy-Sprung zu Modulen + Projekten.
     @State private var showPalette = false
+    // Lern-Loop: Preis-Wissen-Review (offene PDF-Positions-Kandidaten freigeben),
+    // dauerhaft über den Menübefehl erreichbar — nicht nur nach dem Vormerken.
+    @State private var showPriceReview = false
 
     // Direkt nutzbar: der Wizard erzwingt sich beim ersten Start NUR, wenn Claude
     // fehlt (= Assistent stumm). Google ist "empfohlen", nicht Pflicht — wer nur
@@ -263,9 +291,16 @@ struct ContentView: View {
                 )
             }
         }
+        // Mini-Mode: Rail-Icon-Klicks öffnen ein Modul über diese Weiche (der Controller
+        // kennt die SwiftUI-Navigation nicht selbst). Bei jedem Aufbau frisch setzen.
+        .onAppear { miniMode.onSelectModule = { module = $0 } }
         .focusedValue(\.activeModule, $module)
         .focusedValue(\.sidebarCollapsed, $sidebarCollapsed)
         .focusedValue(\.paletteOpen, $showPalette)
+        .focusedValue(\.priceReviewOpen, $showPriceReview)
+        .sheet(isPresented: $showPriceReview) {
+            PriceKnowledgeReviewView(store: appState.learningStore, onClose: { showPriceReview = false })
+        }
         // Navigations-Brücke (siehe AppState.pendingProjectSelection): sobald ein
         // anderes Modul "öffne Projekt X" anfordert, wechselt hier nur das Modul
         // — das tatsächliche Öffnen übernimmt ProjectGalleryView selbst.
@@ -310,7 +345,11 @@ struct ContentView: View {
                 settingsMode: module == .settings,
                 settingsCategory: $settingsCategory,
                 onExitSettings: { module = lastModule },
-                timerCheckInRequested: $timerCheckInRequested
+                timerCheckInRequested: $timerCheckInRequested,
+                // Halte-Geste am mykilOS-Button (~2 s) startet den Mini-Mode — aber nur,
+                // wenn er in Settings freigeschaltet ist. Sonst bleibt der Button ein
+                // reiner Sidebar-Toggle (die Geste feuert dann nichts).
+                onEnterMiniMode: { miniMode.activate() }
             )
             .fixedSize(horizontal: true, vertical: false)
             .layoutPriority(1)
@@ -649,6 +688,7 @@ struct AppCommands: Commands {
     @Environment(\.openWindow) private var openWindow
     @FocusedBinding(\.activeModule)           private var activeModule
     @FocusedBinding(\.paletteOpen)            private var paletteOpen
+    @FocusedBinding(\.priceReviewOpen)        private var priceReviewOpen
     @AppStorage("ui.sidebarCollapsed") private var sidebarCollapsed = false
 
     var body: some Commands {
@@ -682,6 +722,9 @@ struct AppCommands: Commands {
                 .keyboardShortcut("4", modifiers: .command)
             Button("Einstellungen")   { activeModule = .settings }
                 .keyboardShortcut(",", modifiers: .command)
+            Divider()
+            // Lern-Loop: offene PDF-Positions-Kandidaten freigeben (dauerhaft erreichbar).
+            Button("Preis-Wissen freigeben …") { priceReviewOpen = true }
         }
     }
 }

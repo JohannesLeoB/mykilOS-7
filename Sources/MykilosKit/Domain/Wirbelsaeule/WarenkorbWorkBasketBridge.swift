@@ -67,7 +67,12 @@ public enum WarenkorbWorkBasketBridge {
     }
 
     private static func attribute(fuer item: WarenkorbItem) -> [String: String] {
-        var attribute: [String: String] = ["quelle": item.quelle]
+        // Volle Daten-Fidelität: die freien Zusatzfelder des Items (Originaltext, Seite,
+        // Richtung, Konfidenz, Quell-PDF … bei aus einem Angebot herausgelösten Positionen)
+        // wandern mit in den PickSnapshot. `quelle`/`artikelnummer` überschreiben bewusst,
+        // damit sie kanonisch aus den strukturierten Feldern stammen.
+        var attribute = item.attribute
+        attribute["quelle"] = item.quelle
         if item.artikelnummer.isEmpty == false {
             attribute["artikelnummer"] = item.artikelnummer
         }

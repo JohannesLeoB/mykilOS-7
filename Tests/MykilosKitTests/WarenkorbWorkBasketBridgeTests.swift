@@ -144,4 +144,56 @@ struct WarenkorbWorkBasketBridgeTests {
             "Elektroanschluss Herd + Spüle",
         ])
     }
+
+    // MARK: 6. Volle Daten-Fidelität: freie `attribute`-Felder wandern über die Bridge mit
+    // (Bugfix 2026-07-05 — herausgelöste PDF-Positionen tragen Originaltext/Seite/Status usw.)
+
+    @Test func freieAttributeWandernUeberDieBridgeInDenPickSnapshot() {
+        let item = WarenkorbItem(
+            bezeichnung: "Grifflose Front", artikelnummer: "ART-42",
+            menge: 3, ekNetto: 42.0, quelle: "angebot-eingehend",
+            attribute: [
+                "originalText": "3 Stk Grifflose Front 42,00 = 126,00",
+                "seite": "2", "richtung": "eingehend", "kategorie": "Front",
+                "status": "green", "gesamtpreisNetto": "126", "listenpreis": "50",
+            ])
+        let basket = WarenkorbWorkBasketBridge.workBasket(
+            aus: Warenkorb(items: [item]), projektNummer: "2026-015", id: WorkBasketID("WK-attr"))
+        let attr = basket.picks[0].snapshot.attribute
+        #expect(attr["originalText"] == "3 Stk Grifflose Front 42,00 = 126,00")
+        #expect(attr["seite"] == "2")
+        #expect(attr["kategorie"] == "Front")
+        #expect(attr["status"] == "green")
+        #expect(attr["gesamtpreisNetto"] == "126")
+        #expect(attr["listenpreis"] == "50")
+        // quelle/artikelnummer kanonisch aus den strukturierten Feldern.
+        #expect(attr["quelle"] == "angebot-eingehend")
+        #expect(attr["artikelnummer"] == "ART-42")
+    }
+
+    // MARK: 7. Cold-Start-Toleranz: altes WarenkorbItem-JSON OHNE `attribute` bleibt lesbar
+    // (EISERN „Assistent-Gedächtnis = Codable": neues Nicht-Optional-Feld darf alte Daten
+    // nicht unlesbar machen — decodeIfPresent ?? [:]).
+
+    @Test func altesWarenkorbItemOhneAttributeDekodiertZuLeeremDict() throws {
+        let altesJSON = """
+        {"bezeichnung":"Spüle","artikelnummer":"SPL-001","menge":2,"quelle":"katalog","ekNetto":100.0}
+        """.data(using: .utf8)!
+        let item = try JSONDecoder().decode(WarenkorbItem.self, from: altesJSON)
+        #expect(item.bezeichnung == "Spüle")
+        #expect(item.menge == 2)
+        #expect(item.ekNetto == 100.0)
+        #expect(item.attribute.isEmpty)   // fehlendes Feld → leeres Dict, kein Decode-Fehler
+    }
+
+    @Test func warenkorbItemMitAttributeRoundtrippt() throws {
+        let original = WarenkorbItem(
+            bezeichnung: "Front", artikelnummer: "F-1", menge: 1, quelle: "angebot-eingehend",
+            attribute: ["seite": "3", "status": "amber"])
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(WarenkorbItem.self, from: data)
+        #expect(decoded == original)
+        #expect(decoded.attribute["seite"] == "3")
+        #expect(decoded.attribute["status"] == "amber")
+    }
 }

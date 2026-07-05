@@ -82,11 +82,17 @@ struct AllOfferRow: View {
     /// Task A (Dev-Checkout-Exporter): optionaler Warenkorb-Kontext für „In Warenkorb".
     var warenkorb: WarenkorbState? = nil
 
+    @Environment(AppState.self) private var appState
     @State private var showPreview = false
+    @State private var showPositions = false
     @State private var resolvedLocalURL: URL?
     @State private var isHovered = false
 
     private var file: GoogleDriveFile { item.offer.file }
+
+    private var isPDF: Bool {
+        file.mimeType == "application/pdf" || (file.name as NSString).pathExtension.lowercased() == "pdf"
+    }
 
     // Führt mit der echten Projektzuordnung (Titel · Nummer). Richtung + Typ zeigt
     // schon die Spalte bzw. die Typ-Sektion — hier bewusst nicht doppelt.
@@ -162,7 +168,29 @@ struct AllOfferRow: View {
                 .frame(width: 320)
                 .padding(MykSpace.s2)
         }
+        .overlay(alignment: .trailing) {
+            // Flaggschiff-Feature sichtbar statt nur im Rechtsklick-Menü versteckt
+            // (Johannes-Feedback 2026-07-04: nicht auffindbar).
+            if isPDF {
+                Button {
+                    showPositions = true
+                } label: {
+                    Image(systemName: "text.line.first.and.arrowtriangle.forward")
+                        .font(.mykCaption)
+                        .foregroundStyle(MykColor.cash.color)
+                }
+                .buttonStyle(.bordered)
+                .help("Positionen aus diesem PDF-Angebot herauslösen und in den Warenkorb legen")
+                .accessibilityLabel("Positionen aus PDF herauslösen")
+                .opacity(isHovered ? 1.0 : 0.55)
+                .padding(.trailing, warenkorb != nil ? 60 : 24)
+            }
+        }
         .contextMenu {
+            if isPDF {
+                Button("Positionen herauslösen") { showPositions = true }
+                Divider()
+            }
             Button("Im Finder zeigen") {
                 if let local = resolveLocalURL() {
                     LocalDriveRootResolver.shared.revealInFinder(localURL: local)
@@ -173,6 +201,36 @@ struct AllOfferRow: View {
             if let link = file.webViewLink, let url = URL(string: link) {
                 Button("Im Browser öffnen") { NSWorkspace.shared.open(url) }
             }
+        }
+        .sheet(isPresented: $showPositions) {
+            // Bugfix 2026-07-05 (Live-Feedback): Klick auf „In Warenkorb" im Positionen-Picker
+            // muss in DENSELBEN Warenkorb landen, den diese Ansicht anzeigt — das ist der
+            // `WarenkorbState`/`WarenkorbPanel` dieses Moduls, NICHT der projektgebundene
+            // `WorkBasketStore`. Der frühere Reroute in `workBaskets` schrieb in einen anderen
+            // Korb: das sichtbare Panel blieb bei „0 Pos.", und die Positionen landeten in einem
+            // Speicher, aus dem diese Ansicht gar nicht auscheckt. Volle Daten-Fidelität bleibt
+            // erhalten (`attribute` trägt Menge/Preise/Kategorie/Status/Originaltext/Seite/Quelle
+            // bis in den Checkout). Fehlt der Warenkorb-Kontext, würde der Button gar nicht
+            // erscheinen (onTake == nil) — daher hier hart entpackt.
+            OfferPositionsSheet(
+                file: file,
+                onTake: warenkorb.map { korb in
+                    { (paged: OfferPositionPDFReader.PagedPosition, index: Int) in
+                        let p = paged.position
+                        let preis = p.netPrice.map { ($0 as NSDecimalNumber).doubleValue }
+                        let eingehend = item.direction == .incoming
+                        korb.addPosition(
+                            objektID: "\(file.id)-\(paged.pageNumber)-\(index)",
+                            bezeichnung: p.title.isEmpty ? file.name : p.title,
+                            menge: max(1, Int((p.quantity ?? 1).rounded())),
+                            preisNetto: preis,
+                            eingehend: eingehend,
+                            attribute: positionsAttribute(p, quelle: file.name, seite: paged.pageNumber, eingehend: eingehend))
+                        korb.showPanel = true
+                    }
+                },
+                learningStore: appState.learningStore,
+                onClose: { showPositions = false })
         }
     }
 }
