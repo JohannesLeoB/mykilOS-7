@@ -168,6 +168,57 @@ public final class AppState {
         return .created(contact.displayName)
     }
 
+    // MARK: - CheckIn-Spine (Wirbelsäule, die eine zentral auditierte Naht)
+
+    /// Die CheckIn-Spine mit dem nativen Offer-Review-Adapter, verdrahtet auf den
+    /// bestehenden AuditStore (über den dünnen AuditStoreCheckInSink) und
+    /// AllowAllPortRights. Zentral, damit kein Widget das Audit „vergessen" kann und
+    /// der Nutzerstempel (actorUserID) sowie die Herkunft (quelle) IMMER gesetzt sind.
+    public var checkInSpine: CheckInSpine {
+        CheckInSpine(
+            adapter: [OfferReviewCheckInAdapter()],
+            rechte: AllowAllPortRights(alleBekanntenPorts: [OfferReviewCheckInAdapter.portID]),
+            audit: AuditStoreCheckInSink(store: audit)
+        )
+    }
+
+    /// „Angebot in Review übernehmen" durch die Spine. Ersetzt den früheren
+    /// direkten `auditStore.append` im CashWidget (Write-aus-View + hartkodierter
+    /// „local-user" behoben): der echte `actorUserID` und `quelle="drive-offer"`
+    /// landen im Audit, und der PARTIAL UNIQUE INDEX auf `idempotenzKey` macht ein
+    /// Doppel-Import idempotent (zweiter Klick → kein zweiter Eintrag).
+    ///
+    /// Rückgabe: `true` = übernommen (oder bereits vorhanden → idempotent erfolgreich).
+    /// Wird dem CashWidget als `onConfirmOffer`-Closure injiziert.
+    public func checkInOffer(projectID: String, label: String) async -> Bool {
+        let gegenstand = WorkBasket(
+            id: WorkBasketID("offer-\(projectID)"),
+            projektNummer: projectID,
+            inhaltsArt: .dokumente
+        )
+        let absicht = CheckInAbsicht(
+            adapterID: OfferReviewCheckInAdapter.portID,
+            ziel: PortZiel(kind: "review", parameter: ["angebotLabel": label]),
+            begruendung: "Angebot in Review übernommen: \(label)",
+            actorUserID: actorUserID,
+            projektNummer: projectID,
+            quelle: "drive-offer"
+        )
+        do {
+            _ = try await checkInSpine.bestaetigen(gegenstand, absicht)
+            return true
+        } catch {
+            // Idempotenz-Kollision (gleicher Key schon da) = fachlich Erfolg: das
+            // Angebot ist bereits in Review. Alles andere ist ein echter Fehler.
+            let already = audit.entries.contains {
+                $0.projectID == projectID && $0.action == .offerImported
+            }
+            if already { return true }
+            MykLog.contacts.error("CheckIn Angebot fehlgeschlagen: \(String(describing: error), privacy: .public)")
+            return false
+        }
+    }
+
     // MARK: Navigations-Brücke
     // ContentView besitzt `module` (Sidebar-Auswahl), ProjectGalleryView besitzt
     // `selectedProject` (welches Projekt offen ist) — beide bewusst reine

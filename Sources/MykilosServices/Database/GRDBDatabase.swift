@@ -450,6 +450,26 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v23_audit_checkin (CheckIn-Spine) — der zentral auditierte Check-in bekommt
+        // zwei additive, nullable Spalten auf der HEILIGEN auditEntries-Tabelle:
+        //   quelle        — offene Herkunft ("drive-offer"/"kalkulation"/"warenkorb"/…)
+        //   idempotenzKey — deterministischer Dedup-Schlüssel
+        // Beide nullable → bestehende Zeilen bleiben gültig (lesen als NULL → nil).
+        // PLUS ein PARTIAL UNIQUE INDEX auf idempotenzKey, der die Idempotenz HART macht:
+        // ein zweiter Check-in mit gleichem Key kann nicht durchrutschen. Die WHERE-Klausel
+        // schont Alt-Zeilen (idempotenzKey IS NULL) — beliebig viele NULL sind erlaubt.
+        migrator.registerMigration("v23_audit_checkin") { db in
+            try db.alter(table: "auditEntries") { t in
+                t.add(column: "quelle", .text)
+                t.add(column: "idempotenzKey", .text)
+            }
+            try db.execute(sql: """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_auditEntries_idempotenzKey
+                ON auditEntries(idempotenzKey)
+                WHERE idempotenzKey IS NOT NULL
+                """)
+        }
+
         return migrator
     }
 

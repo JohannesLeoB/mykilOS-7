@@ -321,7 +321,8 @@ private struct ProjectWidgetBoardView: View {
         case .tasks:     TasksWidget(projectID: projectID, clickUpListID: clickUpListID)
         case .contacts:  ContactsWidget(projectID: projectID, contactsQuery: contactsQuery,
                                         onMailContact: { composeMailTarget = MailComposeTarget(id: $0) })
-        case .cash:      CashWidget(projectID: projectID, sevdeskRef: sevdeskRef, budget: budget, auditStore: auditStore, workBasketStore: appState.workBaskets)
+        case .cash:      CashWidget(projectID: projectID, sevdeskRef: sevdeskRef, budget: budget, auditStore: auditStore, workBasketStore: appState.workBaskets,
+                                    onConfirmOffer: { pid, label in await appState.checkInOffer(projectID: pid, label: label) })
         case .calendar:  CalendarWidget(projectID: projectID, calendarQuery: calendarQuery)
         case .notes:     NotesWidget(projectID: projectID, noteStore: noteStore)
         case .assistant: ProjectAssistantChatWidget(projectID: projectID, driveFolderID: driveFolderID, clickUpListID: clickUpListID)
