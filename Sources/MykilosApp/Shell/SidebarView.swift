@@ -170,7 +170,7 @@ struct SidebarView: View {
     @ViewBuilder private var navItems: some View {
         if settingsMode, let category = settingsCategory {
             VStack(spacing: 2) {
-                ForEach(SettingsCategory.allCases) { cat in
+                ForEach(SettingsCategory.railCases) { cat in
                     NavItem(title: cat.title, icon: cat.icon, isSelected: category.wrappedValue == cat, compact: isCompact) {
                         withAnimation(.easeInOut(duration: 0.18)) { category.wrappedValue = cat }
                     }

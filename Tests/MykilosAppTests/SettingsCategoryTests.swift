@@ -23,4 +23,19 @@ struct SettingsCategoryTests {
         #expect(SettingsCategory.privat.rawValue == "privat")
         #expect(SettingsCategory.schluesselInventar.rawValue == "schluesselInventar")
     }
+
+    // MARK: - E2 (2026-07-05): Personalausweis als sticky Header, nicht als Rail-Eintrag
+
+    @Test func profilHeisstJetztPersonalausweis() {
+        #expect(SettingsCategory.profil.title == "Personalausweis")
+    }
+
+    @Test func railCasesSchliesstPersonalausweisAus() {
+        // Beide Rails (SettingsView.categoryRail + SidebarView.navItems) iterieren railCases.
+        // Der Personalausweis lebt als sticky Header und darf NICHT in der Rail auftauchen.
+        #expect(!SettingsCategory.railCases.contains(.profil))
+        #expect(SettingsCategory.railCases == [
+            .darstellung, .privat, .schluesselInventar, .verbindungen, .datenschutz, .system
+        ])
+    }
 }

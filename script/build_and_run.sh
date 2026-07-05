@@ -4,7 +4,11 @@ set -euo pipefail
 PRODUCT_NAME="mykilOS6"
 EXECUTABLE_NAME="mykilOS6"
 BUNDLE_ID="de.mykilos.mykilos6"
-APP_VERSION="11.0.0"
+# Eindeutiger Versionsmarker pro Build (Johannes 2026-07-05: jede Build muss klar
+# unterscheidbar sein — kein zweites „11.0.0" auf der Platte). Bewohner-Oberfläche =
+# 11.1.0-alpha-Linie; bei jeder neuen Build die alpha-Nummer hochzählen.
+# ⚠️ create_dmg.sh trägt DIESSELBE Zahl (Zeile ~18) — beide synchron halten!
+APP_VERSION="11.1.0-alpha2"
 # App-Bundle trägt die Versionsnummer im Namen, damit im Dock/Finder immer
 # eindeutig ist, welche Version läuft. BUNDLE_ID bleibt KONSTANT (sonst neuer
 # DB-/Keychain-Pfad → Datenverlust).

@@ -49,8 +49,13 @@ public struct KeychainStore: Sendable {
             throw KeychainStoreError.writeFailed(addStatus)
         }
 
-        var updateAttributes: [CFString: Any] = [kSecValueData: data]
-        if let allowAllAccess { updateAttributes[kSecAttrAccess] = allowAllAccess }
+        // WURZEL-FIX (2026-07-05, Johannes' 6×-Prompt-Hölle): Beim UPDATE die ACL
+        // NICHT erneut setzen. Der Dialog „möchte die Zugriffsrechte … ÄNDERN" ist
+        // exakt die ACL-Modify-Autorisierung — die feuert auf jeder neu signierten
+        // Build, wenn wir kSecAttrAccess mitschreiben (pro Secret ein Prompt → 6×).
+        // Die ACL wurde beim Anlegen einmalig auf „alle Apps, kein Prompt" gesetzt und
+        // bleibt bestehen; Updates schreiben NUR den Wert (kein ACL-Modify → kein Prompt).
+        let updateAttributes: [CFString: Any] = [kSecValueData: data]
         let updateStatus = SecItemUpdate(query as CFDictionary, updateAttributes as CFDictionary)
         guard updateStatus == errSecSuccess else {
             throw KeychainStoreError.writeFailed(updateStatus)
