@@ -17,6 +17,28 @@ Mini-Mode ist noch nicht sauber · gründlich") + `docs/IDEEN_UND_BACKLOG.md` (Z
 
 ---
 
+## Die CHECK-IN-Systematik (das Rückgrat — Johannes-Erkenntnis 2026-07-05)
+Alle Tracks sind Instanzen EINER Sache: der **CHECK-IN-Systematik** — der einzige disziplinierte Weg,
+wie *irgendein* Datum in mykilOS eintritt oder sich ändert. Wie **Versionskontrolle für die Studio-Realität**:
+> **ich hab was → was/wohin/warum → verifizierter Review (okay/nicht okay) → Audit** — append-only,
+> versioniert, idempotent, **nie überschreiben/löschen**, `throws`+SaveState, Cold-Start-safe.
+
+Jedes Feature = „**Check-in** von Typ X in Ziel Y":
+| Feature | Check-in von… |
+|---|---|
+| Kamera „Verwendung wählen" (G8) | Scan-Ergebnis → Warenkorb/Artikel/Kontakt |
+| Lager aus-/einbuchen (G9) | *wörtlich* Check-out / Check-in von Bestand |
+| Visitenkarte → Kontakt / Selbstheilung (G5/G6) | Kontakt-Daten |
+| Daniels-Base-Übersetzung/Fortschreiben (L) | externe Daten |
+| Warenkorb → sevDesk-Postbox / DHL (K) | Positionen/Sendung |
+
+**Code-Knochen existieren:** `CheckoutPort` (Wirbelsäule) + `ActionCard` (Vorschlag+Bestätigung) +
+`AuditEntry` (Spur). → **einmal zu EINER `CheckIn`-Spine formalisieren**, dann ist jedes Feature nur noch
+ein **Check-in-Adapter**. Crash-Safety + Nachvollziehbarkeit an EINER Stelle, nicht 12-mal verstreut.
+= Kern des Master-Architektur-Docs.
+
+---
+
 ## Track A — Kamera/Barcode-Widget  · Branch `feat/kamera-barcode-widget`
 - **A1 ✅ Increment 1 (fertig, 962 Tests grün):** `WidgetKind.barcode`, `BarcodeWidget` (alle
   Renderstates, Quellzeile, Tokens), auf der Übersichtsseite (`homeLayout` + Migration
@@ -44,12 +66,22 @@ Der gebaute Mini-Mode (`9ce2b9b`) hat noch die **alte Hover-Summary** verdrahtet
 - **C2 ⬜ Klick-zur-brennenden-Stelle verdrahten:** normaler Klick aufs pulsende Modul-Icon →
   öffnet App **direkt an der pulsenden Quelle** (Klick-Handler muss die Signal-Quelle auflösen
   und gezielt dorthin navigieren, statt nur die App zu öffnen). Logo-Klick → letzte große Ansicht.
+- **C3 ⬜ Mini liegt NICHT über der Großversion (Feedback 2026-07-05, verriegelte Spec):** Mini-Mode =
+  App geschrumpft auf **NUR die Icon-Sidebar (kein Inhaltsfenster)**. Aktuell schwebt der Mini-Streifen
+  ÜBER dem offenen Heute-Fenster → **Bug**. Fix: beim Aktivieren Hauptfenster **ausblenden/minimieren**
+  (`orderOut`), beim Verlassen wiederherstellen. Der Streifen steht allein (Use-Case: über FREMD-Vollbild
+  wie Vectorworks, nicht über der eigenen Großansicht).
 - Leitplanken: Puls abschaltbar pro Quelle, LEAN (keine neuen Polls), WindowGuard-Panel-Handling.
 
 ## Track D — View-Konsolidierung (Sammlungs-Ansicht-Standard ÜBERALL)
 - **D1 ⬜ Warenkörbe** auf den Sammlungs-Standard (Liste⇄Galerie/Kachel + Zoom + Vorschau +
   Suche/Filter/Sortierung/Quellzeile/Renderstates) — wie Dateien/Angebote.
 - **D2 ⬜ Kontakte als Kachel/Galerie + Kontaktbild** (Toggle lokal/Google-Foto/Icon-Default).
+- **D3 ⬜ Dateien-Ansicht: Parent-Ordner-Herkunft sichtbar (Feedback 2026-07-05):** die flache
+  „alle Dateien"-Galerie zeigt nicht, aus welchem Ordner eine Datei kommt. Vorschlag: **Farb-Herkunfts-
+  Marke** (kleiner Farbpunkt je Ordner-Kategorie aus `MykColor` + Ordnername als muted Mono-Chip pro
+  Kachel — „Farbe ist Sprache") + Umschalter **flach ⇄ nach Ordner gruppiert** + Ordner-Filter-Chips.
+  Farbmarke immer an, Gruppieren/Filter als Sammlungs-Standard-Werkzeug.
 
 ## Track E — Tweaks & kleine Bugs
 - **E1 ⬜ Layout-Drift-Polish:** uneinheitliche Ausrichtung/Abstände (Kataloge/Angebote/
@@ -92,6 +124,17 @@ Audit→SoR, nie destruktiv, Airtable = Outer Limit, Daniels Base heilig):
     `testDeletableMap`. G6 nutzt ausschließlich `updateRecord`.
 - **G7 Über Übersichts-Widget aufrufbar:** Kamera-Ingest (Barcode ✅, Visitenkarten-Scan G5) lebt als
   **eigenes Widget auf der Übersichtsseite** (wie das Barcode-Widget) — der Erfassen-Verb im Cockpit-Überblick.
+- **G8 „Verwendung wählen" nach JEDEM Scan (Kernidee Johannes 2026-07-05):** jeder Scan öffnet ein
+  kontextuelles Aktions-Menü — *was willst du damit tun?* Kandidaten je nach Erkennung: „In Warenkorb" ·
+  „Artikel anlegen" · „Lager ein-/ausbuchen" · „Kontakt anlegen/heilen". **Ein Scanner, viele Ziele**
+  (= G4 Ingest-Naht konkret). Scanner erkennt Barcode vs. QR vs. Text/Karte und bietet passende Verwendungen.
+- **G9 Artikel-/Lager-Ingest per Kamera:** unzählige Kleinteile/Modularteile per Barcode/Foto sauber in die
+  Lagerliste einsortieren, mit Daten anreichern + sortieren; neue Artikel anlegen; Bestand aus-/einbuchen.
+  ⛔ **GOVERNANCE-WEICHE (Johannes/Daniel, VOR dem Bau):** Artikel+Lager liegen in **Daniels Base
+  `appdxTeT6bhSBmwx5` — heilig, bestehende Records NIE ändern/überschreiben/löschen.** „Aus-/einbuchen"
+  *ändert* bestehende Mengen = genau das Verbotene. → Schreib-Ziel = **mykilOS-eigene Lager-/Artikel-Base**
+  (Abnabelung §8b, `docs/AIRTABLE_ARCHITEKTUR.md`), Daniels Base nur read-only Spiegel; Bestand als
+  **append-only Bewegungen** (Ein-/Ausbuchen = neuer Datensatz, Stand = Summe), nie in-place. Erst Entscheidung, dann Bau.
 
 ### Airtable-I/O-Routen für G5/G6 (Ist-Code, Sweep 2026-07-05 — andocken statt neu bauen)
 **Kontakte:**
@@ -110,8 +153,8 @@ DELETE nur `TestSandboxCleaner` (TEST-Whitelist). Alle gated über `AirtableClie
 ## Track H — Widget-Katalog & Spielwiese (Fun-Widgets + Toggles, Johannes 2026-07-05)
 Neue Übersichts-Widgets + spielerische Toggles. **Design-Nordstern: minimal/schön/smart** —
 Anregung, nicht Maximal-Ausbau; kleinste sinnvolle schöne Lösung, kein Gimmick-Overload.
-- **H1 Taschenrechner-Widget** (Casio-Moodboard) — kleines Rechen-Widget. **Quick-Win:** folgt dem
-  Barcode-Muster ohne Kamera/Persistenz (WidgetKind + Widget + Dispatch + homeLayout + Migration + Test).
+- **H1 Taschenrechner-Widget** ✅ (gebaut, Braun-Look, alpha16). **Offen (Feedback 2026-07-05):**
+  Hardware-**Num-Block-Eingabe** (`.onKeyPress`, macOS 14+, mit dezentem „aktiv"-Fokus-Rahmen).
 - **H2 Heuler** — opt-in „Brüllbrief"-Alert (laut, wenn's brennt), abschaltbar pro Quelle (Alerts-dezent-Regel).
 - **H3 Boss-Button** 🥹 — schwebender Satellit-Button (Feierabend-Ritual / Chef-Moment), eigenes
   `NSWindow` über Spaces (groß, eigener Strang — siehe Backlog).
@@ -147,6 +190,25 @@ Per-User-Isolation (Mail/Memos/Chat nie kreuzlesbar) + Alerts-dezent + Toggle je
 Limit** → sauberer **Adapter/Port + Credentials im Keychain** (nie roh, nie im Repo), Postbox-/
 Preview→Confirm-Disziplin wie sevDesk. **Carrier-neutral** ziehen (Nordstern: fremde Anbieter andockbar).
 Eigener größerer Integrations-Strang.
+
+## Track L — Abnabelung von Daniels Base + eigene Bases (Johannes bestätigt 2026-07-05)
+Richtung **ENTSCHIEDEN** (= §8b in `docs/AIRTABLE_ARCHITEKTUR.md`, jetzt von Johannes bekräftigt): die App
+hängt künftig **nur an mykilOS-eigenen Bases.** Zwei Phasen:
+- **L1 Einmal sauber spiegeln (Copy-in):** Daniels Artikel/Lager/Kunden/Projekte EINMAL in eine
+  mykilOS-eigene Base kopieren + re-sortieren. Daniels Base = **read-only Upstream**, nie mehr direkt beschrieben.
+- **L2 Fortschreiben für uns:** ab da schreibt/reichert mykilOS in der EIGENEN Base an. Ein **Feeder** hält
+  Daniels sevDesk/Make-Pipeline über den **Business-Key** (Kundennummer/Projektnummer) gefüttert (er merkt nichts).
+- **L1b Übersetzungs-Schicht + laufende, idempotente Einschleusung (Johannes 2026-07-05):** zwischen
+  Daniels Base und unserer liegt eine **Mapping-Schicht**, die seine Systematik in UNSERE übersetzt
+  (Seed: `ExternalMappingRegistry` / „Archiv-Übersetzung", nicht Greenfield). Der Copy-in ist **kein
+  Einmal-Akt**, sondern ein **wiederholbarer, idempotenter Sync**: neuer Schwung bei Daniel (z. B. 2000
+  Artikel) → nur **neue/geänderte** übersetzt + **fortgeschrieben**, Rest unangetastet. **Dedup** per
+  Artikelnummer/SHA256 (Muster existiert, Eingehende-Angebote). **NIE überschreiben:** Änderung = neue
+  **Version** (append-only, Historie bleibt), „aktuell" = jüngste. Zweimal einschleusen = harmlos.
+- **Schreibgesetz überall:** jedes Anreichern/Fortschreiben durch **„ich hab was → was/wohin/warum →
+  okay/nicht okay → Audit"** (Handeln-Verb: Vorschlag→Bestätigung→Audit, nie destruktiv, verifizierter User-Review).
+- **Schaltet frei:** G9 (Artikel/Lager-Ingest schreibt in die eigene Base). **Braucht Daniel am Tisch**
+  (Schreib-Übergabe/Business-Keys). Voller Strangler-Migrationsplan: `docs/AIRTABLE_ARCHITEKTUR.md` §4/§6/§8b.
 
 ---
 
