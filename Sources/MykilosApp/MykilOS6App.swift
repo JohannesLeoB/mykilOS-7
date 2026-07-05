@@ -13,6 +13,9 @@ struct MykilOS6App: App {
     enum BootPhase { case ready(AppState); case failed(message: String, dbPath: String) }
     @State private var phase: BootPhase
     @State private var context = StudioContext()
+    // Dock-Icon nach System-Hell/Dunkel (2026-07-05): setzt zur Laufzeit das neue
+    // MYKILOS-„M" (Ink im Dunkel-, Paper im Hellmodus). Siehe DockIconController.swift.
+    @NSApplicationDelegateAdaptor(MykAppDelegate.self) private var appDelegate
     // Mini-Mode: schwebendes, fokus-neutrales NSPanel mit der eingeklappten Icon-Sidebar
     // (immer-obenauf über Vollbild-Spaces). Reine AppKit-Fenster-Infrastruktur, imperativ
     // über einen @Observable-Controller verwaltet (kein SwiftUI-Scene-Objekt). Wird erst mit

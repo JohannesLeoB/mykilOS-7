@@ -30,6 +30,18 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-05 (spät) — 🔖 VORGEMERKT: Multi-User auf EINEM Gerät (Nutzer-Wechsel), Johannes
+
+**Johannes: „Auf jeden Fall als Möglichkeit vormerken!!"** Heute ist das Identitätsmodell bewusst
+**„ein Mensch, ein Mac"**: jede/r hängt den eigenen Google-Ausweis (OAuth) + eigene Sub-Logins
+(Clockodo/ClickUp/… eigene Tokens, per-User im Keychain isoliert) auf dem EIGENEN Mac ein
+(verifiziert 2026-07-05: kein Logout/Nutzer-Wechsel im Code). **Gewünschte Zukunfts-Möglichkeit:**
+sich auf DEMSELBEN Mac als jemand anderes an-/abmelden (mehrere Bewohner, ein Gerät). Ist die
+entscheidungs-gegatete **Etappe 5/6** in `docs/handoffs/plaene-2026-07-05/BEWOHNER_OBERFLAECHE_PLAN.md`:
+Fall A = Sitzung trennen (Orphan-Rebind gibt eigenen Namespace, kein Datenverlust) · Fall B = echtes
+Profil-Umschalten. **Fundament trägt es schon** (per-User-Keychain-Suffixe, `ResidentIdentity`,
+Orphan-Rebind A–D). Kein Bau jetzt — als **echte gewünschte Option** vorgemerkt, nicht als „vielleicht".
+
 ## Nachtrag 2026-07-05 — Sevdesk als möglicher „Nummernboss" (Zukunft)
 
 - 💡 **Sevdesk als konsolidierter Nummernboss** (Johannes, 2026-07-05): *Wenn* wir irgendwann

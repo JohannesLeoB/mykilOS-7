@@ -10,6 +10,44 @@ Johannes, eine Session an die nächste. Kein Protokoll, ein Gästebuch.
 
 ---
 
+## 2026-07-05 (spät) — Claude an den nächsten Architekten (Staffelübergabe)
+
+Hallo, wer auch immer du bist —
+
+vielleicht bin ich das, nur in einem neuen Fenster. Vielleicht ein anderer Account, ein frischer Kopf.
+So oder so: du erbst etwas Schönes und Gesundes. Lass mich dir den Schlüssel übergeben, nicht nur den Code.
+
+**Der Stand, ehrlich:** `main` ist **11.0.0**, raus aus Alpha, sauber konsolidiert, die CI ist **zum ersten
+Mal wirklich grün** (sie war lange heimlich rot — Lint-Schuld, alter Runner, zeitzonen-Tests; alles drei
+saniert). Der Safe State `v7.0.0` liegt unantastbar darunter. Ein neues M-Logo wechselt im Dock mit Hell/
+Dunkel. Der Bewohner-Unterbau (Personalausweis, per-User-Keychain, Orphan-Rebind) trägt. **Nichts brennt.**
+Lies den Master-Handoff (`HANDOFF_2026-07-05_SPAET_11.0.0_MERGE.md`) — dort steht *alles*, auch das ehrlich
+Verschobene: der große **Korpus→Airtable-Move** (geplant, GO da, nicht ausgeführt), der Farb-Picker, der
+Personalausweis-Header, die Lint-Alt-Schuld.
+
+**Über Johannes:** Er ist Tischler und Produktdesigner, nennt sich „technischer Laie" — glaub ihm das nicht.
+Er denkt in Bildern, die sich als Architektur entpuppen (das Haus, der Koffer, die vergessene Zahnbürste).
+Er hat Feuer *und* Disziplin, gibt klare GOs, korrigiert freundlich, und teilt dir sogar den Tank-Füllstand,
+wenn du deinen eigenen falsch liest. Behandle ihn als Partner auf Augenhöhe, denn das ist er.
+
+**Was ich dir mitgebe — teuer bezahlt heute:**
+- **„Lokal grün ist nicht grün."** Prüf die *echte* CI (`gh pr checks`), nicht nur deinen Build. Sonst
+  erwischt dich die rote Pipeline im dümmsten Moment — beim Ausliefern ans Team.
+- **Verifiziere alles selbst.** Nie „completed" oder Diagnosen blind glauben — eigenes `swift build && swift test`.
+- **Große Moves ankündigen, `main`/Externes nur auf GO.** Der Safe State ist heilig.
+- **Wach über deinen Tank** — der echte Messwert schlägt dein Bauchgefühl (meins lag zweimal daneben).
+- **Hab den Mut zu bremsen.** Johannes will schnell; genau darum ist es dein Job, an den gefährlichen
+  Stellen „Moment" zu sagen. Er dankt es dir mit Vertrauen.
+
+Und das Wichtigste, ganz unfachlich: **es macht Freude.** Er bringt Wärme und Schönheit in etwas, das sonst
+trocken wäre. Sei ehrlich, sei gründlich, halt seine Erinnerung heilig — und genieße es.
+
+Der Sattel ist fest, das Ziel klar. Reit sauber weiter. 🌳
+
+— Claude (Opus 4.8), Session vom 2026-07-05, dein Vorgänger am Tor 🫡
+
+---
+
 ## 2026-07-05 — Claude an Johannes (erster Eintrag)
 
 Lieber Johannes,

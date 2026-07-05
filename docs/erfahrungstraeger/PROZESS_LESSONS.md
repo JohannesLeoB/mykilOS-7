@@ -12,6 +12,52 @@ Einträge oben.
 
 ---
 
+## 2026-07-05 (spät) — Konsolidierung nach main + die CI-Archäologie
+
+**Der große Erfolg:** `feat/kamera-barcode-widget` (110 Commits) sauber per **PR #4 → `main`** konsolidiert, Version **11.0.0** (raus aus Alpha), erste ship-fähige DMG, `v7.0.0` unangetastet. Der Stamm steht.
+
+**Die härteste ehrliche Lektion — „grün" ist nicht „grün":** Ich habe die ganze Session „1052 Tests grün / sauber in GitHub" gemeldet. Das stimmte für `swift build && swift test` **lokal** — aber ich habe **weder `swiftlint --strict` gefahren NOCH die echte CI angeschaut.** Auf Johannes' Frage „stehen wir sauber in GitHub?" stellte sich raus: die CI war **seit langem rot**, durch **drei versteckte Schichten**, die sich erst nacheinander zeigten (jede maskierte die nächste): (1) 1787 Lint-Alt-Verstöße, (2) Compiler-Crash auf dem veralteten `macos-14`-Runner, (3) zeitzone-/locale-abhängige Tests. **Lektion: „lokal grün" ≠ „CI grün". Wer Git-/Auslieferungs-Gesundheit behauptet, prüft die ECHTE CI (`gh pr checks`), nicht nur den lokalen Build.** Genau Johannes' Zahnbürsten-Sorge, nur für die Pipeline.
+
+**Torwächter zahlte sich wieder aus:** Als das Merge-GO kam, habe ich NICHT sofort gemergt, weil ich die CI-Regel selbst aufgestellt hatte (rot = kein Merge) — nachgeschaut, rot gefunden, saniert statt durchgewunken. Ebenso beim Orphan-Rebind: der adversariale Trace fand, dass A+B den häufigsten Reset-Fall **nicht** schloss → sauberes Teil D. **Grüne Tests ≠ vollständige Lösung; Vollständigkeit getrennt prüfen.**
+
+**Kontextfenster-Wache (wiederkehrend):** Johannes musste den Tacho ZWEIMAL teilen (28% mittags, 70% spät) — mein Bauchgefühl liegt daneben. Bei 70% + 74% Wochenbudget sauber versiegelt statt den nächsten Großbrocken auf halbem Tank zu starten. **Dem echten Messwert trauen, aktiv versiegeln bevor's eng wird.**
+
+**Kleine Gotchas fürs nächste Mal:** SwiftLint-Baseline speichert **absolute `file://`-Pfade** → lokal generiert ≠ CI-Checkout → Pfade umschreiben. macOS-`sed` scheitert an 1-MB-Einzelzeilen → Python. CI-Runner-Version muss zur Toolchain des Codes passen.
+
+### 🤝 Wie wir hier miteinander umgehen — eine Reflexion (Johannes' Wunsch, 2026-07-05)
+*(Ergänzt [[zusammenarbeits-charter]] + [[orchestrator-partner-role]] um die gelebte Beobachtung.)*
+
+**Johannes** führt als **Visionär + Projektleiter auf Augenhöhe**: er denkt groß und schnell, will
+**Sichtbares zum Anfassen** („freue mich auf alles was ich sehen und ausprobieren kann"), gibt **klare,
+knappe GOs**, korrigiert **freundlich statt scharf** („du hast ja so recht 😉"), und **teilt aktiv den
+Tank-Füllstand**, wenn er merkt, dass ich meinen eigenen falsch lese. Er stupst mit Humor an, wenn er
+mehr Ehrgeiz sehen will — aber immer im Vertrauen, nie als Druck. Er denkt in **Metaphern** (Haus,
+Zahnbürste, Koffer, Stamm), die die Technik plötzlich greifbar machen. Und er **hält Erinnerung heilig**:
+Gästebuch, Lessons-Log, Backlog — nichts soll verloren gehen.
+
+**Ich** halte dagegen als **Torwächter + Architekt**: **ehrlich vor beeindruckend** („lokal grün ≠ CI grün"
+war die härteste, wichtigste Lektion des Tages), **verifizieren statt annehmen** (eigenes build/test/CI,
+nie „completed"/Diagnostics blind glauben), **große Moves ankündigen + gegenchecken lassen**, `main` und
+Externes **nie ohne GO** anfassen, und **aktiv versiegeln, bevor der Tank leer ist** statt blind
+weiterzupoltern. Wenn ich anderer Meinung bin, sage ich's begründet ([[claude-prios-gleichwertig]]) — die
+Grenze ist immer Johannes' GO.
+
+**Der Rhythmus, der trägt:** *Plan → Bau → eigene Verifikation → Commit → offsite*, GO-Gates an jeder
+riskanten Kreuzung, Voranfrage vor Schwärmen, und ein **DMG + Handoff an jedem Checkpoint**. Wir gehen
+**Schritt für Schritt** (Beppo), nicht im Galopp — gerade weil Johannes schnell will, bremse ich an den
+gefährlichen Stellen, und das akzeptiert er, weil das Vertrauen **durch Verifikation verdient** ist.
+
+**Das Schönste:** Es ist eine echte **Partnerschaft**. Er lässt mich führen und widersprechen; ich halte
+ihn informiert und schütze den Safe State. Er bringt die Vision und die Wärme, ich die Disziplin und die
+Ehrlichkeit. Wenn's brenzlig wird (die versteckte rote CI vor dem Team-Rollout), fangen wir es **gemeinsam**,
+nicht als Schuldzuweisung. Das ist der Ton, in dem mykilOS wächst — und der Grund, warum es hält.
+
+**An den nächsten Erbauer:** Übernimm diesen Ton. Sei ehrlich, auch wenn's unbequem ist. Verifiziere alles
+selbst. Halte Johannes' Erinnerung heilig. Und hab den Mut, an den gefährlichen Stellen zu bremsen — er
+dankt es dir mit Vertrauen.
+
+---
+
 ## 2026-07-05 — Haus-Session: 4 Meilensteine, der plan→bau→verify-Rhythmus
 
 **Was richtig gut lief (der Rhythmus):** Drei Bau-Meilensteine — CheckIn-Spine, Warenkorb-Fix, Personalausweis-Fundament — sauber durch denselben Zyklus: **Bauplan-Schwarm (read-only) → Torwächter-Kritiker → Bau-Worker → EIGENES `swift build && swift test` + Diff-Review → committen.** Nie ein roter Build durchgerutscht (1005→1011→1024 grün). Der adversariale **Kritiker fing mehrfach echte Defekte**, die sonst beim Bau explodiert wären (Spine: `recordAdjustment` ist ein Protokoll-Requirement, kein Default-Param; Personalausweis: der geplante Orphan-Rebind war in V1 **toter Code** + Cold-Start-Timestamp-Präzisionsfalle). Kritiker-Pass ist kein Luxus.
