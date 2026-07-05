@@ -16,14 +16,25 @@ func positionsAttribute(
     _ position: OfferPositionExtractor.ExtractedPosition,
     quelle: String, seite: Int, eingehend: Bool
 ) -> [String: String] {
+    // Volle Daten-Fidelität (Johannes-Grundsatz, EISERN): ALLE Positionsdaten mitnehmen,
+    // nicht nur Bezeichnung+Preis. Menge/Einzel-/Gesamt-/Listenpreis, Kategorie, Status
+    // (selbstbewiesen/prüfen), Originaltext, Seite, Richtung und Quell-PDF wandern mit —
+    // die eindeutige Positions-ID setzt der Aufrufer als `objektID`.
     var attribute: [String: String] = [
         "originalText": position.originalText,
         "quelle": quelle,
         "seite": String(seite),
         "richtung": eingehend ? "eingehend" : "ausgehend",
+        "kategorie": position.componentType.displayName,
+        "status": position.confidence.rawValue,   // green/amber/red = selbstbewiesen/prüfen/unvollständig
     ]
     if let art = position.artikelnummer { attribute["artikelnummer"] = art }
     if let unit = position.unit { attribute["einheit"] = unit }
+    if let menge = position.quantity { attribute["menge"] = String(menge) }
+    if let einzel = position.netPrice { attribute["einzelpreisNetto"] = "\(einzel)" }
+    if let gesamt = position.lineTotal { attribute["gesamtpreisNetto"] = "\(gesamt)" }
+    if let liste = position.listPrice { attribute["listenpreis"] = "\(liste)" }
+    if position.isAlternative { attribute["alternative"] = "true" }
     return attribute
 }
 

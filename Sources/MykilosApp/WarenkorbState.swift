@@ -22,6 +22,12 @@ public final class WarenkorbState {
         public var menge: Int
         public let ekNetto: Double?
         public let vkNetto: Double?
+        /// Volle Daten-Fidelität (Johannes-Grundsatz, EISERN): freie Zusatzfelder, die das
+        /// schlanke Kernmodell strukturell nicht trägt — bei aus einem Angebots-PDF
+        /// herausgelösten Positionen der Originaltext, Seite, Richtung, Konfidenz-Ampel,
+        /// Einzel-/Gesamt-/Listenpreis und die Quell-Datei. Additiv (default leer), wandert
+        /// über `warenkorbItem.attribute` bis in den Checkout/`PickSnapshot.attribute`.
+        public let attribute: [String: String]
 
         public init(
             id: String,
@@ -31,7 +37,8 @@ public final class WarenkorbState {
             artikelnummer: String,
             menge: Int = 1,
             ekNetto: Double? = nil,
-            vkNetto: Double? = nil
+            vkNetto: Double? = nil,
+            attribute: [String: String] = [:]
         ) {
             self.id = id
             self.source = source
@@ -41,9 +48,11 @@ public final class WarenkorbState {
             self.menge = menge
             self.ekNetto = ekNetto
             self.vkNetto = vkNetto
+            self.attribute = attribute
         }
 
-        /// Konvertiert zu WarenkorbItem für CartStore.
+        /// Konvertiert zu WarenkorbItem für CartStore. Trägt die vollen Zusatzfelder mit,
+        /// damit beim Checkout nichts abgeschnitten wird.
         public var warenkorbItem: WarenkorbItem {
             WarenkorbItem(
                 artikelRecordID: artikelRecordID,
@@ -52,7 +61,8 @@ public final class WarenkorbState {
                 menge: menge,
                 ekNetto: ekNetto,
                 vkNetto: vkNetto,
-                quelle: source
+                quelle: source,
+                attribute: attribute
             )
         }
 
@@ -169,7 +179,43 @@ public final class WarenkorbState {
                 artikelnummer: item.artikelnummer,
                 menge: item.menge,
                 ekNetto: item.ekNetto,
-                vkNetto: item.vkNetto
+                vkNetto: item.vkNetto,
+                attribute: item.attribute
+            ))
+        }
+    }
+
+    /// Eine aus einem Angebots-PDF herausgelöste Position (PDF-Positions v1) in den
+    /// Warenkorb übernehmen — mit VOLLER Daten-Fidelität (Johannes-Grundsatz, EISERN):
+    /// Menge, EK/VK, Kategorie, Originaltext, Seite, Status/Konfidenz, Quell-PDF und die
+    /// eindeutige Positions-ID wandern über `attribute` mit. Gleiche `objektID` →
+    /// idempotent Menge erhöhen (statt Duplikat), analog zum WorkBasketStore-Pfad.
+    ///
+    /// `eingehend` steuert, ob der Preis EK (eingehendes Angebot) oder VK (ausgehend) ist
+    /// — es werden keine Zahlen erfunden, das jeweils andere Feld bleibt `nil`.
+    public func addPosition(
+        objektID: String,
+        bezeichnung: String,
+        menge: Int,
+        preisNetto: Double?,
+        eingehend: Bool,
+        attribute: [String: String]
+    ) {
+        let quelle = eingehend ? "angebot-eingehend" : "angebot-ausgehend"
+        let posID = "\(quelle)-\(objektID)"
+        if let idx = positionen.firstIndex(where: { $0.id == posID }) {
+            positionen[idx].menge += max(1, menge)
+        } else {
+            positionen.append(Position(
+                id: posID,
+                source: quelle,
+                artikelRecordID: nil,
+                bezeichnung: bezeichnung,
+                artikelnummer: attribute["artikelnummer"] ?? objektID,
+                menge: max(1, menge),
+                ekNetto: eingehend ? preisNetto : nil,
+                vkNetto: eingehend ? nil : preisNetto,
+                attribute: attribute
             ))
         }
     }

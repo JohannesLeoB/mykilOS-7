@@ -203,32 +203,30 @@ struct AllOfferRow: View {
             }
         }
         .sheet(isPresented: $showPositions) {
-            // WICHTIG (Bugfix 2026-07-04): herausgelöste Positionen gehören in den echten,
-            // persistenten Projekt-Warenkorb (`WorkBasketStore`) — NICHT in den flüchtigen,
-            // rein session-lokalen `WarenkorbState` dieser globalen Ansicht (der ist für
-            // "ganzes Angebot als Zeile" / Dev-Checkout gedacht, überlebt keinen Neustart und
-            // taucht im echten Projekt-Warenkorb nie auf). Gleicher Zielspeicher wie im
-            // projektbezogenen Angebote-Tab (OffersTabView.OfferRow).
+            // Bugfix 2026-07-05 (Live-Feedback): Klick auf „In Warenkorb" im Positionen-Picker
+            // muss in DENSELBEN Warenkorb landen, den diese Ansicht anzeigt — das ist der
+            // `WarenkorbState`/`WarenkorbPanel` dieses Moduls, NICHT der projektgebundene
+            // `WorkBasketStore`. Der frühere Reroute in `workBaskets` schrieb in einen anderen
+            // Korb: das sichtbare Panel blieb bei „0 Pos.", und die Positionen landeten in einem
+            // Speicher, aus dem diese Ansicht gar nicht auscheckt. Volle Daten-Fidelität bleibt
+            // erhalten (`attribute` trägt Menge/Preise/Kategorie/Status/Originaltext/Seite/Quelle
+            // bis in den Checkout). Fehlt der Warenkorb-Kontext, würde der Button gar nicht
+            // erscheinen (onTake == nil) — daher hier hart entpackt.
             OfferPositionsSheet(
                 file: file,
-                onTake: { (paged: OfferPositionPDFReader.PagedPosition, index: Int) in
-                    let p = paged.position
-                    let preis = p.netPrice.map { ($0 as NSDecimalNumber).doubleValue }
-                    let eingehend = item.direction == .incoming
-                    let projektNummer = item.projectNumber
-                    Task {
-                        do {
-                            try await appState.workBaskets.fuegePositionHinzu(
-                                projektNummer: projektNummer,
-                                bezeichnung: p.title.isEmpty ? file.name : p.title,
-                                menge: max(1, Int((p.quantity ?? 1).rounded())),
-                                ekEinzel: eingehend ? preis : nil,
-                                vkEinzel: eingehend ? nil : preis,
-                                objektID: "\(file.id)-\(paged.pageNumber)-\(index)",
-                                attribute: positionsAttribute(p, quelle: file.name, seite: paged.pageNumber, eingehend: eingehend))
-                        } catch {
-                            MykLog.lifecycle.error("Warenkorb-Anhängen fehlgeschlagen: \(String(describing: error), privacy: .public)")
-                        }
+                onTake: warenkorb.map { korb in
+                    { (paged: OfferPositionPDFReader.PagedPosition, index: Int) in
+                        let p = paged.position
+                        let preis = p.netPrice.map { ($0 as NSDecimalNumber).doubleValue }
+                        let eingehend = item.direction == .incoming
+                        korb.addPosition(
+                            objektID: "\(file.id)-\(paged.pageNumber)-\(index)",
+                            bezeichnung: p.title.isEmpty ? file.name : p.title,
+                            menge: max(1, Int((p.quantity ?? 1).rounded())),
+                            preisNetto: preis,
+                            eingehend: eingehend,
+                            attribute: positionsAttribute(p, quelle: file.name, seite: paged.pageNumber, eingehend: eingehend))
+                        korb.showPanel = true
                     }
                 },
                 learningStore: appState.learningStore,
