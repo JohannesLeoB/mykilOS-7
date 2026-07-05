@@ -42,6 +42,7 @@ enum RechnerTheme: String, CaseIterable, Identifiable {
 public struct RechnerWidget: View {
     @State private var model = RechnerModel()
     @AppStorage("rechnerTheme") private var themeRaw = RechnerTheme.weiss.rawValue
+    @FocusState private var isFocused: Bool
 
     public init() {}
 
@@ -54,6 +55,56 @@ public struct RechnerWidget: View {
                 display
                 keypad
             }
+            // Hardware-Num-Block-Eingabe (H1): dezenter Ocker-Rahmen bei Fokus,
+            // damit sichtbar ist, dass die Tastatur den Rechner bedient.
+            .padding(MykSpace.s3)
+            .overlay(
+                RoundedRectangle(cornerRadius: MykRadius.sm)
+                    .strokeBorder(isFocused ? MykColor.tasks.color : Color.clear, lineWidth: 1.5)
+            )
+            .contentShape(Rectangle())
+            .focusable()
+            .focused($isFocused)
+            .onTapGesture { isFocused = true }
+            .onKeyPress { press in handleKeyPress(press) }
+        }
+    }
+
+    // Mappt Hardware-Tasten auf die bestehende Rechenlogik. Ziffern 0–9 + "."
+    // direkt, Operatoren + - * / auf die Anzeige-Symbole − × ÷ +, Enter = "=",
+    // Delete/Backspace löscht eine Stelle, Escape = C. Alles unbekannte → .ignored.
+    private func handleKeyPress(_ press: KeyPress) -> KeyPress.Result {
+        switch press.key {
+        case .return:
+            model.tapEquals(); return .handled
+        case .delete, .deleteForward:
+            model.tapBackspace(); return .handled
+        case .escape:
+            model.tapClear(); return .handled
+        default:
+            break
+        }
+
+        guard let ch = press.characters.first else { return .ignored }
+        switch ch {
+        case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
+            model.tapDigit(String(ch)); return .handled
+        case ".", ",":
+            model.tapDecimal(); return .handled
+        case "+":
+            model.tapOperator("+"); return .handled
+        case "-":
+            model.tapOperator("−"); return .handled
+        case "*", "x", "X":
+            model.tapOperator("×"); return .handled
+        case "/", ":":
+            model.tapOperator("÷"); return .handled
+        case "=":
+            model.tapEquals(); return .handled
+        case "c", "C":
+            model.tapClear(); return .handled
+        default:
+            return .ignored
         }
     }
 
@@ -191,6 +242,14 @@ private final class RechnerModel {
 
     func tapClear() {
         display = "0"; accumulator = nil; pendingOperator = nil; typingNew = true
+    }
+
+    // Backspace: eine Stelle löschen. Wird die Anzeige leer (oder war sie ein
+    // frisch berechnetes/neu getipptes Ergebnis), fällt sie auf "0" zurück.
+    func tapBackspace() {
+        if typingNew { display = "0"; return }
+        display.removeLast()
+        if display.isEmpty || display == "-" { display = "0"; typingNew = true }
     }
 
     private func applyPending() {
