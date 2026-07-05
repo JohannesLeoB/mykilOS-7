@@ -435,6 +435,66 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
         }
     }
 
+    // MARK: - Personalausweis-Anreicherung (Clockodo-Nutzer, tblPbly2br8mR2kaU)
+    // Read-only: findet die Zeile, deren E-Mail-Feld (case-insensitiv) zur
+    // verifizierten Google-Mail passt, und liefert die reinen Handles/IDs
+    // daraus zurück. NIE ein Secret. Der GRDB-Master bleibt autoritativ; das
+    // hier ist nur Anreicherung.
+    //
+    // TOLERANZ (Fallstrick „Records verschwinden still"): der einzige Grund zu
+    // verwerfen ist ein FEHLENDER Mail-Treffer — nie ein fehlendes Handle. Eine
+    // Zeile mit passender Mail aber ohne Clockodo-Feld liefert einen Ausweis mit
+    // leeren Handles, keinen nil und keinen Crash.
+    //
+    // Feldnamen sind live unverifiziert (kein Swift-Code liest die Tabelle heute):
+    // daher mehrere Kandidaten. Beim ersten echten Lauf gegen die Tabelle die
+    // Kandidatenliste bei Bedarf nachziehen.
+    public static func mapResidentIdentity(
+        from records: [[String: AirtableFieldValue]],
+        matchingEmail email: String
+    ) -> ResidentIdentityHandles? {
+        let needle = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard needle.isEmpty == false else { return nil }
+
+        // Tolerantes Feld-Auslesen: probiert mehrere Feldnamen-Kandidaten.
+        func firstNonEmptyString(_ fields: [String: AirtableFieldValue], _ keys: [String]) -> String? {
+            for key in keys {
+                if let v = fields[key]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+                   v.isEmpty == false {
+                    return v
+                }
+            }
+            return nil
+        }
+        // Clockodo-User-ID kommt als number ODER string (wie Customer.clockodoID).
+        func firstAnyString(_ fields: [String: AirtableFieldValue], _ keys: [String]) -> String? {
+            for key in keys {
+                if let v = fields[key]?.anyStringValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+                   v.isEmpty == false {
+                    return v
+                }
+            }
+            return nil
+        }
+
+        let emailKeys = ["E-Mail", "Email", "E-Mail-Adresse", "E-Mail Adresse", "Mail"]
+
+        for fields in records {
+            // Guard steht auf dem MAIL-TREFFER, NIE auf Handle-Präsenz.
+            guard let rowEmail = firstNonEmptyString(fields, emailKeys),
+                  rowEmail.lowercased() == needle else { continue }
+
+            return ResidentIdentityHandles(
+                displayName: firstNonEmptyString(fields, ["Name", "Anzeigename", "Nutzer"]),
+                clockodoUserID: firstAnyString(fields, ["Clockodo-User-ID", "Clockodo-Nutzer-ID", "Clockodo-ID"]),
+                clockodoEntwurfsTabelle: firstNonEmptyString(fields, ["Airtable-Entwurf-Tabelle", "Entwurf-Tabelle", "Entwurfs-Tabelle"]),
+                clickUpMemberID: firstAnyString(fields, ["ClickUp-Member-ID", "ClickUp-ID"]),
+                airtableRecordID: fields["_airtableRecordID"]?.stringValue
+            )
+        }
+        return nil
+    }
+
     static func mapProjects(from records: [[String: AirtableFieldValue]]) -> [Project] {
         records.compactMap { fields in
             guard let number = fields["Projektnummer"]?.stringValue,
@@ -518,6 +578,32 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
                 projectNumber: (projectNumber?.isEmpty == false) ? projectNumber : nil
             )
         }
+    }
+}
+
+// MARK: - ResidentIdentityHandles
+// Rein die aus Airtable Clockodo-Nutzer aufgelösten Handles/IDs für den
+// Personalausweis. Trägt NIE die Mail oder userID (die kommen aus dem
+// local-first Master beim Merge) und NIE ein Secret. Alle Felder optional.
+public struct ResidentIdentityHandles: Equatable, Sendable {
+    public var displayName: String?
+    public var clockodoUserID: String?
+    public var clockodoEntwurfsTabelle: String?
+    public var clickUpMemberID: String?
+    public var airtableRecordID: String?
+
+    public init(
+        displayName: String? = nil,
+        clockodoUserID: String? = nil,
+        clockodoEntwurfsTabelle: String? = nil,
+        clickUpMemberID: String? = nil,
+        airtableRecordID: String? = nil
+    ) {
+        self.displayName = displayName
+        self.clockodoUserID = clockodoUserID
+        self.clockodoEntwurfsTabelle = clockodoEntwurfsTabelle
+        self.clickUpMemberID = clickUpMemberID
+        self.airtableRecordID = airtableRecordID
     }
 }
 

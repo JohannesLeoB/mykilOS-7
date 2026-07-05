@@ -22,6 +22,10 @@ public final class AppState {
     public let chat:       ChatStore
     public let conversation: ConversationEngine
     public let profile:    ProfileStore
+    // Personalausweis (ResidentIdentity): local-first Identitäts-Anker (verifizierte
+    // Google-Mail als kanonischer Schlüssel + reine Handles zu externen Systemen).
+    // GRDB-Master ist autoritativ; Airtable reichert read-only an. TRÄGT NIE EIN SECRET.
+    public let residentIdentity: ResidentIdentityStore
     // Schaltzentrum-Logbuch: jeder externe Datensync hinterlässt hier einen
     // Handshake (lokal + Airtable-Spiegel). Siehe DataFlowLogger.
     public let dataFlow:   DataFlowLogger
@@ -168,6 +172,57 @@ public final class AppState {
         return .created(contact.displayName)
     }
 
+    // MARK: - Personalausweis-Anreicherung (ResidentIdentity)
+
+    /// Reichert den Personalausweis local-first an: verankert die verifizierte
+    /// Google-Mail auf die aktive stabile userID und spiegelt die read-only aus
+    /// Airtable Clockodo-Nutzer aufgelösten Handles hinein.
+    ///
+    /// - Kanonischer Schlüssel = die volle verifizierte Google-Mail. Ohne Mail
+    ///   (noch nicht hydratisiert) passiert nichts — der nächste Start ruft
+    ///   erneut auf (non-fatal, Muster wie refreshUserInfoIfNeeded).
+    /// - GRDB-Master ist autoritativ: Airtable-Handles werden nur übernommen,
+    ///   wenn sie nicht-leer sind (überschreiben nie einen bestehenden Wert mit nil).
+    /// - userID = die bereits aktive CurrentUserContext-UUID (actorUserID bleibt
+    ///   unangetastet). TRÄGT NIE EIN SECRET.
+    public func enrichResidentIdentity() async {
+        guard let email = currentGoogleUser?.email,
+              email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else { return }
+
+        // Bestehenden Ausweis laden (local-first Master).
+        try? residentIdentity.loadByEmail(email)
+        let existing = residentIdentity.identity
+
+        // Read-only Airtable-Anreicherung (non-fatal — Loader kapselt alle Fehler).
+        let loader = ClockodoNutzerLoader()
+        await loader.load(matchingEmail: email)
+        let fetched = loader.handles
+
+        // Merge: nicht-leere Airtable-Handles gewinnen, sonst bleibt der bestehende
+        // Master-Wert. userID = aktive stabile UUID (CurrentUserContext).
+        func pick(_ new: String?, _ old: String?) -> String? {
+            if let new, new.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false { return new }
+            return old
+        }
+        // Aktive stabile UUID (in AppState.init via ensureUserID gesetzt); der
+        // "local"-Fallback ist derselbe wie in ensureUserID, falls sie fehlt.
+        let activeUserID = CurrentUserContext.current ?? existing?.userID ?? "local"
+        let merged = ResidentIdentity(
+            googleEmail: email,
+            userID: activeUserID,
+            displayName: pick(fetched?.displayName, existing?.displayName),
+            clockodoUserID: pick(fetched?.clockodoUserID, existing?.clockodoUserID),
+            clockodoEntwurfsTabelle: pick(fetched?.clockodoEntwurfsTabelle, existing?.clockodoEntwurfsTabelle),
+            clickUpMemberID: pick(fetched?.clickUpMemberID, existing?.clickUpMemberID),
+            airtableRecordID: pick(fetched?.airtableRecordID, existing?.airtableRecordID),
+            updatedAt: Date()
+        )
+
+        // Non-fatal wie refreshUserInfoIfNeeded: schlägt der Schreibvorgang fehl,
+        // läuft die Anreicherung beim nächsten Start erneut. Kein Crash.
+        try? residentIdentity.save(merged)
+    }
+
     // MARK: - CheckIn-Spine (Wirbelsäule, die eine zentral auditierte Naht)
 
     /// Die CheckIn-Spine mit dem nativen Offer-Review-Adapter, verdrahtet auf den
@@ -247,6 +302,7 @@ public final class AppState {
         self.audit = AuditStore(db: database)
         self.favorites = FavoritesStore(db: database)
         self.profile = ProfileStore(db: database)
+        self.residentIdentity = ResidentIdentityStore(db: database)
         let chatStore = ChatStore(db: database)
         self.chat = chatStore
         // V10 Folge-Block A: stabile lokale userID VOR den Keychain-AuthServices
@@ -473,10 +529,16 @@ public final class AppState {
 
         // B2-Fix: wenn Google verbunden aber kein UserInfo gecacht (z. B. Login vor S17),
         // einmal im Hintergrund nachladen — non-fatal, Sidebar zeigt Name ohne Flackern.
+        // Danach (im selben Task, nach dem Refresh) den Personalausweis anreichern,
+        // damit currentUser?.email garantiert hydratisiert ist bevor enrich guardet.
         if googleAuth.status == .connected, googleAuth.currentUser == nil {
             Task {
                 await googleAuth.refreshUserInfoIfNeeded()
+                await enrichResidentIdentity()
             }
+        } else if googleAuth.currentUser != nil {
+            // UserInfo ist bereits gecacht (dieser Session-Login) → direkt anreichern.
+            Task { await enrichResidentIdentity() }
         }
 
         guard airtableAuth.status == .connected else { return }
