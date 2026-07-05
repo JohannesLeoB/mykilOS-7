@@ -65,6 +65,12 @@ Gilt Interior-Build-Charter (nur innen, Airtable = Outer Limit).
   automatisch neuer Kontakt (Name/Firma/Mail/Telefon). Greift in die Kontakte-Bild-Idee (Punkt 1):
   gescannte Karte = Kontakt MIT Foto. Airtable-Kontakte als Ziel (nie destruktiv). Interior-Build-
   Charter beachten.
+- 💡 **Mail-Metadaten → Kontext-Vorerfassung + Drive-Ablage-Vorschlag.** Aus den Metadaten
+  eingehender Mails (Absender, Betreff, Projekt-/Belegnummern im Text, Anhänge) den **Kontext
+  vorerfassen** → daraus bei Dateiablage ein **Vorschlag, in welchen Drive-Projektordner** der
+  Anhang gehört. Vorschlag, kein Auto-Write; Drive bleibt read-only heilig (Ablage nur zu
+  ausdrücklich bestätigtem Ziel). Fundament: bestehender Gmail-Cache + Projekt-Routing (Airtable).
+  Passt zur Interior-Build-Charter (sauberes I/O, Airtable = Outer Limit).
 
 ---
 
