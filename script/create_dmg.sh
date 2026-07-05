@@ -15,7 +15,7 @@ KEEP=1 "$ROOT_DIR/script/cleanup_old_app_versions.sh" || true
 
 DIST_DIR="$ROOT_DIR/dist"
 # EINE Quelle für die Versionsnummer (synchron mit build_and_run.sh — DIESELBE Zahl!).
-APP_VERSION="11.1.0-alpha1"
+APP_VERSION="11.1.0-alpha2"
 APP_BUNDLE="$DIST_DIR/mykilOS $APP_VERSION.app"
 DMG_NAME="mykilOS-$APP_VERSION"
 DMG_PATH="$DIST_DIR/$DMG_NAME.dmg"
