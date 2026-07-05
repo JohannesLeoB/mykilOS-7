@@ -12,6 +12,20 @@ Einträge oben.
 
 ---
 
+## 2026-07-05 (spät) — Konsolidierung nach main + die CI-Archäologie
+
+**Der große Erfolg:** `feat/kamera-barcode-widget` (110 Commits) sauber per **PR #4 → `main`** konsolidiert, Version **11.0.0** (raus aus Alpha), erste ship-fähige DMG, `v7.0.0` unangetastet. Der Stamm steht.
+
+**Die härteste ehrliche Lektion — „grün" ist nicht „grün":** Ich habe die ganze Session „1052 Tests grün / sauber in GitHub" gemeldet. Das stimmte für `swift build && swift test` **lokal** — aber ich habe **weder `swiftlint --strict` gefahren NOCH die echte CI angeschaut.** Auf Johannes' Frage „stehen wir sauber in GitHub?" stellte sich raus: die CI war **seit langem rot**, durch **drei versteckte Schichten**, die sich erst nacheinander zeigten (jede maskierte die nächste): (1) 1787 Lint-Alt-Verstöße, (2) Compiler-Crash auf dem veralteten `macos-14`-Runner, (3) zeitzone-/locale-abhängige Tests. **Lektion: „lokal grün" ≠ „CI grün". Wer Git-/Auslieferungs-Gesundheit behauptet, prüft die ECHTE CI (`gh pr checks`), nicht nur den lokalen Build.** Genau Johannes' Zahnbürsten-Sorge, nur für die Pipeline.
+
+**Torwächter zahlte sich wieder aus:** Als das Merge-GO kam, habe ich NICHT sofort gemergt, weil ich die CI-Regel selbst aufgestellt hatte (rot = kein Merge) — nachgeschaut, rot gefunden, saniert statt durchgewunken. Ebenso beim Orphan-Rebind: der adversariale Trace fand, dass A+B den häufigsten Reset-Fall **nicht** schloss → sauberes Teil D. **Grüne Tests ≠ vollständige Lösung; Vollständigkeit getrennt prüfen.**
+
+**Kontextfenster-Wache (wiederkehrend):** Johannes musste den Tacho ZWEIMAL teilen (28% mittags, 70% spät) — mein Bauchgefühl liegt daneben. Bei 70% + 74% Wochenbudget sauber versiegelt statt den nächsten Großbrocken auf halbem Tank zu starten. **Dem echten Messwert trauen, aktiv versiegeln bevor's eng wird.**
+
+**Kleine Gotchas fürs nächste Mal:** SwiftLint-Baseline speichert **absolute `file://`-Pfade** → lokal generiert ≠ CI-Checkout → Pfade umschreiben. macOS-`sed` scheitert an 1-MB-Einzelzeilen → Python. CI-Runner-Version muss zur Toolchain des Codes passen.
+
+---
+
 ## 2026-07-05 — Haus-Session: 4 Meilensteine, der plan→bau→verify-Rhythmus
 
 **Was richtig gut lief (der Rhythmus):** Drei Bau-Meilensteine — CheckIn-Spine, Warenkorb-Fix, Personalausweis-Fundament — sauber durch denselben Zyklus: **Bauplan-Schwarm (read-only) → Torwächter-Kritiker → Bau-Worker → EIGENES `swift build && swift test` + Diff-Review → committen.** Nie ein roter Build durchgerutscht (1005→1011→1024 grün). Der adversariale **Kritiker fing mehrfach echte Defekte**, die sonst beim Bau explodiert wären (Spine: `recordAdjustment` ist ein Protokoll-Requirement, kein Default-Param; Personalausweis: der geplante Orphan-Rebind war in V1 **toter Code** + Cold-Start-Timestamp-Präzisionsfalle). Kritiker-Pass ist kein Luxus.
