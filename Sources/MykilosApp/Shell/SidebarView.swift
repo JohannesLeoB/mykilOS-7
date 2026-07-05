@@ -76,8 +76,11 @@ struct SidebarView: View {
         HStack(spacing: 11) {
             brandChip
             if !isCompact {
+                // 2026-07-05 (Johannes): Wortmarke war „gaaaanz mini klein" → deutlich
+                // größer (20→27), balanciert den 34pt-Chip. Passt in die 212pt-Sidebar
+                // (SVG skaliert aspektgetreu, Spacer fängt die Restbreite).
                 MykWordmark()
-                    .frame(height: 20)
+                    .frame(height: 27)
                 Spacer()
             }
         }

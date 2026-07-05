@@ -508,9 +508,15 @@ struct ChatMessageBubble: View {
                     ToolCallRow(label: activity.label, isError: activity.isError, timestamp: message.createdAt)
                 }
                 bubble
-                // Kopieren-Knopf unter fertigen Assistenten-Antworten (per Hover).
-                if message.role == .assistant, message.status == .complete, message.text.isEmpty == false, isHovered {
+                // Kopieren-Knopf unter fertigen Assistenten-Antworten. 2026-07-05 (Johannes:
+                // „zittert bei Mausbewegung"): Knopf IMMER im Layout (Platz reserviert), nur per
+                // Hover ein-/ausgeblendet (Opacity). So ändert sich die Bubble-Höhe beim Hovern
+                // NICHT → kein Reflow, kein Hover-Flackern an der Bereichsgrenze.
+                if message.role == .assistant, message.status == .complete, message.text.isEmpty == false {
                     CopyButton(text: message.text)
+                        .opacity(isHovered ? 1 : 0)
+                        .allowsHitTesting(isHovered)
+                        .animation(.easeInOut(duration: 0.12), value: isHovered)
                 }
                 // Kalender-Aktionskarten nach der Antwort.
                 ForEach(Array(calendarActions.enumerated()), id: \.offset) { _, action in
