@@ -30,6 +30,18 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-05 — Sevdesk als möglicher „Nummernboss" (Zukunft)
+
+- 💡 **Sevdesk als konsolidierter Nummernboss** (Johannes, 2026-07-05): *Wenn* wir irgendwann
+  alle Nummernkreise (Kunden-, Projekt-, Beleg-Nr.) auf **ein** führendes System ziehen, wäre der
+  akribische „Buchhalter von nebenan" der natürliche Kandidat für die *eine* Nummern-Wahrheit.
+  **Späteres Kapitel**, nicht jetzt. Auch dann **nur über den Briefkasten** (append-only, nie
+  direkt) — Sevdesk bleibt Nachbar, kein integriertes System. Baut auf dem bestehenden
+  Nummernkreis-Design (heute schon: Belege + Debitoren = Sevdesk-Master) + der Briefkasten-Regel
+  auf. Rückkanal-/Feedback-Design bewusst offen (Johannes entscheidet später).
+
+---
+
 ## Nachtrag 2026-07-04 (Nacht) — DEV-Feedback (Johannes, Screenshots, „drop→check→erklär")
 
 Fünf Punkte aus Johannes' Screenshot-Feedback-Runde. Grundhaltung: alle fünf sind machbar
@@ -71,6 +83,27 @@ Gilt Interior-Build-Charter (nur innen, Airtable = Outer Limit).
   Anhang gehört. Vorschlag, kein Auto-Write; Drive bleibt read-only heilig (Ablage nur zu
   ausdrücklich bestätigtem Ziel). Fundament: bestehender Gmail-Cache + Projekt-Routing (Airtable).
   Passt zur Interior-Build-Charter (sauberes I/O, Airtable = Outer Limit).
+- 💡 **Universeller Checkout — alles ist pickbar/bündelbar/checkoutbar.** Nicht nur Artikel/
+  Positionen: auch **Kontakte in den Warenkorb und an Projekte „checkouten"**. Grundsatz: ALLES
+  aus allen Katalogen/Listen (Kontakte/Artikel/Dateien/Zeichnungen/Positionen/Material …)
+  auswählen, bündeln, checkouten. = die universelle Wirbelsäule (Pick → WorkBasket →
+  CheckoutPort) über alle `CatalogMatrix`-Typen ausrollen. Verbindet sich mit „globales Drag &
+  Drop" (siehe DEV-Feedback Punkt 4b).
+- 💡 **Kontakte aus Mail-Signaturen aufnehmen.** Aus den Signaturen eingehender Mails
+  Kontaktdaten extrahieren (Name/Firma/Position/Tel/Mail/Adresse) → neuer oder aktualisierter
+  Kontakt. Verwandt mit „Mail-Metadaten → Kontext" + „Visitenkarten-Scan". Vorschlag/Bestätigung,
+  kein Auto-Write.
+- 💡 **Kontakte an Projekte verknüpfen.** Kontakte direkt Projekten zuordnen (Beziehung Kontakt
+  ↔ Projekt), sichtbar auf beiden Seiten. Airtable als SoR (nie destruktiv).
+- 💡 **Universelles Gruppieren/Sortieren/Zuordnen/Vereinzeln/Kontextualisieren.**
+  Querschnitts-Prinzip: ALLES im System soll sich jederzeit zueinander gruppieren, sortieren,
+  zuordnen, vereinzeln und kontextualisieren lassen — ein durchgängiges Beziehungs-/
+  Kontext-Modell über alle Daten & Listen (Kontakte/Projekte/Artikel/Belege/Aufgaben/Dateien).
+  Fundament für viele obige Punkte. Interior-Build-Charter: nur innen, Airtable = Outer Limit.
+- 💡 **Timeline erkennt Meilenstein-Marker.** Die Timeline-Ansicht in den Projekt-Detailseiten
+  soll Marker automatisch erkennen: „Auftragsbestätigung", „Angebot verschickt", „Rechnung",
+  „Bestellung" usw. (aus Belegen/Drive-Dateinamen/Status). Wichtig — macht die Timeline zur
+  echten Projekt-Chronik. Read-only-Erkennung, kein Schreiben.
 
 ---
 
