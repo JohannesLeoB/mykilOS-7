@@ -63,4 +63,30 @@ public struct KeychainIdentityAnchorStore: IdentityAnchorStoring {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }
+
+    // MARK: - "Letzte Mail"-Slot (Teil D / Option A)
+
+    /// Reservierter Account für die zuletzt verwendete Mail. Bewusst kein gültiges
+    /// Mail-Format (führende/abschließende `__`) → kollidiert NIE mit einem echten
+    /// `normalizedEmail`-Account (Mail→userID). So bleibt „welche Mail zuletzt?"
+    /// lesbar, OHNE die Mail schon zu kennen.
+    private static let lastEmailAccount = "__last_email__"
+
+    /// Teil D (Option A): die zuletzt verwendete Google-Mail SUFFIX-LOS mitschreiben.
+    /// Nach einem db.sqlite-Reset ist `loadUserInfo(userID: frisch)` leer (die
+    /// Userinfo liegt unter dem ALTEN userID-Suffix, und loadWithMigration scannt
+    /// keine alten UUID-Suffixe). Über diesen Slot ist die Mail dennoch wieder-
+    /// beschaffbar → der Mail→userID-Anker oben kann greifen (Henne-Ei gelöst).
+    /// Kein Secret (Mail ist keins). Leere/whitespace-Mail wird NIE geschrieben.
+    public func saveLastEmail(_ email: String) throws {
+        guard let normalized = Self.normalizedEmail(email) else { return }
+        try keychain.store(normalized, service: Self.service, account: Self.lastEmailAccount)
+    }
+
+    /// Die zuletzt verwendete (normalisierte) Mail, unabhängig von der aktiven userID.
+    public func loadLastEmail() throws -> String? {
+        guard let value = try keychain.load(service: Self.service, account: Self.lastEmailAccount) else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
 }

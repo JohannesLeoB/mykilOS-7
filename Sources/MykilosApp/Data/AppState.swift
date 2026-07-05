@@ -230,6 +230,11 @@ public final class AppState {
         // Non-fatal (try?): der GRDB-Anker oben ist der Master; der Keychain-
         // Spiegel ist die zusätzliche Überlebensschicht. TRÄGT NIE EIN SECRET.
         try? KeychainIdentityAnchorStore().save(userID: activeUserID, forEmail: email)
+        // ORPHAN-REBIND (Teil D / Option A): die Mail zusätzlich SUFFIX-LOS ablegen,
+        // damit sie nach einem db.sqlite-Reset OHNE bekannte userID wiederbeschaffbar
+        // ist (der Mail→userID-Anker oben ist per Mail indexiert — ohne die Mail
+        // greift er nicht). Non-fatal, kein Secret.
+        try? KeychainIdentityAnchorStore().saveLastEmail(email)
     }
 
     // MARK: - CheckIn-Spine (Wirbelsäule, die eine zentral auditierte Naht)
@@ -337,7 +342,13 @@ public final class AppState {
         // eine neue UUID zu vergeben — sonst verwaisten alle per-User-Keychain-
         // Einträge. Ohne Login (kein loadUserInfo) → finalUserID == firstID
         // (kein Rebind, Verhalten wie zuvor).
-        let hydratedEmail = try? KeychainGoogleTokenStore(userID: firstID).loadUserInfo()?.email
+        // Teil D (Option A): Mail ZUERST aus dem suffixlosen "letzte Mail"-Slot
+        // (überlebt einen db.sqlite-Reset, weil ohne userID-Suffix ablegt), DANN
+        // Fallback auf die userID-gebundene Userinfo (greift, wenn kein Reset war
+        // bzw. der Slot noch leer ist). So feuert der Rebind auch für den häufigen
+        // Fall "etablierter Nutzer, db.sqlite zurückgesetzt, Keychain intakt".
+        let hydratedEmail = (try? KeychainIdentityAnchorStore().loadLastEmail())
+            ?? (try? KeychainGoogleTokenStore(userID: firstID).loadUserInfo()?.email)
         let finalUserID = ProfileStore.ensureUserID(db: database, googleEmail: hydratedEmail)
         // ALLE per-User-Stores werden EINMAL mit der ENDGÜLTIGEN UUID gebaut —
         // kein Doppel-Bau, kein Store zuerst mit firstID und dann nochmal.

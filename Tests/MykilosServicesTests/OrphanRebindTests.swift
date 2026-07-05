@@ -148,6 +148,55 @@ struct OrphanRebindTests {
         #expect(try store.userID(forEmail: "johannes@mykilos.com") == "ALT-UUID-001")
         #expect(try store.userID(forEmail: "JOHANNES@MYKILOS.COM") == "ALT-UUID-001")
     }
+
+    // MARK: - Teil D — "letzte Mail"-Slot (Mail-Wiederbeschaffung nach db-Reset)
+
+    @Test func letzteMailSlotRoundtripptNormalisiert() throws {
+        let fake = FakeKeychain()
+        let store = KeychainIdentityAnchorStore(keychain: fake)
+        #expect(try store.loadLastEmail() == nil)                      // leer am Anfang
+        try store.saveLastEmail("  Johannes@Mykilos.COM ")
+        // Normalisiert (lowercased/trimmed) und OHNE die Mail zu kennen lesbar.
+        #expect(try store.loadLastEmail() == "johannes@mykilos.com")
+    }
+
+    @Test func letzteMailSlotSchreibtLeereMailNie() throws {
+        let fake = FakeKeychain()
+        let store = KeychainIdentityAnchorStore(keychain: fake)
+        try store.saveLastEmail("")
+        try store.saveLastEmail("   ")
+        #expect(fake.storage.isEmpty)
+        #expect(try store.loadLastEmail() == nil)
+    }
+
+    @Test func letzteMailSlotKollidiertNichtMitMailAnker() throws {
+        // Reservierter lastEmail-Account und der Mail→userID-Anker stören sich nicht.
+        let fake = FakeKeychain()
+        let store = KeychainIdentityAnchorStore(keychain: fake)
+        try store.save(userID: "ALT-UUID-001", forEmail: "johannes@mykilos.com")
+        #expect(try store.loadLastEmail() == nil)   // Mail-Anker gesetzt, lastEmail aber nicht
+        #expect(try store.userID(forEmail: "johannes@mykilos.com") == "ALT-UUID-001")
+    }
+
+    @Test func resetFallLetzteMailPlusAnkerLiefertAlteUUID() throws {
+        // Der reale Reset-Fall, den Teil D schließt: db.sqlite weg, aber im Keychain
+        // liegen lastEmail-Slot + Mail-Anker. Die wiederbeschaffte Mail füttert den Anker.
+        let fake = FakeKeychain()
+        let store = KeychainIdentityAnchorStore(keychain: fake)
+        try store.saveLastEmail("johannes@mykilos.com")
+        try store.save(userID: "ALT-UUID-001", forEmail: "johannes@mykilos.com")
+
+        // Simuliert AppState.init nach Reset: Mail aus dem Slot holen …
+        let recovered = try store.loadLastEmail()
+        #expect(recovered == "johannes@mykilos.com")
+
+        // … und über den Anker (ohne DB-Record) die alte UUID auflösen.
+        let tmp = makeOrphanTempDir()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        let db = try GRDBDatabase(url: tmp.appendingPathComponent("db.sqlite"))
+        let rebound = ProfileStore.ensureUserID(db: db, googleEmail: recovered, anchorStore: store)
+        #expect(rebound == "ALT-UUID-001")
+    }
 }
 
 // MARK: - FakeIdentityAnchorStore
