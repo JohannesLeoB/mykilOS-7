@@ -40,6 +40,17 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
   Nummernkreis-Design (heute schon: Belege + Debitoren = Sevdesk-Master) + der Briefkasten-Regel
   auf. Rückkanal-/Feedback-Design bewusst offen (Johannes entscheidet später).
 
+- 💡 **Settings-Ebene im macOS-System-Settings-Stil** (Johannes, 2026-07-05, Screenshot-Anlehnung):
+  die „fertige" Benutzer-Einstellungsebene soll aussehen wie macOS System Settings — ruhige
+  gruppierte Sektionen, Status-Badges, Chevrons — aber mit UNSEREN echten Kategorien. **Mapping:**
+  Apple-Account-Header → Identität/Personalausweis (✅ `ResidentIdentity` gebaut); Datenschutz &
+  Sicherheit → Integrationen (Google/Airtable/ClickUp/Clockodo/Sevdesk/Claude) + Datenschutz-Toggles;
+  Erscheinungsbild → Darstellung (Hell/Dunkel/Auto ✅ + CI-Akzent); Benutzer:innen & Gruppen →
+  Team/Bewohner + Hausmeister(Admin); Netzwerk (grün/rot) → Schlüssel-Inventar (verbunden/verwaist,
+  Orphan-Erkennung); Familie → gemeinsame Räume (Drive/Projekte/Kataloge). Die Settings-Ebene ist die
+  **natürliche Heimat der Bewohner-Schicht** (Personalausweis ✅, Schlüssel-Inventar + Meldeadresse
+  designt). Anregung, kein Maximal-Bau ([[design-nordstern-minimal]]); Mockup auf Abruf.
+
 ---
 
 ## Nachtrag 2026-07-04 (Nacht) — DEV-Feedback (Johannes, Screenshots, „drop→check→erklär")
