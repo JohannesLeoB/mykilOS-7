@@ -124,4 +124,34 @@ public struct KeychainIdentityAnchorStore: IdentityAnchorStoring {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }
+
+    // MARK: - Sign-out-Marker (Nutzer-Wechsel)
+    //
+    // Nach dem „Abmelden" wird dieser Slot gesetzt. AppState.init prüft ihn VOR
+    // der Auto-Hydration (loadLastEmail/loadUserInfo) und ÜBERSPRINGT sie, damit
+    // der nächste Start NICHT automatisch die Mail des abgemeldeten Bewohners
+    // wieder einloggt (der neue Bewohner startet mit einem frischen Namespace).
+    // Der erste erfolgreiche Login des neuen Bewohners löscht den Marker wieder.
+    //
+    // Kein Secret (nur ein Präsenz-Flag). Liegt im geräteweiten identity-Namespace
+    // OHNE per-User-Suffix — er muss ja gerade dann lesbar sein, wenn noch keine
+    // aktive userID feststeht. Das KeychainAccessing-Protokoll kennt kein delete;
+    // „abgemeldet aufheben" schreibt daher den Leerwert, isSignedOut prüft nicht-leer.
+    public static let signedOutAccount = "__signed_out__"
+
+    /// Setzt den Sign-out-Marker (der aktive Bewohner hat sich abgemeldet).
+    public func markSignedOut() throws {
+        try keychain.store("1", service: Self.service, account: Self.signedOutAccount)
+    }
+
+    /// Hebt den Sign-out-Marker auf (neuer Bewohner erfolgreich eingeloggt).
+    public func clearSignedOut() throws {
+        try keychain.store("", service: Self.service, account: Self.signedOutAccount)
+    }
+
+    /// True, wenn der Sign-out-Marker gesetzt ist (nicht-leerer Wert).
+    public func isSignedOut() throws -> Bool {
+        guard let value = try keychain.load(service: Self.service, account: Self.signedOutAccount) else { return false }
+        return value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
 }

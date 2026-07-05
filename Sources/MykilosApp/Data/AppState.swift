@@ -372,8 +372,17 @@ public final class AppState {
         // Fallback auf die userID-gebundene Userinfo (greift, wenn kein Reset war
         // bzw. der Slot noch leer ist). So feuert der Rebind auch für den häufigen
         // Fall "etablierter Nutzer, db.sqlite zurückgesetzt, Keychain intakt".
-        let hydratedEmail = (try? KeychainIdentityAnchorStore().loadLastEmail())
-            ?? (try? KeychainGoogleTokenStore(userID: firstID).loadUserInfo()?.email)
+        // MULTI-USER: Nach einem „Abmelden" (Sign-out-Marker gesetzt) NICHT
+        // automatisch die Mail des abgemeldeten Bewohners re-hydratisieren —
+        // sonst würde der nächste Start ihn wieder einloggen, statt den neuen
+        // Bewohner mit frischem Namespace starten zu lassen. Der erste Login des
+        // neuen Bewohners hebt den Marker wieder auf (siehe Abmelde-/Login-Flow).
+        let identityAnchor = KeychainIdentityAnchorStore()
+        let signedOut = (try? identityAnchor.isSignedOut()) ?? false
+        let hydratedEmail: String? = signedOut
+            ? nil
+            : (try? identityAnchor.loadLastEmail())
+                ?? (try? KeychainGoogleTokenStore(userID: firstID).loadUserInfo()?.email)
         let finalUserID = ProfileStore.ensureUserID(db: database, googleEmail: hydratedEmail)
         // ALLE per-User-Stores werden EINMAL mit der ENDGÜLTIGEN UUID gebaut —
         // kein Doppel-Bau, kein Store zuerst mit firstID und dann nochmal.

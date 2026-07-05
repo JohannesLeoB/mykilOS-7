@@ -249,4 +249,16 @@ struct PerUserKeychainServiceTests {
         try store.ensureDevicePrimary("   ")
         #expect(try store.loadDevicePrimary() == nil)
     }
+
+    // MARK: - Sign-out-Marker (Nutzer-Wechsel)
+
+    @Test func signOutMarkerSetzenPruefenAufheben() throws {
+        let keychain = FakeKeychain()
+        let store = KeychainIdentityAnchorStore(keychain: keychain)
+        #expect(try store.isSignedOut() == false)   // frisch: nicht abgemeldet
+        try store.markSignedOut()
+        #expect(try store.isSignedOut() == true)     // nach Abmelden gesetzt
+        try store.clearSignedOut()
+        #expect(try store.isSignedOut() == false)    // nach Login wieder aufgehoben
+    }
 }
