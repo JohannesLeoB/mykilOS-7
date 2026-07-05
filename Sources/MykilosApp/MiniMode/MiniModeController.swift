@@ -11,8 +11,10 @@ import MykilosServices
 // erscheint (z. B. während man in Vectorworks im Vollbild zeichnet) und NIE den Fokus stiehlt.
 //
 // Aktivierung: einmalig in Settings → Darstellung freischalten (`ui.miniMode.enabled`),
-// dann per Halte-Geste am mykilOS-Button oben links ausgelöst. Verlassen: Klick aufs Logo
-// im Rail (bringt das Hauptfenster zurück nach vorn).
+// dann per Halte-Geste am mykilOS-Button oben links ausgelöst. Beim Aktivieren wird das
+// Hauptfenster AUSGEBLENDET (orderOut) — der schwebende Icon-Streifen steht dann allein und
+// liegt NIE über der Großversion (C3). Verlassen: Klick aufs Logo im Rail — das blendet genau
+// dieses Hauptfenster wieder ein und bringt es nach vorn.
 //
 // LEAN: Der Controller pollt NICHTS Neues. Er liest ausschließlich den MiniModeStore, der
 // seinerseits nur bestehende lokale Caches/Loops verdichtet (Timer/Signale/Aufgaben). Der
@@ -24,13 +26,18 @@ import MykilosServices
 @MainActor
 @Observable
 final class MiniModeController {
-    /// Läuft der Mini-Mode gerade (Panel sichtbar)? Treibt u. a. das Ausblenden des
-    /// Hauptfensters durch den Aufrufer nicht — beide Fenster dürfen koexistieren; der
-    /// Nutzer schiebt das Hauptfenster nur zur Seite bzw. arbeitet im Vollbild daneben.
+    /// Läuft der Mini-Mode gerade (Panel sichtbar)? Beim Aktivieren wird das Hauptfenster
+    /// AUSGEBLENDET (orderOut), sodass der schwebende Icon-Streifen ALLEIN steht und nie über
+    /// der Großversion liegt (C3). Beim Verlassen wird genau dieses Fenster wiederhergestellt.
     private(set) var isActive = false
 
     private var panel: MiniModePanel?
     private var refreshTimer: Timer?
+
+    /// Das beim Aktivieren ausgeblendete Hauptfenster — gemerkt, damit beim Verlassen exakt
+    /// dieses eine Fenster wiederhergestellt wird (nicht irgendein Fenster). Schwach gehalten:
+    /// verschwindet das Fenster anderweitig, restauriert der Fallback in `restoreMainWindow`.
+    private weak var hiddenMainWindow: NSWindow?
 
     // Wird beim Boot verdrahtet (attach). Vorher kann der Mini-Mode nicht starten.
     private var store: MiniModeStore?
@@ -66,29 +73,67 @@ final class MiniModeController {
         panel.orderFrontFloating()
         self.panel = panel
         isActive = true
+        // C3: Hauptfenster ausblenden, damit der Icon-Streifen ALLEIN schwebt und nicht
+        // über der Großversion liegt. Das schwebende Panel (canBecomeMain = false) wird
+        // vom Filter unten übersprungen — nur das echte Hauptfenster wird verborgen.
+        hideMainWindow()
         startRefreshTicker()
         Task { await store.refresh() }
     }
 
-    /// Beendet den Mini-Mode: Panel schließen, Ticker stoppen.
+    /// Beendet den Mini-Mode: Panel schließen, Ticker stoppen, Hauptfenster wiederherstellen.
     func deactivate() {
         refreshTimer?.invalidate()
         refreshTimer = nil
         panel?.close()
         panel = nil
         isActive = false
+        // C3: das beim Aktivieren ausgeblendete Hauptfenster wieder einblenden.
+        restoreMainWindow()
+    }
+
+    // MARK: Fenster-Sichtbarkeit (C3)
+
+    /// Blendet das echte Hauptfenster aus (orderOut) und merkt es sich für die spätere
+    /// Wiederherstellung. Das schwebende MiniModePanel (canBecomeMain = false) ist durch den
+    /// Filter ausgenommen — es bleibt sichtbar. WindowGuard fasst ein ausgeblendetes Fenster
+    /// ohnehin nicht (isVisible == false), es kann also nicht klammernd „zurückwandern".
+    private func hideMainWindow() {
+        guard let window = mainWindow() else { return }
+        hiddenMainWindow = window
+        window.orderOut(nil)
+    }
+
+    /// Stellt genau das zuvor ausgeblendete Hauptfenster wieder her und bringt es nach vorn.
+    /// Fällt (falls die Referenz verloren ging) auf ein passendes sichtbares Fenster zurück.
+    private func restoreMainWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+        if let window = hiddenMainWindow {
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            for window in NSApp.windows where window.canBecomeMain && window.contentView != nil {
+                window.makeKeyAndOrderFront(nil)
+                break
+            }
+        }
+        hiddenMainWindow = nil
+    }
+
+    /// Findet das echte Hauptfenster — bevorzugt das aktuelle Key/Main-Fenster, sonst das erste
+    /// sichtbare inhaltstragende Fenster, das Main werden kann. Das MiniModePanel
+    /// (canBecomeMain = false) wird dabei niemals getroffen.
+    private func mainWindow() -> NSWindow? {
+        if let key = NSApp.keyWindow, key.canBecomeMain, key.contentView != nil { return key }
+        if let main = NSApp.mainWindow, main.canBecomeMain, main.contentView != nil { return main }
+        return NSApp.windows.first { $0.isVisible && $0.canBecomeMain && $0.contentView != nil }
     }
 
     // MARK: Klick-Ziele
 
-    /// Logo angetippt → Hauptfenster zurück nach vorn, Mini-Mode beenden.
+    /// Logo angetippt → Mini-Mode beenden. `deactivate()` blendet das zuvor ausgeblendete
+    /// Hauptfenster wieder ein und bringt es nach vorn (C3-Wiederherstellung).
     func returnToMainWindow() {
         deactivate()
-        NSApp.activate(ignoringOtherApps: true)
-        for window in NSApp.windows where window.canBecomeMain && window.contentView != nil {
-            window.makeKeyAndOrderFront(nil)
-            break
-        }
     }
 
     /// Modul-Icon angetippt → Modul öffnen UND Hauptfenster nach vorn (Mini-Mode beenden).
