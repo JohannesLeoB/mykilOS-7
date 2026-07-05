@@ -2,14 +2,50 @@ import SwiftUI
 import MykilosKit
 import MykilosDesign
 
+// MARK: - RechnerTheme
+// Drei Farbwelten für den Taschenrechner, wählbar über den Mini-Toggle im Header
+// (Johannes-Feedback 2026-07-05: Braun ET66 schwarz · Braun-hell · „Mustard"-Rost).
+// Alles über MykColor-Tokens — kein rohes Hex. Der Ocker-„="-Akzent bleibt konstant
+// als Signatur. Persistiert per @AppStorage (nutzer-eigene Ansichts-Vorliebe).
+enum RechnerTheme: String, CaseIterable, Identifiable {
+    case weiss, schwarz, rot
+    var id: String { rawValue }
+    var label: String {
+        switch self { case .weiss: "Weiß"; case .schwarz: "Schwarz"; case .rot: "Rot" }
+    }
+    var swatch: Color            { keyBackground }
+    var keyBackground: Color {
+        switch self { case .weiss: MykColor.paper2.color; case .schwarz: MykColor.ink.color; case .rot: MykColor.drive.color }
+    }
+    var digitText: Color {
+        switch self { case .weiss: MykColor.ink.color; default: MykColor.paper.color }
+    }
+    var operatorText: Color {
+        switch self { case .weiss, .schwarz: MykColor.tasks.color; case .rot: MykColor.paper.color }
+    }
+    var clearText: Color {
+        switch self { case .rot: MykColor.paper.color; default: MykColor.critical.color }
+    }
+    var equalsBackground: Color  { MykColor.tasks.color }   // Ocker-Signatur, immer
+    var equalsText: Color {
+        switch self { case .weiss: MykColor.paper.color; default: MykColor.ink.color }
+    }
+    var displayBackground: Color { keyBackground }
+    var displayText: Color {
+        switch self { case .weiss: MykColor.ink.color; default: MykColor.paper.color }
+    }
+}
+
 // MARK: - RechnerWidget
 // Kleiner Taschenrechner auf der Übersichtsseite. Braun-angelehnt (Dieter Rams,
-// ET66): klares 4er-Raster, ruhige Flächen, ein warmer Ocker-Akzent für die
-// Operatoren und „=". Rein lokal — kein Schreiben, keine Persistenz (v1).
+// ET66) mit wählbarer Farbwelt. Rein lokal — kein Schreiben.
 public struct RechnerWidget: View {
     @State private var model = RechnerModel()
+    @AppStorage("rechnerTheme") private var themeRaw = RechnerTheme.weiss.rawValue
 
     public init() {}
+
+    private var theme: RechnerTheme { RechnerTheme(rawValue: themeRaw) ?? .weiss }
 
     public var body: some View {
         WidgetContainer(kind: .rechner, sourceLabel: "RECHNER", projectID: "home") {
@@ -26,19 +62,40 @@ public struct RechnerWidget: View {
             SourceChip(kind: .rechner)
             Text("Rechner").mykWidgetTitle()
             Spacer()
+            themeToggle
+        }
+    }
+
+    // Mini-Toggle: drei Farbpunkte, der aktive trägt einen Ring.
+    private var themeToggle: some View {
+        HStack(spacing: MykSpace.s3) {
+            ForEach(RechnerTheme.allCases) { t in
+                Button { themeRaw = t.rawValue } label: {
+                    Circle()
+                        .fill(t.swatch)
+                        .frame(width: 13, height: 13)
+                        .overlay(
+                            Circle().strokeBorder(
+                                theme == t ? MykColor.ink.color : MykColor.line.color,
+                                lineWidth: theme == t ? 2 : 1)
+                        )
+                }
+                .buttonStyle(.plain)
+                .help("Farbe: \(t.label)")
+            }
         }
     }
 
     private var display: some View {
         Text(model.display)
             .font(.mykMono(24))
-            .foregroundStyle(MykColor.ink.color)
+            .foregroundStyle(theme.displayText)
             .lineLimit(1)
             .minimumScaleFactor(0.4)
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.horizontal, MykSpace.s4)
             .padding(.vertical, MykSpace.s4)
-            .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.paper2.color))
+            .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(theme.displayBackground))
     }
 
     private var keypad: some View {
@@ -47,23 +104,27 @@ public struct RechnerWidget: View {
             row(["4", "5", "6", "×"])
             row(["1", "2", "3", "−"])
             row(["C", "0", ".", "+"])
-            RechnerKey(label: "=", kind: .equals) { model.tapEquals() }
+            RechnerKey(label: "=", foreground: theme.equalsText, background: theme.equalsBackground) {
+                model.tapEquals()
+            }
         }
     }
 
     private func row(_ labels: [String]) -> some View {
         HStack(spacing: MykSpace.s3) {
             ForEach(labels, id: \.self) { label in
-                RechnerKey(label: label, kind: kind(for: label)) { tap(label) }
+                RechnerKey(label: label, foreground: foreground(for: label), background: theme.keyBackground) {
+                    tap(label)
+                }
             }
         }
     }
 
-    private func kind(for label: String) -> RechnerKey.Kind {
+    private func foreground(for label: String) -> Color {
         switch label {
-        case "÷", "×", "−", "+": .operatorKey
-        case "C":                .clear
-        default:                 .digit
+        case "÷", "×", "−", "+": theme.operatorText
+        case "C":                theme.clearText
+        default:                 theme.digitText
         }
     }
 
@@ -79,9 +140,9 @@ public struct RechnerWidget: View {
 
 // MARK: - RechnerKey (eine Taste)
 private struct RechnerKey: View {
-    enum Kind { case digit, operatorKey, equals, clear }
     let label: String
-    let kind: Kind
+    let foreground: Color
+    let background: Color
     let action: () -> Void
 
     var body: some View {
@@ -93,22 +154,6 @@ private struct RechnerKey: View {
                 .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(background))
         }
         .buttonStyle(.plain)
-    }
-
-    private var foreground: Color {
-        switch kind {
-        case .digit:       MykColor.ink.color
-        case .operatorKey: MykColor.tasks.color
-        case .clear:       MykColor.critical.color
-        case .equals:      MykColor.paper.color
-        }
-    }
-
-    private var background: Color {
-        switch kind {
-        case .equals: MykColor.tasks.color   // Ocker-Akzent (der „Braun-Gelb"-Moment)
-        default:      MykColor.paper2.color
-        }
     }
 }
 
