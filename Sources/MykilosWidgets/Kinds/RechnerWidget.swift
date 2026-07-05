@@ -209,9 +209,11 @@ private struct RechnerKey: View {
 }
 
 // MARK: - RechnerModel (immediate-execution Rechenlogik)
+// `internal` (nicht `private`), damit die reine Rechenlogik testbar ist
+// (@testable import MykilosWidgets). Keine Verhaltensänderung — nur Sichtbarkeit.
 @MainActor
 @Observable
-private final class RechnerModel {
+final class RechnerModel {
     private(set) var display = "0"
     private var accumulator: Double?
     private var pendingOperator: String?

@@ -65,6 +65,10 @@ let package = Package(
                         .product(name: "GRDB", package: "GRDB.swift"),
                     ],
                     path: "Tests/MykilosServicesTests"),
+        // Tests für MykilosWidgets-eigene, reine Logik (RechnerModel etc.).
+        .testTarget(name: "MykilosWidgetsTests",
+                    dependencies: ["MykilosWidgets", "MykilosKit", "MykilosDesign"],
+                    path: "Tests/MykilosWidgetsTests"),
         // Tests für MykilosApp-eigene Utility-Klassen (MykPDFRenderer etc.).
         // Executable targets können in SPM 5.4+ per @testable importiert werden.
         .testTarget(name: "MykilosAppTests",

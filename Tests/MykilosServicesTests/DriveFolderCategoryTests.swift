@@ -59,4 +59,46 @@ struct DriveFolderCategoryTests {
         #expect(DriveFolderCategory.angebote.chipLabel == "ANGEBOTE")
         #expect(DriveFolderCategory.zeichnungen.chipLabel == "ZEICHNUNGEN")
     }
+
+    // (g) Kollision zweier ECHTER Signalklassen: bei "Angebot" UND "Zeichnung"
+    //     im selben Namen gewinnt Angebote (steht in matchOrder vor Zeichnungen).
+    @Test func kollisionAngeboteSchlaegtZeichnung() {
+        #expect(DriveFolderCategory.category(forFolderName: "Angebot Zeichnung Meyer") == .angebote)
+        #expect(DriveFolderCategory.category(forFolderName: "Zeichnung Angebot Meyer") == .angebote)
+        // Zeichnung UND Präsentation → Zeichnung gewinnt (steht davor).
+        #expect(DriveFolderCategory.category(forFolderName: "Plan Rendering") == .zeichnungen)
+    }
+
+    // (h) Weitere Infos-Schlüsselwörter (nicht das generische "info") treffen
+    //     eindeutig — decken die bisher ungetesteten Zweige ab.
+    @Test func infosSpezifischeSchluesselwoerter() {
+        #expect(DriveFolderCategory.category(forFolderName: "Schriftverkehr") == .infos)
+        #expect(DriveFolderCategory.category(forFolderName: "Korrespondenz Kunde") == .infos)
+    }
+
+    // (h2) Dokumentierter Prioritäts-Quirk (KEIN Bug-Fix, nur festgehalten):
+    //     Der Infos-Schlüsselbegriff "vorplanung" enthält das Substring "plan",
+    //     und "plan" (Zeichnungen) steht in matchOrder VOR Infos. Ein Ordner
+    //     "Vorplanung" wird daher als .zeichnungen erkannt, nie als .infos.
+    //     Der Test nagelt das Ist-Verhalten fest, ohne die Logik zu ändern.
+    @Test func vorplanungWirdWegenSubstringPlanAlsZeichnungErkannt() {
+        #expect(DriveFolderCategory.category(forFolderName: "06 Vorplanung") == .zeichnungen)
+    }
+
+    // (i) Tipp-/Schreibvarianten und CAD greifen (typo-tolerante Keywords + ASCII).
+    @Test func schreibvariantenUndCadGreifen() {
+        #expect(DriveFolderCategory.category(forFolderName: "Moodbord") == .praesentation)  // Tippfehler-Variante
+        #expect(DriveFolderCategory.category(forFolderName: "CAD Export") == .zeichnungen)
+        #expect(DriveFolderCategory.category(forFolderName: "cad") == .zeichnungen)
+        #expect(DriveFolderCategory.category(forFolderName: "Presentation") == .praesentation)  // ohne Umlaut
+    }
+
+    // (j) Diakritik-Naheschüsse dürfen NICHT fälschlich matchen (kein Substring-
+    //     Übergriff nach der Faltung). "Präzision" faltet zu "prazision" —
+    //     enthält NICHT "prasentation" → korrekt nil.
+    @Test func diakritikNaheschussBleibtNil() {
+        #expect(DriveFolderCategory.category(forFolderName: "Präzision") == nil)
+        #expect(DriveFolderCategory.category(forFolderName: "Kläranlage") == nil)
+        #expect(DriveFolderCategory.category(forFolderName: "   ") == nil)   // nur Whitespace, keine Keywords
+    }
 }
