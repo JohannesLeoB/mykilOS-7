@@ -448,6 +448,16 @@ Oben rechts: **+ Neues Projekt** (Fragebogen) und der **Warenkorb-Badge** (Posit
   zuerst; Filter Aktuell/Archiviert). **Vorschau** (Auge-Icon) öffnet die Positionen read-only,
   **ohne** den aktiven Warenkorb zu verändern; **Wiederherstellen** lädt sie zurück in den
   aktiven Warenkorb. Editieren der Mengen passiert im Warenkorb-Panel (Badge oben rechts).
+- **Positionen aus einem Angebot in den Warenkorb (Fix 2026-07-05)** — in Kataloge/Angebote ein
+  **eingehendes** Angebot öffnen → **„Positionen herauslösen"** löst die erkannten PDF-Positionen
+  heraus → **„In Warenkorb"** legt eine Position in den aktiven Warenkorb (Zähler steigt, Panel
+  öffnet sich). *(Vorher blieb der Korb leer — Picker und sichtbares Panel schrieben/lasen zwei
+  verschiedene Körbe; jetzt derselbe.)* **Volle Daten-Fidelität:** jede übernommene Position trägt
+  ALLE Felder bis in den Checkout — Menge · Preis · Kategorie · Originaltext · Seite · Status
+  (selbstbewiesen/prüfen) · Quell-PDF · ID (nichts wird abgeschnitten). *Voraussetzung:* Angebots-PDF
+  mit erkannten Positionen. *Einschränkung:* die Zusatzfelder wandern mit, werden im Warenkorb-Panel
+  aber (noch) nicht alle **angezeigt** (sichtbar bleiben Bezeichnung/Menge/EK/VK) — reiner UI-Ausbau,
+  offen.
 - **Kontakte** — das geteilte **Airtable-Kontaktverzeichnis** (Mastermind-Base, Tabelle
   „Kontakte"): Kunden, Lieferanten, Handwerker, Architekt/Planer, Team. Sortier- und filterbar
   (Kategorie + Freitext über Name/Firma/Projekt). **Zeile klicken** → Detailkarte: alle Felder

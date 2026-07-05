@@ -12,6 +12,22 @@ Einträge oben.
 
 ---
 
+## 2026-07-05 — Haus-Session: 4 Meilensteine, der plan→bau→verify-Rhythmus
+
+**Was richtig gut lief (der Rhythmus):** Drei Bau-Meilensteine — CheckIn-Spine, Warenkorb-Fix, Personalausweis-Fundament — sauber durch denselben Zyklus: **Bauplan-Schwarm (read-only) → Torwächter-Kritiker → Bau-Worker → EIGENES `swift build && swift test` + Diff-Review → committen.** Nie ein roter Build durchgerutscht (1005→1011→1024 grün). Der adversariale **Kritiker fing mehrfach echte Defekte**, die sonst beim Bau explodiert wären (Spine: `recordAdjustment` ist ein Protokoll-Requirement, kein Default-Param; Personalausweis: der geplante Orphan-Rebind war in V1 **toter Code** + Cold-Start-Timestamp-Präzisionsfalle). Kritiker-Pass ist kein Luxus.
+
+**Wiederkehrende Lehre — Stale Diagnostics:** SourceKit zeigte JEDES Mal mitten im Worker-Bau rote „no member"-Fehler; JEDES Mal war der eigene `swift build` danach grün. **Weder dem „completed"-Bericht des Workers NOCH den Diagnostics blind trauen — selbst bauen + testen.** (Bestätigt [[worker-delegation-lesson]].)
+
+**Ehrlichkeit vor Vollständigkeit:** Beim Personalausweis machte der Kritiker klar, dass das Fundament die Zersplitterung löst, aber den *häufigsten* Orphan-Fall (ganze DB weg) NICHT — statt das still halb zu bauen: Fundament sauber abgegrenzt, den echten Rebind als eigenen frischen Strang vertagt, Johannes' Ziel ehrlich benannt statt überverkauft.
+
+**Konsolidierungs-Disziplin:** Nach 4 Meilensteinen NICHT in den nächsten Bau galoppiert — stattdessen DMG (alpha20) + Offsite-Push + Live-Test-Angebot + Durchatmen empfohlen. Boden sichern vor Weiterklettern.
+
+**Kommunikation:** Johannes delegierte mehrfach die Architektur-Entscheidung an mich („immer nach deiner Empfehlung, werter Herr Architekt") → Antwort: klare Empfehlung MIT Begründung + handeln, kein Menü vorlegen. Nebenbei entstand die [[zusammenarbeits-charter]] (Rollen/Sprachstil/Feedback-Routine fest verankert) + das Haus-Bild als Nordstern.
+
+**Eigener Ausrutscher (ehrlich):** Kontextfüllstand aus dem Bauch geschätzt (~85%) — realer Tacho zeigte 36%. **Bauch läuft ~2× zu hoch; echtem Messwert trauen, im Zweifel Johannes auf den Tacho schauen lassen, nicht vorschnell „frische Session" rufen.** ([[kontextfenster-wache-gentlemans-agreement]]).
+
+---
+
 ## 2026-07-04 (spät Abend) — Mini-Mode: gebaut, verworfen, neu gebaut + Konsolidierung
 
 **Was auffiel (der teure Zick-Zack):** Ein Ultracode-Workflow wurde direkt auf „Mini-Mode"
