@@ -5,6 +5,22 @@ Das Cockpit, das alles kann. macOS 14+, SwiftUI, local-first.
 
 ---
 
+## ⛔ EISERNE REGEL: Kein hohles „erledigt" · Keine Ansage vergessen (ÜBER ALLEM)
+
+**Verankert 2026-07-05 (Johannes, maßlos enttäuscht nach zu langem Im-Kreis-Drehen). Gilt für JEDEN
+Agenten, jede Session, jedes Tool.**
+
+1. **KEIN hohles „erledigt/grün/fertig".** Nie Erfolg verkaufen, solange es nicht ECHT verifiziert ist.
+   „Done" = Johannes hat's live geprüft ODER ein real bewiesenes Ergebnis. **„Tests grün" / „Build läuft"
+   ist Proxy, kein Beweis.** Nüchtern + ehrlich melden, kein Schulterklopfen. Bei Unsicherheit: „ich glaube
+   X, bitte bestätigen" — nie „fixed".
+2. **NIE eine Ansage/Aufgabe von Johannes vergessen, übergehen oder vernachlässigen.** Jede wird verfolgt
+   und gehalten; wird etwas verschoben, dann ausgesprochen + getrackt, nie stillschweigend fallengelassen.
+3. **Basics vor Features** (App geht sauber auf, sieht konsistent aus, tut was er braucht — DANN Neues).
+4. **Wurzel-Fix statt Halbmaßnahme** („ein für alle mal richtig").
+
+Vollständiger Kontext + Warum: Gedächtnis `kein-hohles-erledigt-nie-ansagen-vergessen`.
+
 ## ⛔ EISERNE REGEL: Kanonischer Ordner + Branch-Verifikation
 
 **Diese Regel gilt für JEDEN Agenten, jede Session, jedes Tool — Claude, Codex, GitHub Actions, alles.**
