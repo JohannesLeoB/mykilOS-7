@@ -6,13 +6,17 @@ import MykilosServices
 
 // MARK: - SettingsCategory
 enum SettingsCategory: String, CaseIterable, Identifiable {
-    case profil, darstellung, verbindungen, schluesselInventar, privat, datenschutz, system
+    // Stufe 2, Etappe 1 (2026-07-05): Reihenfolge in privat→geteilt-Bändern
+    // (Nutzer-Mentalmodell: erst ich/meine Darstellung + Schlüssel, dann Geteiltes,
+    // dann System). rawValues unverändert → @AppStorage-Persistenz bleibt gültig.
+    // `.profil` steht oben (wird in Etappe 2 zum Personalausweis-Header).
+    case profil, darstellung, privat, schluesselInventar, verbindungen, datenschutz, system
     var id: String { rawValue }
     var title: String {
         switch self {
         case .profil:             "Profil"
         case .darstellung:        "Darstellung"
-        case .verbindungen:       "Verbindungen"
+        case .verbindungen:       "Integrationen"
         case .schluesselInventar: "Schlüssel-Inventar"
         case .privat:             "Privat"
         case .datenschutz:        "Datenschutz"
