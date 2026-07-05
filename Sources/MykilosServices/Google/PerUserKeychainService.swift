@@ -93,6 +93,13 @@ extension KeychainStore: KeychainAccessing {}
 //      2026-07-05). Wird nur gezogen, wenn die aktive userID selbst KEIN "local"
 //      ist (sonst wäre newService == localService → Selbst-Migration/Loop).
 public enum PerUserKeychainMigrator {
+    /// Persönliche Dienste (Multi-User-Bauplan §1a): jeder Bewohner hat EIGENE
+    /// Credentials. Ein Zweit-Bewohner darf die Alt-Quellen (Legacy team-weit /
+    /// „.local") des Erst-Bewohners NIE adoptieren — sonst erbt er dessen Tokens.
+    /// Geteilte Dienste (airtable/sevdesk) sind bewusst NICHT hier: ihr Team-
+    /// Zugang darf über die Alt-Quellen weitergereicht werden.
+    static let personalBases: Set<String> = ["google", "clockodo", "clickup", "claude"]
+
     /// Liefert den Wert unter `account`, bevorzugt aus dem per-User-Service.
     /// Migriert bei Bedarf einmalig von einer Migrationsquelle in den per-User-Service.
     public static func loadWithMigration(
@@ -104,6 +111,25 @@ public enum PerUserKeychainMigrator {
         let newService = PerUserKeychainService.perUser(base, userID: userID)
         if let value = try keychain.load(service: newService, account: account) {
             return value
+        }
+        // ⛔ MULTI-USER-RIEGEL (§7.4 Falle 1): Für PERSÖNLICHE Dienste darf nur der
+        // geräteweite Erst-Bewohner (Device Primary) die Alt-Quellen adoptieren.
+        // Ist ein Primary verankert UND der aktuelle Bewohner ist ein anderer, wird
+        // die Legacy/.local-Migration abgebrochen (kein Cross-User-Datenleck). Ohne
+        // verankerten Primary (Erstkonfiguration / Bestandsgerät vor diesem Fix)
+        // bleibt das bisherige Verhalten — der erste Aufruf verankert den Primary
+        // (AppState.init → ensureDevicePrimary), danach greift der Riegel.
+        if Self.personalBases.contains(base),
+           let primary = try? keychain.load(
+                service: KeychainIdentityAnchorStore.service,
+                account: KeychainIdentityAnchorStore.devicePrimaryAccount),
+           case let trimmedPrimary = primary.trimmingCharacters(in: .whitespacesAndNewlines),
+           trimmedPrimary.isEmpty == false {
+            let currentTrimmed = userID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let effectiveUserID = currentTrimmed.isEmpty ? "local" : currentTrimmed
+            if effectiveUserID != trimmedPrimary {
+                return nil  // Zweit-Bewohner: keine Adoption persönlicher Alt-Secrets.
+            }
         }
         // Migrationsquelle 1: der alte teamweite Legacy-Service.
         let oldService = PerUserKeychainService.legacy(base)

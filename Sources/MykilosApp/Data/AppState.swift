@@ -378,6 +378,13 @@ public final class AppState {
         // ALLE per-User-Stores werden EINMAL mit der ENDGÜLTIGEN UUID gebaut —
         // kein Doppel-Bau, kein Store zuerst mit firstID und dann nochmal.
         CurrentUserContext.set(finalUserID)
+        // MULTI-USER: den geräteweiten Erst-Bewohner EINMALIG verankern (first-writer-
+        // wins). Nur dieser darf später die persönlichen Alt-Quellen (Legacy/.local)
+        // adoptieren — der loadWithMigration-Riegel liest genau diesen Anker, damit
+        // ein Zweit-Bewohner (Nutzer-Wechsel) NIE die Tokens des Ersten erbt. Kein
+        // Secret (nur die stabile userID). Non-fatal: scheitert der Keychain-Zugriff,
+        // bleibt der Riegel inaktiv (Verhalten wie vor diesem Fix) statt Absturz.
+        try? KeychainIdentityAnchorStore().ensureDevicePrimary(finalUserID)
         let userID = finalUserID
         self.googleAuth = GoogleAuthService(tokenStore: KeychainGoogleTokenStore(userID: userID))
         self.clockodoAuth = ClockodoAuthService(

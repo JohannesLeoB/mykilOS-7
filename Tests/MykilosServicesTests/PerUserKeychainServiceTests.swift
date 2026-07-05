@@ -166,4 +166,87 @@ struct PerUserKeychainServiceTests {
 
         #expect(value == "legacy-key")
     }
+
+    // MARK: - Multi-User-Riegel: Zweit-Bewohner erbt keine persönlichen Alt-Secrets
+    // (Bauplan §7.4 Falle 1 — das 🔴 größte Datenleck des User-Wechsels)
+
+    @Test func zweitBewohnerErbtNichtLegacyPersoenlichenDienst() throws {
+        let keychain = FakeKeychain()
+        // Erst-Bewohner A ist geräteweiter Primary; A's altes team-weites Google-Token liegt in Legacy.
+        try keychain.store("user-a", service: KeychainIdentityAnchorStore.service,
+                           account: KeychainIdentityAnchorStore.devicePrimaryAccount)
+        try keychain.store("a-google-token", service: PerUserKeychainService.legacy("google"), account: "tokens")
+
+        // Zweit-Bewohner B liest → bekommt NICHTS (kein Cross-User-Leak).
+        let bValue = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "google", userID: "user-b", account: "tokens")
+        #expect(bValue == nil)
+    }
+
+    @Test func zweitBewohnerErbtNichtLocalFallbackPersoenlichenDienst() throws {
+        let keychain = FakeKeychain()
+        try keychain.store("user-a", service: KeychainIdentityAnchorStore.service,
+                           account: KeychainIdentityAnchorStore.devicePrimaryAccount)
+        // A's Claude-Key im „.local"-Fallback (der 2026-07-05-Bug-Zustand).
+        try keychain.store("a-claude-key", service: "com.mykilos6.claude.local", account: "apiKey")
+
+        let bValue = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "claude", userID: "user-b", account: "apiKey")
+        #expect(bValue == nil)
+    }
+
+    @Test func erstBewohnerAdoptiertSeineLegacySecretsWeiterhin() throws {
+        let keychain = FakeKeychain()
+        // A ist Primary UND liest selbst → der Riegel darf ihn NICHT blockieren.
+        try keychain.store("user-a", service: KeychainIdentityAnchorStore.service,
+                           account: KeychainIdentityAnchorStore.devicePrimaryAccount)
+        try keychain.store("a-google-token", service: PerUserKeychainService.legacy("google"), account: "tokens")
+
+        let aValue = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "google", userID: "user-a", account: "tokens")
+        #expect(aValue == "a-google-token")
+        // Nachgezogen unter A's eigenen per-User-Service.
+        #expect(try keychain.load(service: "com.mykilos6.google.user-a", account: "tokens") == "a-google-token")
+    }
+
+    @Test func geteilterDienstBleibtVomRiegelUnberuehrt() throws {
+        let keychain = FakeKeychain()
+        // Primary = A. Geteilter Dienst (airtable) → Team-Zugang DARF an B weitergereicht werden (§1a).
+        try keychain.store("user-a", service: KeychainIdentityAnchorStore.service,
+                           account: KeychainIdentityAnchorStore.devicePrimaryAccount)
+        try keychain.store("team-pat", service: PerUserKeychainService.legacy("airtable"), account: "pat")
+
+        let bValue = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "airtable", userID: "user-b", account: "pat")
+        #expect(bValue == "team-pat")  // geteilt: kein Riegel
+    }
+
+    @Test func ohnePrimaryLaeuftMigrationWieBisher() throws {
+        // Kein Primary verankert (Erstkonfiguration / Bestandsgerät) → Riegel inaktiv, Legacy wird gezogen.
+        let keychain = FakeKeychain()
+        try keychain.store("a-google-token", service: PerUserKeychainService.legacy("google"), account: "tokens")
+
+        let value = try PerUserKeychainMigrator.loadWithMigration(
+            keychain: keychain, base: "google", userID: "irgendwer", account: "tokens")
+        #expect(value == "a-google-token")
+    }
+
+    // MARK: - ensureDevicePrimary (first-writer-wins)
+
+    @Test func ensureDevicePrimaryVerankertNurEinmal() throws {
+        let keychain = FakeKeychain()
+        let store = KeychainIdentityAnchorStore(keychain: keychain)
+        try store.ensureDevicePrimary("user-a")
+        #expect(try store.loadDevicePrimary() == "user-a")
+        // Zweiter Aufruf mit anderem Bewohner ändert den Primary NICHT.
+        try store.ensureDevicePrimary("user-b")
+        #expect(try store.loadDevicePrimary() == "user-a")
+    }
+
+    @Test func ensureDevicePrimarySchreibtKeineLeereUserID() throws {
+        let keychain = FakeKeychain()
+        let store = KeychainIdentityAnchorStore(keychain: keychain)
+        try store.ensureDevicePrimary("   ")
+        #expect(try store.loadDevicePrimary() == nil)
+    }
 }

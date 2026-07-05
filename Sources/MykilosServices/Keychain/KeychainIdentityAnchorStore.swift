@@ -89,4 +89,39 @@ public struct KeychainIdentityAnchorStore: IdentityAnchorStoring {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
     }
+
+    // MARK: - Geräte-Erstbewohner (Device Primary) — für den loadWithMigration-Riegel
+    //
+    // Der erste Bewohner, der das Gerät einrichtet, ist der geräteweite „Primary".
+    // NUR er darf die persönlichen Alt-Quellen (Legacy team-weit / „.local")
+    // adoptieren. Jeder spätere Bewohner (Nutzer-Wechsel) bekommt sie NICHT —
+    // sonst erbte er beim ersten Connect die Tokens des Erst-Bewohners
+    // (Cross-User-Datenleck, Multi-User-Bauplan §7.4 Falle 1). Der Riegel sitzt
+    // in PerUserKeychainMigrator.loadWithMigration und liest genau diesen Slot.
+    //
+    // ⛔ TRÄGT NIE EIN SECRET: der Wert ist ausschließlich eine stabile userID
+    // (UUID). Kein per-User-Suffix — muss geräteweit auffindbar sein. Überlebt
+    // eine db.sqlite-Löschung (liegt im Keychain, nicht in der DB). Bewusst NICHT
+    // im KeyIntegration-Enum des Schlüssel-Inventars (kein Token, kein API-Key).
+    public static let devicePrimaryAccount = "__device_primary_userID__"
+
+    /// Verankert den geräteweiten Erst-Bewohner EINMALIG (first-writer-wins): ist
+    /// bereits ein Primary gesetzt, bleibt er unverändert. Leere/whitespace-userID
+    /// wird nie geschrieben. Idempotent — bei jedem App-Start gefahrlos aufrufbar.
+    public func ensureDevicePrimary(_ userID: String) throws {
+        let value = userID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard value.isEmpty == false else { return }
+        if let existing = try keychain.load(service: Self.service, account: Self.devicePrimaryAccount),
+           existing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+            return  // Primary steht bereits — nie überschreiben (kein Wechsel des Erstbewohners).
+        }
+        try keychain.store(value, service: Self.service, account: Self.devicePrimaryAccount)
+    }
+
+    /// Der geräteweite Erst-Bewohner (Device Primary), falls verankert — sonst nil.
+    public func loadDevicePrimary() throws -> String? {
+        guard let value = try keychain.load(service: Self.service, account: Self.devicePrimaryAccount) else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
 }
