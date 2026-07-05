@@ -110,9 +110,12 @@ Versuche verlaufen im Sande — genau dafür gibt es den Safe State.
 - **Ein Repo:** `origin` = github.com/JohannesLeoB/**mykilOS-7** (privat). mykilOS-6 ist
   **archiviert** (Remote `mykilos6-archive`, read-only). Kein zweites aktives Repo.
 - Tag `v7.0.0` (e629e84) liegt in `origin` + Archiv + als GitHub-Release — die unantastbare
-  Rückfallebene. `main` entwickelt sich seit 2026-07-03 per PR weiter (erster Merge:
-  PR #2 → `6699dc6`); weiterhin gilt: nur über PR auf `main`.
-- **NIE** den Tag verschieben/löschen, **NIE** `main` force-pushen, **NIE** direkt auf `main`.
+  Rückfallebene. **`main` ist die LEBENDE App (Johannes 2026-07-06: „main ist nicht heilig"),
+  kein Museum** — sie wird VORWÄRTS weiterentwickelt (Merge/Advance, **CI-grün Pflicht**). Stand
+  2026-07-06: `main` = mykilOS 11 (Bewohner-Serie, `0a4ab6b`). Alter Stand als Tag `v11.0.0` gesichert.
+- **NIE** einen Tag verschieben/löschen, **NIE** `main` force-pushen / History umschreiben — nur
+  VORWÄRTS (was drauf liegt, bleibt). `v7.0.0` bleibt unantastbar. Direkt auf `main` pushen ist okay,
+  **wenn CI grün + Johannes' GO**; ein PR ist optional, kein Zwang.
 - Neue Arbeit nur auf Branches (`release/7.5`, `feat/…`, `experiment/…`), signiert (SSH).
 - Frisch aufrufen: `./script/recall_safe_state.sh` (separater Worktree) oder `git checkout v7.0.0`.
 - Verträge: **[docs/SAFE_STATE.md](docs/SAFE_STATE.md)** + **[docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md)**.

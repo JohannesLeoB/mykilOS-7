@@ -2,10 +2,10 @@
 
 ```
 Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
-Branch:  feat/bewohner-oberflaeche  (6 Commits vor origin/main, NICHT gepusht — kein GO)
-Build:   ✅ swift build grün · ✅ 1052→1060 Tests grün  (ABER: „Tests grün" ≠ verifiziert!)
+main:    ✅ mykilOS 11 STEHT auf `main` (0a4ab6b, CI GRÜN verifiziert: build-and-test + Lint-Gate)
+Build:   ✅ swift build grün · ✅ 1060 Tests grün · ✅ CI grün auf main
 Version: 11.1.0-alpha2 · DMG dist/mykilOS-11.1.0-alpha2.dmg
-Safe:    ✅ Tag v7.0.0 (e629e84) unantastbar
+Safe:    ✅ v7.0.0 (e629e84) unantastbar · alter main-Stand als Tag v11.0.0 (4422335) gesichert
 Datum:   2026-07-05, sehr spät. Diese Session lief RAU (siehe §0).
 ```
 
