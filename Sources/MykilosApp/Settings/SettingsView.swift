@@ -39,6 +39,11 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
 // MARK: - SettingsView
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
+    // Item D (2026-07-05): globaler Drive-Sync über alle aktiven Projekt-Ordner an
+    // EINEM Ort (Parent-I/O). Der StudioContext ist app-weit injiziert (MykilOS6App).
+    @Environment(StudioContext.self) private var context
+    @State private var driveSyncing = false
+    @State private var driveSyncResult: String?
     @State private var diagnosticsCopied = false
     @State private var profileName: String = ""
     @State private var profileRole: String = ""
@@ -481,12 +486,57 @@ struct SettingsView: View {
             Text("Nur Lesezugriff (Drive-Metadaten, Kalender, Gmail, Kontakte) — keine Schreibrechte.")
                 .font(.mykMono(9.5))
                 .foregroundStyle(MykColor.faint.color)
+            if appState.googleAuth.status == .connected {
+                Divider().overlay(MykColor.line.color)
+                driveSyncRow
+            }
         }
         .settingsCard()
 
         if appState.googleAuth.status == .connected && appState.airtableAuth.status == .connected {
             ContactsImportView()
         }
+    }
+
+    // Item D (2026-07-05): der EINE globale Drive-Sync über alle aktiven Projekt-Ordner
+    // (Parent-I/O: gehört zu Google/Drive). Ersetzt die verstreuten „Jetzt prüfen"-Leisten
+    // in Heute + Dateien-Tab. Nutzt exakt dieselbe Logik wie der 300s-Hintergrund-Loop.
+    private var driveSyncRow: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s2) {
+            HStack(spacing: MykSpace.s4) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .foregroundStyle(MykColor.drive.color)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Drive-Ordner synchronisieren")
+                        .font(.mykBody).foregroundStyle(MykColor.ink.color)
+                    Text("Prüft alle aktiven Projekt-Ordner in einem Durchgang.")
+                        .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
+                }
+                Spacer()
+                Button(driveSyncing ? "Synchronisiert…" : "Jetzt synchronisieren") {
+                    Task { await syncAllDrive() }
+                }
+                .font(.mykMono(10))
+                .foregroundStyle(driveSyncing ? MykColor.muted.color : MykColor.drive.color)
+                .buttonStyle(.plain)
+                .disabled(driveSyncing)
+            }
+            if let driveSyncResult {
+                Text(driveSyncResult)
+                    .font(.mykMono(9.5))
+                    .foregroundStyle(MykColor.muted.color)
+            }
+        }
+    }
+
+    private func syncAllDrive() async {
+        driveSyncing = true
+        driveSyncResult = nil
+        let count = await appState.pollAllActiveProjectsForOffers(into: context)
+        driveSyncResult = count > 0
+            ? "Fertig · \(count) neue Belege gefunden."
+            : "Fertig · keine neuen Belege."
+        driveSyncing = false
     }
 
     private var googleStatusText: String {

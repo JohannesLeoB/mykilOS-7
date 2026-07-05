@@ -78,7 +78,7 @@ Signale, Aufgaben), **startet keine eigenen Netzwerk-Abrufe** (lean).
 
 ## Heute-Board
 
-**Was es tut:** Übersicht über den aktuellen Arbeitstag — Signal-Strip, Drive-Ordner-Status,
+**Was es tut:** Übersicht über den aktuellen Arbeitstag — Signal-Strip,
 offene Aufgaben und Kalender-Ereignisse auf einen Blick.
 
 **Wo:** Sidebar → Heute (⌘1)
@@ -88,8 +88,11 @@ offene Aufgaben und Kalender-Ereignisse auf einen Blick.
   Selektor — Heute-Widgets (Fokus-Liste, Notiz, Projekt-Favoriten, Letzte Aktivität,
   Zeiterfassung) frei **ein-/ausblenden** und in der **Größe** wählen (Klein/Mittel/Breit/Voll).
   Dieselbe Mechanik wie in der Projekt-Übersicht; Reihenfolge per Drag im Board.
-- **DriveFolderRefreshBar**: zeigt wann der Drive-Ordner zuletzt geprüft wurde.
-  "Jetzt prüfen" erzwingt einen sofortigen Poll aller aktiven Projektordner auf neue Angebots-PDFs.
+- **Drive-Synchronisation (2026-07-05, Item D):** Die früheren verstreuten „Jetzt prüfen"-
+  Leisten (Heute-Board + Projekt-Dateien-Tab) sind entfernt. Der **eine** globale Sync über
+  alle aktiven Projekt-Ordner sitzt jetzt zentral in **Einstellungen → Integrationen → Google →
+  „Drive-Ordner synchronisieren"** (Parent-I/O-Prinzip). Der Dateien-Tab lädt seinen Ordner
+  beim Öffnen ohnehin frisch; der Hintergrund-Poll (alle 5 Min) läuft unverändert weiter.
 - **Signal-Strip**: zeigt Signale aus dem aktuellen Projektkontext (z.B. neue Angebote erkannt).
 - **Favoriten**: angepinnte Projekte als Schnellzugriff (Stern auf einer Projektkarte/im
   Detail-Header). Leer, bis du das erste Projekt anpinnst.

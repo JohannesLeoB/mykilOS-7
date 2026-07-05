@@ -236,30 +236,16 @@ struct FilesTabView: View {
         }
     }
 
-    // MARK: Status bar
+    // MARK: Controls bar
+    // 2026-07-05 (Johannes, Item D): die Drive-„geprüft"/„Jetzt prüfen"-Chrome hier
+    // entfernt (der globale Sync lebt jetzt zentral in Einstellungen → Integrationen →
+    // Google, Parent-I/O-Prinzip). Der Dateien-Tab lädt seinen Ordner beim Öffnen
+    // ohnehin frisch (.task). Übrig bleiben nur die Ansichts-Controls.
     private var statusBar: some View {
         HStack(spacing: MykSpace.s4) {
-            Circle()
-                .fill(MykColor.muted.color.opacity(0.45))
-                .frame(width: 7, height: 7)
-            if let lastChecked = store.lastChecked {
-                Text("Zuletzt geprüft: \(lastChecked.formatted(.dateTime.hour().minute()))")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.muted.color)
-            } else {
-                Text("Drive-Ordner noch nicht geprüft")
-                    .font(.mykMono(10))
-                    .foregroundStyle(MykColor.muted.color)
-            }
             Spacer()
             if galerieAn { KachelGroessenSlider(kachelSeite: kachelSeite) }
             ansichtsUmschalter
-            Button("Jetzt prüfen") {
-                Task { await store.load(folderID: driveFolderID) }
-            }
-            .font(.mykMono(10))
-            .foregroundStyle(MykColor.drive.color)
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, MykSpace.s9)
         .padding(.vertical, MykSpace.s3)
