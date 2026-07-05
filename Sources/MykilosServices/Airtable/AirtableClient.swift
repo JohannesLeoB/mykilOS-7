@@ -184,6 +184,9 @@ public struct AirtableClient: AirtableFetching, AirtableRecordCreating, Airtable
                                    // belegführend. sevDesk=BOSSMODE, wir schlagen nur vor. Testdaten Status=Test.
             "Postbox-Position",    // sevDesk-Postbox Positions-Ebene (tblfVRnwgaxvXPfOK, 2026-07-04).
                                    // N verlinkte Positionen pro Beleg. Append-only, nie DELETE.
+            "Clockodo-Nutzer",     // E6 (2026-07-05, Johannes freigegeben): NutzerProvisioningService
+                                   // find-or-create Menschen-Record (tblPbly2br8mR2kaU). Append-only,
+                                   // nie DELETE, nie bestehende Records ändern. Bestätigungs-gated.
         ],
         // Artikel & Einkauf (Webshop-Phase 1, gated, von Johannes freigegeben 2026-06-30)
         // Intake-Fragebogen legt neue Kunden- + Projekt-Records an (append-only, gated, Record-Link gültig).

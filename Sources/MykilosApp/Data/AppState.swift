@@ -26,6 +26,10 @@ public final class AppState {
     // Google-Mail als kanonischer Schlüssel + reine Handles zu externen Systemen).
     // GRDB-Master ist autoritativ; Airtable reichert read-only an. TRÄGT NIE EIN SECRET.
     public let residentIdentity: ResidentIdentityStore
+    // E6 (Bewohner-Oberfläche): idempotente Anlage des eigenen Menschen-Records in
+    // Airtable Clockodo-Nutzer (find-or-create über die Mail). Bestätigungs-gated,
+    // append-only, nie DELETE. Nutzt AirtableClient (Keychain-Auth).
+    public let nutzerProvisioning: NutzerProvisioningService
     // Schaltzentrum-Logbuch: jeder externe Datensync hinterlässt hier einen
     // Handshake (lokal + Airtable-Spiegel). Siehe DataFlowLogger.
     public let dataFlow:   DataFlowLogger
@@ -237,6 +241,27 @@ public final class AppState {
         try? KeychainIdentityAnchorStore().saveLastEmail(email)
     }
 
+    /// E6: Trägt den aktuellen Nutzer (aus der verifizierten Google-Identität) idempotent
+    /// ins Team-Verzeichnis (Airtable Clockodo-Nutzer) ein. Bestätigungs-gated (die View
+    /// fragt vorher), append-only (find-or-create — nie Update/Delete). Gibt die Record-ID
+    /// zurück oder nil bei Fehler; protokolliert die Weiche AIRTABLE_NUTZER_PROVISIONING.
+    public func provisionCurrentUserIntoTeamDirectory() async -> String? {
+        guard let user = currentGoogleUser,
+              user.email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else { return nil }
+        do {
+            let recordID = try await nutzerProvisioning.findOrCreate(
+                googleEmail: user.email, displayName: user.displayName)
+            dataFlow.log(integrationID: "AIRTABLE_NUTZER_PROVISIONING", actorUserID: actorUserID,
+                         action: .success, summary: "Nutzer ins Team-Verzeichnis eingetragen (find-or-create)")
+            return recordID
+        } catch {
+            dataFlow.log(integrationID: "AIRTABLE_NUTZER_PROVISIONING", actorUserID: actorUserID,
+                         action: .error, errorMessage: String(describing: error),
+                         summary: "Nutzer-Provisioning fehlgeschlagen")
+            return nil
+        }
+    }
+
     // MARK: - CheckIn-Spine (Wirbelsäule, die eine zentral auditierte Naht)
 
     /// Die CheckIn-Spine mit dem nativen Offer-Review-Adapter, verdrahtet auf den
@@ -363,6 +388,9 @@ public final class AppState {
             credentialsStore: KeychainSevdeskCredentialsStore(userID: userID))
         self.airtableAuth = AirtableAuthService(
             credentialsStore: KeychainAirtableCredentialsStore(userID: userID))
+        // E6: NutzerProvisioningService (find-or-create in Airtable Clockodo-Nutzer).
+        self.nutzerProvisioning = NutzerProvisioningService(
+            airtableFetch: AirtableClient(), airtableCreate: AirtableClient())
         // Logger spiegelt nach Airtable über den eng begrenzten Schreibpfad
         // (nur Datenstrom-Log der Mastermind-Base; Whitelist im AirtableClient).
         let dataFlowLogger = DataFlowLogger(db: database, airtable: AirtableClient())

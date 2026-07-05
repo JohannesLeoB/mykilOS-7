@@ -40,6 +40,19 @@ auf Nummer, Titel oder Kundenname; Prefix-Treffer stehen oben). **Enter** oder *
 - **Profil-Einstellungen mit Speichern/Abbrechen:** „Speichern" ist nur bei echter Änderung
   aktiv, „Abbrechen" stellt den gespeicherten Stand wieder her (kein stiller Verlust beim
   Kategoriewechsel). Integrationen speichern über Verbinden/Trennen, Darstellung sofort.
+- **Personalausweis-Header (2026-07-05):** Oben in den Einstellungen sitzt jetzt dein „Ausweis" —
+  Avatar (Initialen), Name, `johannes@mykilos.com`, Rolle, „Hausmeister (dieses Gerät)". Speist aus
+  deiner Google-Identität + lokalem Profil, **trägt nie ein Secret**. Klick öffnet das Detail
+  (Name/Rolle/Mail-Signatur). „Profil" ist keine eigene Rail-Kategorie mehr — es IST der Header.
+- **Meldeadresse im Onboarding (2026-07-05):** Nach dem Google-Schritt bestätigt ein Schritt die
+  erkannte Identität („Erkannt als … stimmt das?") + optional die Clockodo-User-ID. **Nur lokal
+  gespeichert**, kein externer Write.
+- **Ins Team-Verzeichnis eintragen (2026-07-05):** In den Einstellungen → Personalausweis-Detail ein
+  Knopf, der dich (Name + Mail) einmalig ins geteilte Airtable-Team-Verzeichnis („Clockodo-Nutzer")
+  einträgt. **Bestätigungs-gated** (Klick → Nachfrage → Eintrag), **idempotent** (find-or-create über
+  die Mail, nie ein Doppel), **append-only** (nie löschend, nie bestehende Records ändern).
+  *Voraussetzungen:* Google + Airtable verbunden. *Einschränkung:* deine Bestätigung ist der Absender
+  — die App trägt nie ungefragt ein; Datenstrom-Weiche `AIRTABLE_NUTZER_PROVISIONING`.
 
 ---
 
