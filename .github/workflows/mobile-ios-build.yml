@@ -1,0 +1,25 @@
+name: Satellit iOS Build (Cloud-Mac)
+# Laeuft NUR fuer Aenderungen unter mobile/ auf diesem Branch -
+# stoert die normale Mothership-CI nicht.
+on:
+  push:
+    branches: [claude/mykil-os-10-mobile-ehuhy6]
+    paths: ['mobile/**']
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - name: XcodeGen installieren + Projekt erzeugen
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Bauen (iOS-Simulator, ohne Signatur)
+        run: |
+          xcodebuild -project myMini.xcodeproj -target myMini \
+            -sdk iphonesimulator -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO build

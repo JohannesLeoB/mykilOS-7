@@ -1,0 +1,13 @@
+# Xcode / Swift
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+.DS_Store
+# Nutzer-Geheimnisse liegen NIE im Repo (nur im Keychain)
+*.secret
+Secrets.plist
+
+# Von XcodeGen erzeugt (nicht committen)
+*.xcodeproj/

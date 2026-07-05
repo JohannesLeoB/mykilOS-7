@@ -1,0 +1,35 @@
+# XcodeGen-Bauplan: erzeugt das Xcode-Projekt aus dieser einen Datei.
+# Vorteil: kein fragiles .xcodeproj im Repo, keine Merge-Konflikte,
+# eine Wahrheit fuer die Projekt-Konfiguration. Lokal + in CI identisch:
+#   brew install xcodegen && xcodegen generate  ->  myMini.xcodeproj
+name: myMini
+options:
+  bundleIdPrefix: com.johannes
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+targets:
+  myMini:
+    type: application
+    platform: iOS
+    sources:
+      - myMini
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.johannes.myMini
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1,2"          # iPhone + iPad
+        SWIFT_VERSION: "5.0"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        # Die 7 Berechtigungen (docs/20) direkt als Build-Settings -
+        # kein separates Info.plist noetig.
+        INFOPLIST_KEY_NSCameraUsageDescription: "mykilOS fotografiert Baustellen, Visitenkarten, Lieferscheine und Typenschilder - nur wenn du den Ausloeser drueckst."
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Fuer das Diktieren von Notizen, Zeiten und Maengeln."
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "Wandelt dein Diktat direkt auf dem Geraet in Text um."
+        INFOPLIST_KEY_NSContactsUsageDescription: "Speichert gescannte Visitenkarten als Kontakt - nur nach deiner Bestaetigung."
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Merkt sich auf Wunsch den Standort eines Projekts."
+        INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription: "Erkennt im Hintergrund, wenn du bei einem gemerkten Projekt-Standort ankommst - nur wenn der Standort-Waechter eingeschaltet ist."
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: "Verbindet sich mit deinem Laser-Entfernungsmesser."
