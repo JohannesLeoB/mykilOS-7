@@ -487,8 +487,20 @@ Oben rechts: **+ Neues Projekt** (Fragebogen) und der **Warenkorb-Badge** (Posit
   *Liste* (clean) oder *Wand* (bunte Notizzettel, je nach Notiz eingefärbt & leicht geneigt);
   die Wahl wird gemerkt. **Bearbeiten (S20):** Klick auf einen Zettel/eine Zeile öffnet den
   Editor (Text ändern, **4-Farb-Picker**, Speichern/Löschen); die Farbe bleibt an der Notiz.
-- **Aufgaben** — die lokale Aufgabenliste (S6): To-dos/Erinnerungen abhaken, anlegen,
-  löschen — hier oder im Assistenten-Chat. Offene zuerst, Fälligkeit sichtbar. Rein lokal.
+- **Aufgaben** — die lokale, private Aufgabenliste (S6): To-dos/Erinnerungen abhaken,
+  anlegen, bearbeiten, löschen — hier oder im Assistenten-Chat. Offene zuerst,
+  Fälligkeit sichtbar. Rein lokal.
+  - **Fälligkeit + Alarm beim Anlegen:** Das Kalender-Icon in der Eingabezeile klappt einen
+    **Datum-/Uhrzeit-Picker** und einen **Alarm-Schalter** aus (per Default eingeklappt, damit
+    schnelles „nur ein Titel"-Anlegen wie gewohnt bleibt). Ist der Alarm aktiv, fragt die App
+    einmalig die macOS-Mitteilungserlaubnis ab und legt eine **lokale Benachrichtigung** zur
+    Fälligkeit an (kein Server, kein Team — nur auf diesem Mac).
+  - **Bearbeiten:** Das Stift-Icon öffnet ein Sheet mit voller Editierbarkeit (Titel,
+    Fälligkeit an/aus, Datum/Uhrzeit, Alarm an/aus). Abhaken einer Aufgabe **storniert den
+    Alarm automatisch**.
+  - **Alarm-Voraussetzungen:** Ein Alarm feuert nur, wenn (a) der globale Aufgaben-Alarm in
+    *Einstellungen → Mitteilungen* an ist, (b) die Aufgabe selbst „Alarm" gesetzt hat,
+    (c) eine Fälligkeit in der Zukunft liegt und (d) die Aufgabe offen ist.
 
 ### Kalkulation (jetzt im Assistenten, S27)
 Der eigene „Kalkulation"-Sidebar-Tab ist **entfernt** — die Kostenschätzungs-Engine

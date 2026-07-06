@@ -71,7 +71,7 @@ struct AssistantTasksStoreTests {
         let created: AssistantTask
         do {
             let store = AssistantTasksStore(db: try GRDBDatabase(url: url))
-            created = try await store.create("überlebt Neustart", dueDate: due)
+            created = try await store.create("überlebt Neustart", dueDate: due, alarmAktiv: true)
             try await store.setDone(matching: created.ref, done: true)
         }
 
@@ -83,6 +83,43 @@ struct AssistantTasksStoreTests {
         #expect(t.title == "überlebt Neustart")
         #expect(t.done == true)
         #expect(t.dueDate.map { Int($0.timeIntervalSince1970) } == Int(due.timeIntervalSince1970))
+        #expect(t.alarmAktiv == true)   // Alarm-Flag überlebt den Neustart (persistierbares Feld)
+    }
+
+    // Die ID-präzisen Methoden, die die Katalog-UI nutzt (nicht die Fuzzy-Suche der Chat-Tools):
+    // update/setDone/delete treffen exakt den Datensatz und melden nil bei unbekannter ID.
+    @Test func idPraeziseMethodenFuerUI() async throws {
+        let store = AssistantTasksStore(db: try GRDBDatabase.inMemory())
+        let aufgabeA = try await store.create("A", dueDate: nil, alarmAktiv: false)
+        let aufgabeB = try await store.create("B")
+
+        // update(id:) setzt Titel, Fälligkeit und Alarm genau auf A.
+        let neuesDatum = Date(timeIntervalSince1970: 1_800_000)
+        let updated = try await store.update(id: aufgabeA.id, title: "A neu", dueDate: neuesDatum, alarmAktiv: true)
+        #expect(updated?.id == aufgabeA.id)
+        #expect(updated?.title == "A neu")
+        #expect(updated?.alarmAktiv == true)
+        #expect(updated?.dueDate.map { Int($0.timeIntervalSince1970) } == Int(neuesDatum.timeIntervalSince1970))
+        // B bleibt unberührt.
+        #expect(try await store.find(matching: aufgabeB.id)?.title == "B")
+
+        // setDone(id:) hakt genau A ab.
+        let done = try await store.setDone(id: aufgabeA.id, done: true)
+        #expect(done?.done == true)
+        #expect(try await store.find(matching: aufgabeB.id)?.done == false)
+
+        // delete(id:) entfernt genau A, B bleibt.
+        let deleted = try await store.delete(id: aufgabeA.id)
+        #expect(deleted?.id == aufgabeA.id)
+        let rest = try await store.all()
+        #expect(rest.count == 1)
+        #expect(rest.first?.id == aufgabeB.id)
+
+        // Unbekannte ID → nil für alle drei, keine Mutation.
+        #expect(try await store.update(id: "gibtsnicht", title: "x", dueDate: nil, alarmAktiv: false) == nil)
+        #expect(try await store.setDone(id: "gibtsnicht", done: true) == nil)
+        #expect(try await store.delete(id: "gibtsnicht") == nil)
+        #expect(try await store.all().count == 1)
     }
 
     // MARK: - Tools

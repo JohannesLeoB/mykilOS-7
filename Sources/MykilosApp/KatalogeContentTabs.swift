@@ -602,9 +602,15 @@ struct AufgabenKatalogTab: View {
     @State private var tasks: [AssistantTask] = []
     @State private var draft: String = ""
     @State private var errorText: String?
+    // Fälligkeit+Alarm beim Anlegen (Johannes-Feedback 2026-07-06/07, Aufgaben-Spalten):
+    // per Default eingeklappt, damit das schnelle "nur ein Titel"-Anlegen wie bisher bleibt.
+    @State private var zeigeFaelligkeit = false
+    @State private var faelligkeitDatum = Date()
+    @State private var alarmBeimAnlegen = false
+    @State private var editiereTask: AssistantTask?
 
     private static let stamp: DateFormatter = {
-        let fmt = DateFormatter(); fmt.dateFormat = "dd.MM.yy"; fmt.locale = Locale(identifier: "de_DE"); return fmt
+        let fmt = DateFormatter(); fmt.dateFormat = "dd.MM.yy · HH:mm"; fmt.locale = Locale(identifier: "de_DE"); return fmt
     }()
 
     var body: some View {
@@ -632,6 +638,9 @@ struct AufgabenKatalogTab: View {
                                         if let due = task.dueDate {
                                             Text("fällig \(Self.stamp.string(from: due))")
                                                 .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                                            if task.alarmAktiv {
+                                                Image(systemName: "bell.fill").font(.mykMono(8)).foregroundStyle(MykColor.tasks.color)
+                                            }
                                         }
                                         if let pid = task.projectID {
                                             Text(pid).font(.mykMono(9)).foregroundStyle(MykColor.tasks.color)
@@ -639,9 +648,12 @@ struct AufgabenKatalogTab: View {
                                     }
                                 }
                                 Spacer()
+                                Button { editiereTask = task } label: {
+                                    Image(systemName: "pencil").font(.mykCaption).foregroundStyle(MykColor.muted.color)
+                                }.buttonStyle(.plain).help("Bearbeiten")
                                 Button { delete(task) } label: {
                                     Image(systemName: "trash").font(.mykCaption).foregroundStyle(MykColor.critical.color)
-                                }.buttonStyle(.plain)
+                                }.buttonStyle(.plain).help("Löschen")
                             }
                             .padding(.horizontal, MykSpace.s9).padding(.vertical, MykSpace.s3)
                             Divider().overlay(MykColor.line.color)
@@ -651,16 +663,41 @@ struct AufgabenKatalogTab: View {
             }
         }
         .task { await reload() }
+        .sheet(item: $editiereTask) { task in
+            AufgabeEditSheet(task: task, onSave: { neu in
+                Task { await speichereEdit(neu) }
+            }, onCancel: { editiereTask = nil })
+        }
     }
 
     private var addBar: some View {
-        HStack(spacing: MykSpace.s3) {
-            Image(systemName: "plus").font(.mykCaption).foregroundStyle(MykColor.muted.color)
-            TextField("Neue Aufgabe …", text: $draft)
-                .font(.mykBody).textFieldStyle(.plain).onSubmit { add() }
-            Button("Hinzufügen") { add() }
-                .font(.mykSmall).buttonStyle(.plain).foregroundStyle(MykColor.tasks.color)
-                .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        VStack(alignment: .leading, spacing: MykSpace.s3) {
+            HStack(spacing: MykSpace.s3) {
+                Image(systemName: "plus").font(.mykCaption).foregroundStyle(MykColor.muted.color)
+                TextField("Neue Aufgabe …", text: $draft)
+                    .font(.mykBody).textFieldStyle(.plain).onSubmit { add() }
+                Button {
+                    zeigeFaelligkeit.toggle()
+                } label: {
+                    Image(systemName: zeigeFaelligkeit ? "calendar.badge.minus" : "calendar.badge.plus")
+                        .font(.mykCaption)
+                        .foregroundStyle(zeigeFaelligkeit ? MykColor.tasks.color : MykColor.muted.color)
+                }
+                .buttonStyle(.plain).help("Fälligkeit + Alarm setzen")
+                Button("Hinzufügen") { add() }
+                    .font(.mykSmall).buttonStyle(.plain).foregroundStyle(MykColor.tasks.color)
+                    .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            if zeigeFaelligkeit {
+                HStack(spacing: MykSpace.s4) {
+                    DatePicker("", selection: $faelligkeitDatum, displayedComponents: [.date, .hourAndMinute])
+                        .labelsHidden().datePickerStyle(.field)
+                    Toggle(isOn: $alarmBeimAnlegen) {
+                        Label("Alarm", systemImage: "bell").font(.mykMono(10))
+                    }
+                    .toggleStyle(.switch)
+                }
+            }
         }
         .padding(MykSpace.s4)
         .background(MykColor.card.color)
@@ -687,21 +724,109 @@ struct AufgabenKatalogTab: View {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard text.isEmpty == false else { return }
         draft = ""
+        let dueDate = zeigeFaelligkeit ? faelligkeitDatum : nil
+        let alarm = zeigeFaelligkeit && alarmBeimAnlegen
+        zeigeFaelligkeit = false; alarmBeimAnlegen = false
         Task {
-            do { try await appState.assistantTasks.create(text); await reload() }
-            catch { errorText = "Aufgabe konnte nicht gespeichert werden: \(error.localizedDescription)" }
+            do {
+                let created = try await appState.assistantTasks.create(text, dueDate: dueDate, alarmAktiv: alarm)
+                if alarm { await TaskAlarmScheduler.requestAuthorizationIfNeeded() }
+                await TaskAlarmScheduler.reschedule(created)
+                await reload()
+            } catch {
+                errorText = "Aufgabe konnte nicht gespeichert werden: \(error.localizedDescription)"
+            }
         }
     }
     private func toggle(_ task: AssistantTask) {
         Task {
-            do { try await appState.assistantTasks.setDone(matching: task.id, done: !task.done); await reload() }
-            catch { errorText = "Aufgabe konnte nicht aktualisiert werden: \(error.localizedDescription)" }
+            do {
+                guard let aktualisiert = try await appState.assistantTasks.setDone(id: task.id, done: !task.done) else { return }
+                await TaskAlarmScheduler.reschedule(aktualisiert)   // erledigt → cancelt den Alarm automatisch
+                await reload()
+            } catch {
+                errorText = "Aufgabe konnte nicht aktualisiert werden: \(error.localizedDescription)"
+            }
         }
     }
     private func delete(_ task: AssistantTask) {
         Task {
-            do { try await appState.assistantTasks.delete(matching: task.id); await reload() }
-            catch { errorText = "Aufgabe konnte nicht gelöscht werden: \(error.localizedDescription)" }
+            do {
+                _ = try await appState.assistantTasks.delete(id: task.id)
+                TaskAlarmScheduler.cancel(taskID: task.id)
+                await reload()
+            } catch {
+                errorText = "Aufgabe konnte nicht gelöscht werden: \(error.localizedDescription)"
+            }
         }
+    }
+    private func speichereEdit(_ neu: AssistantTask) async {
+        editiereTask = nil
+        do {
+            guard let aktualisiert = try await appState.assistantTasks.update(
+                id: neu.id, title: neu.title, dueDate: neu.dueDate, alarmAktiv: neu.alarmAktiv
+            ) else { return }
+            if aktualisiert.alarmAktiv { await TaskAlarmScheduler.requestAuthorizationIfNeeded() }
+            await TaskAlarmScheduler.reschedule(aktualisiert)
+            await reload()
+        } catch {
+            errorText = "Aufgabe konnte nicht gespeichert werden: \(error.localizedDescription)"
+        }
+    }
+}
+
+// MARK: - AufgabeEditSheet (volle Editierbarkeit: Titel, Fälligkeit, Alarm)
+private struct AufgabeEditSheet: View {
+    @State var task: AssistantTask
+    let onSave: (AssistantTask) -> Void
+    let onCancel: () -> Void
+
+    @State private var hatFaelligkeit: Bool
+    @State private var datum: Date
+
+    init(task: AssistantTask, onSave: @escaping (AssistantTask) -> Void, onCancel: @escaping () -> Void) {
+        _task = State(initialValue: task)
+        self.onSave = onSave
+        self.onCancel = onCancel
+        _hatFaelligkeit = State(initialValue: task.dueDate != nil)
+        _datum = State(initialValue: task.dueDate ?? Date())
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            Text("Aufgabe bearbeiten").font(.mykHeadline).foregroundStyle(MykColor.ink.color)
+            TextField("Titel", text: $task.title).textFieldStyle(.roundedBorder).font(.mykBody)
+
+            Toggle(isOn: $hatFaelligkeit) {
+                Label("Fälligkeit", systemImage: "calendar").font(.mykSmall)
+            }
+            .toggleStyle(.switch)
+
+            if hatFaelligkeit {
+                DatePicker("", selection: $datum, displayedComponents: [.date, .hourAndMinute])
+                    .labelsHidden().datePickerStyle(.field)
+                Toggle(isOn: $task.alarmAktiv) {
+                    Label("Alarm bei Fälligkeit", systemImage: "bell").font(.mykSmall)
+                }
+                .toggleStyle(.switch)
+            }
+
+            HStack(spacing: MykSpace.s3) {
+                Spacer()
+                Button("Abbrechen") { onCancel() }
+                    .buttonStyle(.plain).font(.mykSmall).foregroundStyle(MykColor.muted.color)
+                Button("Speichern") {
+                    task.dueDate = hatFaelligkeit ? datum : nil
+                    if hatFaelligkeit == false { task.alarmAktiv = false }
+                    onSave(task)
+                }
+                .buttonStyle(.plain).font(.mykSmall).foregroundStyle(MykColor.paper.color)
+                .padding(.horizontal, MykSpace.s4).padding(.vertical, MykSpace.s2)
+                .background(RoundedRectangle(cornerRadius: MykRadius.sm).fill(MykColor.tasks.color))
+                .disabled(task.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(MykSpace.s6)
+        .frame(width: 360)
     }
 }
