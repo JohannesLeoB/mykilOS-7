@@ -118,6 +118,16 @@ struct AllOfferRow: View {
         return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
     }
 
+    // Nachfass-Hinweis (2026-07-07): reiner Alters-Proxy, KEINE bestätigte Reaktion —
+    // siehe NachfassAlertComputer-Dokumentation. Nur für ausgehende Belege, nur wenn
+    // der Nutzer die Präferenz nicht abgeschaltet hat.
+    private var nachfassTage: Int? {
+        guard NachfassAlertPreferences.aktiv,
+              NachfassAlertComputer.istFaellig(item, schwelleInTagen: NachfassAlertPreferences.schwelleInTagen)
+        else { return nil }
+        return NachfassAlertComputer.tageSeitAenderung(item)
+    }
+
     var body: some View {
         Button {
             resolvedLocalURL = resolveLocalURL()
@@ -139,6 +149,12 @@ struct AllOfferRow: View {
                         .lineLimit(1)
                 }
                 Spacer()
+                if let tage = nachfassTage {
+                    Label("seit \(tage)T ohne Aktivität", systemImage: "clock.badge.exclamationmark")
+                        .font(.mykMono(9))
+                        .foregroundStyle(MykColor.tasks.color)
+                        .help("Alters-Hinweis, keine bestätigte Kundenreaktion — Datei seit \(tage) Tagen im Drive unverändert.")
+                }
                 Image(systemName: "eye")
                     .font(.mykMono(10))
                     .foregroundStyle(MykColor.faint.color)

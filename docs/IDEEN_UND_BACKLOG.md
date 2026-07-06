@@ -614,10 +614,14 @@ verdient volle Aufmerksamkeit + Johannes' Live-Abnahme auf echten PDFs, nicht ne
   Ordnerlisting existiert schon (`GoogleDriveClient`), Mail-Anhänge sind gerade erst live geworden
   (`MailAttachmentRow`/`MailAttachmentDriveSheet`, diese Session) — fehlt nur ein Namens-Ähnlichkeits-
   Abgleich (Basisname ohne Versions-/Datumssuffix) + Datums-/Versionsvergleich vor dem Senden.
-- 📋 **Nachfass-Erinnerung bei Angebot ohne Reaktion:** „bei dem Angebot müsste ich mal wieder
-  nachfassen" — zeitbasiertes Signal, wenn ein ausgehendes Angebot seit N Tagen ohne erkennbare
-  Reaktion (keine neue Datei/Mail im Projekt) liegt. **Buildbar auf Bestehendem:** Datum steckt
-  schon in `AllOffersView`/`DriveOfferWatcher`, nur eine Alters-Schwelle + Signal fehlt.
+- ✅ **Nachfass-Erinnerung bei Angebot ohne Reaktion (gebaut 2026-07-07):** „bei dem Angebot
+  müsste ich mal wieder nachfassen" — als reiner **Alters-Hinweis** (Label in `AllOfferRow`,
+  „Alle Angebote" → Ausgehend) ab konfigurierbarer Tage-Schwelle (Einstellungen → Mitteilungen,
+  `NachfassAlertPreferences`, Default 14 Tage). **Ehrlich reduzierter Scope gegenüber der
+  ursprünglichen Idee:** es gibt KEIN echtes "keine Reaktion"-Signal (kein Beleg für Mail/
+  Telefon-Reaktion außerhalb Drive) — nur `GoogleDriveFile.modifiedAt` als Alters-Proxy, in der
+  UI klar so beschriftet (`NachfassAlertComputer`, 7 Tests). Kein neuer Background-Poll (teurer
+  Drive-Volltextbaum-Scan) — badge nur bei ohnehin schon geladenen "Alle Angebote"-Daten.
 - 💡 **„Ist die Rechnung eingegangen/bezahlt?"** — **ehrliche Einschränkung:** ob eine Rechnung
   *bezahlt* ist, lässt sich NICHT zuverlässig daraus ableiten, dass ein PDF im Drive-Ordner liegt
   (ein abgelegtes Dokument beweist nur „Dokument da", nicht „bezahlt"). Echter Bezahlt-Status

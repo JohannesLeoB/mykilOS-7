@@ -397,6 +397,14 @@ begrenzt nebenläufig (schont das Drive-Rate-Limit) mit Lade-Fortschrittsanzeige
 nicht erreichbare Projektordner werden übersprungen und gezählt. **Voraussetzung:**
 Google-Konto verbunden (volle Drive-Vorschau via M2).
 
+**Nachfass-Hinweis (2026-07-07):** Ausgehende Belege, die seit mehreren Tagen unverändert im
+Drive liegen, bekommen ein dezentes Label "seit X T ohne Aktivität" in ihrer Zeile.
+**Ehrliche Einschränkung:** das ist ein reiner **Alters-Hinweis** auf Basis des Drive-
+Änderungsdatums der Datei — **kein Beweis, dass der Kunde nicht reagiert hat** (ein
+abgelegtes PDF sagt nichts über E-Mails, Telefonate oder Reaktionen außerhalb von Drive).
+Ein/aus + Tage-Schwelle (Default 14) unter **Einstellungen → Mitteilungen**, per Nutzer
+individuell. Betrifft ausschließlich ausgehende Belege — eingehende werden nie geflaggt.
+
 ### Mail — Anhänge klickbar + in Drive ablegen (2026-07-02)
 Der Mail-Reader (Sidebar → Mail bzw. Assistent → Mail-Umschalter) zeigt zu jeder
 Nachricht ihre Anhänge. Diese sind jetzt **interaktiv**:
