@@ -72,6 +72,10 @@ public struct DateiKachel: View {
         .buttonStyle(.plain)
         .simultaneousGesture(TapGesture(count: 2).onEnded { onPreview() })
         .scaleEffect(isHovered ? MykMotion.hoverScale : 1)
+        // Bugfix 2026-07-07 (Johannes-Feedback: "Jiggle im Dateien-Tab"): ohne zIndex
+        // zeichnet das Grid Nachbarkacheln über die hochskalierte Kachel — das Überlappen
+        // wechselt bei jedem Hover-Übergang und sieht wie Zittern/Verspringen aus.
+        .zIndex(isHovered ? 1 : 0)
         .animation(MykMotion.hover, value: isHovered)
         .onHover { isHovered = $0 }
         .task(id: "\(file.id)#\(Int(side))") {

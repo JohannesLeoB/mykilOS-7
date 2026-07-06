@@ -14,18 +14,27 @@ public struct WidgetContainer<Content: View>: View {
 
     @Environment(StudioContext.self) private var context
     @State private var isHovered = false
+    /// Deaktiviert den Hover-Scale/Schatten-Puls DIESES Containers (Bugfix 2026-07-07,
+    /// Johannes-Feedback: "Jiggle im Dateien-Tab"). Kollidiert mit eigenständig hover-
+    /// fähigen Kindern (z. B. Datei-Galerie-Kacheln, DateiGalerie.swift) — zwei
+    /// verschachtelte, unabhängige scaleEffects ließen den linken Akzentstreifen bei jedem
+    /// Hover-Wechsel sichtbar zittern. Default true = unverändertes Verhalten für alle
+    /// bestehenden Aufrufer.
+    public var hoverAnimiert: Bool = true
 
     public init(
         kind: WidgetKind,
         sourceLabel: String,
         renderState: WidgetRenderState = .content,
         projectID: String,
+        hoverAnimiert: Bool = true,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.kind = kind
         self.sourceLabel = sourceLabel
         self.renderState = renderState
         self.projectID = projectID
+        self.hoverAnimiert = hoverAnimiert
         self.content = content
     }
 
@@ -58,7 +67,10 @@ public struct WidgetContainer<Content: View>: View {
         .scaleEffect(isHovered ? 1.007 : 1.0)
         .animation(.easeInOut(duration: 0.18), value: isHovered)
         .animation(.easeInOut(duration: 0.25), value: context.isFocused(projectID))
-        .onHover { isHovered = $0 }
+        .onHover { hovering in
+            guard hoverAnimiert else { return }
+            isHovered = hovering
+        }
     }
 
     // MARK: Haupt-Inhalt je Renderstate

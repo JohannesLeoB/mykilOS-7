@@ -213,7 +213,10 @@ struct FilesTabView: View {
             kind: .drive,
             sourceLabel: sourceLabel,
             renderState: store.renderState,
-            projectID: projectID
+            projectID: projectID,
+            // Bugfix 2026-07-07: kollidiert mit den eigenständig hover-fähigen Datei-
+            // Galerie-Kacheln (siehe WidgetContainer.hoverAnimiert-Kommentar).
+            hoverAnimiert: false
         ) {
             VStack(spacing: 0) {
                 statusBar
