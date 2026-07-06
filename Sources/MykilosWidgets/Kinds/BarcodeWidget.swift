@@ -93,6 +93,21 @@ public struct BarcodeWidget: View {
                 Text(code)
                     .font(.mykBody).foregroundStyle(MykColor.ink.color)
                     .textSelection(.enabled).lineLimit(2)
+                // QR mit URL-Inhalt (2026-07-06): klickbaren Link anbieten. Bewusst
+                // ein expliziter Button (kein Auto-Open) — gescannte Codes können auf
+                // beliebige Ziele zeigen; der Nutzer sieht die volle URL oben + im
+                // Hover-Tooltip und öffnet selbst. Nur http/https.
+                if let link = scannedLink {
+                    Button(action: { NSWorkspace.shared.open(link) }) {
+                        HStack(spacing: MykSpace.s3) {
+                            Image(systemName: "safari")
+                            Text("Link öffnen")
+                        }
+                        .font(.mykCaption).foregroundStyle(MykColor.drive.color)
+                    }
+                    .buttonStyle(.plain)
+                    .help(link.absoluteString)
+                }
             } else {
                 Text("Artikel-Barcode oder QR-Code mit der Kamera einlesen.")
                     .font(.mykSmall).foregroundStyle(MykColor.muted.color)
@@ -107,6 +122,18 @@ public struct BarcodeWidget: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    // Gescannter Code als http/https-URL (QR-Link), sonst nil. Trimmt Whitespace;
+    // akzeptiert nur die zwei Web-Schemata — kein file:/javascript:/custom-scheme.
+    private var scannedLink: URL? {
+        guard let raw = loader.lastCode?.trimmingCharacters(in: .whitespacesAndNewlines),
+              raw.isEmpty == false,
+              let url = URL(string: raw),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https",
+              url.host?.isEmpty == false else { return nil }
+        return url
     }
 
     private func openCameraSettings() {
