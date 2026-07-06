@@ -12,6 +12,35 @@ Einträge oben.
 
 ---
 
+## 2026-07-06 — Lange, produktive Session (Multi-User fertig + Review + Vision kartiert)
+
+**Was näher an der Vision:** Multi-User-Identität komplett gebaut UND adversarial reviewt
+(8-Winkel-Multi-Agenten-Review), dabei einen **echten Cross-User-Identitäts-Leck in meinem eigenen
+Code** gefunden + gefixt (`completeLoginAndRefresh` band die Mail eines neuen Bewohners an die alte
+userID). Nutzerprofil + Start-Ansicht ausgebaut, 3 UI-Feedback-Bugs mit *visuellem* Input gefixt
+(Favoriten-Klick war ein echter Funktionsbug). Die ganze Architektur-Vision (Login-Wege, Sevdesk-
+Budget-Routen, ClickUp-Datenintegration + 13 Custom Fields, Ordner-Schema-Editor, Schaltschrank-
+Prinzip) kartiert + als 4 Startpläne verankert. 1085 Tests grün, Build warnungsfrei.
+
+**Was gestolpert:**
+1. **Zwei eigene Fehl-Fixes** — der Cross-User-Leak (s.o.) und ein „Datenleck-Falle #6"-Fix, der
+   team-geteilte OAuth-Client-Daten löschte. **Beide durch den adversarialen Review gefangen**, bevor
+   sie Schaden taten. Lehre: der Review ist kein Luxus — er hat einen echten Leak meiner eigenen Hand
+   abgefangen. Immer reviewen, was man selbst gebaut hat.
+2. **Flaky-Subs erneut** — die Review-Finder-Agenten spawnten mehrfach rekursiv sich selbst (dokumentiert
+   als „Flaky-Sub-Erfahrung"). Abgebrochen, Rest selbst per gezieltem Bash. Für context-schwere Reviews
+   bleibt gezieltes Bash oft günstiger.
+3. **Kontext lief voll**, weil viele Stränge nachgeschoben wurden (Profil → View-Einstellungen →
+   Datenschutz → Ordner-Schema → ClickUp → Schaltschrank). Ich hab am Ende *bewusst gebremst* statt
+   große Stränge halbgar anzufangen — und sie präzise als Startpläne übergeben.
+
+**Die eine Sache fürs nächste Mal:** Bei „bau in voller Tiefe alles"-Wünschen den Scope **früh + laut
+in abnehmbare Stufen schneiden** und das Kontext-Budget offen ansprechen — statt immer weiter
+draufzubauen, bis der Kopf voll ist. Das „Mut zum Bremsen" hat diesmal funktioniert; es sollte
+früher kommen, nicht erst bei 90 %.
+
+---
+
 ## 2026-07-05 (sehr spät) — RAUE Session, Vertrauens-Reset, zu wenig gelandet
 
 **Was schiefging (ehrlich — das ist die wichtige Seite):**
