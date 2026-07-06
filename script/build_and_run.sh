@@ -107,6 +107,7 @@ done
 /usr/bin/plutil -insert NSPrincipalClass -string "NSApplication" "$INFO_PLIST"
 /usr/bin/plutil -insert NSHumanReadableCopyright -string "Copyright MYKILOS" "$INFO_PLIST"
 /usr/bin/plutil -insert NSCameraUsageDescription -string "mykilOS liest Artikel-Barcodes und QR-Codes über die Kamera ein (Barcode-Widget). Es werden keine Bilder gespeichert oder gesendet." "$INFO_PLIST"
+/usr/bin/plutil -insert NSBluetoothAlwaysUsageDescription -string "mykilOS koppelt einen Bluetooth-Laser für Aufmaß-Messwerte (Aufmaß-Widget)." "$INFO_PLIST"
 /usr/bin/plutil -insert LSMultipleInstancesProhibited -bool true "$INFO_PLIST"
 /usr/bin/plutil -insert MykGitCommit -string "$GIT_COMMIT" "$INFO_PLIST"
 /usr/bin/plutil -insert MykGitBranch -string "$GIT_BRANCH" "$INFO_PLIST"

@@ -6,5 +6,8 @@
 	     Entitlement blockiert Hardened Runtime die Kamera trotz NSCameraUsageDescription. -->
 	<key>com.apple.security.device.camera</key>
 	<true/>
+	<!-- Hardened Runtime: Bluetooth-Zugriff freigeben (Aufmaß-Widget, Leica-Disto-Laser). -->
+	<key>com.apple.security.device.bluetooth</key>
+	<true/>
 </dict>
 </plist>
