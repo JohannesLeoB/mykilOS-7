@@ -1,7 +1,7 @@
 # STARTPROMPT S20 — Drive Live, Board-Reset, Keychain, Airtable-Writes
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: claude/elegant-nobel-ee5ece  (S17+S18+S19 fertig, 217 Tests)
 Build:  swift build && swift test
 Datum:  2026-06-28
@@ -52,7 +52,7 @@ Erst danach starten.
 ### Aufgabe 0 — Pflichtcheck (erst dann weitermachen)
 
 ```bash
-cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6"
+cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac"
 git checkout claude/elegant-nobel-ee5ece
 swift build && swift test 2>&1 | tail -5
 # Muss: 217 Tests grün

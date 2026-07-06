@@ -15,7 +15,7 @@ git log --oneline -5
 ```
 
 **Prüfe in dieser Reihenfolge:**
-1. **Pfad** muss enden mit `/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6` — NICHT ein
+1. **Pfad** muss enden mit `/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac` — NICHT ein
    `~/Desktop/CLAUDE/...`-Worktree (das sind Wegwerfkopien anderer Sessions).
 2. **Status** muss leer/clean sein.
 3. **Voraussetzung C2:** in den letzten Commits (`git log --oneline -20`) muss ein Commit mit

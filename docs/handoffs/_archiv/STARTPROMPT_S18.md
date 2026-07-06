@@ -1,7 +1,7 @@
 # Startprompt S18 — Kalkulations-Chat-Tool
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main (S17 muss noch gemergt werden — Johannes gibt die Freigabe)
 Build:  ✅ 209 Tests grün (190 swift-testing + 19 XCTest)
 Datum:  2026-06-28
@@ -39,14 +39,14 @@ Die wichtigsten Regeln:
 2. **Kein Push ohne explizite Freigabe von Johannes.**
 3. **`git add` immer mit expliziten Pfaden — nie `git add -A`** — Johannes hat uncommittete eigene Änderungen.
 4. **Handoff-Dreifach-Pflicht am Ende:** EREIGNISPROTOKOLL + CLAUDE.md + STARTPROMPT_S19 — alle drei, kein STOP ohne sie.
-5. **Kanonischer Ordner:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+5. **Kanonischer Ordner:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 
 ---
 
 ## Pflicht-Checks ZUERST
 
 ```bash
-cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6"
+cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac"
 pwd
 git status
 git log --oneline -3

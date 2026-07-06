@@ -2,7 +2,7 @@
 
 **Datum:** 2026-06-28  
 **Session-Typ:** Learning / Tisch — kein Build  
-**Worktree:** `~/Desktop/CLAUDE/_mykilOS/mykilOS6/keen-williamson-ddb354`
+**Worktree:** `~/Desktop/CLAUDE/_mykilOS/mykilOS Mac/keen-williamson-ddb354`
 
 ---
 

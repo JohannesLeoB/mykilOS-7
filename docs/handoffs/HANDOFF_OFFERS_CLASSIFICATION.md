@@ -1,7 +1,7 @@
 # HANDOFF — Angebote: Beleg-Klassifikation per sicherem Zuordnungsweg
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: polish/dampflok
 Build:  ✅ swift build grün
 Tests:  ✅ 270 Tests grün (43 Suites, swift test)

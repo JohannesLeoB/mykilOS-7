@@ -1,7 +1,7 @@
 # HANDOFF — mykilOS 8 Block C: Identität + Nomenklatur (S2)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/mykilos8-block-c-identitaet-nomenklatur
 Build:  ✅ swift build grün
 Tests:  ✅ 695 Tests grün (24 neu)

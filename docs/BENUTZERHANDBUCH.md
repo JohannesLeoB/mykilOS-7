@@ -306,7 +306,7 @@ bewusst neutral (keine Summen-/MwSt-Begriffe → Carryforward-sicher).
 erzeugt der Knopf **„Zum Angebot"** aus dem am Projekt gespeicherten Warenkorb ein
 **Angebots-Vorschau-PDF** (Briefkopf, Positionstabelle, Netto/19 % MwSt/Brutto, aus der
 Projektnummer abgeleitete Angebotsnummer, Datum). Die Vorschau wird **lokal** abgelegt
-(`~/Library/Application Support/mykilOS6/AngebotsVorschau/<Projektnummer>/`) und darunter
+(`~/Library/Application Support/mykilOS Mac/AngebotsVorschau/<Projektnummer>/`) und darunter
 gelistet — Klick öffnet sie in der macOS-Vorschau, Rechtsklick → „Im Finder zeigen".
 **Eiserne Regel Belegführung extern:** Das PDF ist eine **beschriftete Vorschau** („Angebots-
 Vorschau", Kopf-Hinweis + Fußzeile „Kalkulations-Vorschau — kein offizielles Angebot"), **kein**

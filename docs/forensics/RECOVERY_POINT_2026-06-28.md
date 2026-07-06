@@ -8,7 +8,7 @@ Release-Freigabe.
 ## Verbindliche Identität
 
 - Kanonisches Repository:
-  `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6`
+  `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac`
 - Ursprünglicher Entwicklungszweig:
   `sprint/shared-drive-widget-oauth`
 - Letzter nachgewiesen stabiler Commit:

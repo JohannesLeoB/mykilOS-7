@@ -1,7 +1,7 @@
 # HANDOFF — Fragebogen: echte Provisionierung statt TEST-Sandbox-Testkarte
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/mykilos8-block-d-provisioning
 Build:  ✅ swift build grün
 Tests:  ✅ 719 Tests grün (19 neu über beide Teile dieses Handoffs)

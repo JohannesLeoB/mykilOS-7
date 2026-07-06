@@ -1,7 +1,7 @@
 # Handoff: Phase A — Identity, Private Area, B2-Fix
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: claude/nifty-goldwasser-af846a  (4 Commits vor main)
 Build:  ✅ swift build grün
 Tests:  ✅ 192 Tests grün (swift test)
@@ -151,7 +151,7 @@ Ziel: Jede Integration mit echten Live-Daten prüfen und ggf. verbinden.
 
 ```
 Kanonischer Ordner:
-/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 
 Pflichtchecks:
   pwd

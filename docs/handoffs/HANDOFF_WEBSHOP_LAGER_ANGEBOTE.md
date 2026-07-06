@@ -1,7 +1,7 @@
 # HANDOFF — Webshop · Lager · Angebote (in Kataloge integrieren)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Basis:  main (v7.6.9) — sauber, 514 Tests grün, Repo aufgeräumt
 Modell: Sonnet 4.6 (Bau), Opus für Phase 1 (Whitelist/Datenmodell, sensibel)
 Datum:  2026-06-30

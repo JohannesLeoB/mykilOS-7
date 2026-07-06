@@ -98,7 +98,7 @@ auf Johannes' Title-Block-Export, Erinnerung läuft für 2026-07-04.
 2. **Einzige geschützte Base = `appdxTeT6bhSBmwx5`** (Daniels): Lesen frei, seine Records nie ändern.
    Die ältere `artikel-projektliste-no-edit-rule` bleibt gültig (Projekte/Kunden-Tabellen), aber die
    neuere „Lesen frei"-Präzisierung führt.
-3. **Versionszählung 6→7→8→9** ist nirgends erklärt. Festhalten: mykilOS-6 archiviert, origin=mykilOS-7,
+3. **Versionszählung 6→7→8→9** ist nirgends erklärt. Festhalten: mykilOS-6 archiviert, origin=mykilOS-macOS,
    `v7.0.0` = Safe State; die 8.x-DMGs sind die laufende Entwicklungszählung; **9.0.0 = dieser
    Konsolidierungspunkt.** (Marketing-Version ≠ `BUILD_VERSION`.)
 4. **Veraltete Einstiegs-Memories:** `project-current-state` (6.5.0/386 Tests) + `orchestrator-partner-role`

@@ -1,7 +1,7 @@
 # Handoff: Polish Sprint „Dampflok" — Forensik + Übergabe an Core Repair
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: polish/dampflok
 Build:  ✅ swift build grün
 Tests:  ✅ 243 Tests grün (swift test)

@@ -1,7 +1,7 @@
 # HANDOFF — feat/tischler-predictor (B-gated, selbstwachsendes Schätz-Brain)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/tischler-predictor (von release/7.5, dem aktuellen grünen Stand)
 Entscheidung (Johannes, 2026-06-29): B-gated
 Datum:  2026-06-29

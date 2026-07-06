@@ -1,7 +1,7 @@
 # Startprompt S17 — Security-Härtung + technische Schulden
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main (S16-Kette ist als Fast-Forward nach main gemergt — main = aktueller Stand)
 Build:  ✅ 198 Tests grün (179 swift-testing + 19 XCTest)
 Datum:  2026-06-28
@@ -19,7 +19,7 @@ Die wichtigsten Regeln für dich als aktive Build-Session:
 2. **Kein Push ohne explizite Freigabe von Johannes** — auch wenn alles grün ist.
 3. **`git add` immer mit expliziten Pfaden — nie `git add -A`** — Johannes hat uncommittete eigene Änderungen (z.B. `docs/IDEEN_UND_BACKLOG.md`). NIE anfassen.
 4. **Handoff-Dreifach-Pflicht am Ende:** EREIGNISPROTOKOLL-Eintrag + CLAUDE.md aktualisiert + STARTPROMPT_S18.md geschrieben — alle drei, kein STOP ohne sie.
-5. **Kanonischer Ordner:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/` — der einzige echte Arbeitsort. Desktop-Worktrees sind Wegwerfkopien.
+5. **Kanonischer Ordner:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/` — der einzige echte Arbeitsort. Desktop-Worktrees sind Wegwerfkopien.
 6. **Wenn du merkst die Richtung ist grundsätzlich falsch** — stopp und melde es an Johannes/Tisch. Nicht weiterbauen auf falschen Fundamenten (Statut 14).
 7. **Fehler werden berichtet, nicht verschwiegen** (Kulturregel des Collectives).
 
@@ -53,7 +53,7 @@ Details: `docs/handoffs/HANDOFF_KALKULATION_CORE_PORT.md` (Schritt 8).
 ## Pflicht-Checks ZUERST
 
 ```bash
-cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6"
+cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac"
 pwd
 git status
 git log --oneline -3

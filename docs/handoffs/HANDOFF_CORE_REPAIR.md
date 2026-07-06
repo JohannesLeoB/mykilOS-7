@@ -1,7 +1,7 @@
 # Handoff: Core Repair (PR #3) — Mandate A–G code-fertig
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: polish/dampflok   (lokal — KEIN Push/Merge ohne ausdrückliche Freigabe)
 Build:  ✅ swift build grün
 Tests:  ✅ 296 Tests grün (48 Suites · swift test)
@@ -51,7 +51,7 @@ Details je Mandat: [docs/EREIGNISPROTOKOLL.md](../EREIGNISPROTOKOLL.md) (Eintrag
       (Schaltzentrum)**: Zeile `GMAIL_SEARCH` zeigt einen frischen Handshake (> 0).
 - [ ] **Settings → Diagnose**: Version **und** echter Commit sichtbar (nicht „unbekannt").
 - [ ] **Settings → Diagnose → „Backup jetzt"**: Status wird „Backup erstellt"; Ordner unter
-      `…/Application Support/mykilOS6/backups/` vorhanden.
+      `…/Application Support/mykilOS Mac/backups/` vorhanden.
 
 ### Bekannte Live-Unsicherheiten (ehrlich)
 - Der xattr-Name `com.google.drivefs.item-id#S` ist gegen einen echten Drive-Mount **nicht**

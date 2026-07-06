@@ -20,8 +20,8 @@ Signal-Nervensystem, die Persistenz und den Funktionsbaum darstellt.
 
 | Datei | Was |
 |---|---|
-| `docs/architecture/mykilOS6_Systemarchitektur.pdf` | Das fertige Dokument (9 S.) |
-| `docs/architecture/mykilOS6_Systemarchitektur.html` | Versionierte Quelle (HTML/CSS/SVG) |
+| `docs/architecture/mykilOS Mac_Systemarchitektur.pdf` | Das fertige Dokument (9 S.) |
+| `docs/architecture/mykilOS Mac_Systemarchitektur.html` | Versionierte Quelle (HTML/CSS/SVG) |
 | `docs/architecture/build_pdf.sh` | Repo-relatives Render-Skript (Chrome headless) |
 
 Inhalt: Integrations-Landkarte (Google/Clockodo/Airtable/Claude live;

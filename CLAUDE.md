@@ -51,10 +51,10 @@ Johannes hält aktiv ehrlich („bist du sicher?") — das ist Teil des Systems,
 ### Kanonischer Arbeitsordner (nicht verhandelbar)
 
 ```
-/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 ```
 
-**GitHub:** https://github.com/JohannesLeoB/mykilOS-7 (privat) — Nachfolger von mykilOS-6
+**GitHub:** https://github.com/JohannesLeoB/mykilOS-macOS (privat) — Nachfolger von mykilOS-6
 
 Der Desktop-Ordner `~/Desktop/CLAUDE/` enthält NUR temporäre Worktrees von Claude Code-Sessions.
 Diese sind WEGWERFKOPIEN. Nie dauerhaft darin arbeiten. Immer in den gelben MYKILOS-6-Ordner.
@@ -64,7 +64,7 @@ Diese sind WEGWERFKOPIEN. Nie dauerhaft darin arbeiten. Immer in den gelben MYKI
 ```bash
 # Schritt 1: Bin ich im richtigen Ordner?
 pwd
-# Muss enden mit: /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6
+# Muss enden mit: /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac
 
 # Schritt 2: Welcher Branch ist aktiv? Ist er sauber?
 git status
@@ -80,7 +80,7 @@ geschrieben werden. Andernfalls: zuerst den Fehler beheben, dann dokumentieren.
 ### Jeder Handoff MUSS im Header enthalten
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: <aktueller branch-name>
 Build:  ✅ swift build grün
 Tests:  ✅ N Tests grün (swift test)
@@ -107,7 +107,7 @@ für immer.** Alles, was wir weiterentwickeln (7.5, Mail-Client, Experimente),
 läuft auf Branches daneben und darf diesen Stand **niemals** zerstören. Manche
 Versuche verlaufen im Sande — genau dafür gibt es den Safe State.
 
-- **Ein Repo:** `origin` = github.com/JohannesLeoB/**mykilOS-7** (privat). mykilOS-6 ist
+- **Ein Repo:** `origin` = github.com/JohannesLeoB/**mykilOS-macOS** (privat). mykilOS-6 ist
   **archiviert** (Remote `mykilos6-archive`, read-only). Kein zweites aktives Repo.
 - Tag `v7.0.0` (e629e84) liegt in `origin` + Archiv + als GitHub-Release — die unantastbare
   Rückfallebene. **`main` ist die LEBENDE App (Johannes 2026-07-06: „main ist nicht heilig"),
@@ -796,7 +796,7 @@ swift run                      # App starten (ohne Bundle)
 swiftlint --strict              # Token-Disziplin prüfen
 ```
 
-**Repo:** https://github.com/JohannesLeoB/mykilOS-7 (privat). Codex-Workflow
+**Repo:** https://github.com/JohannesLeoB/mykilOS-macOS (privat). Codex-Workflow
 und Session-Regeln: `docs/codex/WORKFLOW.md`.
 
 ---
@@ -858,7 +858,7 @@ Lückenloses Protokoll aller Entwicklungsschritte (wer, was, wann, welcher Branc
 - `docs/handoffs/HANDOFF_LIVE_WIRING_3.md` — BrandsView-Navigationsbug, Live-Tour-Befunde, OAuth-Handshake, Startprompt für Session 4
 - `docs/handoffs/HANDOFF_LIVE_WIRING_4.md` — Clockodo Zuhörer: Architektur, Airtable-Schema live, User-Scoping-Constraint, Startprompt für Implementierungs-Session
 - `docs/registry/README.md` — 3-Kopien-Redundanzmodell (Airtable/lokaler Cache/Git-JSON) für die Projekt-/Kunden-Registry
-- `docs/architecture/mykilOS6_Systemarchitektur.pdf` — Systemarchitektur (9 S., A4 quer): Integrations-Landkarte, Steckbriefe (Google/Clockodo/Airtable/ClickUp/Sevdesk/Claude), Signal-Nervensystem, GRDB-Persistenz, Funktionsbaum, Trigger-/Handle-Matrix; Quelle `.html` + `build_pdf.sh` daneben
+- `docs/architecture/mykilOS Mac_Systemarchitektur.pdf` — Systemarchitektur (9 S., A4 quer): Integrations-Landkarte, Steckbriefe (Google/Clockodo/Airtable/ClickUp/Sevdesk/Claude), Signal-Nervensystem, GRDB-Persistenz, Funktionsbaum, Trigger-/Handle-Matrix; Quelle `.html` + `build_pdf.sh` daneben
 - `docs/PARTNER_APP_SCHEMA.md` — Airtable-Gesamtschema mykilOS 6 (nach Vollintegrations-Entscheidung aktualisiert): alle Tabellen-IDs, Clockodo-Nutzer-Records, Stundensatz-Priorität
 - `docs/KALKULATION_INTEGRATION.md` — mykilO$$ Vollintegrations-Plan: Modulstruktur, GRDB-Migration, UI-Slots, Tests, Drive-Integration, Merge-Reihenfolge
 - `docs/MYKILOS_6_TEAM_MODELL.md` — Team, Airtable, Identität

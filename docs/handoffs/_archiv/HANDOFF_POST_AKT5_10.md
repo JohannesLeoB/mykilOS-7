@@ -26,7 +26,7 @@ Download.
 | `Sources/MykilosApp/Detail/OffersTabView.swift` | **Neu.** `OffersTabView` (Tab), privater `@Observable OffersLoader` (read-only Fetch über `GoogleDriveClient`, Filter via `DriveOfferWatcher.detectOffers`), `OfferRow`. Rendert über den geteilten `WidgetContainer` (alle Renderstates), Quellzeile „GOOGLE DRIVE · N BELEGE", Retry. |
 | `Sources/MykilosServices/Google/DriveOfferWatcher.swift` | `offerKeywords`/`detectOffers`/`isOffer` von intern auf **`public`** gehoben (geteilte Erkennung Signal ↔ Tab). |
 | `Sources/MykilosApp/Detail/ProjectDetailView.swift` | `tabContent`: neuer `case .offers → OffersTabView(projectID:driveFolderID:)`. |
-| `docs/architecture/mykilOS6_Systemarchitektur.html/.pdf` | Projekt-Tab „Angebote" von GEPLANT → **LIVE**; Notiz, dass die Tab `DriveOfferWatcher.detectOffers` teilt. PDF neu (9 S.). |
+| `docs/architecture/mykilOS Mac_Systemarchitektur.html/.pdf` | Projekt-Tab „Angebote" von GEPLANT → **LIVE**; Notiz, dass die Tab `DriveOfferWatcher.detectOffers` teilt. PDF neu (9 S.). |
 | `CLAUDE.md` | „Wo wir stehen", Akt-Tabelle (Aufgabe 10), Target-Struktur, „Nächste Schritte", Doku-Index. |
 
 ## Renderstates

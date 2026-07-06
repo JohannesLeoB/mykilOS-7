@@ -1,7 +1,7 @@
 # HANDOFF — mykilOS 8 · Rollierender Orchestrierungs-Plan
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Start:  main = v7.7.2 (d36063c), 661 Tests grün, DMG signiert.
 Ziel:   mykilOS 8 — in rollierenden Session-Blöcken, je bestem Modell, jeder Block endet mit
         DMG + striktem ZIEL-CHECK + nächstem orchestriertem Schritt. Automatisch rollierend.

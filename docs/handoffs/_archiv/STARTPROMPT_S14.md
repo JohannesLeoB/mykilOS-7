@@ -1,7 +1,7 @@
 # Startprompt S14 — Kalkulations-Widget UI (Schritt 6)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/kalkulation-core-port
 Build:  ✅ 194 Tests grün
 Datum:  2026-06-28
@@ -95,7 +95,7 @@ verdrahten, nur die Variante anlegen).
 ```bash
 # Im kanonischen Ordner:
 pwd
-# Muss enden mit: .../MYKILOS 6/mykilOS6
+# Muss enden mit: .../MYKILOS 6/mykilOS Mac
 
 git status
 # Branch: feat/kalkulation-core-port, keine uncommitteten Änderungen

@@ -1,7 +1,7 @@
 # Handoff: Identitätsmodell härten + Wire-by-Wire Bestätigung
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main
 Build:  ✅ swift build grün
 Tests:  ✅ 192 Tests grün
@@ -251,7 +251,7 @@ Kalkulation    □         Schätzung erscheint: ja/nein
 ## Startprompt für die Session
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main
 Fallback: git checkout ui/sidebar-ci-stable
 

@@ -18,7 +18,7 @@ git log --oneline -1
 
 **Soll:**
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac
 Branch: feat/mykilos8-block-d-provisioning
 Status: (leer — clean)
 Head:   0a31fef docs(codex): C2-Handoff — erste native Ports (...)   [oder neuer]

@@ -10,7 +10,7 @@ was ist kaputt gegangen, was ist offen, wer hat was gemacht, auf welchem Branch.
 
 ```
 ## [DATUM] [AGENT/TOOL] — [KURZTITEL]
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: <branch>
 Build:  ✅/❌
 Tests:  N grün / M fehlgeschlagen
@@ -21,7 +21,7 @@ Tests:  N grün / M fehlgeschlagen
 ## Kanonischer Ordner (immer)
 
 ```
-/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 GitHub: https://github.com/JohannesLeoB/mykilOS-6
 ```
 
@@ -33,7 +33,7 @@ nie dauerhafter Arbeitsort.
 ## 2026-07-04 · Claude Code — sevDesk-Postbox, Galerie-Ausrollen, Mini-Mode
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/plaene-katalog
 Build:  ✅ swift build grün
 Tests:  ✅ 962 grün (126 Suites)
@@ -61,7 +61,7 @@ protokolliert (kein eigener Handoff). LEAN gewahrt: kein neuer API-Poll.
 ## 2026-07-01 · Claude Code (Opus 4.8, Ultracode) — mykilOS 8 Block C: Identität + Nomenklatur (S2)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/mykilos8-block-c-identitaet-nomenklatur
 Build:  ✅ swift build grün
 Tests:  ✅ 695 Tests grün (24 neu)
@@ -82,7 +82,7 @@ Nummernvergabe). Details: [HANDOFF_MYKILOS8_BLOCK_C.md](handoffs/HANDOFF_MYKILOS
 ## 2026-07-01 · Claude Code (Opus 4.8, Ultracode) — mykilOS 8 Block B: Lokales Zeit-Subsystem (S1)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/mykilos8-block-b-zeit-subsystem
 Build:  ✅ swift build grün
 Tests:  ✅ 672 Tests grün (13 neu)
@@ -103,7 +103,7 @@ critical: `runQueuedStartIfNeeded` schluckte Fehler). Details:
 ## 2026-06-30 · Claude Code (Sonnet 5) — mykilOS 8 Block A: Fundament (Eine Wahrheit + Sicherheits-Sockel)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/mykilos8-block-a-fundament (von docs/mykilos8-handoff)
 Build:  ✅ swift build grün
 Tests:  ✅ 652 Tests grün (0 fehlgeschlagen)
@@ -995,7 +995,7 @@ ist durch die S16-Kette subsumiert → geschlossen.
 
 ### 2026-06-28 · Claude Sonnet 4.6 (Dampflok) — L16–L22 abgeschlossen (polish/dampflok)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `polish/dampflok` · HEAD: `3e5c60e`
 **Build:** ✅ swift build grün
 **Tests:** ✅ 237 Tests grün (37 Suites)
@@ -1015,7 +1015,7 @@ ist durch die S16-Kette subsumiert → geschlossen.
 
 ### 2026-06-28 · Claude Sonnet 4.6 (Dampflok) — L6–L15 abgeschlossen (polish/dampflok)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `polish/dampflok` · HEAD: `be51948`
 **Build:** ✅ swift build grün
 **Tests:** ✅ 233 Tests grün (37 Suites) — inkl. Drive-Thumbnail-Fix (urlEnthaeltOrdnerIDUndFelder)
@@ -1041,7 +1041,7 @@ ist durch die S16-Kette subsumiert → geschlossen.
 
 ### 2026-06-28 · Claude Sonnet 4.6 (angry-benz-2df776) — P0 Fix-Versuch 1 ABGEBROCHEN
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `main` · HEAD: `dd235ab` (keine neuen Commits, alle Änderungen ungestaged)
 **Build:** ✅ (swift build + build_and_run.sh — alle uncommitted Changes eingebaut)
 **Tests:** nicht ausgeführt
@@ -1062,7 +1062,7 @@ ist durch die S16-Kette subsumiert → geschlossen.
 
 ### 2026-06-28 · Codex + Johannes — P0 bestätigt: Übersicht blockiert sichtbare Sidebar
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `main` · HEAD bei Untersuchung: `dd235ab`
 **Build:** nicht neu ausgeführt (forensische Dokumentation, keine Codeänderung)
 **Tests:** 192 laut Commit `dd235ab`, in dieser Dokumentationsrunde nicht neu ausgeführt
@@ -1128,7 +1128,7 @@ P0 nicht.
 
 ### 2026-06-28 · S10 Learning — S20 Sprint-Vorbereitung (keen-williamson-ddb354)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`  
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`  
 **Branch:** `claude/elegant-nobel-ee5ece` (Zielbranch für S20)  
 **Build:** kein Build (Learning-Session)
 
@@ -1151,7 +1151,7 @@ Timeline-Tab, Airtable `createRecord`, BaseID-Fehleranzeige.
 
 ### 2026-06-28 · Claude Code (Opus 4.8, S16) — Lern-Loop sichtbar: Kalibrierungs-Kandidaten + Promote-Flow (Schritt 8)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `feat/kalkulation-calibration-loop` (abgezweigt von `feat/kalkulation-record-adjustment`)
 **Build:** ✅ | **Tests:** 198 grün (179 swift-testing + 19 XCTest)
 
@@ -1194,7 +1194,7 @@ gelesen oder geschrieben.
 
 ### 2026-06-28 · Claude Code (Opus 4.8, S15) — recordAdjustment-Flow + KalkulationsActionCard (Schritt 7)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `feat/kalkulation-record-adjustment` (abgezweigt von `feat/kalkulation-core-port`)
 **Build:** ✅ | **Tests:** 197 grün (178 swift-testing + 19 XCTest)
 
@@ -1227,7 +1227,7 @@ Plus `recordAdjustmentBuchtAnpassungGegenSchaetzung` und
 
 ### 2026-06-28 · Claude Code (Sonnet 4.6, S14) — KalkulationsWidget + Kalkulations-Tab (Schritt 6)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `feat/kalkulation-core-port`
 **Build:** ✅ | **Tests:** 175 grün
 
@@ -1247,7 +1247,7 @@ Plus `recordAdjustmentBuchtAnpassungGegenSchaetzung` und
 
 ### 2026-06-28 · Claude Code (Sonnet 4.6) — Session-Abschluss Kalkulations-Port + App-Preview
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `feat/kalkulation-core-port`
 **Build:** ✅ | **Tests:** 194 grün
 
@@ -1278,7 +1278,7 @@ kein Push ohne Johannes' Freigabe.
 
 ### 2026-06-28 · Claude Code (Opus 4.8) — Engine in AppState verdrahtet + Baseline-Anker (Schritt 5)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `feat/kalkulation-core-port`
 **Build:** ✅ | **Tests:** 194 grün (175 swift-testing + 19 XCTest)
 
@@ -1307,7 +1307,7 @@ diesem Commit gemischt.
 
 ### 2026-06-28 · Claude Code (Opus 4.8) — DeviceCatalog + `geraetepreis` live (Schritt 4)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `feat/kalkulation-core-port`
 **Build:** ✅ | **Tests:** 193 grün (174 swift-testing + 19 XCTest)
 
@@ -1335,7 +1335,7 @@ Das tatsächliche Laden der echten CSV ist ein separater Daten-Schritt (Johannes
 
 ### 2026-06-28 · Claude Code (Opus 4.8) — Contract + Engine-Adapter (Schritt 3)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `feat/kalkulation-core-port`
 **Build:** ✅ | **Tests:** 189 grün (173 swift-testing + 16 XCTest)
 
@@ -1368,7 +1368,7 @@ vervollständigen, wenn Persistenz-/Bestätigungs-Flow steht. Kein Push ohne Fre
 
 ### 2026-06-28 · Claude Code (Opus 4.8) — Kalkulations-Lern-Schicht portiert (Schritt 2)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `feat/kalkulation-core-port`
 **Build:** ✅ | **Tests:** 187 grün (171 swift-testing inkl. 2 Cold-Start + 16 XCTest)
 
@@ -1401,7 +1401,7 @@ muss EINE kanonische Basis hergestellt werden. Kein Push ohne Johannes' Freigabe
 
 ### 2026-06-28 · Claude Code (Opus 4.8) — mykilO$$ Kalkulations-Core portiert (Schritt 1)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `feat/kalkulation-core-port` (aus `stabilize/from-0b7c366-2026-06-28`)
 **Build:** ✅ | **Tests:** 185 grün (169 swift-testing + 16 portierte XCTest)
 
@@ -1431,7 +1431,7 @@ Kein Push ohne Johannes' Freigabe.
 
 ### 2026-06-28 · Claude Code Desktop — Verbindungscheck + Session-Abschluss
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `stabilize/from-0b7c366-2026-06-28`
 **Build:** ✅ | **Tests:** 169 grün
 
@@ -1461,7 +1461,7 @@ Kein Push ohne Johannes' Freigabe.
 
 ### 2026-06-28 · Claude Code Desktop — Eiserne Regel + Ereignisprotokoll
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `stabilize/from-0b7c366-2026-06-28`
 **Build:** ✅ (Build complete)
 **Tests:** 169 grün
@@ -1482,7 +1482,7 @@ Kein Push ohne Johannes' Freigabe.
 
 ### 2026-06-28 · Codex — Forensic Recovery Point
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `stabilize/from-0b7c366-2026-06-28` (neu erstellt von Codex)
 **Build:** ✅
 **Tests:** 169 grün
@@ -1497,8 +1497,8 @@ Kein Push ohne Johannes' Freigabe.
 
 ### 2026-06-27/28 · Claude Code Desktop (Session musing-sammet-3abd94) — Worktree-Ordner-Konfusion
 
-**Pfad (Worktree):** `~/Desktop/CLAUDE/_mykilOS/mykilOS6/musing-sammet-3abd94/`
-**Pfad (Ziel):** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad (Worktree):** `~/Desktop/CLAUDE/_mykilOS/mykilOS Mac/musing-sammet-3abd94/`
+**Pfad (Ziel):** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch Worktree:** `claude/musing-sammet-3abd94`
 **Branch Hauptordner:** `sprint/shared-drive-widget-oauth`
 
@@ -1541,7 +1541,7 @@ Kein Push ohne Johannes' Freigabe.
 
 ### 2026-06-27 · Claude Code Desktop — Live-Wiring Session 3 (BrandsView-Fix)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `sprint/shared-drive-widget-oauth`
 **Build:** ✅ | **Tests:** 169 grün
 **Handoff:** [HANDOFF_LIVE_WIRING_3.md](handoffs/HANDOFF_LIVE_WIRING_3.md)
@@ -1561,7 +1561,7 @@ Kein Push ohne Johannes' Freigabe.
 
 ### 2026-06-27 · Claude Code Desktop — Post-Akt-5 Aufgaben 15–21 (Release 6.3.0)
 
-**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+**Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 **Branch:** `sprint/shared-drive-widget-oauth` (und Vorgänger-Branches)
 **Build:** ✅ | **Tests:** 169 grün
 **Handoff:** [HANDOFF_POST_AKT5_15_SURFACE_COMPLETION.md](handoffs/HANDOFF_POST_AKT5_15_SURFACE_COMPLETION.md)

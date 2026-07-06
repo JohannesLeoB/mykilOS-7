@@ -1,7 +1,7 @@
 # Handoff: Live Data Feed — echte Daten in die App (2026-06-28)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main
 Build:  ✅ swift build grün
 Tests:  ✅ 192 Tests grün
@@ -194,7 +194,7 @@ ProjectDetailView
 ## Startprompt für die Session
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main  (Fallback: git checkout ui/sidebar-ci-stable)
 Build:  swift build && swift test → muss grün sein bevor irgendetwas passiert
 Datum:  nach 2026-06-28

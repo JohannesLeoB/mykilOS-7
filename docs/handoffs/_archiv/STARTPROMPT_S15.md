@@ -1,7 +1,7 @@
 # Startprompt S15 — recordAdjustment-Flow + KalkulationsWidget in Projekt-Boards
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/kalkulation-core-port (oder main nach Merge von PR #2)
 Build:  ✅ 194 Tests grün
 Datum:  2026-06-28
@@ -39,7 +39,7 @@ Tests grün, Commit, Dokumentation aktuell. STOP wenn der Schritt fertig ist.
 ## Pflicht-Checks ZUERST
 
 ```bash
-cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6"
+cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac"
 pwd
 git status
 git log --oneline -3

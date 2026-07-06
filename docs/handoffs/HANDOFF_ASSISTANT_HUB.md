@@ -1,7 +1,7 @@
 # HANDOFF — Assistant Hub: Kontakte · Mail · Datei-Drop (3 Sessions)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Basis:  main = 721ba53 (v7.5.x) — Fundament verifiziert (s. u.)
 Datum:  2026-06-30
 Modell: Sonnet 4.6 (alle drei)

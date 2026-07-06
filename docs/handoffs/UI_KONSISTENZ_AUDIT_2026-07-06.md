@@ -1,7 +1,7 @@
 # UI/UX-Konsistenz-Audit — 2026-07-06 (Nacht-Session)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/multi-user-login
 Status: NUR DOKUMENTIERT, NICHTS GEÄNDERT — braucht Johannes' Live-Sichtprüfung
 ```

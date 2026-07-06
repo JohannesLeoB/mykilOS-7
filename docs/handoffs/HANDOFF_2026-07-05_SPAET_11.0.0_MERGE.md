@@ -1,7 +1,7 @@
 # 🌳 MASTER-HANDOFF — 11.0.0 auf main + nahtloser Übergang (2026-07-05, spät)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/kamera-barcode-widget  (== origin)
 main:   ✅ 11.0.0 konsolidiert (PR #4, Merge-Commit 2b3be7b) — ABER feat ist +6 voraus (s.u.)
 Build:  ✅ swift build grün · Tests ✅ 1052 grün · CI ✅ GRÜN (macos-15)
@@ -49,7 +49,7 @@ UI-Fixes, Drive-Sync-Bündelung, Settings-Etappe-1, Dock-Icon Hell/Dunkel. Zwei 
 **Qualitäts-/Prozess-Schuld:**
 - **Lint-Alt-Schuld 1787** — baselined, nicht abgetragen (eigener Cleanup-Strang). ⚠️ **Gotcha:** Edit an
   einer schon-zu-langen Datei (`file_length`) verschiebt den Verstoß → CI rot → Baseline neu generieren
-  + Pfade re-pinnen (Python-Replace `johannesleoberger…/mykilOS6/`→`runner/work/mykilOS-7/mykilOS-7/`, escaped `\/`; `sed` scheitert an 1-MB-Zeile).
+  + Pfade re-pinnen (Python-Replace `johannesleoberger…/mykilOS Mac/`→`runner/work/mykilOS-macOS/mykilOS-macOS/`, escaped `\/`; `sed` scheitert an 1-MB-Zeile).
 - **Umgebungsabhängige Tests** (Zeitzone/Locale) — per CI-`env` gepflastert, nicht deterministisch gemacht.
 - **`maxChars=6000`-Truncation-Bug** im Kalkulations-Import-Brief — vor echtem PDF-Live-Import fixen (Quelle: `IMPORT_BRIEF_VERIFIZIERT.md`).
 - **Airtable-Enrich-Weiche** (Personalausweis) nicht im Datenstrom-Handbuch (früher durchgerutscht).

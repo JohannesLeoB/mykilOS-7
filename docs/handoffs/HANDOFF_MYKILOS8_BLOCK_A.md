@@ -1,7 +1,7 @@
 # HANDOFF — mykilOS 8 Block A: Fundament (Eine Wahrheit + Sicherheits-Sockel)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/mykilos8-block-a-fundament (von docs/mykilos8-handoff abgezweigt)
 Build:  ✅ swift build grün
 Tests:  ✅ 659 Tests grün (0 fehlgeschlagen)

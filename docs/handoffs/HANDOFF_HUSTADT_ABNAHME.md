@@ -1,7 +1,7 @@
 # Handoff: Hustadt-Live-Abnahme — der letzte Schritt zu mykilOS 7
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: polish/dampflok · HEAD b5d062a · Version 6.5.0
 Build:  ✅ grün   Tests: ✅ 386 grün (62 Suites)
 Datum:  2026-06-29
@@ -20,7 +20,7 @@ nur die Bestätigung am echten Gerät. Diese Abnahme ist die Definition von „f
 ## Schritt 1 — App frisch bauen & starten
 
 ```bash
-cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6"
+cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac"
 ./script/build_and_run.sh    # baut echtes .app-Bundle (Commit wird in Info.plist injiziert)
 ```
 

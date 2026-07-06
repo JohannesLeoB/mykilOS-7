@@ -5,7 +5,7 @@ in der App** an. Aus der **Projekt-Anlegen-Maske** heraus werden dann alle neuen
 **vollständig, systematisch und mit korrektem Namensschema** nach genau diesem Muster angelegt.
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Regel:  „langsam daran machen" — Fundament steht, eigener fokussierter Strang.
         Echter Drive-Write auf PROJEKTE-Root ist GO-pflichtig (extern).
 ```

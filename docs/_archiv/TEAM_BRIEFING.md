@@ -60,7 +60,7 @@ Ein intelligentes Projektmanagement-Cockpit für ein Innenarchitektur-Studio.
 
 | Was | Wo |
 |---|---|
-| Kanonischer Ordner | `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/` |
+| Kanonischer Ordner | `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/` |
 | Tisch-Session | `keen-williamson-ddb354` (S10 Learning) |
 | Charter | `docs/TEAM_CHARTER.md` |
 | Roadmap | `docs/handoffs/ROADMAP_S16_S20.md` |

@@ -67,7 +67,7 @@ Der Erfahrungsbericht und die Handoff-Dokumente landen im selben Commit wie die 
 
 ### 10. Kanonischer Ordner ist heilig
 Aktive Sessions arbeiten ausschließlich in:  
-`/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`  
+`/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`  
 Desktop-Worktrees sind Wegwerfkopien — nie als Quelle der Wahrheit behandeln.
 
 ### 11. Verbatim-Prinzip für portierten Fremdcode

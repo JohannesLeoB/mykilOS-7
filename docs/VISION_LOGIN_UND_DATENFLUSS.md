@@ -5,7 +5,7 @@ Datenzufluss, festgehalten 2026-07-06 (Nacht/Vormittag). Wächst weiter — hier
 bevor gebaut wird. Bau-Reihenfolge + Status unten.
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/multi-user-login
 Regel:  Ziel zuerst · klein bauen · Johannes prüft jede Stufe live · nichts extern ohne GO
 ```

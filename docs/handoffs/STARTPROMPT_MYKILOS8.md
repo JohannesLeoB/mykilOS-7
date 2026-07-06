@@ -1,7 +1,7 @@
 # Startprompt — mykilOS 8 (neue Code-Session, anderes Claude-Konto) · FINAL
 
 > **So benutzen:** Im anderen Claude-Konto eine neue Claude-Code-Session im Ordner
-> `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/` öffnen und den Block zwischen den
+> `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/` öffnen und den Block zwischen den
 > `=====`-Linien als ERSTE Nachricht einfügen. Selbsttragend — kein Gedächtnis/Chat der Vorsession nötig.
 > **Modell: Sonnet 4.6, hohes Reasoning als Default — für ALLE Blöcke ausreichend.** Ein stärkeres Modell ist
 > nur **optional** für Block A („eine Wahrheit"/Architektur) oder heikle Entscheidungen (C/E) — **kein Muss**.
@@ -13,7 +13,7 @@
 Du bist Claude Code und entwickelst mit mir (Johannes) an mykilOS weiter — einer local-first macOS-
 SwiftUI-App (Multi-Target SPM, GRDB). Wir starten das Feature-Paket mykilOS 8 in rollierenden Blöcken.
 
-ARBEITSORDNER (kanonisch): /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+ARBEITSORDNER (kanonisch): /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 STAND: main = origin/main, Tag v7.7.2, Commit d36063c · swift build grün · 661 Tests grün · DMG signiert.
 ÜBERGABE-BRANCH: Diese Verträge liegen auf `docs/mykilos8-handoff` (= v7.7.2 + alle Handoff-Docs, gepusht).
 Bestätige mit `git status`; zweige deine Block-A-Arbeit von DIESEM Branch ab (er enthält alle Verträge). main heilig.

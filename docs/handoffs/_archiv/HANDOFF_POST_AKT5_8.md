@@ -42,7 +42,7 @@ Container umzuschalten.
 | `Sources/MykilosApp/Data/DemoSeed.swift` | `sevdeskRef` + `budget` an zwei Demo-Projekten (ME-24, LO-23) ergänzt. |
 | `Sources/MykilosApp/Settings/SettingsView.swift` | 6. Sektion „Sevdesk Umsatz" (SecureField Token, Status-Badge, Verbinden/Trennen, Laden im `.task`). |
 | `Tests/MykilosServicesTests/SevdeskClientTests.swift` | **Neu.** URL-Builder, Parser, `double`-Helfer, leere Liste, kaputtes JSON, `notConnected`. + `InMemorySevdeskCredentialsStore`. |
-| `docs/architecture/mykilOS6_Systemarchitektur.html/.pdf` | Sevdesk von „GEPLANT/STUB" auf **LIVE** umgestellt (Landkarte, SVG-Pfeil/Box, Karten S.1, Steckbrief, Feld-Mapping inkl. `budget`, Widget-Katalog, Keychain-Notiz). PDF neu gerendert (9 S.). |
+| `docs/architecture/mykilOS Mac_Systemarchitektur.html/.pdf` | Sevdesk von „GEPLANT/STUB" auf **LIVE** umgestellt (Landkarte, SVG-Pfeil/Box, Karten S.1, Steckbrief, Feld-Mapping inkl. `budget`, Widget-Katalog, Keychain-Notiz). PDF neu gerendert (9 S.). |
 
 ## Auth & Protokoll
 

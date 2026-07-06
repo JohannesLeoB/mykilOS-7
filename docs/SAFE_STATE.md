@@ -13,10 +13,10 @@ genau deshalb gibt es diesen Safe State.
 
 | Artefakt | Wo | Zweck |
 |---|---|---|
-| **Git-Tag `v7.0.0`** | `origin` (mykilOS-7) + `mykilos6-archive` | unveränderlicher Anker auf Commit `e629e84` |
-| **GitHub Release `v7.0.0`** | github.com/JohannesLeoB/mykilOS-7/releases/tag/v7.0.0 | dauerhaft abrufbare DMG + Release-Notes |
-| **Safe-DMG** | `dist/safe/mykilOS-7-v7.0.0-SAFE.dmg` (+ `.sha256`) | lauffähiges Bundle, lokal |
-| **`main`** | mykilOS-7 `main` = `e629e84` | der Stamm steht exakt auf dem Safe-Stand |
+| **Git-Tag `v7.0.0`** | `origin` (mykilOS-macOS) + `mykilos6-archive` | unveränderlicher Anker auf Commit `e629e84` |
+| **GitHub Release `v7.0.0`** | github.com/JohannesLeoB/mykilOS-macOS/releases/tag/v7.0.0 | dauerhaft abrufbare DMG + Release-Notes |
+| **Safe-DMG** | `dist/safe/mykilOS-macOS-v7.0.0-SAFE.dmg` (+ `.sha256`) | lauffähiges Bundle, lokal |
+| **`main`** | mykilOS-macOS `main` = `e629e84` | der Stamm steht exakt auf dem Safe-Stand |
 
 > Workflow & Branch-Modell: **[docs/GIT_WORKFLOW.md](GIT_WORKFLOW.md)**.
 
@@ -33,7 +33,7 @@ S24 (Fehler-400-Fix) · Version 7.0.0.
 ./script/recall_safe_state.sh
 ```
 
-Legt den Stand in einem **separaten Worktree** an (`~/Desktop/CLAUDE/mykilOS-7-SAFE-v7.0.0`),
+Legt den Stand in einem **separaten Worktree** an (`~/Desktop/CLAUDE/mykilOS-macOS-SAFE-v7.0.0`),
 baut und startet ihn dort. Dein aktueller Arbeitsordner bleibt unberührt.
 Aufräumen: `./script/recall_safe_state.sh --clean`.
 
@@ -44,7 +44,7 @@ git checkout v7.0.0      # exakt der Safe-Stand (detached HEAD)
 swift build && swift test
 ```
 
-**Variante C — einfach die DMG:** `dist/safe/mykilOS-7-v7.0.0-SAFE.dmg` öffnen,
+**Variante C — einfach die DMG:** `dist/safe/mykilOS-macOS-v7.0.0-SAFE.dmg` öffnen,
 oder vom GitHub-Release herunterladen.
 
 ---
@@ -52,7 +52,7 @@ oder vom GitHub-Release herunterladen.
 ## ⛔ Eiserne Schutzregeln
 
 1. **Tag `v7.0.0` wird NIE verschoben, NIE überschrieben, NIE gelöscht.**
-2. **mykilOS-7 `main` wird NIE force-gepusht.** Kein `git push --force` auf `main`.
+2. **mykilOS-macOS `main` wird NIE force-gepusht.** Kein `git push --force` auf `main`.
 3. **Neue Entwicklung läuft AUSSCHLIESSLICH auf Branches** (`release/7.5`,
    `feat/…`, `experiment/…`). Branches dürfen jederzeit sterben — der Safe-Stand nie.
 4. **Vor jedem Experiment-Branch:** vom Safe-Stand oder einem grünen Branch ausgehen,

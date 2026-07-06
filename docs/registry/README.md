@@ -9,7 +9,7 @@ einzelner Knoten zum Single Point of Failure wird:
 2. **Lokaler Cache pro Nutzer** — existiert bereits strukturell seit Akt 0/3:
    `CachedProjectRegistry` (`Sources/MykilosServices/CachedProjectRegistry.swift`)
    schreibt `customers.json` + `projects.json` über `FileBackedRepository` nach
-   `~/Library/Application Support/mykilOS6/`. Wird bei jedem erfolgreichen
+   `~/Library/Application Support/mykilOS Mac/`. Wird bei jedem erfolgreichen
    Airtable-Sync (`RegistryStore.syncFromAirtable`) aktualisiert, überlebt
    Neustarts, funktioniert offline. Kein zusätzlicher Code nötig — das ist
    schon "lokale Sicherheitskopie auf jedem Nutzer-Mac".

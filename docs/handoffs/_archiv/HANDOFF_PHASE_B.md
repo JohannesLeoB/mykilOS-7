@@ -1,7 +1,7 @@
 # Handoff: Phase B — Wire-by-Wire Live-Verifikation
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main
 Build:  ✅ swift build grün
 Tests:  ✅ 192 Tests grün
@@ -123,7 +123,7 @@ Sobald Johannes die IDs eingetragen hat:
 ## Startprompt für S18 (Kalkulations-Chat-Tool)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main
 Modell: claude-sonnet-4-6
 

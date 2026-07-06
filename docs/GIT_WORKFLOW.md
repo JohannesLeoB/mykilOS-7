@@ -10,9 +10,9 @@ sich jederzeit sauber wieder vereinen.
 
 | Was | Wo |
 |---|---|
-| **Kanonisches Repo** | `origin` → github.com/JohannesLeoB/**mykilOS-7** (privat) |
+| **Kanonisches Repo** | `origin` → github.com/JohannesLeoB/**mykilOS-macOS** (privat) |
 | **Archiv** | `mykilos6-archive` → mykilOS-6 (read-only archiviert, nur Nachschlagen) |
-| **Arbeitsordner** | `…/MYKILOS 6/mykilOS6/` (der gelbe Ordner, [[canonical-folder-rule]]) |
+| **Arbeitsordner** | `…/MYKILOS 6/mykilOS Mac/` (der gelbe Ordner, [[canonical-folder-rule]]) |
 
 Es gibt **kein zweites aktives Repo** mehr. Alles läuft über `origin`.
 

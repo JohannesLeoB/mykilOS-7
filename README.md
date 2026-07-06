@@ -1,4 +1,4 @@
-# mykilOS 7.5
+# mykilOS 11
 
 **Das Cockpit, das alles kann.** Internes Studio-OS für MYKILOS — neuer, bewusster Start.
 

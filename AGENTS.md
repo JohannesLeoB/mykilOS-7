@@ -11,7 +11,7 @@
 - Andere Agenten (Codex / weitere Claude-Sessions, z. B. ausgelagerte Coding-Blöcke): arbeiten auf **eigenen Branches**, **nie** direkt auf `main`, **nie** force-push. Ergebnis = PR an Johannes.
 
 ## Eiserne Regeln (nicht verhandelbar)
-1. **Kanonischer Ordner:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`. Desktop-Worktrees sind Wegwerfkopien.
+1. **Kanonischer Ordner:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`. Desktop-Worktrees sind Wegwerfkopien.
 2. **`main` ist heilig:** nie direkt committen, nie force-pushen, nur Johannes merged (Fast-Forward/PR). Tag `v7.0.0` (Safe State) ist unantastbar.
 3. **Signierte Commits** (SSH), **Conventional Commits**; bei Claude-Arbeit Suffix `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
 4. **Gate:** `swift build` UND `swift test` müssen grün sein. Rot = kein Merge. Keine Versions-/Build-Skripte heimlich ändern.

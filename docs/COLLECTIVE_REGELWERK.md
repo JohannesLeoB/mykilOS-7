@@ -82,7 +82,7 @@ aber er unterbricht nie während gebaut wird.
 ## Teil 4 — Pflicht-Checks (Start jeder Session)
 
 ```bash
-cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6"
+cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac"
 pwd          # muss genau dieser Pfad sein — kein Desktop-Ordner
 git status   # kein fremdes Zeug staged
 git log --oneline -3
@@ -91,7 +91,7 @@ swift build && swift test 2>&1 | tail -5
 
 **Erst wenn Build und Tests grün sind, beginnt die Arbeit.**
 
-Kanonischer Ordner: `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`  
+Kanonischer Ordner: `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`  
 Desktop-Worktrees (`~/Desktop/CLAUDE/`) sind Wegwerfkopien — nie dauerhafter Arbeitsort.
 
 ---

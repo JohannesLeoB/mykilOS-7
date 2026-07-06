@@ -1,7 +1,7 @@
 # Handoff — Session-Abschluss 2026-06-28
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: stabilize/from-0b7c366-2026-06-28
 Build:  ✅ swift build grün
 Tests:  169 grün (swift test)
@@ -18,7 +18,7 @@ paralleler Entwicklung in mehreren Worktrees und Branches.
 
 ### 1. Eiserne Regel eingeführt
 `CLAUDE.md` hat jetzt einen `⛔ EISERNE REGEL`-Abschnitt ganz oben:
-- Kanonischer Ordner ist und bleibt `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+- Kanonischer Ordner ist und bleibt `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 - Pflichtchecks (`pwd`, `git branch`, `swift build && swift test`) vor jedem Handoff
 - Handoff-Header-Pflicht (Pfad + Branch + Build + Tests + Datum)
 - `~/Desktop/CLAUDE/` = temporäre Worktrees, nie dauerhafter Arbeitsort
@@ -107,7 +107,7 @@ Du übernimmst mykilOS 6 — macOS-Studio-Cockpit (SwiftUI, local-first, GRDB).
 
 ━━━ PFLICHT: ZUERST AUSFÜHREN ━━━
 pwd
-# Muss enden mit: /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6
+# Muss enden mit: /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac
 git branch && git status
 swift build && swift test 2>&1 | tail -5
 

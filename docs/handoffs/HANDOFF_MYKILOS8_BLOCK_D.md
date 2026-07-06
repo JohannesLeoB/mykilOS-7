@@ -1,7 +1,7 @@
 # HANDOFF — mykilOS 8 Block D: Provisioning in der Sandbox (S4)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/mykilos8-block-d-provisioning
 Build:  ✅ swift build grün
 Tests:  ✅ 700 Tests grün (5 neu)

@@ -1,7 +1,7 @@
 # HANDOFF — feat/layout-polish (Spacings in allen Modi geradeziehen)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/layout-polish (von feat/sidebar-app-dock — enthält S25–S28)
 Modell: Opus 4.8 empfohlen (siehe unten)
 Datum:  2026-06-30

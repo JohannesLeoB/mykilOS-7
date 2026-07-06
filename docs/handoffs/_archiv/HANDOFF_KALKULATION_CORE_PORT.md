@@ -1,7 +1,7 @@
 # Handoff: mykilO$ Kalkulations-Core Port (Schritte 1–7)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/kalkulation-record-adjustment (Schritt 7) / feat/kalkulation-core-port (1–6)
 Build:  ✅ swift build grün
 Tests:  ✅ 197 Tests grün (178 swift-testing + 19 XCTest)

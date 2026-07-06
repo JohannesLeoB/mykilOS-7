@@ -1,7 +1,7 @@
 # HANDOFF — Zusammenarbeit & Arbeitsbaum (für externe Mitwirkende & Agenten)
 
 ```
-Repo:    https://github.com/JohannesLeoB/mykilOS-7  (privat)
+Repo:    https://github.com/JohannesLeoB/mykilOS-macOS  (privat)
 Stand:   mykilOS 7.7.0 (Tag v7.7.0)
 Gilt für: Daniel Klapsing, Codex, ausgelagerte Claude-Code-Sessions, jeden fremden Agenten.
 ```

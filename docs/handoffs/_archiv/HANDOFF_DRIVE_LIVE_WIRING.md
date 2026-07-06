@@ -1,7 +1,7 @@
 # Handoff — Drive Live Wiring + P0-Fix + DriveFolderRefreshBar
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main
 Build:  ✅ swift build — Build complete (clean, keine Warnings)
 Tests:  ✅ 192 Tests grün (swift test)
@@ -108,7 +108,7 @@ Alle 4 Commits auf `origin/main` gepusht.
 ## Startprompt für nächste Session
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main @ 9ddf75a
 Build:  ✅ swift build grün
 Tests:  ✅ 192 Tests grün

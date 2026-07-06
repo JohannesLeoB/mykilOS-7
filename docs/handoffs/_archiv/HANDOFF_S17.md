@@ -1,7 +1,7 @@
 # Handoff S17 — Security-Härtung + Google Identity
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/security-haertung
 Build:  ✅ swift build grün
 Tests:  ✅ 209 Tests grün (190 swift-testing + 19 XCTest)

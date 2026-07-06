@@ -1,7 +1,7 @@
 # HANDOFF — mykilOS 8 Kickoff (Brücke: Briefing ↔ echter Code-Stand)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main (= origin/main), Tag v7.7.2, Commit d36063c
 Build:  ✅ swift build grün
 Tests:  ✅ 661 Tests grün (636 Swift-Testing @Test + 25 XCTest)

@@ -1,7 +1,7 @@
 # mykilOS 6 — Master Status & Startprompt (2026-06-28)
 
 ```
-Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch:  main
 Commit:  9a3dbbf
 Build:   ✅ swift build grün
@@ -17,7 +17,7 @@ Datum:   2026-06-28
 ## Startprompt für die nächste Session
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main
 Modell: claude-sonnet-4-6
 
@@ -197,7 +197,7 @@ git branch fallback/ui-sidebar-ci-stable  # Branch zum Vergleich
 
 ## Eiserne Regeln (für jede Session gültig)
 
-- **Kanonischer Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/`
+- **Kanonischer Pfad:** `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/`
 - **Vor Handoff:** `swift build && swift test` — beides grün
 - **Keine Schreibvorgänge** in Sevdesk, geteilte Airtable-Base, Drive-Root
 - **Secrets nur Keychain** — nie in Code, Dateien, Logs

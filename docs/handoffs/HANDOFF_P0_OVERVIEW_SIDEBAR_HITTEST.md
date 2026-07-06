@@ -1,7 +1,7 @@
 # P0-Handoff — Projekt-„Übersicht“ überlagert die Sidebar
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main
 HEAD:   dd235ab bei forensischer Untersuchung
 Build:  nicht neu ausgeführt (Dokumentation, keine Codeänderung)

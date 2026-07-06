@@ -1,7 +1,7 @@
 # HANDOFF — mykilOS 8 Block B: Lokales Zeit-Subsystem (S1)
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/mykilos8-block-b-zeit-subsystem (von Block-A-Branch abgezweigt)
 Build:  ✅ swift build grün
 Tests:  ✅ 672 Tests grün (13 neu für Block B)

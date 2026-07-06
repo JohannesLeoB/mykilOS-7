@@ -49,7 +49,7 @@ er erzeugt dasselbe `offerDetected`, ohne auf ein echtes neues PDF zu warten.
 | `Sources/MykilosApp/Detail/ProjectDetailView.swift` | `@State offerWatcher` + `offerPollInterval = .seconds(60)`. Neuer `.task(id: driveFolderID)`-Loop: pollt solange das Projekt offen ist, `context.emit(...)` für jedes neue Signal. |
 | `Sources/MykilosApp/Detail/SignalDemoView.swift` | Kommentar aktualisiert: `DriveOfferWatcher` ist jetzt die Live-Quelle, der Button bleibt Showcase fürs gleiche Signal. |
 | `Tests/MykilosServicesTests/DriveOfferWatcherTests.swift` | **Neu.** 5 Tests + `FakeDriveClient`. |
-| `docs/architecture/mykilOS6_Systemarchitektur.html/.pdf` | Drive-Webhook von „GEPLANT" auf **LIVE** (Landkarte-Pfeil/Box „Drive-Offer-Watcher", Karte S.1, Steckbrief S.5, Signal-Sektion, Trigger-Matrix-Zeile). PDF neu (9 S.). |
+| `docs/architecture/mykilOS Mac_Systemarchitektur.html/.pdf` | Drive-Webhook von „GEPLANT" auf **LIVE** (Landkarte-Pfeil/Box „Drive-Offer-Watcher", Karte S.1, Steckbrief S.5, Signal-Sektion, Trigger-Matrix-Zeile). PDF neu (9 S.). |
 | `CLAUDE.md` | „Wo wir stehen", Akt-Tabelle (Aufgabe 9), Target-Struktur, „Nächste Schritte", Doku-Index. |
 
 ## Tests

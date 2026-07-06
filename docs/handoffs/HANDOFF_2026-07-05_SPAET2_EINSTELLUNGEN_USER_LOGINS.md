@@ -1,7 +1,7 @@
 # 🔴 MASTER-HANDOFF — Einstellungen + User-Log-Ins (DIE Priorität) + Vertrauens-Reset
 
 ```
-Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 main:    ✅ mykilOS 11 STEHT auf `main` (0a4ab6b, CI GRÜN verifiziert: build-and-test + Lint-Gate)
 Build:   ✅ swift build grün · ✅ 1060 Tests grün · ✅ CI grün auf main
 Version: 11.1.0-alpha2 · DMG dist/mykilOS-11.1.0-alpha2.dmg
@@ -181,7 +181,7 @@ Header-Inkonsistenz (Item B) ist der sichtbare offene Punkt daraus.
   (`e629e84`) bleibt der unantastbare Rückfall. Regel korrigiert: „main ist die lebende App" (`CLAUDE.md`).
 - Branch `feat/bewohner-oberflaeche` ist vollständig in `main`. **Neue Arbeit:** frischer Branch von
   `main` ODER direkt auf `main` (bei CI-grün + Johannes' GO; PR optional). Bei Datei-Längen-Änderung
-  Baseline neu (Muster: swiftlint --write-baseline → Python-Re-Pin auf `runner/work/mykilOS-7`, Task #8 erledigt).
+  Baseline neu (Muster: swiftlint --write-baseline → Python-Re-Pin auf `runner/work/mykilOS-macOS`, Task #8 erledigt).
 - DMGs: `dist/mykilOS-11.1.0-alpha2.dmg` (aktuell, mit Keychain-Fix), `-alpha1.dmg`, `-11.0.0.dmg` (= Tag v11.0.0).
 - **Weitere offene Punkte** (Audit): FEEDBACK-DEV-Items **C** (MYKILOS-Wortmarke neben Squircle zu klein)
   + **D** (Drive-„geprüft" verteilt statt EIN globaler Sync in Einstellungen); die 5 neuen Settings-

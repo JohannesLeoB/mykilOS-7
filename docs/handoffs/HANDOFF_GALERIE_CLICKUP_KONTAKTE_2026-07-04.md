@@ -1,7 +1,7 @@
 ## Handoff — Galerie-Flug, ClickUp-Ausbau, Kontakte-Migration Schritt 1, Positions-Picker
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/plaene-katalog
 Build:  ✅ swift build grün
 Tests:  ✅ 940 Tests grün (swift test) — 913 vor dieser Session

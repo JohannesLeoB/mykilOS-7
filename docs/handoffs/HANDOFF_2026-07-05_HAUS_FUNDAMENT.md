@@ -1,7 +1,7 @@
 # 🏠 HANDOFF — Haus-Fundament (2026-07-05) → nächste Sessions
 
 ```
-Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch:  feat/kamera-barcode-widget   (offsite: origin @ 0f2aaf6, lokal == remote)
 Build:   ✅ swift build grün
 Tests:   ✅ 1024 grün (132 Suites) — verifiziert nach Personalausweis-Commit 8320538;

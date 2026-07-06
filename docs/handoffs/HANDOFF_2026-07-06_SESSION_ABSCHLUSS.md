@@ -1,7 +1,7 @@
 # 🏁 Session-Abschluss 2026-07-06 — Multi-User fertig, Vision kartiert
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: feat/multi-user-login — GEPUSHT nach origin (mit origin synchron)
 Build:  ✅ swift build grün + warnungsfrei (lokal)
 Tests:  ✅ 1085 grün (139 Suites) (lokal)

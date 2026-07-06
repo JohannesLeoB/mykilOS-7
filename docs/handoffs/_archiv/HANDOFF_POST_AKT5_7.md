@@ -29,7 +29,7 @@ per-Projekt-Live-Widget-Vorlage.
 | `Sources/MykilosApp/Data/AppState.swift` | `clickUpAuth: ClickUpAuthService` ergänzt. |
 | `Sources/MykilosApp/Settings/SettingsView.swift` | 5. Sektion „ClickUp Aufgaben" (SecureField Token, Status-Badge, Verbinden/Trennen, Laden im `.task`). |
 | `Tests/MykilosServicesTests/ClickUpClientTests.swift` | **Neu.** URL-Builder, Parser (Fälligkeit/Assignee/Urgent), leere Liste, kaputtes JSON, `notConnected`. + `InMemoryClickUpCredentialsStore`. |
-| `docs/architecture/mykilOS6_Systemarchitektur.html/.pdf` | ClickUp von „GEPLANT/STUB" auf **LIVE** umgestellt (Landkarte, Legende, Steckbrief, Feld-Mapping, Funktionsbaum, Keychain-Notiz). PDF neu gerendert (9 S.). |
+| `docs/architecture/mykilOS Mac_Systemarchitektur.html/.pdf` | ClickUp von „GEPLANT/STUB" auf **LIVE** umgestellt (Landkarte, Legende, Steckbrief, Feld-Mapping, Funktionsbaum, Keychain-Notiz). PDF neu gerendert (9 S.). |
 
 ## Auth & Protokoll
 

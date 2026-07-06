@@ -1,7 +1,7 @@
 # HANDOFF — Version 6.4.0 festgeschrieben (2026-06-28)
 
 ```
-Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:    /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch:  main (13 Commits vor origin/main)
 Build:   ✅ swift build grün
 Tests:   ✅ 192 Tests, 30 Suites
@@ -144,7 +144,7 @@ Tags:
 
 **Fallback aktivieren (falls Session etwas bricht):**
 ```bash
-cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6"
+cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac"
 git checkout ui/sidebar-ci-stable
 ```
 
@@ -153,7 +153,7 @@ git checkout ui/sidebar-ci-stable
 ## Startprompt für die nächste Session
 
 ```
-Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
+Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac/
 Branch: main
 Modell: claude-sonnet-4-6
 

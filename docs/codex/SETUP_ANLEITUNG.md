@@ -4,14 +4,14 @@
 
 - OpenAI Codex-Zugang (codex.openai.com oder CLI)
 - Das Repo ist auf GitHub: https://github.com/JohannesLeoB/mykilOS-6 (privat)
-- Lokaler Klon unter: `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6`
+- Lokaler Klon unter: `/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac`
 
 ## Schritt 1: Repo-Stand pushen
 
 Bevor Codex starten kann, muss der aktuelle Stand auf GitHub sein:
 
 ```bash
-cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6"
+cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac"
 git push origin main
 ```
 
@@ -31,7 +31,7 @@ Nach jeder Codex-Session diese Checkliste durchgehen:
 ### Pflicht-Checks
 
 ```bash
-cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6"
+cd "/Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac"
 git pull origin main
 
 # 1. Tests grün?
@@ -82,7 +82,7 @@ Wenn du zurück zu Claude Code wechselst, nutze diesen Sessionstart-Prompt:
 
 ```
 Du arbeitest am Projekt mykilOS 6 — ein macOS 14+ SwiftUI-Cockpit für Projektplanung.
-Repo: /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6
+Repo: /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS Mac
 Lies zuerst CLAUDE.md — das ist das vollständige Projektgedächtnis.
 Dann git log --oneline -10 für den aktuellen Stand.
 Dann swift test um zu prüfen ob alles grün ist.
