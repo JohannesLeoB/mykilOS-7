@@ -1,3 +1,5 @@
+> ⚠️ **Maxime #1:** macOS-App, Ordner `mykilOS Mac`, Repo `mykilOS-macOS`. Vor jeder Aktion origin prüfen (= mykilOS-macOS). Nie in ein anderes Ordner/Repo/Git. Volle Regeln: **KOORDINATEN.md**.
+
 # mykilOS 10 — Claude Code Projektgedächtnis
 
 **Smarte Projektplanung und Management mit intelligenten Automationen und Integrationen.**
