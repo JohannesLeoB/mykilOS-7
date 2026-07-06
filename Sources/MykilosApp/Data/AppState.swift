@@ -764,7 +764,11 @@ public final class AppState {
 
     // S14: legt einen vom Nutzer BESTÄTIGTEN Mail-Entwurf via Gmail API an + Audit.
     // Wird der AssistantChatView als `onCreateDraft` injiziert. Versendet NIE — nur Entwurf.
+    // Bugfix 2026-07-06/07: dieser Pfad hängte die gespeicherte Mail-Signatur nie an (nur
+    // ComposeMailView tat das, für den manuellen Verfassen-Weg) — jeder Assistenten-Entwurf
+    // ging signaturlos raus. Jetzt dieselbe Konvention wie ComposeMailView.effectiveBody.
     public func createDraft(_ draft: EmailDraft) async -> DraftCreateOutcome {
+        let draft = draft.mitAngehaengterSignatur(UserDefaults.standard.string(forKey: "mail.signature"))
         do {
             _ = try await GoogleGmailClient().createDraft(draft)
         } catch GoogleGmailError.notConnected {

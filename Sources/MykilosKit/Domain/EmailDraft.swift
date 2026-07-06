@@ -63,6 +63,29 @@ public struct EmailDraft: Codable, Sendable, Equatable {
         let empfaenger = (to?.isEmpty == false) ? to! : "(kein Empfänger)"
         return "\(subject) · an \(empfaenger)"
     }
+
+    // Bugfix 2026-07-06/07 (docs/IDEEN_UND_BACKLOG.md, "Mail-Signaturen laufen nicht sauber
+    // aus dem Assistenten-Versand"): die manuelle Verfassen-Ansicht baute die Signatur selbst
+    // in ihren Body ein (eigene "\n\n-- \n"-Konvention), der vom Assistenten bestätigte
+    // Entwurfs-Pfad (AppState.createDraft) tat das nie — jeder Assistenten-Entwurf ging ohne
+    // Signatur raus. EINE geteilte Konvention statt zwei Kopien, damit beide Pfade fortan
+    // identisch funktionieren.
+
+    /// Hängt eine Signatur nach der Standard-Konvention ("\n\n-- \n<Signatur>") an einen Body
+    /// an. Leere/nur-Whitespace-Signatur → Body bleibt unverändert.
+    public static func signaturAnhaengen(an body: String, signatur: String?) -> String {
+        let getrimmt = (signatur ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard getrimmt.isEmpty == false else { return body }
+        return body.isEmpty ? "\n\n-- \n\(getrimmt)" : "\(body)\n\n-- \n\(getrimmt)"
+    }
+
+    /// Wie `signaturAnhaengen(an:signatur:)`, aber liefert einen neuen `EmailDraft` mit
+    /// angepasstem Body (Rest unverändert).
+    public func mitAngehaengterSignatur(_ signatur: String?) -> EmailDraft {
+        var neu = self
+        neu.body = Self.signaturAnhaengen(an: body, signatur: signatur)
+        return neu
+    }
 }
 
 // MARK: - DraftCreateOutcome (S14)

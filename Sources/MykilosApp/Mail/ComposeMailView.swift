@@ -49,12 +49,10 @@ struct ComposeMailView: View {
     }
 
     /// Body mit optionaler Signatur (wird erst beim Speichern zusammengebaut — nicht live).
+    /// Geteilte Konvention mit AppState.createDraft (EmailDraft.signaturAnhaengen) — EINE
+    /// Quelle statt zweier unabhängiger Kopien (Bugfix 2026-07-06/07).
     private var effectiveBody: String {
-        let sig = savedSignature.trimmingCharacters(in: .whitespacesAndNewlines)
-        if appendSignature && !sig.isEmpty {
-            return bodyText.isEmpty ? "\n\n-- \n\(sig)" : "\(bodyText)\n\n-- \n\(sig)"
-        }
-        return bodyText
+        appendSignature ? EmailDraft.signaturAnhaengen(an: bodyText, signatur: savedSignature) : bodyText
     }
 
     private var draft: EmailDraft {
