@@ -59,7 +59,7 @@ Johannes hält aktiv ehrlich („bist du sicher?") — das ist Teil des Systems,
 **GitHub:** https://github.com/JohannesLeoB/mykilOS-macOS (privat) — Nachfolger von mykilOS-6
 
 Der Desktop-Ordner `~/Desktop/CLAUDE/` enthält NUR temporäre Worktrees von Claude Code-Sessions.
-Diese sind WEGWERFKOPIEN. Nie dauerhaft darin arbeiten. Immer in den gelben MYKILOS-6-Ordner.
+Diese sind WEGWERFKOPIEN. Nie dauerhaft darin arbeiten. Immer in den kanonischen `mykilOS Mac`-Ordner.
 
 ### Pflichtprüfung vor JEDER Handoff / Startprompt / Anweisung
 
@@ -160,8 +160,10 @@ Notizen, Clockodo, Kontakte, Bilder, Angebote).
 
 ## Wo wir stehen
 
-> **🜂 EINSTIEG: [HYPERBUILD.md](HYPERBUILD.md) — der Brühwürfel. Bei Session-Start
-> ZUERST lesen.** mykilOS 6+ Hyperbuild = die ganze App hochkonzentriert auf einer Seite:
+> **🜂 ARCHIVIERT (2026-07-06 Migration): [HYPERBUILD.md](_archiv_2026-07-06/HYPERBUILD.md) — der Brühwürfel.**
+> Historischer Snapshot (Branch `polish/dampflok`, 270 Tests) — NICHT mehr der aktuelle Stand
+> (heute: `feat/multi-user-login`, 1103 Tests). Nicht mehr als Pflicht-Einstieg lesen. mykilOS 6+
+> Hyperbuild war die ganze App hochkonzentriert auf einer Seite:
 > echter Stand (Branch `polish/dampflok`, 270 Tests, Core-Repair-Strang), Architektur-Skelett,
 > die eine Lektion (Proxy- statt Ziel-Optimierung), „fertig"=Hustadt-Live-Gate, die einzige
 > To-do-Liste (Core Repair A–G, Polish L24–L30, manuelle Aktionen M1–M7), eiserne Regeln.
@@ -477,10 +479,11 @@ in geteilten Logs, nie in Airtable-Tabellen ohne expliziten User-Scope-Filter.
 **Korrektur 2026-07-01 (Doku-Konsolidierung):** Dieser Abschnitt war massiv veraltet
 (stand auf „Version 6.4.0 / Nächste Code-Session: S18", obwohl seither Akt 5,
 Post-Akt-5 1–21, S17/S18/S26, Kalkulations-Port, mykilOS 7 Safe State und der
-komplette mykilOS-8-Rolling-Plan Block A–D gelaufen sind). Aktueller Stand siehe
-[HYPERBUILD.md](HYPERBUILD.md) — das ist seit 2026-06-29 die verbindliche
-Status-Quelle, dieser Abschnitt bleibt als historisches Sprungbrett zu den
-Post-Akt-5-Handoffs stehen, wird aber nicht mehr als "aktueller Stand" gepflegt.
+komplette mykilOS-8-Rolling-Plan Block A–D gelaufen sind). [HYPERBUILD.md](_archiv_2026-07-06/HYPERBUILD.md)
+war bis zur Migration 2026-07-06 die verbindliche Status-Quelle, ist seither archiviert und NICHT
+mehr aktuell (steht auf 270 Tests / `polish/dampflok`). Aktueller Stand: `docs/handoffs/HANDOFF_2026-07-06_MIGRATION_MACOS_V11.md`
++ die Tabelle oben. Dieser Abschnitt bleibt als historisches Sprungbrett zu den Post-Akt-5-Handoffs
+stehen, wird aber nicht mehr als "aktueller Stand" gepflegt.
 
 **✅ Phase A + B abgeschlossen (2026-06-28):**
 - Phase A: IdentityView, Private Area, clearLocalCache, B2-Fix, GRDB-v5 → 192 Tests

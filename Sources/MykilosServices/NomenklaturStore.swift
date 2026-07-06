@@ -47,6 +47,8 @@ public final class NomenklaturStore {
     public private(set) var konnektoren: [OrdnerSlot: OrdnerKonnektor] = [:]
     public private(set) var aktiveSchemaVersion: Int = 1
     public private(set) var authorityMode: NumberAuthorityMode = .local
+    /// Vom Admin editiertes Schema, falls eins gespeichert ist. `nil` → `aktivesSchema()` fällt auf `.v1` zurück.
+    public private(set) var customFolderSchema: FolderSchema?
     /// Projektweise Kostenstellen-Overrides (Projektnummer → Namen).
     public private(set) var kostenstellenOverrides: [String: [Kostenstelle]] = [:]
     public private(set) var saveState: SaveState = .idle
@@ -54,6 +56,7 @@ public final class NomenklaturStore {
     private let db: GRDBDatabase
     private static let schemaVersionKey = "blockC.activeFolderSchemaVersion"
     private static let authorityModeKey = "blockC.numberAuthorityMode"
+    private static let customFolderSchemaKey = "blockC.customFolderSchemaJSON"
 
     public init(db: GRDBDatabase) { self.db = db }
 
@@ -70,6 +73,10 @@ public final class NomenklaturStore {
            let v = Int(row.value) { aktiveSchemaVersion = v }
         if let row = try db.read({ try NomenklaturConfigRow.fetchOne($0, key: Self.authorityModeKey) }),
            let m = NumberAuthorityMode(rawValue: row.value) { authorityMode = m }
+        if let row = try db.read({ try NomenklaturConfigRow.fetchOne($0, key: Self.customFolderSchemaKey) }),
+           let data = row.value.data(using: .utf8) {
+            customFolderSchema = try JSONDecoder().decode(FolderSchema.self, from: data)
+        }
         // Kostenstellen-Overrides
         let ksRows = try db.read { try ProjektKostenstellenRow.fetchAll($0) }
         var overrides: [String: [Kostenstelle]] = [:]
@@ -100,8 +107,45 @@ public final class NomenklaturStore {
     /// Den realen Ordnernamen/-pfad für einen logischen Slot (Re-Wiring-sicher).
     public func konnektor(_ slot: OrdnerSlot) -> OrdnerKonnektor? { konnektoren[slot] }
 
-    /// Das aktive Ordnerschema (heute v1). Re-Schematisierung legt eine neue Version an.
-    public func aktivesSchema() -> FolderSchema { aktiveSchemaVersion == 1 ? .v1 : .v1 }
+    /// Das aktive Ordnerschema — das vom Admin gespeicherte, falls eins existiert, sonst `.v1`.
+    public func aktivesSchema() -> FolderSchema { customFolderSchema ?? .v1 }
+
+    /// Admin-Schema speichern (Ordner-Schema-Editor, Stufe 1 — Domain + Persistenz, noch ohne UI).
+    /// `aktivesSchema()` liefert danach dieses Schema statt `.v1`.
+    public func setzeSchema(_ schema: FolderSchema) throws {
+        let data = try JSONEncoder().encode(schema)
+        guard let json = String(data: data, encoding: .utf8) else {
+            throw PersistenceError.encodeFailed
+        }
+        let ts = Date().timeIntervalSince1970
+        saveState = .saving
+        do {
+            try db.write { dbc in
+                try NomenklaturConfigRow(key: Self.customFolderSchemaKey, value: json, updatedAt: ts).save(dbc)
+                try NomenklaturConfigRow(key: Self.schemaVersionKey, value: String(schema.version), updatedAt: ts).save(dbc)
+            }
+            customFolderSchema = schema
+            aktiveSchemaVersion = schema.version
+            saveState = .saved(Date())
+        } catch {
+            saveState = .failed(error.localizedDescription)
+            throw error
+        }
+    }
+
+    /// Wirft das Admin-Schema weg, `aktivesSchema()` fällt wieder auf `.v1` zurück.
+    public func setzeSchemaAufStandard() throws {
+        saveState = .saving
+        do {
+            try db.write { dbc in _ = try NomenklaturConfigRow.deleteOne(dbc, key: Self.customFolderSchemaKey) }
+            customFolderSchema = nil
+            aktiveSchemaVersion = 1
+            saveState = .saved(Date())
+        } catch {
+            saveState = .failed(error.localizedDescription)
+            throw error
+        }
+    }
 
     // MARK: Kostenstellen (Block C: Default-Liste, Airtable-Quelle sobald Feld da)
 

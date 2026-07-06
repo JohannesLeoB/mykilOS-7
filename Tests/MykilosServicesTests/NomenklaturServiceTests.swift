@@ -213,6 +213,55 @@ struct NomenklaturServiceTests {
         #expect(storeB.konnektoren.count == OrdnerKonnektor.v1Defaults.count)
     }
 
+    // MARK: FolderSchema editierbar (Ordner-Schema-Editor, Stufe 1)
+
+    @Test func aktivesSchemaFaelltOhneAdminSchemaAufV1Zurueck() throws {
+        let db = try GRDBDatabase.inMemory()
+        let store = NomenklaturStore(db: db)
+        try store.load()
+        #expect(store.aktivesSchema() == FolderSchema.v1)
+        #expect(store.customFolderSchema == nil)
+    }
+
+    @Test func adminSchemaUeberlebtNeustartUndWirdZumAktivenSchema() throws {
+        let dir = tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("db.sqlite")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let eigenesSchema = FolderSchema(
+            version: 2,
+            rootTemplate: "<JJJJ_NNN_Kunde>",
+            children: [FolderNode("01 EIGEN", children: [FolderNode("Unterordner")])],
+            rootDateien: []
+        )
+
+        let dbA = try GRDBDatabase(url: url)
+        let storeA = NomenklaturStore(db: dbA)
+        try storeA.load()
+        try storeA.setzeSchema(eigenesSchema)
+        #expect(storeA.aktivesSchema() == eigenesSchema)
+        #expect(storeA.aktiveSchemaVersion == 2)
+
+        let dbB = try GRDBDatabase(url: url)
+        let storeB = NomenklaturStore(db: dbB)
+        try storeB.load()   // neue Instanz, echter Neustart
+        #expect(storeB.aktivesSchema() == eigenesSchema)
+        #expect(storeB.customFolderSchema == eigenesSchema)
+        #expect(storeB.aktiveSchemaVersion == 2)
+    }
+
+    @Test func setzeSchemaAufStandardWirftAdminSchemaWegUndFaelltAufV1Zurueck() throws {
+        let db = try GRDBDatabase.inMemory()
+        let store = NomenklaturStore(db: db)
+        try store.load()
+        try store.setzeSchema(FolderSchema(version: 3, rootTemplate: "x", children: [], rootDateien: []))
+        #expect(store.aktivesSchema().version == 3)
+
+        try store.setzeSchemaAufStandard()
+        #expect(store.aktivesSchema() == FolderSchema.v1)
+        #expect(store.customFolderSchema == nil)
+        #expect(store.aktiveSchemaVersion == 1)
+    }
+
     // MARK: Registry-Identitäts-Lookups
 
     @Test func registryLoestKdnrUndProjektnrUndTokenAuf() throws {
