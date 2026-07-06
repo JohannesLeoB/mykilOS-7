@@ -53,6 +53,13 @@ struct SettingsView: View {
     @State private var diagnosticsCopied = false
     @State private var profileName: String = ""
     @State private var profileRole: String = ""
+    // v28: persönliche Profil-Angaben (Geburtsdatum optional via Toggle, Rest Text).
+    // Default-Geburtsdatum 1990-01-01 als Picker-Startwert, bis der Nutzer eins setzt.
+    @State private var profileBirthDate: Date = Date(timeIntervalSince1970: 631_152_000)
+    @State private var profileHasBirthDate: Bool = false
+    @State private var profilePhone: String = ""
+    @State private var profileDepartment: String = ""
+    @State private var profileBio: String = ""
     @State private var profileSaved = false
     @State private var clockodoUserIDInput: String = ""
     @State private var clientID: String = ""
@@ -130,6 +137,11 @@ struct SettingsView: View {
                 profileName = p.displayName
                 profileRole = p.role
                 clockodoUserIDInput = p.clockodoUserID ?? ""
+                profileHasBirthDate = p.birthDate != nil
+                if let bd = p.birthDate { profileBirthDate = bd }
+                profilePhone = p.phone ?? ""
+                profileDepartment = p.department ?? ""
+                profileBio = p.bio ?? ""
             }
             clientID = (try? appState.googleAuth.storedClientID()) ?? ""
             clientSecret = (try? appState.googleAuth.storedClientSecret()) ?? ""
@@ -313,6 +325,26 @@ struct SettingsView: View {
             TextField("Rolle (z. B. Design & Projektleitung)", text: $profileRole)
                 .textFieldStyle(.roundedBorder)
                 .font(.mykMono(12))
+            // v28: persönliche Angaben — „richtiges" Profil. Rein lokal.
+            TextField("Telefon", text: $profilePhone)
+                .textFieldStyle(.roundedBorder)
+                .font(.mykMono(12))
+            TextField("Abteilung / Bereich", text: $profileDepartment)
+                .textFieldStyle(.roundedBorder)
+                .font(.mykMono(12))
+            TextField("Über mich", text: $profileBio, axis: .vertical)
+                .lineLimit(2...4)
+                .textFieldStyle(.roundedBorder)
+                .font(.mykMono(12))
+            Toggle(isOn: $profileHasBirthDate) {
+                Text("Geburtsdatum").font(.mykMono(12)).foregroundStyle(MykColor.ink.color)
+            }
+            .toggleStyle(.switch)
+            if profileHasBirthDate {
+                DatePicker("", selection: $profileBirthDate, in: ...Date(), displayedComponents: .date)
+                    .labelsHidden()
+                    .datePickerStyle(.field)
+            }
             HStack(spacing: MykSpace.s4) {
                 Button("Speichern") { saveProfile() }
                     .disabled(!profileDirty)
@@ -320,6 +352,7 @@ struct SettingsView: View {
                     Button("Abbrechen") {
                         profileName = storedProfileName
                         profileRole = storedProfileRole
+                        resetPersonalProfileFields()
                     }
                     .buttonStyle(.plain)
                     .font(.mykSmall)
@@ -444,10 +477,35 @@ struct SettingsView: View {
 
     // Dirty-State fürs Profil: Speichern nur aktiv bei echter Änderung, „Abbrechen"
     // stellt den gespeicherten Stand wieder her (kein stiller Verlust bei Kategoriewechsel).
-    private var storedProfileName: String { appState.profile.profile?.displayName ?? "" }
-    private var storedProfileRole: String { appState.profile.profile?.role ?? "" }
+    private var storedProfile: UserProfile? { appState.profile.profile }
+    private var storedProfileName: String { storedProfile?.displayName ?? "" }
+    private var storedProfileRole: String { storedProfile?.role ?? "" }
+    // v28: Geburtsdatum-Dirty separat — Toggle-Wechsel ODER geändertes Datum
+    // (Sekunden-Toleranz gegen Sub-Sekunden-Rauschen beim Picker-Roundtrip).
+    private var birthDateDirty: Bool {
+        let storedHas = storedProfile?.birthDate != nil
+        if profileHasBirthDate != storedHas { return true }
+        if profileHasBirthDate, let stored = storedProfile?.birthDate {
+            return abs(profileBirthDate.timeIntervalSince1970 - stored.timeIntervalSince1970) > 1
+        }
+        return false
+    }
     private var profileDirty: Bool {
-        profileName != storedProfileName || profileRole != storedProfileRole
+        profileName != storedProfileName
+            || profileRole != storedProfileRole
+            || profilePhone != (storedProfile?.phone ?? "")
+            || profileDepartment != (storedProfile?.department ?? "")
+            || profileBio != (storedProfile?.bio ?? "")
+            || birthDateDirty
+    }
+
+    // v28: persönliche Felder auf den gespeicherten Stand zurücksetzen („Abbrechen").
+    private func resetPersonalProfileFields() {
+        profilePhone = storedProfile?.phone ?? ""
+        profileDepartment = storedProfile?.department ?? ""
+        profileBio = storedProfile?.bio ?? ""
+        profileHasBirthDate = storedProfile?.birthDate != nil
+        if let bd = storedProfile?.birthDate { profileBirthDate = bd }
     }
 
     private func saveProfile() {
@@ -456,13 +514,18 @@ struct SettingsView: View {
         do {
             // V10 Folge-Block A: userID unverändert mitführen — sonst würde
             // jedes Settings-Save die stabile Keychain-userID auf nil zurücksetzen.
+            // v28: leere Textfelder als nil speichern (kein "" statt echter Angabe).
             try appState.profile.save(UserProfile(
                 displayName: profileName,
                 role: profileRole,
                 updatedAt: Date(),
                 clockodoUserID: clockodoUserIDInput.isEmpty ? nil : clockodoUserIDInput,
                 googleDomain: existing?.googleDomain ?? appState.currentGoogleUser?.domain,
-                userID: existing?.userID
+                userID: existing?.userID,
+                birthDate: profileHasBirthDate ? profileBirthDate : nil,
+                phone: profilePhone.isEmpty ? nil : profilePhone,
+                department: profileDepartment.isEmpty ? nil : profileDepartment,
+                bio: profileBio.isEmpty ? nil : profileBio
             ))
             profileSaved = true
         } catch {}

@@ -21,6 +21,42 @@ struct ProfileStoreTests {
         #expect(storeB.isEmpty == false)
     }
 
+    // v28: persönliche Profil-Angaben (Geburtsdatum/Telefon/Abteilung/Bio)
+    // überleben einen Neustart bitgenau (Cold-Start-Pflicht für neue Felder).
+    @Test func persoenlicheAngabenUeberlebenNeustart() throws {
+        let db = try GRDBDatabase.inMemory()
+        let profile = UserProfile(
+            displayName: "Johannes", role: "Design & Projektleitung",
+            updatedAt: Date(timeIntervalSince1970: 1_800_000_000),
+            birthDate: Date(timeIntervalSince1970: 631_152_000),   // 1990-01-01
+            phone: "+49 170 1234567", department: "Studio", bio: "Tischler & Produktdesigner")
+
+        let storeA = ProfileStore(db: db)
+        try storeA.save(profile)
+
+        let storeB = ProfileStore(db: db)
+        try storeB.load()
+        #expect(storeB.profile?.birthDate == Date(timeIntervalSince1970: 631_152_000))
+        #expect(storeB.profile?.phone == "+49 170 1234567")
+        #expect(storeB.profile?.department == "Studio")
+        #expect(storeB.profile?.bio == "Tischler & Produktdesigner")
+    }
+
+    // v28: fehlende persönliche Angaben bleiben nil (kein "" statt echter Leere) —
+    // Bestandsprofile ohne die Spalten decodieren additiv als nil.
+    @Test func fehlendePersoenlicheAngabenBleibenNil() throws {
+        let db = try GRDBDatabase.inMemory()
+        let store = ProfileStore(db: db)
+        try store.save(UserProfile(displayName: "Nur Name", role: "x",
+                                    updatedAt: Date(timeIntervalSince1970: 1_800_000_000)))
+        let reloaded = ProfileStore(db: db)
+        try reloaded.load()
+        #expect(reloaded.profile?.birthDate == nil)
+        #expect(reloaded.profile?.phone == nil)
+        #expect(reloaded.profile?.department == nil)
+        #expect(reloaded.profile?.bio == nil)
+    }
+
     @Test func leereDatenbankLiefertNil() throws {
         let db = try GRDBDatabase.inMemory()
         let store = ProfileStore(db: db)

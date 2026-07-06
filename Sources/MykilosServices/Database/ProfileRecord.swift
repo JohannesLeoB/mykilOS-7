@@ -19,6 +19,13 @@ struct ProfileRecord: Codable, FetchableRecord, PersistableRecord {
     // V10 Folge-Block A, Vorab (v22_user_identity): additiv, alte Zeilen
     // haben NULL — AppState.ensureUserID() erzeugt + speichert einmalig nach.
     var userID: String?
+    // v28 (2026-07-06): persönliche Profil-Angaben. Additiv, nullable —
+    // Bestandszeilen haben NULL. birthDate als timeIntervalSince1970 (Double?),
+    // konsistent mit updatedAt.
+    var birthDate: Double?
+    var phone: String?
+    var department: String?
+    var bio: String?
 
     init(from profile: UserProfile) {
         self.id = Self.localID
@@ -28,6 +35,10 @@ struct ProfileRecord: Codable, FetchableRecord, PersistableRecord {
         self.clockodoUserID = profile.clockodoUserID
         self.googleDomain = profile.googleDomain
         self.userID = profile.userID
+        self.birthDate = profile.birthDate?.timeIntervalSince1970
+        self.phone = profile.phone
+        self.department = profile.department
+        self.bio = profile.bio
     }
 
     /// Reine Value-Kopie mit neuer userID — vermeidet `var`-Closure-Captures
@@ -45,7 +56,11 @@ struct ProfileRecord: Codable, FetchableRecord, PersistableRecord {
             updatedAt: Date(timeIntervalSince1970: updatedAt),
             clockodoUserID: clockodoUserID,
             googleDomain: googleDomain,
-            userID: userID
+            userID: userID,
+            birthDate: birthDate.map { Date(timeIntervalSince1970: $0) },
+            phone: phone,
+            department: department,
+            bio: bio
         )
     }
 }

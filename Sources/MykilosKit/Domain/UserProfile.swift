@@ -17,6 +17,13 @@ public struct UserProfile: Equatable, Sendable, Codable {
     // erzeugt und danach nie mehr geändert — siehe AppState.ensureUserID().
     // Optional nur wegen additivem Rollout (Bestandsprofile ohne diese Spalte).
     public var userID: String?
+    // Persönliche Profil-Angaben (v28, 2026-07-06 — „richtiges schönes Nutzerprofil").
+    // Alle optional + additiv: Bestandsprofile ohne diese Spalten decodieren als nil.
+    // Rein lokal, nie extern geteilt (Datenschutz-Sektion steuert Sichtbarkeit).
+    public var birthDate: Date?
+    public var phone: String?
+    public var department: String?
+    public var bio: String?
 
     public init(
         displayName: String,
@@ -24,7 +31,11 @@ public struct UserProfile: Equatable, Sendable, Codable {
         updatedAt: Date = Date(),
         clockodoUserID: String? = nil,
         googleDomain: String? = nil,
-        userID: String? = nil
+        userID: String? = nil,
+        birthDate: Date? = nil,
+        phone: String? = nil,
+        department: String? = nil,
+        bio: String? = nil
     ) {
         self.displayName = displayName
         self.role = role
@@ -32,6 +43,10 @@ public struct UserProfile: Equatable, Sendable, Codable {
         self.clockodoUserID = clockodoUserID
         self.googleDomain = googleDomain
         self.userID = userID
+        self.birthDate = birthDate
+        self.phone = phone
+        self.department = department
+        self.bio = bio
     }
 
     public static let empty = UserProfile(displayName: "", role: "", updatedAt: .distantPast)

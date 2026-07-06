@@ -534,6 +534,19 @@ public final class GRDBDatabase: Sendable {
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_timeSegments_userID ON timeSegments(userID)")
         }
 
+        // v28_profile_personal (2026-07-06) — „richtiges schönes Nutzerprofil":
+        // persönliche Angaben additiv an userProfile. Alle nullable — Bestandszeilen
+        // (id="local") behalten NULL, kein Datenverlust. birthDate als Double
+        // (timeIntervalSince1970), konsistent mit updatedAt.
+        migrator.registerMigration("v28_profile_personal") { db in
+            try db.alter(table: "userProfile") { t in
+                t.add(column: "birthDate", .double)
+                t.add(column: "phone", .text)
+                t.add(column: "department", .text)
+                t.add(column: "bio", .text)
+            }
+        }
+
         return migrator
     }
 
