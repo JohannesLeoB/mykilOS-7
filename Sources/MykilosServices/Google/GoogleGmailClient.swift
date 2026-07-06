@@ -144,10 +144,30 @@ public protocol GoogleGmailWriting: Sendable {
     func sendMessage(_ draft: EmailDraft) async throws
 }
 
+// MARK: - GoogleGmailLabelModifying — Nachrichten-Aktionen (gelesen/Stern/Archiv/Papierkorb)
+// Getrennt von GoogleGmailWriting (Entwurf/Versand), damit dessen bestehende Fakes unberührt
+// bleiben. Braucht den gmail.modify-Scope (Re-Consent) — bis dahin liefert der App-Layer
+// .permissionRequired, gleiches Muster wie drive.file/contacts.
+public protocol GoogleGmailLabelModifying: Sendable {
+    /// Fügt Labels hinzu / entfernt Labels (users.messages.modify). Für gelesen/ungelesen
+    /// (UNREAD-Label entfernen/setzen), Stern (STARRED), Archiv (INBOX entfernen).
+    func modifyLabels(messageID: String, add: [String], remove: [String]) async throws
+    /// Verschiebt eine Nachricht in den Papierkorb (users.messages.trash) — REVERSIBEL
+    /// (Gmail hält Trash 30 Tage), NIE permanentes Löschen (Kein-Datenverlust-Regel).
+    func trashMessage(messageID: String) async throws
+}
+
+// MARK: - Gmail-Label-Konstanten (Schaltschrank-artig, keine Stringliterale verstreut)
+public enum GmailSystemLabel {
+    public static let unread = "UNREAD"
+    public static let starred = "STARRED"
+    public static let inbox = "INBOX"
+}
+
 // MARK: - GoogleGmailClient
 // Liest E-Mails readonly über Gmail API v1. Scope gmail.readonly ist bereits
 // in GoogleOAuthScope.readOnlyDefaults enthalten.
-public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting {
+public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting, GoogleGmailLabelModifying {
     private let tokenProvider: GoogleAccessTokenProviding
     private let session: URLSession
     private let baseURL = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
@@ -301,7 +321,58 @@ public struct GoogleGmailClient: GoogleGmailFetching, GoogleGmailWriting {
         guard (200...299).contains(http.statusCode) else { throw GoogleGmailError.httpError(http.statusCode) }
     }
 
+    // MARK: - Nachrichten-Aktionen (gelesen/Stern/Archiv/Papierkorb)
+
+    public func modifyLabels(messageID: String, add: [String] = [], remove: [String] = []) async throws {
+        guard let accessToken = try? await tokenProvider.validAccessToken() else {
+            throw GoogleGmailError.notConnected
+        }
+        guard let url = Self.buildModifyURL(messageID: messageID, baseURL: baseURL) else {
+            throw GoogleGmailError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: Self.buildModifyBody(add: add, remove: remove))
+
+        let (_, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw GoogleGmailError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw GoogleGmailError.httpError(http.statusCode) }
+    }
+
+    public func trashMessage(messageID: String) async throws {
+        guard let accessToken = try? await tokenProvider.validAccessToken() else {
+            throw GoogleGmailError.notConnected
+        }
+        guard let url = Self.buildTrashURL(messageID: messageID, baseURL: baseURL) else {
+            throw GoogleGmailError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        let (_, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw GoogleGmailError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw GoogleGmailError.httpError(http.statusCode) }
+    }
+
     // MARK: - Reine, testbare Bausteine
+
+    static func buildModifyURL(messageID: String, baseURL: String) -> URL? {
+        URL(string: "\(baseURL)/\(messageID)/modify")
+    }
+
+    static func buildTrashURL(messageID: String, baseURL: String) -> URL? {
+        URL(string: "\(baseURL)/\(messageID)/trash")
+    }
+
+    static func buildModifyBody(add: [String], remove: [String]) -> [String: [String]] {
+        var body: [String: [String]] = [:]
+        if add.isEmpty == false { body["addLabelIds"] = add }
+        if remove.isEmpty == false { body["removeLabelIds"] = remove }
+        return body
+    }
 
     /// RFC822-MIME für einen Entwurf. Subject als RFC2047-Encoded-Word bei Nicht-ASCII,
     /// Body base64-transfer-encoded (UTF-8). Deterministisch + testbar.

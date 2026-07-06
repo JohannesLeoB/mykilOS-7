@@ -6,7 +6,8 @@ import Foundation
 public struct AuditEntry: Codable, Identifiable, Sendable {
     public enum Action: String, Codable, Sendable {
         case offerImported, draftCreated, draftSent, projectLinked, noteUpdated, estimateAdjusted, calibrationPromoted, contactCreated, driveFileUploaded,
-             warenkorbGesendet   // Webshop Phase 1: Warenkorb-Version in Airtable gespeichert (append-only)
+             warenkorbGesendet,   // Webshop Phase 1: Warenkorb-Version in Airtable gespeichert (append-only)
+             mailAktionAusgefuehrt   // gelesen/ungelesen, Stern, Archiv, Papierkorb (Gmail messages.modify/trash)
     }
     public let id: UUID
     public let timestamp: Date

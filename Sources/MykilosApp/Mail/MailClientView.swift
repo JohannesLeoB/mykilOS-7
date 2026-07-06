@@ -282,11 +282,16 @@ struct MailClientView: View {
                         ForEach(store.messages) { msg in
                             MailListRow(
                                 message: msg,
-                                isSelected: store.selectedID == msg.id
-                            ) {
-                                store.select(msg)
-                                Task { await store.loadBody(for: msg) }
-                            }
+                                isSelected: store.selectedID == msg.id,
+                                onTap: {
+                                    store.select(msg)
+                                    Task { await store.loadBody(for: msg) }
+                                },
+                                onToggleGelesen: { Task { await toggleGelesen(msg) } },
+                                onToggleStern: { Task { await toggleStern(msg) } },
+                                onArchivieren: { Task { await archiviere(msg) } },
+                                onPapierkorb: { Task { await papierkorb(msg) } }
+                            )
                             Divider().overlay(MykColor.line.color.opacity(0.5))
                         }
                     }
@@ -301,6 +306,44 @@ struct MailClientView: View {
             .foregroundStyle(MykColor.muted.color)
             .padding(MykSpace.s6)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    // MARK: - Nachrichten-Aktionen (gelesen/Stern/Archiv/Papierkorb)
+    // Optimistisches lokales Update nach Erfolg — kein Reload. permissionRequired/Fehler
+    // bleiben still (kein Toast-System hier); das nächste Re-Consent behebt permissionRequired.
+
+    private func toggleGelesen(_ message: GoogleGmailMessage) async {
+        let istUngelesen = message.labels.contains(GmailSystemLabel.unread)
+        let ergebnis = await appState.setzeGelesen(message.id, gelesen: istUngelesen)
+        guard ergebnis == .ausgefuehrt else { return }
+        if istUngelesen {
+            store.aktualisiereLabelsLokal(message.id, add: [], remove: [GmailSystemLabel.unread])
+        } else {
+            store.aktualisiereLabelsLokal(message.id, add: [GmailSystemLabel.unread], remove: [])
+        }
+    }
+
+    private func toggleStern(_ message: GoogleGmailMessage) async {
+        let istMarkiert = message.labels.contains(GmailSystemLabel.starred)
+        let ergebnis = await appState.setzeStern(message.id, markiert: !istMarkiert)
+        guard ergebnis == .ausgefuehrt else { return }
+        if istMarkiert {
+            store.aktualisiereLabelsLokal(message.id, add: [], remove: [GmailSystemLabel.starred])
+        } else {
+            store.aktualisiereLabelsLokal(message.id, add: [GmailSystemLabel.starred], remove: [])
+        }
+    }
+
+    private func archiviere(_ message: GoogleGmailMessage) async {
+        let ergebnis = await appState.archiviereMail(message.id)
+        guard ergebnis == .ausgefuehrt else { return }
+        store.entferneLokal(message.id)
+    }
+
+    private func papierkorb(_ message: GoogleGmailMessage) async {
+        let ergebnis = await appState.verschiebeInPapierkorb(message.id)
+        guard ergebnis == .ausgefuehrt else { return }
+        store.entferneLokal(message.id)
     }
 
     // MARK: - Rechte Spalte: Volltext
@@ -387,11 +430,21 @@ private struct MailListRow: View {
     let message: GoogleGmailMessage
     let isSelected: Bool
     let onTap: () -> Void
+    // Nachrichten-Aktionen (Bugfix/Feature 2026-07-06/07 — fehlten komplett).
+    let onToggleGelesen: () -> Void
+    let onToggleStern: () -> Void
+    let onArchivieren: () -> Void
+    let onPapierkorb: () -> Void
+
+    @State private var isHovering = false
+
+    private var istUngelesen: Bool { message.labels.contains(GmailSystemLabel.unread) }
+    private var istMarkiert: Bool { message.labels.contains(GmailSystemLabel.starred) }
 
     var body: some View {
         Button(action: onTap) {
             HStack(alignment: .top, spacing: MykSpace.s4) {
-                Image(systemName: "envelope")
+                Image(systemName: istUngelesen ? "envelope.fill" : "envelope")
                     .font(.mykCaption)
                     .foregroundStyle(MykColor.personal.color)
                     .frame(width: 18)
@@ -399,11 +452,13 @@ private struct MailListRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
                         Text(message.from)
-                            .font(.mykSmall)
+                            .font(istUngelesen ? .mykBody : .mykSmall)
                             .foregroundStyle(MykColor.ink.color)
                             .lineLimit(1)
                         Spacer()
-                        if let date = message.receivedAt {
+                        if isHovering {
+                            aktionsLeiste
+                        } else if let date = message.receivedAt {
                             Text(date.formatted(.relative(presentation: .named)))
                                 .font(.mykMono(9))
                                 .foregroundStyle(MykColor.faint.color)
@@ -432,6 +487,37 @@ private struct MailListRow: View {
             .padding(.vertical, MykSpace.s4)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(isSelected ? MykColor.personal.color.opacity(0.1) : Color.clear)
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovering = $0 }
+    }
+
+    private var aktionsLeiste: some View {
+        HStack(spacing: MykSpace.s2) {
+            aktionsIcon(istMarkiert ? "star.fill" : "star", tint: istMarkiert ? MykColor.tasks.color : MykColor.muted.color) {
+                onToggleStern()
+            }
+            .help(istMarkiert ? "Stern entfernen" : "Stern setzen")
+            aktionsIcon(istUngelesen ? "envelope.open" : "envelope.badge", tint: MykColor.muted.color) {
+                onToggleGelesen()
+            }
+            .help(istUngelesen ? "Als gelesen markieren" : "Als ungelesen markieren")
+            aktionsIcon("archivebox", tint: MykColor.muted.color) {
+                onArchivieren()
+            }
+            .help("Archivieren")
+            aktionsIcon("trash", tint: MykColor.critical.color) {
+                onPapierkorb()
+            }
+            .help("In Papierkorb verschieben")
+        }
+    }
+
+    private func aktionsIcon(_ systemName: String, tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.mykMono(10))
+                .foregroundStyle(tint)
         }
         .buttonStyle(.plain)
     }
@@ -700,6 +786,33 @@ final class MailClientStore {
         selectedID = message.id
         selectedMessage = message
         selectedBody = ""
+    }
+
+    // MARK: Nachrichten-Aktionen (gelesen/Stern/Archiv/Papierkorb) — optimistisches
+    // lokales Update nach erfolgreicher API-Antwort, kein Reload nötig.
+
+    /// Aktualisiert die Labels einer Nachricht lokal (gelesen/ungelesen, Stern).
+    func aktualisiereLabelsLokal(_ nachrichtID: String, add: [String], remove: [String]) {
+        guard let index = messages.firstIndex(where: { $0.id == nachrichtID }) else { return }
+        var labels = Set(messages[index].labels)
+        labels.formUnion(add)
+        labels.subtract(remove)
+        messages[index].labels = Array(labels)
+        if selectedID == nachrichtID {
+            selectedMessage?.labels = Array(labels)
+        }
+    }
+
+    /// Entfernt eine Nachricht lokal aus der aktuell angezeigten Liste (Archiv/Papierkorb —
+    /// sie gehört danach nicht mehr in den gerade offenen Ordner).
+    func entferneLokal(_ nachrichtID: String) {
+        messages.removeAll { $0.id == nachrichtID }
+        if selectedID == nachrichtID {
+            selectedID = nil
+            selectedMessage = nil
+            selectedBody = ""
+        }
+        if messages.isEmpty { phase = .empty }
     }
 
     func loadBody(for message: GoogleGmailMessage) async {

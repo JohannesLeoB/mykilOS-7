@@ -7,6 +7,39 @@ struct GoogleGmailClientTests {
 
     private let baseURL = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
 
+    // MARK: - Nachrichten-Aktionen (gelesen/Stern/Archiv/Papierkorb)
+
+    @Test func buildModifyURLZeigtAufMessageModify() {
+        let url = GoogleGmailClient.buildModifyURL(messageID: "abc123", baseURL: baseURL)
+        #expect(url?.absoluteString == "\(baseURL)/abc123/modify")
+    }
+
+    @Test func buildTrashURLZeigtAufMessageTrash() {
+        let url = GoogleGmailClient.buildTrashURL(messageID: "abc123", baseURL: baseURL)
+        #expect(url?.absoluteString == "\(baseURL)/abc123/trash")
+    }
+
+    @Test func buildModifyBodyMitNurHinzufuegen() {
+        let body = GoogleGmailClient.buildModifyBody(add: [GmailSystemLabel.starred], remove: [])
+        #expect(body["addLabelIds"] == [GmailSystemLabel.starred])
+        #expect(body["removeLabelIds"] == nil)
+    }
+
+    @Test func buildModifyBodyMitNurEntfernen() {
+        let body = GoogleGmailClient.buildModifyBody(add: [], remove: [GmailSystemLabel.unread])
+        #expect(body["removeLabelIds"] == [GmailSystemLabel.unread])
+        #expect(body["addLabelIds"] == nil)
+    }
+
+    @Test func buildModifyBodyOhneLabelsIstLeer() {
+        let body = GoogleGmailClient.buildModifyBody(add: [], remove: [])
+        #expect(body.isEmpty)
+    }
+
+    @Test func mailAktionTimelineLabelIstGesetzt() {
+        #expect(AuditEntry.Action.mailAktionAusgefuehrt.timelineLabel == "Mail-Aktion")
+    }
+
     // MARK: - S14: Entwurf-MIME / Header / base64url
 
     @Test func buildMIMEEnthaeltHeaderUndBase64Body() {

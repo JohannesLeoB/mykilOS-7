@@ -41,6 +41,7 @@ public extension AuditEntry.Action {
         case .contactCreated:     "Kontakt angelegt"
         case .driveFileUploaded:  "Datei hochgeladen"
         case .warenkorbGesendet:  "Warenkorb gesendet"
+        case .mailAktionAusgefuehrt: "Mail-Aktion"
         }
     }
 }

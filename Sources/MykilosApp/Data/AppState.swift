@@ -863,6 +863,71 @@ public final class AppState {
         }
     }
 
+    // MARK: - Nachrichten-Aktionen (Bugfix/Feature 2026-07-06/07: gelesen/Stern/Archiv/Papierkorb
+    // fehlten komplett in MailClientView). Braucht gmail.modify (Re-Consent) — bis dahin
+    // .permissionRequired, gleiches Muster wie drive.file/contacts.
+    public enum MailActionOutcome: Equatable, Sendable {
+        case ausgefuehrt
+        case permissionRequired
+        case fehlgeschlagen(String)
+    }
+
+    public func setzeGelesen(_ nachrichtID: String, gelesen: Bool) async -> MailActionOutcome {
+        await fuehreMailAktionAus(
+            summary: gelesen ? "Als gelesen markiert" : "Als ungelesen markiert"
+        ) {
+            if gelesen {
+                try await GoogleGmailClient().modifyLabels(messageID: nachrichtID, add: [], remove: [GmailSystemLabel.unread])
+            } else {
+                try await GoogleGmailClient().modifyLabels(messageID: nachrichtID, add: [GmailSystemLabel.unread], remove: [])
+            }
+        }
+    }
+
+    public func setzeStern(_ nachrichtID: String, markiert: Bool) async -> MailActionOutcome {
+        await fuehreMailAktionAus(
+            summary: markiert ? "Stern gesetzt" : "Stern entfernt"
+        ) {
+            if markiert {
+                try await GoogleGmailClient().modifyLabels(messageID: nachrichtID, add: [GmailSystemLabel.starred], remove: [])
+            } else {
+                try await GoogleGmailClient().modifyLabels(messageID: nachrichtID, add: [], remove: [GmailSystemLabel.starred])
+            }
+        }
+    }
+
+    public func archiviereMail(_ nachrichtID: String) async -> MailActionOutcome {
+        await fuehreMailAktionAus(summary: "Archiviert") {
+            try await GoogleGmailClient().modifyLabels(messageID: nachrichtID, add: [], remove: [GmailSystemLabel.inbox])
+        }
+    }
+
+    /// In den Papierkorb — REVERSIBEL (Gmail hält Trash 30 Tage), kein permanentes Löschen.
+    public func verschiebeInPapierkorb(_ nachrichtID: String) async -> MailActionOutcome {
+        await fuehreMailAktionAus(summary: "In Papierkorb verschoben") {
+            try await GoogleGmailClient().trashMessage(messageID: nachrichtID)
+        }
+    }
+
+    private func fuehreMailAktionAus(summary: String, _ aktion: () async throws -> Void) async -> MailActionOutcome {
+        do {
+            try await aktion()
+        } catch GoogleGmailError.notConnected {
+            return .permissionRequired
+        } catch GoogleGmailError.httpError(403) {
+            return .permissionRequired
+        } catch {
+            return .fehlgeschlagen(error.localizedDescription)
+        }
+        do {
+            try audit.append(AuditEntry(actorUserID: actorUserID, projectID: "-",
+                                        action: .mailAktionAusgefuehrt, summary: summary))
+        } catch {
+            MykLog.contacts.error("Audit für Mail-Aktion fehlgeschlagen: \(String(describing: error), privacy: .public)")
+        }
+        return .ausgefuehrt
+    }
+
     // feat/assistant-file-drop: legt einen Mail-Entwurf mit Dateianhang an.
     // Wird der AssistantChatView als `onAttachFileToMailDraft` injiziert.
     // Versendet NIE — nur Gmail-Entwurf anlegen.

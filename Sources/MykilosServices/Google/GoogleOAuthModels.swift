@@ -15,6 +15,12 @@ public enum GoogleOAuthScope: String, CaseIterable, Codable, Sendable {
     // Schreibender Gmail-Scope (S14): nötig für drafts.create. NUR Entwürfe — Senden
     // bleibt NO-GO (wir rufen die Send-API nie auf). Erfordert Re-Consent (M2).
     case gmailCompose           = "https://www.googleapis.com/auth/gmail.compose"
+    // Schreibender Gmail-Scope (Bugfix/Feature 2026-07-06/07, "Nachrichten-Aktionen fehlen"):
+    // nötig für messages.modify (gelesen/ungelesen, Stern, Archiv) + messages.trash
+    // (Papierkorb — REVERSIBEL, kein permanentes Löschen). gmail.compose deckt das NICHT ab
+    // (nur Entwurf/Versand). Erfordert Re-Consent (Trennen→Verbinden), bis dahin
+    // .permissionRequired wie bei allen anderen scope-gated Features.
+    case gmailModify            = "https://www.googleapis.com/auth/gmail.modify"
     case contactsReadonly       = "https://www.googleapis.com/auth/contacts.readonly"
     // Schreibender Kontakt-Scope (S9): nötig für people:createContact. Schließt
     // contacts.readonly ein, ist aber ein eigener Scope → erfordert Re-Consent (M2).
@@ -38,7 +44,7 @@ public enum GoogleOAuthScope: String, CaseIterable, Codable, Sendable {
         // drive.file: Schreibrechte NUR für app-eigene Dateien (Datei-Drop → Drive ablegen).
         // Erfordert Re-Consent (Trennen→Verbinden) — Johannes hat Schreibzugriff freigegeben.
         .driveFile,
-        .calendarEventsReadonly, .gmailReadonly, .gmailCompose,
+        .calendarEventsReadonly, .gmailReadonly, .gmailCompose, .gmailModify,
         // contacts (Schreiben, S9) ersetzt contacts.readonly — schließt Lesen ein.
         // Erfordert einmaliges Re-Consent (M2). Lesen funktioniert weiter darüber.
         .contacts, .directoryReadonly,
