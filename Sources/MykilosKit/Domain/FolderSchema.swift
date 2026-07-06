@@ -5,11 +5,16 @@ import Foundation
 // nicht hartkodierte Strings (HANDOFF_PROVISIONING_NOMENKLATUR §3). Provisioning (Block D)
 // liest das aktive Schema; Re-Schematisierung = neue Version anlegen, Konnektoren neu mappen.
 public struct FolderNode: Codable, Hashable, Sendable, Identifiable {
-    public var id: String { name }
+    // Stabile ID, UNABHÄNGIG vom Namen (Namen sind Referenzen, keine Primärschlüssel —
+    // CLAUDE.md). Wichtig für den Admin-Editor: bindet man ein TextField direkt an `name`,
+    // würde eine ID = name bei JEDEM Tastendruck die SwiftUI-Identität wechseln und dem
+    // Feld den Fokus rauben.
+    public let id: UUID
     public var name: String
     public var children: [FolderNode]
 
-    public init(_ name: String, children: [FolderNode] = []) {
+    public init(id: UUID = UUID(), _ name: String, children: [FolderNode] = []) {
+        self.id = id
         self.name = name
         self.children = children
     }
