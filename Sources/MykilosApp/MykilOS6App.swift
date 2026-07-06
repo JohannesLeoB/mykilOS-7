@@ -237,7 +237,10 @@ struct ContentView: View {
     // Mini-Mode-Controller (schwebendes Panel). Injiziert von der App-Wurzel, damit er die
     // Boot-Anbindung teilt. Klick-Ziele im Rail routen über onSelectModule zurück hierher.
     let miniMode: MiniModeController
-    @State private var module: AppModule = .today
+    // v28: Start-Ansicht aus den Einstellungen (ui.startView). Default .today.
+    // Der Ausdruck läuft beim Aufbau der Root-View — also genau einmal beim Start.
+    @State private var module: AppModule =
+        AppModule(rawValue: UserDefaults.standard.string(forKey: "ui.startView") ?? "") ?? .today
     // Settings-Sidebar-Modus: gewählte Kategorie + letztes Nicht-Settings-Modul (Rückkehr).
     @State private var settingsCategory: SettingsCategory = .profil
     @State private var lastModule: AppModule = .today

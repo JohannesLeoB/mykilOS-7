@@ -229,12 +229,21 @@ struct SettingsView: View {
     // in MykilOS6App. Nicht mehr stur nach System.
     @AppStorage("ui.appearance") private var appearanceRaw = AppAppearance.auto.rawValue
     @AppStorage("ui.rainbowMode") private var rainbowMode = false
+    // v28: welche Seite mykilOS direkt nach dem Start zeigt (MykilOS6App liest
+    // denselben Key beim Aufbau der Root-View). settings ist bewusst kein Start-Ziel.
+    @AppStorage("ui.startView") private var startViewRaw = AppModule.today.rawValue
+
+    // Module, die als Start-Ansicht sinnvoll sind (ohne Einstellungen selbst).
+    private var startableModules: [AppModule] { [.today, .projects, .assistant, .kataloge] }
 
     private var darstellungSection: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
-            Text("Darstellung")
+            Text("Darstellung & Fenster")
                 .font(.mykHeadline)
                 .foregroundStyle(MykColor.ink.color)
+            Text("ERSCHEINUNGSBILD")
+                .font(.mykMono(10)).tracking(1.5)
+                .foregroundStyle(MykColor.muted.color)
             Picker("", selection: $appearanceRaw) {
                 ForEach(AppAppearance.allCases) { mode in
                     Label(mode.label, systemImage: mode.symbol).tag(mode.rawValue)
@@ -243,8 +252,21 @@ struct SettingsView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .frame(maxWidth: 360, alignment: .leading)
-            // UI-Polish (2026-07-02, Johannes): Erklärtext entfernt — der Umschalter
-            // erklärt sich selbst, das Verhalten steht im Benutzerhandbuch.
+
+            // v28: Start-Ansicht — welche Seite nach dem Öffnen zuerst erscheint.
+            Text("START-ANSICHT")
+                .font(.mykMono(10)).tracking(1.5)
+                .foregroundStyle(MykColor.muted.color)
+            Picker("", selection: $startViewRaw) {
+                ForEach(startableModules) { mode in
+                    Label(mode.rawValue, systemImage: mode.icon).tag(mode.rawValue)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(maxWidth: 260, alignment: .leading)
+            Text("Diese Seite zeigt mykilOS direkt nach dem Start.")
+                .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
 
             Toggle(isOn: $rainbowMode) {
                 Label("Rainbow Mode 🌈", systemImage: "paintpalette")
