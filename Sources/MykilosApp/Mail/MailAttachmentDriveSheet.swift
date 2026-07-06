@@ -27,6 +27,9 @@ struct MailAttachmentDriveSheet: View {
     /// Bestätigter Upload (appState.uploadFileToDrive) — schreibt Audit + dataFlow.
     let uploadToDrive: (DroppedFile, String) async -> DriveUploadOutcome
     let onClose: () -> Void
+    /// Ordner-Schema-Konnektoren fürs Marker→Slot-Vorschlagen (appState.nomenklatur.konnektoren).
+    /// Leer, solange kein Nomenklatur-Store übergeben wird — dann bleibt die Marker-Zeile aus.
+    var konnektoren: [OrdnerSlot: OrdnerKonnektor] = [:]
 
     private enum LoadPhase: Equatable {
         case loading
@@ -146,7 +149,8 @@ struct MailAttachmentDriveSheet: View {
                     loadSubfolders: loadSubfolders,
                     onUploadToDrive: uploadToDrive,
                     onAttachToMailDraft: nil,
-                    onDismiss: { onClose() }
+                    onDismiss: { onClose() },
+                    konnektoren: konnektoren
                 )
                 .id(project.id)
             } else {

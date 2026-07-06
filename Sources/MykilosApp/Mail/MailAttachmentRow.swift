@@ -88,7 +88,8 @@ struct AttachmentRow: View {
                 projects: appState.registry.projects,
                 loadSubfolders: { await appState.listDriveSubfolders(parentFolderID: $0) },
                 uploadToDrive: { await appState.uploadFileToDrive($0, parentFolderID: $1) },
-                onClose: { showDriveSheet = false }
+                onClose: { showDriveSheet = false },
+                konnektoren: appState.nomenklatur.konnektoren
             )
         }
     }

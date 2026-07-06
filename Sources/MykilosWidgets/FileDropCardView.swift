@@ -19,10 +19,20 @@ public struct FileDropCardView: View {
     let onAttachToMailDraft: (([DroppedFile]) async -> DraftCreateOutcome)?
     let onRemove: (DroppedFile) -> Void
     let onDismiss: () -> Void
+    /// Ordner-Schema-Konnektoren fürs Marker→Slot-Vorschlagen (Ordner-Schema-Editor-Plan,
+    /// "Mail-Anhang → Marker → Unterordner"). Leer (Default) → keine Marker-Zeile, unverändertes
+    /// Verhalten für alle bestehenden Aufrufer (z. B. AssistantChatView).
+    let konnektoren: [OrdnerSlot: OrdnerKonnektor]
+    let markerRoutes: MailMarkerRouteRegistry
 
     // Ziel-Ordner-Auswahl: default = Projektordner-Wurzel; Unterordner werden lazy geladen.
     @State private var target: DriveFolderChoice?
-    @State private var subfolders: [DriveFolderChoice] = []
+    // Navigations-Pfad zum Reinklicken in Unterordner (Ordner-Schema-Editor-Plan, "Mail-Anhang
+    // → Marker → Unterordner"): leer = auf der Wurzel; jede Ebene wird erst beim Betreten geladen
+    // (lazy, ein API-Ruf pro Navigationsschritt — kein eifriges Vorabladen des ganzen Baums).
+    @State private var browsePfad: [DriveFolderChoice] = []
+    @State private var browseChildren: [DriveFolderChoice] = []
+    @State private var selectedMarker: MailAnhangMarker?
 
     public init(
         files: [DroppedFile],
@@ -31,7 +41,9 @@ public struct FileDropCardView: View {
         onUploadToDrive: ((DroppedFile, String) async -> DriveUploadOutcome)? = nil,
         onAttachToMailDraft: (([DroppedFile]) async -> DraftCreateOutcome)? = nil,
         onRemove: @escaping (DroppedFile) -> Void = { _ in },
-        onDismiss: @escaping () -> Void
+        onDismiss: @escaping () -> Void,
+        konnektoren: [OrdnerSlot: OrdnerKonnektor] = [:],
+        markerRoutes: MailMarkerRouteRegistry = .default
     ) {
         self.files = files
         self.rootFolder = rootFolder
@@ -40,6 +52,8 @@ public struct FileDropCardView: View {
         self.onAttachToMailDraft = onAttachToMailDraft
         self.onRemove = onRemove
         self.onDismiss = onDismiss
+        self.konnektoren = konnektoren
+        self.markerRoutes = markerRoutes
         _target = State(initialValue: rootFolder)
     }
 
@@ -82,6 +96,8 @@ public struct FileDropCardView: View {
                 }
             }
 
+            markerPicker
+
             // Ziel-Ordner-Auswahl (nur wenn ein Projektordner bekannt ist).
             if rootFolder != nil {
                 zielOrdnerPicker
@@ -115,42 +131,63 @@ public struct FileDropCardView: View {
                 )
         )
         .frame(maxWidth: 460)
-        .task {
-            // Unterordner des Projektordners für die Ziel-Auswahl laden (read-only).
-            guard subfolders.isEmpty, let root = rootFolder, let loader = loadSubfolders else { return }
-            subfolders = await loader(root.id)
+        .task(id: browseFolder?.id) {
+            // Nur die AKTUELL durchsuchte Ebene laden (read-only, ein Ruf pro Navigationsschritt).
+            guard let folder = browseFolder, let loader = loadSubfolders else { browseChildren = []; return }
+            browseChildren = await loader(folder.id)
         }
     }
 
-    // Ziel-Ordner-Menü: Projektordner (Wurzel) + geladene Unterordner.
+    /// Der Ordner, dessen Inhalt gerade im Picker angezeigt wird (Wurzel, falls noch nicht reingeklickt).
+    private var browseFolder: DriveFolderChoice? { browsePfad.last ?? rootFolder }
+
+    // Marker → Ziel-Slot (Vorschlag, kein Auto-Move) — ausgelagert in FileDropMarkerPicker.swift.
+    private var markerPicker: some View {
+        FileDropMarkerPicker(
+            konnektoren: konnektoren,
+            markerRoutes: markerRoutes,
+            rootFolder: rootFolder,
+            browseChildren: browseChildren,
+            selectedMarker: $selectedMarker,
+            onResolvedTarget: { target = $0 }
+        )
+    }
+
+    // Ziel-Ordner-Menü: Finder-artiges Reinklicken. Jede Zeile im gerade durchsuchten Ordner
+    // navigiert EINE Ebene tiefer (lazy nachgeladen); "Diesen Ordner wählen" markiert die
+    // aktuell durchsuchte Ebene als Ablageziel — Auswahl und Navigation sind bewusst getrennt,
+    // damit ein Klick auf einen Unterordner nie versehentlich das Ziel ändert.
     private var zielOrdnerPicker: some View {
         HStack(spacing: MykSpace.s2) {
             Image(systemName: "folder")
                 .font(.mykMono(10)).foregroundStyle(MykColor.muted.color)
             Text("Ziel").font(.mykMono(9.5)).foregroundStyle(MykColor.faint.color)
             Menu {
-                if let root = rootFolder {
+                if let folder = browseFolder {
                     Button {
-                        target = root
+                        target = folder
                     } label: {
-                        if target?.id == root.id {
-                            Label("\(root.name) (Projektordner)", systemImage: "checkmark")
+                        if target?.id == folder.id {
+                            Label("Diesen Ordner wählen: \(folder.name)", systemImage: "checkmark")
                         } else {
-                            Text("\(root.name) (Projektordner)")
+                            Text("Diesen Ordner wählen: \(folder.name)")
                         }
                     }
                 }
-                if !subfolders.isEmpty {
+                if browsePfad.isEmpty == false {
+                    Button {
+                        browsePfad.removeLast()
+                    } label: {
+                        Label("Zurück", systemImage: "arrow.up.left")
+                    }
+                }
+                if browseChildren.isEmpty == false {
                     Divider()
-                    ForEach(subfolders) { folder in
+                    ForEach(browseChildren) { folder in
                         Button {
-                            target = folder
+                            browsePfad.append(folder)
                         } label: {
-                            if target?.id == folder.id {
-                                Label(folder.name, systemImage: "checkmark")
-                            } else {
-                                Text(folder.name)
-                            }
+                            Label(folder.name, systemImage: "folder")
                         }
                     }
                 }
@@ -167,6 +204,10 @@ public struct FileDropCardView: View {
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
+            if browsePfad.isEmpty == false {
+                Text(browsePfad.map(\.name).joined(separator: " / "))
+                    .font(.mykMono(9)).foregroundStyle(MykColor.faint.color).lineLimit(1)
+            }
             Spacer()
         }
     }
