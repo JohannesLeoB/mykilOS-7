@@ -1,5 +1,20 @@
 # Prozess-Lessons — laufender Abschlussbericht
 
+## 2026-07-07 (00:10, Übergabe wegen Kontextfenster-Grenze 91%)
+
+**Näher an der Vision:** 13 Commits diese Nacht, zwei echte Bugs gefunden+behoben (Mail-Signatur-
+Bug, Hover-Jiggle im Dateien-Tab), acht Live-Feedback-Punkte aus 14 Screenshots real gefixt und
+verifiziert (nicht nur behauptet — z.B. die Wortmarken-Größe per NSImage-Pixel-Messung bestätigt).
+
+**Was stolperte:** Ein Feature (Aufgaben-Alarm-System) musste MITTEN im Bau abgebrochen werden,
+weil das Kontextfenster bei 91% war — bewusst NICHT die UI-Seite halbfertig angefasst (nur
+fertige, getestete Bausteine committet), um keinen kaputten Zwischenzustand zu hinterlassen.
+
+**Die eine Sache anders nächstes Mal:** Bei einem Non-Stop-Auftrag über mehrere Stunden früher
+einen Kontextfenster-Checkpoint einbauen (z.B. bei 70% schon einen Handoff vorbereiten), statt bis
+91% zu warten und dann unter Zeitdruck übergeben zu müssen.
+
+
 ## 2026-07-06/07 (Nacht, Non-Stop-Auftrag bis mind. 09:45)
 
 **Näher an der Vision:** 11 saubere Commits in einer Session (Ordner-Schema-Editor komplett,
