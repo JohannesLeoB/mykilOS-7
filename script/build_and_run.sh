@@ -43,6 +43,18 @@ APP_ICON="AppIcon.icns"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Onboarding-Plan Ebene 1: Google-Client-ID/Secret als Build-Zeit-Inject (nie im Klartext-
+# Repo). Lokale, git-ignorierte Datei mit GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET — fehlt sie,
+# bleiben beide leer und alles verhaelt sich exakt wie vorher (manuelle Eingabe als Notausgang,
+# siehe BundledGoogleOAuthConfig.swift).
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+GOOGLE_OAUTH_SECRETS_FILE="$ROOT_DIR/script/.google-oauth.local.sh"
+if [ -f "$GOOGLE_OAUTH_SECRETS_FILE" ]; then
+  # shellcheck source=/dev/null
+  source "$GOOGLE_OAUTH_SECRETS_FILE"
+fi
+
 # Diagnose-Injektion (Mandate A): echter Git-Commit, Branch und Build-Zeitpunkt
 # wandern in die Info.plist (Keys Myk…) und werden zur Laufzeit über
 # Bundle.main.infoDictionary gelesen (AppIdentity). Kein zerbrechliches #if-Makro.
@@ -98,6 +110,8 @@ done
 /usr/bin/plutil -insert LSMultipleInstancesProhibited -bool true "$INFO_PLIST"
 /usr/bin/plutil -insert MykGitCommit -string "$GIT_COMMIT" "$INFO_PLIST"
 /usr/bin/plutil -insert MykGitBranch -string "$GIT_BRANCH" "$INFO_PLIST"
+/usr/bin/plutil -insert MykGoogleClientID -string "$GOOGLE_CLIENT_ID" "$INFO_PLIST"
+/usr/bin/plutil -insert MykGoogleClientSecret -string "$GOOGLE_CLIENT_SECRET" "$INFO_PLIST"
 /usr/bin/plutil -insert MykBuildDate -string "$BUILD_DATE" "$INFO_PLIST"
 printf "APPL????" > "$PKG_INFO"
 

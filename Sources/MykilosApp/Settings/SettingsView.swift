@@ -636,12 +636,18 @@ struct SettingsView: View {
                 .font(.mykHeadline)
                 .foregroundStyle(MykColor.ink.color)
             serviceStatusBadge(color: googleStatusColor, text: googleStatusText)
-            TextField("OAuth-Client-ID (Desktop App)", text: $clientID)
-                .textFieldStyle(.roundedBorder)
-                .font(.mykMono(12))
-            SecureField("Client-Secret (nur falls Google es verlangt)", text: $clientSecret)
-                .textFieldStyle(.roundedBorder)
-                .font(.mykMono(12))
+            // Onboarding-Plan Ebene 1: ist ein Client-ID/Secret eingebacken (Build-Zeit-Inject,
+            // script/build_and_run.sh), braucht der Nutzer NIE ein Formular auszufüllen — nur
+            // "Verbinden" tippen. Kein Bundle-Wert (Normalfall ohne die lokale Secrets-Datei)?
+            // Exakt das bisherige manuelle Formular als Notausgang.
+            if BundledGoogleOAuthConfig.istVerfuegbar == false {
+                TextField("OAuth-Client-ID (Desktop App)", text: $clientID)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.mykMono(12))
+                SecureField("Client-Secret (nur falls Google es verlangt)", text: $clientSecret)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.mykMono(12))
+            }
             HStack(spacing: MykSpace.s4) {
                 Button(connectLabel) { connect() }
                     .disabled(appState.googleAuth.status == .connecting)
@@ -725,7 +731,8 @@ struct SettingsView: View {
     }
     private func connect() {
         errorMessage = nil
-        let id = clientID; let secret = clientSecret
+        let id = BundledGoogleOAuthConfig.clientID ?? clientID
+        let secret = BundledGoogleOAuthConfig.clientSecret ?? clientSecret
         Task {
             do { try await appState.googleAuth.startAuthorization(clientID: id, clientSecret: secret) }
             catch { errorMessage = "Verbindung fehlgeschlagen: \(error)" }

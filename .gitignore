@@ -9,3 +9,6 @@ dist/
 *.zip
 skills/
 
+# Onboarding-Plan Ebene 1: eingebackene Google-OAuth-Credentials — NIE im Repo.
+script/.google-oauth.local.sh
+

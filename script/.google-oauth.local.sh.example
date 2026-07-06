@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Onboarding-Plan Ebene 1 (docs/handoffs/ONBOARDING_ADMIN_EINLADUNG_PLAN.md):
+# Kopieren nach "script/.google-oauth.local.sh" (git-ignoriert, NIE committen)
+# und die echten Werte aus der Google Cloud Console eintragen (Desktop-OAuth-Client).
+# Fehlt diese Datei, bleibt alles wie heute — manuelle Eingabe in den Settings.
+
+GOOGLE_CLIENT_ID="DEINE-CLIENT-ID.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="GOCSPX-dein-client-secret"
