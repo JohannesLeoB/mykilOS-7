@@ -1,5 +1,25 @@
 # Prozess-Lessons — laufender Abschlussbericht
 
+## 2026-07-06/07 (Nacht, Non-Stop-Auftrag bis mind. 09:45)
+
+**Näher an der Vision:** 11 saubere Commits in einer Session (Ordner-Schema-Editor komplett,
+Mail-Marker, Onboarding-Erleichterungen, Aufmaß-Grundgerüst, Datenschutz-Sektion, ein echter
+Bug gefunden+gefixt), jeder mit Build+Test+Lint-Beweis, nicht nur behauptet. 8 von 8
+selbst-priorisierten Aufgaben durchgezogen, ohne bei jeder auf Freigabe zu warten — Johannes
+wollte explizit "Architekt-Modus": Entscheidungen selbst treffen und bauen, nur bei echten
+externen Grenzen (fremde Accounts, Hardware, Daniels Datenbank) stehen bleiben.
+
+**Was stolperte:** Der Zeilen-Shift-Effekt bei der SwiftLint-Baseline (jede Einfügung verschiebt
+nachfolgende Zeilen, wodurch die Baseline alte Verstöße nicht mehr matched) kostete bei fast
+jedem Commit einen Extra-Schritt (Baseline neu erzeugen). Einmal fast versehentlich eine
+redundante Architektur gebaut (Projekt-Status-Ableitung existierte schon, nur die Doku war
+veraltet) — erst durch tatsächliches Code-Lesen statt reinem Plan-Vertrauen bemerkt.
+
+**Die eine Sache anders nächstes Mal:** Vor jedem "das ist offen laut Plan X"-Item zuerst kurz
+im Code selbst nachsehen, ob es nicht längst gebaut wurde — Pläne veralten schneller als der
+Code sich merkt, wer ihn zuletzt geschrieben hat.
+
+
 **Zweck (Johannes, 2026-07-04):** „Am Ende machen wir ja alle Erfahrungen, vielleicht lernen
 wir so alle mehr, wenn wir immer einen kleinen Abschlussbericht fortführen." Dieses Dokument
 ist der EINE, wachsende Ort dafür — nicht in einzelnen Handoffs verstreut. Jede Session (auch
