@@ -53,6 +53,27 @@ Regel:  „langsam daran machen" — Fundament steht, eigener fokussierter Stran
 3. Verdrahtung Projekt-Anlegen-Maske → Plan (weiter Sandbox).
 4. **GO-Gate:** echter PROJEKTE-Root statt Sandbox — Johannes' ausdrückliches GO, ein Testprojekt live.
 
+## Anwendungsfall: Mail-Anhang → Marker → Unterordner (Johannes 2026-07-06)
+
+**Wunsch:** Im Mail-Anhang-Drive-Dialog auswählen können, in welchen **Unterordner** eines Über-
+ordners das Dokument verschoben wird — mit einem **Marker** (AB / Rechnung / Zeichnung / …).
+
+**Ist-Stand (Fundament da):** `Sources/MykilosApp/Mail/MailAttachmentDriveSheet.swift` +
+`MailAttachmentRow.swift` existieren; `appState.listDriveSubfolders(parentFolderID:)` **listet
+Unterordner bereits**. Es ist ein **Ausbau**, kein Neubau.
+
+**Zu bauen:**
+1. **Unterordner-Navigation** im Sheet — nicht nur Überordner, sondern in die Unterordner
+   reinklicken + als Ziel wählen (nutzt `listDriveSubfolders`).
+2. **Marker → Ziel-Slot (Schaltschrank-Route):** Marker AB/Rechnung/Zeichnung/… mappen auf die
+   **Ordner-Slots dieses Schemas** (z. B. AB→„01 ANGEBOTE", Zeichnung→„02 CAD"). Der Marker
+   *schlägt* den Ziel-Unterordner vor (steckbare Route, kein Hardcode) und **taggt** das Dokument.
+   → Genau dieselbe `OrdnerKonnektor`/Slot-Logik wie oben; die Marker sind die Slot-Namen.
+3. Ablage bleibt **bestätigt** (nie Auto-Move), Drive read-only außer zum bestätigten Ziel.
+
+Deshalb gehört dieser Wunsch hierher: die Marker-Zuordnung IST das Ordner-Schema, nur von der
+Mail-Seite aus benutzt. Ein gepflegtes Schema (oben) speist direkt die Marker-Liste dieses Dialogs.
+
 ## Warum eigener Strang / frische Session
 
 Erfasst in der langen Session vom 2026-07-06 (Multi-User + Profil + View-Einstellungen + UI-Feedback).
