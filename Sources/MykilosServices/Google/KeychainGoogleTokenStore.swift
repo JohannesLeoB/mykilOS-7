@@ -68,16 +68,18 @@ public struct KeychainGoogleTokenStore: GoogleTokenStoring {
         return try decoder.decode(GoogleTokens.self, from: Data(json.utf8))
     }
 
-    // MULTI-USER (2026-07-06): clear() loeschte bisher nur Tokens + UserInfo,
-    // nicht die vom Nutzer selbst eingetragene clientID/clientSecret (Settings-
-    // Formular). Kein Cross-User-Leak (per-User-Keychain-Suffix trennt schon),
-    // aber ein vollstaendiges Trennen sollte alles raeumen, was dieser Bewohner
-    // eingegeben hat -- sonst bleiben seine OAuth-Client-Daten fuer immer liegen.
+    // MULTI-USER (2026-07-06, REVIDIERT nach Review-Fund): ein frueherer Fix
+    // dieser Session liess clear() auch clientID/clientSecret loeschen. Review
+    // (Cross-File-Tracer) zeigte: das ist wahrscheinlich falsch -- clientID/
+    // Secret sind die EINMALIG registrierten Google-OAuth-App-Zugangsdaten
+    // (Desktop-App-Registrierung), team-weit dieselben, keine persoenlichen
+    // Secrets wie Token/UserInfo. Ein Bewohner, der sich abmeldet und SPAETER
+    // per Mail-Rebind zurueckkehrt, bekaeme seine alte Keychain-Zeile zurueck --
+    // haette sie clear() geloescht, muesste er die (team-weit identische)
+    // Client-ID jedes Mal neu eintippen. Zurueckgerollt auf Tokens+UserInfo.
     public func clear() throws {
         try keychain.delete(service: service, account: Self.tokensAccount)
         try keychain.delete(service: service, account: Self.userInfoAccount)
-        try keychain.delete(service: service, account: Self.clientIDAccount)
-        try keychain.delete(service: service, account: Self.clientSecretAccount)
     }
 
     public func storeClientID(_ clientID: String) throws {

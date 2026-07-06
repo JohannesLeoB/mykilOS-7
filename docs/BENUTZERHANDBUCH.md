@@ -616,6 +616,23 @@ Spart Kosten ohne Qualitätsverlust im Alltag. Logik: `AssistantModelRouter`.
   Schlüssel (Clockodo/ClickUp/… im Schlüsselbund) nicht verwaisen. Der Anker (E-Mail→Identität)
   wird dafür zusätzlich im Schlüsselbund gespiegelt (trägt nur die Zuordnung, **kein** Geheimnis).
 
+### Abmelden (Multi-User-Nutzerwechsel, 2026-07-06)
+
+**Was es tut:** Trennt alle sechs persönlichen und geteilten Integrationen (Google, Clockodo,
+ClickUp, Sevdesk, Airtable, Claude) auf diesem Gerät, gibt den lokalen Namespace frei und startet
+die App neu. Der nächste Bewohner startet danach sauber isoliert — er sieht nie deine privaten
+Daten (Chat, Notizen, Aufgaben, Zeiten). Meldest du dich selbst später wieder mit derselben
+Google-Mail an, findet die App deine alte Identität automatisch wieder (gleicher Mechanismus wie
+die Identitäts-Wiederfindung oben) — deine Daten bleiben erhalten, nichts geht verloren.
+
+**Wo:** Settings → Identität (Personalausweis-Bereich) → „Abmelden (dieses Gerät)".
+
+**Voraussetzungen:** keine.
+
+**Einschränkungen:** Geteilte Team-Daten (Airtable-Projekte, Kunden) sind von einem Abmelden
+**nicht** betroffen — die bleiben für alle Bewohner des Geräts sichtbar. Der Wechsel ist
+neustart-basiert (kein nahtloses Umschalten ohne App-Neustart).
+
 ---
 
 ## Schlüssel-Inventar (Settings → Schlüssel-Inventar, 2026-07-05)

@@ -15,9 +15,7 @@ final class InMemoryGoogleTokenStore: GoogleTokenStoring, @unchecked Sendable {
 
     func store(_ tokens: GoogleTokens) throws { self.tokens = tokens }
     func load() throws -> GoogleTokens? { tokens }
-    // MULTI-USER (2026-07-06): clear() raeumt jetzt auch clientID/clientSecret
-    // (spiegelt den echten KeychainGoogleTokenStore-Fix).
-    func clear() throws { tokens = nil; userInfo = nil; clientID = nil; clientSecret = nil }
+    func clear() throws { tokens = nil; userInfo = nil }
     func storeClientID(_ clientID: String) throws { self.clientID = clientID }
     func loadClientID() throws -> String? { clientID }
     func storeClientSecret(_ clientSecret: String) throws { self.clientSecret = clientSecret }
@@ -106,21 +104,26 @@ struct GoogleOAuthTests {
         #expect(store.tokens == nil)
     }
 
-    // MULTI-USER (2026-07-06, Datenleck-Falle #6): disconnect() muss auch die
-    // vom Nutzer eingetragene clientID/clientSecret raeumen, nicht nur Tokens —
-    // sonst bleiben seine OAuth-Client-Daten fuer immer im Keychain liegen.
+    // MULTI-USER (2026-07-06, REVIDIERT): ein frueherer Fix dieser Session liess
+    // disconnect() auch clientID/clientSecret raeumen (Test dafuer existierte
+    // hier). Review-Fund: das sind team-weit geteilte OAuth-App-Zugangsdaten,
+    // keine persoenlichen Secrets -- ein Rueckkehrer muesste sie sonst jedes
+    // Mal neu eintippen. Zurueckgerollt, Test entfernt (testete falsches Soll).
     @MainActor
-    @Test func disconnectRaeumtAuchClientIDUndSecret() throws {
+    @Test func disconnectRaeumtClientIDUndSecretNicht() throws {
         let store = InMemoryGoogleTokenStore()
         store.tokens = GoogleTokens(accessToken: "a", refreshToken: "r", expiresAt: Date())
-        store.clientID = "meine-client-id"
-        store.clientSecret = "mein-secret"
+        store.clientID = "team-client-id"
+        store.clientSecret = "team-secret"
         let service = GoogleAuthService(tokenStore: store, redirectServer: GoogleOAuthLoopbackRedirectServer())
 
         try service.disconnect()
 
-        #expect(store.clientID == nil)
-        #expect(store.clientSecret == nil)
+        // Client-ID/Secret sind team-weite OAuth-App-Registrierung, kein
+        // persoenliches Secret -- bleiben ueber ein Abmelden hinweg erhalten,
+        // damit ein Rueckkehrer sie nicht erneut eintippen muss.
+        #expect(store.clientID == "team-client-id")
+        #expect(store.clientSecret == "team-secret")
     }
 
     @MainActor

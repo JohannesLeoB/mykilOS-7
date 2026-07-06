@@ -268,25 +268,34 @@ public final class AppState {
     /// Gegenpart zu `signOutEverywhere()`. Aufgerufen via
     /// `GoogleAuthService.onLoginComplete`.
     ///
-    /// - Reichert den Personalausweis an (verankert Mail → userID, persistiert
-    ///   „letzte Mail" — wie beim App-Start, nur jetzt auch live).
-    /// - Hebt einen evtl. gesetzten Sign-out-Marker auf. Ohne diesen Aufruf
-    ///   blieb der Marker nach dem ERSTEN Abmelden für immer gesetzt (toter
-    ///   Code: `clearSignedOut()` war definiert, aber nirgends aufgerufen) —
-    ///   jeder künftige Rückkehrer wäre nie per Mail wiedererkannt worden.
-    /// - War der Marker gesetzt (= dies ist der erste Login NACH einem
-    ///   Abmelden, also ein Bewohner-Wechsel), löst es einen App-Neustart aus.
-    ///   Bewusst NEUSTART-BASIERT (kein Hot-Switch von CurrentUserContext/
-    ///   Stores während die App läuft — das wäre laut Bauplan Touchpoint 7
-    ///   unsicher). War kein Sign-out aktiv, ist es nur ein normales Re-Login
-    ///   derselben Person — kein Neustart nötig.
+    /// ⚠️ KORRIGIERT (2026-07-06, Review-Fund, Angle A): die erste Fassung rief
+    /// IMMER `enrichResidentIdentity()` auf — die liest `CurrentUserContext.
+    /// current`, das aber NUR in `AppState.init` gesetzt wird und in diesem
+    /// (gleich sterbenden) Prozess nach einem Abmelden weiterhin die ALTE,
+    /// abgemeldete userID trägt (nirgends aktualisiert). War der Sign-out-
+    /// Marker gesetzt (= Bewohner-Wechsel), hätte das die neue Mail des
+    /// nächsten Bewohners fälschlich an die alte stabile userID gebunden —
+    /// NOCH VOR dem Neustart, nicht erst bei einem Relaunch-Fehler. Echtes
+    /// Cross-User-Identitäts-Leck trotz sonst korrekter Isolation.
+    ///
+    /// Fix: bei einem Bewohner-Wechsel NUR die Mail persistieren (überlebt bis
+    /// zum Neustart) + Marker aufheben + Neustart — OHNE `enrichResidentIdentity()`
+    /// hier aufzurufen. Die eigentliche Ausflösung passiert dann sauber im
+    /// NÄCHSTEN Boot (`AppState.init` → `CurrentUserContext.set(finalUserID)`
+    /// mit der FRISCH aufgelösten ID → `enrichResidentIdentity()` im Bootstrap,
+    /// Zeile ~691). War KEIN Sign-out aktiv, ist es nur ein normales Re-Login
+    /// derselben Person — `CurrentUserContext` ist noch korrekt, live
+    /// anreichern ist sicher, kein Neustart nötig.
     public func completeLoginAndRefresh() async {
         let anchor = KeychainIdentityAnchorStore()
         let warSignedOut = (try? anchor.isSignedOut()) ?? false
-        await enrichResidentIdentity()
-        try? anchor.clearSignedOut()
         if warSignedOut {
+            try? anchor.saveLastEmail(currentGoogleUser?.email ?? "")
+            try? anchor.clearSignedOut()
             AppRelaunch.relaunch()
+        } else {
+            await enrichResidentIdentity()
+            try? anchor.clearSignedOut()
         }
     }
 
