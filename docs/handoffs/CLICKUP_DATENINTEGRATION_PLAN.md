@@ -50,12 +50,16 @@ Nachfass-Fälligkeit) — Kontext für die Alert-/Fälligkeits-Ableitung.
    Projekttyp→`kind`, Budget→Cash-Widget. Read-only, kein Schreiben.
 3. **Meilensteine:** `ClickUpTask` um `isMilestone` (ClickUp liefert `milestone: true`) +
    Angebots-/Auftragsdatum → Projekt-**Timeline**-Marker (Backlog „Timeline erkennt Meilensteine").
-4. **Projekt-Status ableiten** — ⚠️ **Design-Entscheidung Johannes offen:** ClickUp-`project_phase`?
-   Lebenszyklus-Stepper (existiert in ProjectDetail)? Ableitung aus Tasks? → erst klären, dann bauen.
+4. **Projekt-Status ableiten** — ✅ **ERLEDIGT, schon gebaut** (Korrektur 2026-07-06/07: dieser
+   Punkt stand hier noch als offen, ist aber längst live): `ProjectLifecycleStage` (nutzergesetzter
+   Stepper, `ProjectLifecycleStore`) + `ProjectLifecycleDeriver.derive(timeBookedHours:isArchived:)`
+   als Startwert, solange der Nutzer nichts gesetzt hat. ClickUp-`project_phase`
+   (`ClickUpClient.projectPhase(from:)`) läuft NUR als read-only Abweichungs-Hinweis
+   ("ClickUp sagt: X") daneben — nie Auto-Write, der Nutzer tippt seine Stufe selbst.
+   Siehe `Sources/MykilosApp/Detail/ProjectLifecycleBar.swift` + `ProjectLifecycleStoreTests.swift`.
 5. **Fälligkeiten/Alerts:** `dueDate` + „Nächstes Nachfassen" + „Risiko/Engpass" → Signal-/Alert-Pfad
    (bestehendes Mediator-/Signal-System, nie schreibend).
 6. **Caching/Polling** dosiert (API-Limit) — Muster wie `DriveOfferWatcher` (Poll + Baseline).
 
 ## Offen für Johannes
-- **Was ist „Projekt-Status" genau?** (Phase / Stepper / Ableitung) — blockt Schritt 4.
 - Verknüpfung `clickUpListID` pro Projekt: aus Airtable (M3) oder Provisioning — muss gesetzt sein.

@@ -20,12 +20,24 @@ umsteckbare Klemme (Quelle → Route → Ziel), nie hart verdrahtet. Gilt für A
 | 6 | **Aufmaß-Widget** — BT-Laser, iPhone-Foto→Mac, Point-to-Point-Maßlinien, Fullscreen | [handoffs/AUFMASS_WIDGET_PLAN.md](handoffs/AUFMASS_WIDGET_PLAN.md) | Overlay-Muster ✅ · Laser vom Satellit portierbar | groß · Hardware |
 
 ## Offene Johannes-Entscheidungen (blocken jeweils einen Strang)
-- **Projekt-Status-Definition** (ClickUp-Phase / Lebenszyklus-Stepper / Ableitung) → Strang 3
-- **ClickUp-OAuth-App registrieren** (client_id/secret) → Login-Fenster, Strang 1
-- **Datenschutz-Freigabe-Texte / Toggle-Semantik** → Strang 2
-- **Lager-Ziel-Base** (mykilOS-eigene, Daniels bleibt READ ONLY) + welche Kataloge EAN-durchsuchbar → Strang 5
-- **Laser-Modell + Foto-Andock-Kanal** Satellit→Mac → Strang 6
-- **Drive-Write-GO** (raus aus Sandbox) → Strang 4
+
+**Korrektur 2026-07-06/07:** Nur noch zwei Punkte sind ECHTE externe Grenzen (kein Zugriff auf
+fremde Konten/Hardware). Der Rest wurde von Claude als Architekt entschieden (Empfehlung aus dem
+jeweiligen Plan-Dokument übernommen, Begründung dort) und ist kein Blocker mehr:
+- ~~Projekt-Status-Definition~~ → bereits gebaut (`ProjectLifecycleStage`/`ProjectLifecycleDeriver`,
+  ClickUp-Phase nur als Hinweis) — siehe CLICKUP_DATENINTEGRATION_PLAN.md.
+- ~~Datenschutz-Freigabe-Texte~~ → Entwurf geschrieben, klar als Entwurf markiert, UI gebaut.
+- ~~Lager-Ziel-Base~~ → Entscheidung: neue mykilOS-eigene Base (Daniels bleibt READ ONLY).
+- ~~Client-Secret einbacken~~ → Entscheidung: ja (Google-Standard für Desktop-Clients, PKCE-geschützt).
+
+**Echte externe Grenzen (nur Johannes kann das):**
+- **ClickUp-OAuth-App registrieren** (client_id/secret) → Login-Fenster, Strang 1. Code-Pfad steht,
+  nur die echten Credentials fehlen.
+- **Laser-Modell** ist geklärt (Leica Disto, aus dem Satellit portiert) — offen bleibt nur der
+  **Foto-Andock-Kanal** Satellit→Mac (welcher Übertragungsweg) → Strang 6.
+
+**Bleibt bewusst gesperrt (Sicherheits-/Prozessregel, kein Ermessen):**
+- **Drive-Write-GO** (raus aus Sandbox, echter PROJEKTE-Root) → Strang 4 — externe Kundendaten.
 
 ## Empfohlene Bau-Reihenfolge (kleinster Aufwand / größter Nutzen zuerst)
 1. **QR→Link** (Strang 5A) + **Mail-Marker-Ausbau** (Strang 4) — Fundament da, in Stunden sichtbar, kein GO nötig.
