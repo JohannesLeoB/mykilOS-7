@@ -510,6 +510,17 @@ public final class GRDBDatabase: Sendable {
                 """)
         }
 
+        // v26_assistant_notes_tasks_isolation (Multi-User) — Assistent-Notizen und
+        // -Aufgaben sind PRIVAT (nutzer-eigene Memos, eiserne Regel). Gleiches
+        // additive Muster wie v25: nullable userID-Spalte, Alt-Zeilen → Backfill an
+        // den Erst-Bewohner, neue Zeilen tragen die aktive userID.
+        migrator.registerMigration("v26_assistant_notes_tasks_isolation") { db in
+            try db.alter(table: "assistantNotes") { t in t.add(column: "userID", .text) }
+            try db.alter(table: "assistantTasks") { t in t.add(column: "userID", .text) }
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_assistantNotes_userID ON assistantNotes(userID)")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_assistantTasks_userID ON assistantTasks(userID)")
+        }
+
         return migrator
     }
 

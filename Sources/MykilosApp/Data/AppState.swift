@@ -505,9 +505,9 @@ public final class AppState {
         )
         self.kalkulationsEngine = kalkulationsEngine
         self.learningStore = learningStore
-        let notes = AssistantNotesStore(db: database)
+        let notes = AssistantNotesStore(db: database, userID: userID)
         self.assistantNotes = notes
-        let tasks = AssistantTasksStore(db: database)
+        let tasks = AssistantTasksStore(db: database, userID: userID)
         self.assistantTasks = tasks
         // Read-only Tool-Whitelist (Sevdesk NIE enthalten) + die lokalen Schreib-Tools
         // für Notizen (S4) und Aufgaben (S6). Tools laufen nur bei Opt-in (siehe AssistantChatView).

@@ -11,14 +11,18 @@ struct AssistantNoteRecord: Codable, FetchableRecord, PersistableRecord {
     var color: String?
     var createdAt: Double   // timeIntervalSince1970
     var updatedAt: Double
+    // Multi-User (v26): besitzender Bewohner. Nullable — Alt-Zeilen (vor v26) haben
+    // NULL und werden beim Start dem Erst-Bewohner zugeordnet (MultiUserBackfill).
+    var userID: String?
 
-    init(from note: AssistantNote) {
+    init(from note: AssistantNote, userID: String?) {
         id = note.id
         body = note.body
         projectID = note.projectID
         color = note.color
         createdAt = note.createdAt.timeIntervalSince1970
         updatedAt = note.updatedAt.timeIntervalSince1970
+        self.userID = userID
     }
 
     var toDomain: AssistantNote {
@@ -35,15 +39,21 @@ struct AssistantNoteRecord: Codable, FetchableRecord, PersistableRecord {
 // Bewusst NUR lokale, nutzer-eigene Daten — kein externer Schreibzugriff.
 public actor AssistantNotesStore {
     private let db: GRDBDatabase
+    // Multi-User: der aktive Bewohner. all() filtert darauf → alle abgeleiteten
+    // Reads (scoped/find) und Mutationen bleiben auf den Bewohner beschränkt.
+    private let userID: String?
 
-    public init(db: GRDBDatabase) {
+    public init(db: GRDBDatabase, userID: String? = CurrentUserContext.current) {
         self.db = db
+        self.userID = userID
     }
 
-    /// Alle Notizen, neueste zuerst.
+    /// Alle Notizen des aktiven Bewohners, neueste zuerst.
     public func all() throws -> [AssistantNote] {
-        try db.read { conn in
+        let uid = userID
+        return try db.read { conn in
             try AssistantNoteRecord
+                .filter(Column("userID") == uid)
                 .order(Column("updatedAt").desc)
                 .fetchAll(conn)
         }.map(\.toDomain)
@@ -62,7 +72,8 @@ public actor AssistantNotesStore {
     public func create(_ body: String, projectID: String? = nil, now: Date = Date()) throws -> AssistantNote {
         let note = AssistantNote(body: body.trimmingCharacters(in: .whitespacesAndNewlines),
                                  projectID: projectID, createdAt: now, updatedAt: now)
-        try db.write { conn in try AssistantNoteRecord(from: note).insert(conn) }
+        let record = AssistantNoteRecord(from: note, userID: userID)
+        try db.write { conn in try record.insert(conn) }
         return note
     }
 
@@ -73,7 +84,8 @@ public actor AssistantNotesStore {
         guard var note = try find(matching: query, scopedTo: projectID) else { return nil }
         note.body = newBody.trimmingCharacters(in: .whitespacesAndNewlines)
         note.updatedAt = now
-        try db.write { conn in try AssistantNoteRecord(from: note).update(conn) }
+        let record = AssistantNoteRecord(from: note, userID: userID)
+        try db.write { conn in try record.update(conn) }
         return note
     }
 
@@ -93,7 +105,8 @@ public actor AssistantNotesStore {
         note.body = body.trimmingCharacters(in: .whitespacesAndNewlines)
         note.color = color
         note.updatedAt = now
-        try db.write { conn in try AssistantNoteRecord(from: note).update(conn) }
+        let record = AssistantNoteRecord(from: note, userID: userID)
+        try db.write { conn in try record.update(conn) }
         return note
     }
 

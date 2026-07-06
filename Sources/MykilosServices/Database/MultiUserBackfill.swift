@@ -20,7 +20,7 @@ public enum MultiUserBackfill {
     /// Die privaten Tabellen mit einer nullable userID-Spalte. Wird pro Store
     /// erweitert, sobald dessen Isolation gebaut ist. Feste, interne Whitelist —
     /// KEINE User-Eingabe, daher ist die Tabellennamen-Interpolation unten sicher.
-    static let isolatedTables = ["chatMessages"]
+    static let isolatedTables = ["chatMessages", "assistantNotes", "assistantTasks"]
 
     /// Setzt userID = primaryUserID für alle Zeilen mit userID IS NULL in den
     /// isolierten Tabellen. Leere/whitespace-userID ist ein No-Op (Schutz gegen

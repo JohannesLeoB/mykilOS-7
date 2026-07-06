@@ -12,8 +12,11 @@ struct AssistantTaskRecord: Codable, FetchableRecord, PersistableRecord {
     var projectID: String?
     var createdAt: Double
     var updatedAt: Double
+    // Multi-User (v26): besitzender Bewohner. Nullable — Alt-Zeilen (vor v26) haben
+    // NULL und werden beim Start dem Erst-Bewohner zugeordnet (MultiUserBackfill).
+    var userID: String?
 
-    init(from task: AssistantTask) {
+    init(from task: AssistantTask, userID: String?) {
         id = task.id
         title = task.title
         done = task.done
@@ -21,6 +24,7 @@ struct AssistantTaskRecord: Codable, FetchableRecord, PersistableRecord {
         projectID = task.projectID
         createdAt = task.createdAt.timeIntervalSince1970
         updatedAt = task.updatedAt.timeIntervalSince1970
+        self.userID = userID
     }
 
     var toDomain: AssistantTask {
@@ -39,15 +43,21 @@ struct AssistantTaskRecord: Codable, FetchableRecord, PersistableRecord {
 // Bewusst NUR lokale, nutzer-eigene Daten — kein externer Schreibzugriff.
 public actor AssistantTasksStore {
     private let db: GRDBDatabase
+    // Multi-User: der aktive Bewohner. all() filtert darauf → alle abgeleiteten
+    // Reads (open/scoped/find) und Mutationen bleiben auf den Bewohner beschränkt.
+    private let userID: String?
 
-    public init(db: GRDBDatabase) {
+    public init(db: GRDBDatabase, userID: String? = CurrentUserContext.current) {
         self.db = db
+        self.userID = userID
     }
 
-    /// Alle Aufgaben: offene zuerst (nach Fälligkeit/Anlage), erledigte danach.
+    /// Alle Aufgaben des aktiven Bewohners: offene zuerst (nach Fälligkeit/Anlage), erledigte danach.
     public func all() throws -> [AssistantTask] {
+        let uid = userID
         let tasks = try db.read { conn in
             try AssistantTaskRecord
+                .filter(Column("userID") == uid)
                 .order(Column("updatedAt").desc)
                 .fetchAll(conn)
         }.map(\.toDomain)
@@ -80,7 +90,8 @@ public actor AssistantTasksStore {
     public func create(_ title: String, dueDate: Date? = nil, projectID: String? = nil, now: Date = Date()) throws -> AssistantTask {
         let task = AssistantTask(title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                                  dueDate: dueDate, projectID: projectID, createdAt: now, updatedAt: now)
-        try db.write { conn in try AssistantTaskRecord(from: task).insert(conn) }
+        let record = AssistantTaskRecord(from: task, userID: userID)
+        try db.write { conn in try record.insert(conn) }
         return task
     }
 
@@ -91,7 +102,8 @@ public actor AssistantTasksStore {
         guard var task = try find(matching: query, scopedTo: projectID) else { return nil }
         task.done = done
         task.updatedAt = now
-        try db.write { conn in try AssistantTaskRecord(from: task).update(conn) }
+        let record = AssistantTaskRecord(from: task, userID: userID)
+        try db.write { conn in try record.update(conn) }
         return task
     }
 
