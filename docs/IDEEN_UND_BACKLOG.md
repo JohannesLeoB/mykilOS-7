@@ -1295,13 +1295,20 @@ Bestandsprojekte — keine Eile, kein Drängen auf Daniel.
 ### 📋 ClickUp als Quelle für `ProjectKind`
 **Quelle:** Live-Wiring-Session 1 (2026-06-27). Drive-Ordnernamen lassen
 `ProjectKind` (kitchen/lighting/addendum/lead/quote) nicht erkennen.
-**Plan:** Handle/Link-Konnektor (ClickUp-Listen-ID pro Projekt, Feld
-`ClickUp-Liste` existiert bereits in `Project.links` und in der Airtable-
-Tabelle `Projekte`) + eine Übersetzungsregistry, die ClickUp-Daten auf
-`ProjectKind` mapped. Der neue ClickUp-Sandbox-Space "MYKILOS API
-TESTSPACE" (`90128024109`) ist der vorgesehene Testort dafür.
-**Noch offen:** genaues Mapping-Schema (welches ClickUp-Feld/Status/Tag
-→ welcher `ProjectKind`) ist nicht entschieden.
+
+**Mapping-Schema entschieden + gebaut (Claude, 2026-07-06/07):** `ClickUpProjektTypRoute` +
+`ClickUpProjektTypRouteRegistry` (`Sources/MykilosKit/Domain/ClickUpProjektTypRoute.swift`) —
+gleiches Schaltschrank-Muster wie `ClickUpFieldRouteRegistry`/`MailMarkerRouteRegistry`. Bildet
+`ClickUpProjektMeta.projekttyp` (Dropdown-Klartext) auf `ProjectKind` ab, Groß-/Kleinschreibung-
+tolerant. 8 Tests. ⚠️ Die Default-Labels ("Küche"/"Licht"/…) sind eine plausible Erst-Vorlage —
+die echten ClickUp-Dropdown-Werte bestätigt Johannes bei der ersten Nutzung, dann eine Route-
+Zeile anpassen (kein Code-Umbau).
+
+**Noch offen:** die Registry ist gebaut, aber noch NICHT in einen Live-Lesepfad verdrahtet
+(wann/wo `Project.kind` daraus tatsächlich gespiegelt wird — bei jedem Poll? nur beim Anlegen?
+überschreibt es einen bereits vom Nutzer gesetzten Kind? — ist eine echte Design-Entscheidung,
+kein reines Mapping mehr). Handle/Link-Konnektor (`ClickUp-Liste` in `Project.links`) existiert
+bereits. Testort: ClickUp-Sandbox-Space "MYKILOS API TESTSPACE" (`90128024109`).
 
 ### 📋 Archiv-Übersetzungsregistry für `_PROJEKTE_ARCHIV`
 **Quelle:** Live-Wiring-Session 1. ~200+ archivierte Projektordner
