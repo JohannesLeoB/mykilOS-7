@@ -2,11 +2,21 @@
 
 ```
 Pfad:   /Users/johannesleoberger/Claude/Projects/mykilOS/MYKILOS 6/mykilOS6/
-Branch: feat/multi-user-login (29 Commits vor origin/main) — GEPUSHT nach origin
-Build:  ✅ swift build grün + warnungsfrei
-Tests:  ✅ 1085 grün (139 Suites)
-DMG:    dist/mykilOS-11.1.0-alpha7.dmg (Profil + Start-Ansicht + UI-Fixes)
+Branch: feat/multi-user-login — GEPUSHT nach origin (mit origin synchron)
+Build:  ✅ swift build grün + warnungsfrei (lokal)
+Tests:  ✅ 1085 grün (139 Suites) (lokal)
+CI:     🔴 ROT am SwiftLint-Gate (Build/Test liefen nicht) — Lint-Baseline-Drift, s. u.
+DMG:    dist/mykilOS-11.1.0-alpha7.dmg (Profil + Start-Ansicht + UI-Fixes; QR→Link kam danach)
 main:   NICHT angetastet (heilig; Merge braucht CI-grün + separates GO)
+
+## 🔴 ZUERST: CI ist rot (Lint-Gate) — der eine echte offene Punkt
+Lokal ist alles grün, aber die GitHub-CI scheitert am **SwiftLint-Disziplin-Gate** (Lauf endet nach
+~20 s, vor Build/Test). Ursache: die vielen deutschen Erklär-Kommentare dieser Session erzeugen neue
+`line_length`-Verstöße, die die eingefrorene `swiftlint-baseline.json` nicht kennt (~27 neue).
+**Fix (GO-pflichtig, war Permission-blockiert):** Baseline neu schreiben + auf CI-Runner-Pfad
+re-pinnen — `swiftlint lint --write-baseline <tmp>` → Python-Replace lokaler Pfad
+(`…/MYKILOS%206/mykilOS6/`) → `\/Users\/runner\/work\/mykilOS-7\/mykilOS-7\/` → `swiftlint-baseline.json`.
+Verfahren dokumentiert in `NACHT_2026-07-06_LOG.md`. **Bis dahin: kein Merge nach main.**
 ```
 
 ## Was diese Session gebaut hat (alles committet + getestet)
