@@ -8,6 +8,10 @@ import MykilosKit
 private struct ActiveTimerRecord: Codable, FetchableRecord, PersistableRecord {
     static var databaseTableName: String { "activeTimer" }
     static let singletonID = "singleton"
+    // Multi-User: die id IST der besitzende Bewohner (statt der festen "singleton"),
+    // damit jeder Bewohner genau EINEN laufenden Timer haben kann, ohne den des
+    // anderen zu überschreiben. Alt-Zeilen (id == "singleton") ordnet der Backfill
+    // dem Erst-Bewohner zu. Fallback "local", falls keine userID aktiv ist.
     var id: String
     var projektNummer: String
     var projektTitel: String
@@ -17,8 +21,9 @@ private struct ActiveTimerRecord: Codable, FetchableRecord, PersistableRecord {
     var isPaused: Bool
     var segmentStartedAt: Double
 
-    init(from t: ActiveTimer) {
-        id = Self.singletonID
+    init(from t: ActiveTimer, userID: String?) {
+        let trimmed = userID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        id = trimmed.isEmpty ? "local" : trimmed
         projektNummer = t.projektNummer
         projektTitel = t.projektTitel
         kostenstelle = t.kostenstelle
@@ -46,8 +51,10 @@ private struct TimeSegmentDraftRecord: Codable, FetchableRecord, PersistableReco
     var startedAt: Double
     var endedAt: Double
     var seconds: Double
+    // Multi-User (v27): besitzender Bewohner. Nullable — Alt-Zeilen → Backfill.
+    var userID: String?
 
-    init(from d: TimeSegmentDraft) {
+    init(from d: TimeSegmentDraft, userID: String?) {
         id = d.id.uuidString
         projektNummer = d.projektNummer
         projektTitel = d.projektTitel
@@ -55,6 +62,7 @@ private struct TimeSegmentDraftRecord: Codable, FetchableRecord, PersistableReco
         startedAt = d.startedAt.timeIntervalSince1970
         endedAt = d.endedAt.timeIntervalSince1970
         seconds = d.seconds
+        self.userID = userID
     }
 
     var toDomain: TimeSegmentDraft? {
@@ -76,8 +84,10 @@ private struct TimeSegmentRecord: Codable, FetchableRecord, PersistableRecord {
     var endedAt: Double
     var seconds: Double
     var bookedAt: Double
+    // Multi-User (v27): besitzender Bewohner. Nullable — Alt-Zeilen → Backfill.
+    var userID: String?
 
-    init(from s: TimeSegment) {
+    init(from s: TimeSegment, userID: String?) {
         id = s.id.uuidString
         projektNummer = s.projektNummer
         projektTitel = s.projektTitel
@@ -86,6 +96,7 @@ private struct TimeSegmentRecord: Codable, FetchableRecord, PersistableRecord {
         endedAt = s.endedAt.timeIntervalSince1970
         seconds = s.seconds
         bookedAt = s.bookedAt.timeIntervalSince1970
+        self.userID = userID
     }
 
     var toDomain: TimeSegment? {
@@ -162,24 +173,39 @@ public final class TimerStore {
     private var queuedStart: (projektNummer: String, projektTitel: String, kostenstelle: String)?
 
     private let db: GRDBDatabase
+    // Multi-User: der aktive Bewohner. Die drei Zeit-Tabellen (activeTimer/
+    // timeSegmentDrafts/timeSegments) sind PRIVAT (Clockodo-Regel: jeder sieht nur
+    // seine eigenen Zeiten). projectZielkontingente + appSettings bleiben bewusst
+    // geteilt/global. Neustart-basiert → kein In-Prozess-Cache-Leak.
+    private let userID: String?
     private let now: @MainActor () -> Date
     // Namespaced, damit der generische appSettings-Store keine Schlüssel-Kollision
     // mit anderen Komponenten (z. B. Block A `provisioningMode`) riskiert.
     private static let pulseIntervalKey = "blockB.timer.pulseIntervalMinutes"
 
     /// `now` injizierbar für deterministische Tests.
-    public init(db: GRDBDatabase, now: @escaping @MainActor () -> Date = { Date() }) {
+    public init(db: GRDBDatabase, userID: String? = CurrentUserContext.current, now: @escaping @MainActor () -> Date = { Date() }) {
         self.db = db
+        self.userID = userID
         self.now = now
+    }
+
+    /// Die id-/Filter-userID für die privaten Zeit-Tabellen: leere/nil userID → "local"
+    /// (spiegelt ActiveTimerRecord.init, damit fetchOne/deleteOne denselben Schlüssel treffen).
+    private var effectiveUserID: String {
+        let t = userID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return t.isEmpty ? "local" : t
     }
 
     // MARK: Laden
 
     public func load() throws {
-        active = try db.read { try ActiveTimerRecord.fetchOne($0) }?.toDomain
-        pendingDrafts = (try db.read { try TimeSegmentDraftRecord.order(Column("startedAt")).fetchAll($0) })
+        let uid = userID
+        let eid = effectiveUserID
+        active = try db.read { try ActiveTimerRecord.fetchOne($0, key: eid) }?.toDomain
+        pendingDrafts = (try db.read { try TimeSegmentDraftRecord.filter(Column("userID") == uid).order(Column("startedAt")).fetchAll($0) })
             .compactMap(\.toDomain)
-        bookedSegments = (try db.read { try TimeSegmentRecord.order(Column("bookedAt").desc).fetchAll($0) })
+        bookedSegments = (try db.read { try TimeSegmentRecord.filter(Column("userID") == uid).order(Column("bookedAt").desc).fetchAll($0) })
             .compactMap(\.toDomain)
         let ziele = (try db.read { try ZielkontingentRecord.fetchAll($0) }).compactMap(\.toDomain)
         zielkontingente = Dictionary(uniqueKeysWithValues: ziele.map { ($0.projektNummer, $0) })
@@ -281,8 +307,9 @@ public final class TimerStore {
         guard let timer = active, timer.kostenstelle != kostenstelle else { return }
         let t = now()
         let draft = makeDraft(from: timer, endedAt: t)
+        let draftRecord = TimeSegmentDraftRecord(from: draft, userID: userID)
         try db.write { dbc in
-            try TimeSegmentDraftRecord(from: draft).insert(dbc)
+            try draftRecord.insert(dbc)
         }
         pendingDrafts.append(draft)
         let next = ActiveTimer(
@@ -300,9 +327,11 @@ public final class TimerStore {
     public func requestStop() throws {
         guard let timer = active else { return }
         let draft = makeDraft(from: timer, endedAt: now())
+        let draftRecord = TimeSegmentDraftRecord(from: draft, userID: userID)
+        let eid = effectiveUserID
         try db.write { dbc in
-            if draft.seconds > 0 { try TimeSegmentDraftRecord(from: draft).insert(dbc) }
-            try ActiveTimerRecord.deleteAll(dbc)
+            if draft.seconds > 0 { try draftRecord.insert(dbc) }
+            _ = try ActiveTimerRecord.deleteOne(dbc, key: eid)   // nur eigenen Timer
         }
         if draft.seconds > 0 { pendingDrafts.append(draft) }
         active = nil
@@ -317,10 +346,11 @@ public final class TimerStore {
         guard pendingDrafts.isEmpty == false else { return }
         saveState = .saving
         let booked = pendingDrafts.map { TimeSegment(fromDraft: $0, bookedAt: now()) }
+        let uid = userID
         do {
             try db.write { dbc in
-                for seg in booked { try TimeSegmentRecord(from: seg).insert(dbc) }
-                try TimeSegmentDraftRecord.deleteAll(dbc)
+                for seg in booked { try TimeSegmentRecord(from: seg, userID: uid).insert(dbc) }
+                try TimeSegmentDraftRecord.filter(Column("userID") == uid).deleteAll(dbc)   // nur eigene Drafts
             }
             bookedSegments.insert(contentsOf: booked, at: 0)
             pendingDrafts.removeAll()
@@ -335,7 +365,8 @@ public final class TimerStore {
     /// Verwirft die offene Buchung (Drafts), ohne zu buchen.
     public func cancelBooking() throws {
         guard pendingDrafts.isEmpty == false else { return }
-        try db.write { dbc in try TimeSegmentDraftRecord.deleteAll(dbc) }
+        let uid = userID
+        try db.write { dbc in try TimeSegmentDraftRecord.filter(Column("userID") == uid).deleteAll(dbc) }
         pendingDrafts.removeAll()
         runQueuedStartIfNeeded()
     }
@@ -417,9 +448,12 @@ public final class TimerStore {
     }
 
     private func persistActive(_ timer: ActiveTimer) throws {
+        let record = ActiveTimerRecord(from: timer, userID: userID)
         try db.write { dbc in
-            try ActiveTimerRecord.deleteAll(dbc)
-            try ActiveTimerRecord(from: timer).insert(dbc)
+            // Nur den EIGENEN laufenden Timer ersetzen (id == eigene userID) — NICHT
+            // deleteAll (das löschte den laufenden Timer anderer Bewohner).
+            _ = try ActiveTimerRecord.deleteOne(dbc, key: record.id)
+            try record.insert(dbc)
         }
     }
 }

@@ -439,7 +439,7 @@ public final class AppState {
             self.externalMapping = nil
         }
         self.projectNumberBindings = ProjectNumberBindingStore(db: database)
-        self.timer = TimerStore(db: database)
+        self.timer = TimerStore(db: database, userID: userID)
         let nomenklaturStore = NomenklaturStore(db: database)
         self.nomenklatur = nomenklaturStore
         // Aktive Projektnummern kommen live aus dem lokalen Routing-Cache (Eine Wahrheit) —

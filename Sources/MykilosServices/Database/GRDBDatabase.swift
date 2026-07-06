@@ -521,6 +521,19 @@ public final class GRDBDatabase: Sendable {
             try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_assistantTasks_userID ON assistantTasks(userID)")
         }
 
+        // v27_timer_user_isolation (Multi-User) — die drei Zeit-Tabellen sind PRIVAT
+        // (Clockodo-Regel: jeder sieht/bucht nur seine eigenen Zeiten). timeSegment-
+        // Drafts/Segments bekommen eine nullable userID-Spalte; activeTimer nutzt
+        // stattdessen seine id-Spalte als Bewohner-Schlüssel (statt der festen
+        // "singleton") — der Backfill ordnet die Alt-Zeilen dem Erst-Bewohner zu.
+        // projectZielkontingente + appSettings bleiben bewusst geteilt/global.
+        migrator.registerMigration("v27_timer_user_isolation") { db in
+            try db.alter(table: "timeSegmentDrafts") { t in t.add(column: "userID", .text) }
+            try db.alter(table: "timeSegments") { t in t.add(column: "userID", .text) }
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_timeSegmentDrafts_userID ON timeSegmentDrafts(userID)")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_timeSegments_userID ON timeSegments(userID)")
+        }
+
         return migrator
     }
 
