@@ -48,7 +48,10 @@ struct GlobalPlansView: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.7)
                 .padding(.horizontal, MykSpace.s7)
-                .padding(.top, MykSpace.s9)
+                // Bugfix 2026-07-07 (Johannes-Feedback): oberer Rand auf dieselbe Baseline
+                // wie der mykilOS-Button in der Sidebar (SidebarView: s7) -- vorher s9 (48pt),
+                // 20pt zu tief gegenüber der Sidebar.
+                .padding(.top, MykSpace.s7)
                 .padding(.bottom, MykSpace.s5)
             Divider().overlay(MykColor.line.color)
             allPlansButton

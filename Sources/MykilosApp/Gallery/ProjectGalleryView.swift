@@ -220,7 +220,11 @@ struct ProjectGalleryView: View {
             .frame(maxWidth: 260)
         }
         .padding(.horizontal, MykSpace.s9)
-        .padding(.vertical, MykSpace.s5)
+        // Bugfix 2026-07-07 (Johannes-Feedback): oberer Rand muss auf dieselbe Baseline
+        // wie der mykilOS-Button in der Sidebar (SidebarView: .padding(.vertical, s7))
+        // treffen -- vorher s5 (17pt), 11pt zu hoch gegenüber der Sidebar.
+        .padding(.top, MykSpace.s7)
+        .padding(.bottom, MykSpace.s5)
     }
 
     // Galerie (Raster) ⇄ Pipeline (Kanban) umschalten.
