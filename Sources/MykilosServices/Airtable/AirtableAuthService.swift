@@ -123,6 +123,20 @@ public final class AirtableAuthService {
         status = .disconnected
     }
 
+    // MARK: Admin-Einladung (Onboarding-Plan Ebene 2)
+
+    /// Admin: baut eine .mykinvite-Datei aus den AKTUELL verbundenen Zugangsdaten.
+    public func einladungErstellen(passwort: String, gueltigTage: Int? = 7) throws -> Data {
+        try MykInviteService.einladungErstellen(
+            airtableCredentials: credentialsStore, passwort: passwort, gueltigTage: gueltigTage)
+    }
+
+    /// Neuer User: öffnet eine .mykinvite-Datei und übernimmt die Zugangsdaten.
+    public func einladungOeffnen(daten: Data, passwort: String) throws {
+        try MykInviteService.einladungOeffnen(daten: daten, passwort: passwort, airtableCredentials: credentialsStore)
+        status = .connected
+    }
+
     public func setSyncing() { status = .syncing }
     public func setSynced() { status = .connected }
     public func setError(_ message: String) { status = .error(message) }

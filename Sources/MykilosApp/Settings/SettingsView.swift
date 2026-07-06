@@ -221,6 +221,7 @@ struct SettingsView: View {
         case .system:
             diagnoseSection
             ordnerSchemaSection
+            mykInviteSection
             SchaltzentrumView()
         }
     }
