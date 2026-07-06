@@ -48,6 +48,23 @@ public enum MultiUserBackfill {
                     """,
                 arguments: [trimmed, trimmed]
             )
+            // chatMemorySummaries: KEIN separates userID-Feld — der Bewohner steckt
+            // im scopeKey selbst ("<userID>::<scope>", wie activeTimer die id
+            // doppelt nutzt). Alte, unpräfigierte Zeilen (vor diesem Fix) → dem
+            // Erst-Bewohner zuordnen (Rename, kein Duplikat: nur falls die
+            // präfigierte Zielzeile noch nicht existiert — sonst blieben zwei
+            // Zeilen für denselben Scope stehen).
+            try dbConn.execute(
+                sql: """
+                    UPDATE chatMemorySummaries SET scopeKey = ? || '::' || scopeKey
+                    WHERE scopeKey NOT LIKE '%::%'
+                    AND NOT EXISTS (
+                        SELECT 1 FROM chatMemorySummaries AS c2
+                        WHERE c2.scopeKey = ? || '::' || chatMemorySummaries.scopeKey
+                    )
+                    """,
+                arguments: [trimmed, trimmed]
+            )
         }
     }
 }

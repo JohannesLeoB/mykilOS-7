@@ -64,6 +64,58 @@ struct MultiUserStoreIsolationTests {
         let other = AssistantTasksStore(db: db, userID: "other")
         #expect(try await other.all().isEmpty)
     }
+
+    // MARK: Chat-Gedächtnis (ChatMemoryStore) — abgeleitet aus dem isolierten
+    // ChatStore, muss deshalb genauso pro Bewohner getrennt sein. `ChatScope`
+    // ist projekt-/board-basiert (identisch für beide Bewohner) — ohne
+    // Isolation würde ein Zweit-Bewohner die Zusammenfassung des Ersten lesen
+    // oder überschreiben (kein separates userID-Feld, Präfix im scopeKey selbst).
+
+    @MainActor
+    @Test func chatGedaechtnisIstProBewohnerIsoliert() throws {
+        let db = try GRDBDatabase.inMemory()
+        let scope = ChatScope.project("2026-042")
+
+        let storeA = ChatMemoryStore(db: db, userID: "user-a")
+        try storeA.save(ChatMemorySummary(
+            scopeKey: scope.rawKey, summaryText: "A's Zusammenfassung",
+            coveredThroughMessageID: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            updatedAt: Date(timeIntervalSince1970: 1_800_000_000)))
+
+        // B sieht A's Zusammenfassung für DENSELBEN Scope nicht — und
+        // überschreibt sie auch nicht beim eigenen Speichern.
+        let storeB = ChatMemoryStore(db: db, userID: "user-b")
+        #expect(try storeB.summary(for: scope) == nil)
+        try storeB.save(ChatMemorySummary(
+            scopeKey: scope.rawKey, summaryText: "B's Zusammenfassung",
+            coveredThroughMessageID: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            updatedAt: Date(timeIntervalSince1970: 1_800_000_001)))
+
+        // A findet nach „Neustart" weiterhin die EIGENE Zusammenfassung.
+        let storeA2 = ChatMemoryStore(db: db, userID: "user-a")
+        #expect(try storeA2.summary(for: scope)?.summaryText == "A's Zusammenfassung")
+        let storeB2 = ChatMemoryStore(db: db, userID: "user-b")
+        #expect(try storeB2.summary(for: scope)?.summaryText == "B's Zusammenfassung")
+    }
+
+    @MainActor
+    @Test func backfillChatGedaechtnisLandetBeimErstBewohner() throws {
+        let db = try GRDBDatabase.inMemory()
+        // Alt-Zustand vor der Isolation: unpräfigierter scopeKey.
+        try db.write { conn in
+            try conn.execute(sql: """
+                INSERT INTO chatMemorySummaries (scopeKey, summaryText, coveredThroughMessageID, updatedAt)
+                VALUES ('project:2026-042', 'Alte Zusammenfassung vor Multi-User', 'x', 0)
+                """)
+        }
+        try MultiUserBackfill.assignNullRowsToPrimary(db: db, primaryUserID: "primary")
+
+        let scope = ChatScope.project("2026-042")
+        let primary = ChatMemoryStore(db: db, userID: "primary")
+        #expect(try primary.summary(for: scope)?.summaryText == "Alte Zusammenfassung vor Multi-User")
+        let other = ChatMemoryStore(db: db, userID: "other")
+        #expect(try other.summary(for: scope) == nil)
+    }
 }
 
 // MARK: - Multi-User TimerStore-Isolation (Clockodo-Zeiten sind datensensitiv)

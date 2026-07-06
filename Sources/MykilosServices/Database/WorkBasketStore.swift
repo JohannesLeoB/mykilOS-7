@@ -164,6 +164,17 @@ public enum WorkBasketStoreError: Error, Sendable, Equatable {
 }
 
 // MARK: - WorkBasketStore
+//
+// MULTI-USER-ENTSCHEIDUNG (2026-07-06, autonome Nacht-Session, "nach bestem
+// Wissen und Gewissen" freigegeben): dieser Store bleibt BEWUSST GETEILT
+// (team-weit), NICHT nach userID isoliert. Begründung: WorkBasket trägt
+// `projektNummer`, keine Personen-ID — er ist eine Projekt-Kalkulationsgröße,
+// kein persönliches Datum (Team kalkuliert gemeinsam an einem Warenkorb pro
+// Projekt: Positionen aus Angeboten herauslösen, Artikel picken). Analog zu
+// den geteilten Airtable-Projekten (CLAUDE.md Team-Modell), NICHT analog zu
+// Clockodo/Chat/Notizen (die sind privat). Eine userID-Isolation würde die
+// gemeinsame Kalkulation zerschneiden — die eigentliche Gefahr, vor der der
+// Nacht-Log warnte. Siehe Touchpoint 9 im Bauplan (HANDOFF_2026-07-05_SPAET2).
 @MainActor
 @Observable
 public final class WorkBasketStore {
