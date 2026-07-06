@@ -34,7 +34,7 @@ extension SettingsView {
                                 .font(.mykMono(9.5))
                                 .foregroundStyle(MykColor.muted.color)
                         }
-                        Text("· Hausmeister (dieses Gerät)")
+                        Text("· aktiver Bewohner (dieses Gerät)")
                             .font(.mykMono(9))
                             .foregroundStyle(MykColor.faint.color)
                     }

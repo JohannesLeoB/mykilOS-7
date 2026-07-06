@@ -176,6 +176,28 @@ public final class AppState {
         return .created(contact.displayName)
     }
 
+    // MARK: - Abmelden (Multi-User Nutzer-Wechsel)
+
+    /// Meldet den aktiven Bewohner vollständig ab: trennt alle SECHS Integrationen,
+    /// gibt den Namespace frei (frische Gast-userID in der local-Profilzeile) und
+    /// setzt den Sign-out-Marker. Der AUFRUFER löst danach den App-Neustart aus
+    /// (`AppRelaunch.relaunch()`) — erst nach dem Neustart baut `AppState.init` alle
+    /// per-User-Stores mit der frischen Gast-userID, in der der nächste Bewohner
+    /// sauber isoliert startet. Jeder disconnect ist EINZELN `try?`-gekapselt, damit
+    /// ein Fehler bei einem Dienst die anderen fünf nicht blockiert (kein
+    /// inkonsistenter Halbzustand). NIE `clearLocalCache()` — das löschte die
+    /// GETEILTEN Team-Daten (Projekte/Kunden), die allen gehören.
+    public func signOutEverywhere() {
+        try? googleAuth.disconnect()
+        try? clockodoAuth.disconnect()
+        try? clickUpAuth.disconnect()
+        try? sevdeskAuth.disconnect()
+        try? airtableAuth.disconnect()
+        try? claudeAuth.disconnect()
+        _ = ProfileStore.resetToFreshGuest(db: database)
+        try? KeychainIdentityAnchorStore().markSignedOut()
+    }
+
     // MARK: - Personalausweis-Anreicherung (ResidentIdentity)
 
     /// Reichert den Personalausweis local-first an: verankert die verifizierte

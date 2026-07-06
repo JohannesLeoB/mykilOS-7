@@ -131,4 +131,25 @@ public final class ProfileStore {
             return "local"
         }
     }
+
+    // MARK: - Abmelden: Namespace freigeben (Multi-User Nutzer-Wechsel)
+    // Setzt die local-Profilzeile auf einen FRISCHEN Gast (neue UUID, leeres Profil).
+    // Nach dem Neustart (Sign-out-Marker aktiv) bestimmt ensureUserID(nil) daraus
+    // einen frischen, isolierten Namespace, in dem der NÄCHSTE Bewohner startet —
+    // statt den des abgemeldeten zu erben. Die alte userID des abgemeldeten Bewohners
+    // überlebt im Mail→userID-Anker (KeychainIdentityAnchorStore) für seine Rückkehr;
+    // nur seine Profil-Basisdaten (Name/Rolle) werden ersetzt (Name kommt bei Rückkehr
+    // aus dem Personalausweis; Rollen-Erhalt ist die spätere Multi-Row-Politur).
+    // Best-effort (wie ensureUserID): DB-Fehler → "local"-Fallback statt Crash.
+    @discardableResult
+    public static func resetToFreshGuest(db: GRDBDatabase) -> String {
+        let freshID = UUID().uuidString
+        do {
+            let guest = ProfileRecord(from: UserProfile.empty).withUserID(freshID)
+            try db.write { dbConn in try guest.save(dbConn) }
+            return freshID
+        } catch {
+            return "local"
+        }
+    }
 }
