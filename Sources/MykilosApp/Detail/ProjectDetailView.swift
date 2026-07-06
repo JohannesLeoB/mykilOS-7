@@ -43,7 +43,6 @@ struct ProjectDetailView: View {
                 } else {
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 0) {
-                            SignalDemoView(projectID: project.projectNumber, driveFolderID: project.links.driveFolderID)
                             tabContent
                         }
                     }
