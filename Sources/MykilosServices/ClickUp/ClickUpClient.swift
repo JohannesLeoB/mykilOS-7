@@ -290,6 +290,10 @@ public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning, ClickU
         return Date(timeIntervalSince1970: value / 1000.0)
     }
 
+    // Der Projekt-Meta-Übertrag (`custom_fields` → `ClickUpProjektMeta` über die Route-Tabelle)
+    // liegt bewusst NEBENAN in ClickUpProjektMetaMapper.swift (`ClickUpProjektMetaMapper.parse`) —
+    // eigener Decodable-Pfad, hält diesen Client schlank und den Meta-Schaltschrank an einem Ort.
+
     // MARK: Schreib-Bausteine (rein, testbar)
 
     static func buildFolderListsURL(baseURL: String, folderID: String) -> URL? {
@@ -361,6 +365,8 @@ private struct ClickUpTaskEntity: Decodable {
     // Custom Fields sind je nach Feldtyp heterogen (Bool/String/Int/null) — uns interessiert
     // hier nur `project_phase` (drop_down → `value` ist der Orderindex der Option als Int).
     // Andere Feldtypen tolerant überspringen (nil), statt das ganze Parsing zu brechen.
+    // Der typisierte Projekt-Meta-Übertrag (13 Felder) läuft separat über
+    // ClickUpProjektMetaMapper.swift mit eigenem Decodable-Pfad.
     struct CustomFieldEntity: Decodable {
         var name: String
         var value: Int?

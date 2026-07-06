@@ -12,6 +12,32 @@ Einträge oben.
 
 ---
 
+## 2026-07-06 (autonome Folge-Session) — ClickUp-Custom-Fields als Schaltschrank-Route (Stufe 1)
+
+**Was näher an der Vision:** Der erste echte `FieldRoute`-Schaltschrank steht — ClickUps 13 Projekt-
+Custom-Fields werden über eine umsteckbare Routing-Tabelle (Registry als Daten, nicht 13 harte if-Zweige)
+in ein typisiertes `ClickUpProjektMeta` gehoben. Genau das Leitprinzip aus `PRINZIP_SCHALTSCHRANK.md`,
+sauber in Code gegossen + voll getestet (18 Tests, u. a. „Route umlegen leitet Quelle auf anderes Ziel"),
+read-only wie beauftragt. 1103 Tests grün, neue Dateien 0 Lint-Verstöße.
+
+**Was gestolpert:**
+1. **Erst mis-gelesen: „exit 0" ≠ Tests grün.** Ein Hintergrund-Testlauf meldete exit 0, aber die
+   Testdatei kompilierte gar nicht (`ambiguous use`). Hätte ich dem Exit-Code getraut, hätte ich hohl
+   „grün" gemeldet — die eiserne Regel. Gefangen, weil ich zusätzlich nach `Test run with`/`✘` grep'te.
+   Lehre bestätigt: immer die echte Summenzeile sehen, nie den Exit-Code als Beweis.
+2. **Doppel-Enum-Ambiguität selbst gebaut** (zwei parallele Rohwert-Enums `.zahl/.text/.liste`) → Test-
+   Kompilierfehler. Auf EIN öffentliches Enum kollabiert = einfacher + fehlerfrei. Weniger Typen ist mehr.
+3. **SwiftLint-Falle #2 (neu):** die Custom-Rule `no_silent_try` matcht den Literal-Text `try?` **auch im
+   Kommentar** → False-Positive-„Verstoß". Und: eine verbose Datei über 400 Zeilen zu schieben löst
+   `file_length` aus. Beides sauber gefixt (Kommentar umformuliert, Meta-Logik in eigene Datei gesplittet,
+   ClickUpClient.swift wieder unter 400) statt gebaselined — Baseline musste NICHT angefasst werden.
+
+**Die EINE Sache anders fürs nächste Mal:** Bei tolerantem Decoding gleich EIN Rohwert-Typ + `do/catch`
+statt `try?`-Ketten — spart die Ambiguität UND die Lint-Reibung von vornherein. Und Kommentare nie den
+Token `try?` enthalten lassen, wenn eine Regex-Custom-Rule darauf triggert.
+
+---
+
 ## 2026-07-06 — Lange, produktive Session (Multi-User fertig + Review + Vision kartiert)
 
 **Was näher an der Vision:** Multi-User-Identität komplett gebaut UND adversarial reviewt

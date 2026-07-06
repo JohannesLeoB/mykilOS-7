@@ -58,3 +58,47 @@ Baseline neu erzeugt + auf CI-Runner-Pfad re-pinnt (Commit `606fde7`). Ein echte
 `main` NICHT gemergt (bewusst — CI-grün + GO nötig). Der gepushte Branch ist die Backup-/Weiterbau-Basis.
 Kleinster nächster Bau-Schritt mit größtem Wert: **ClickUp `FieldRoute`-Registry** (Schaltschrank,
 read-only, voll testbar) ODER **Ordner-Schema editierbar machen** (Stufe 1, kein Drive-Write).
+
+---
+
+## Nachtrag 2026-07-06 (autonome Folge-Session): ClickUp-Custom-Fields als Schaltschrank-Route (Stufe 1, read-only)
+
+**Gebaut** (Schritt 1+2 aus `CLICKUP_DATENINTEGRATION_PLAN.md`, rein Lese-/Modell-Arbeit — kein Schreiben,
+kein Netzwerk, kein echtes Secret):
+
+1. **`ClickUpProjektMeta`-Struct** (`Sources/MykilosKit/Domain/ClickUpProjektMeta.swift`, Foundation-only,
+   Codable/Sendable): typisiertes Modell der 13 Projekt-Custom-Fields (Budget `Double?`, 3× Datum `Date?`,
+   Drive-Ordner/Kunde/Kunde-Token/Projekttyp/Ort/Lead/Risiko/Slack `String?`, Lieferanten `[String]?`).
+   Alle Slots optional (fehlt ein Feld → nil, nie brechend). Dazu `.empty`/`isEmpty`.
+2. **Schaltschrank-Registry** (gleiche Datei): `ClickUpMetaSlot` (13 stabile Klemmen-IDs mit `kind` +
+   typisierten Key-Paths als DATEN am Slot), `ClickUpFieldRoute { routeID, quelle, ziel, aktiv }` und
+   `ClickUpFieldRouteRegistry` mit `.default` (13 Routen, ClickUp-Feldname → Slot). Umlegen = Route-Zeile
+   ändern, nicht Parser. Registry ist Codable (persistierbar/perspektivisch editierbar).
+3. **Adapter-Auswertung** (`Sources/MykilosServices/ClickUp/ClickUpProjektMetaMapper.swift`, neue Datei):
+   `ClickUpMetaFieldValue` (tolerant dekodierter Rohwert: Zahl/Text/Liste/none via do/catch-Type-Probing,
+   inkl. Label-Objekt-Arrays), `ClickUpProjektMetaMapper.parse(from:routes:)` (eigener minimaler
+   Decodable-Pfad über `custom_fields` der ersten befüllten Task) und `.map(fields:routes:)` (läuft die
+   Felder durch die Route-Tabelle statt 13 harter if-Zweige). `ClickUpClient.swift` blieb dabei bewusst
+   schlank (der `project_phase`-Int-Pfad ist unverändert — Regressionstest deckt das ab).
+
+**Tests:** `Tests/MykilosServicesTests/ClickUpProjektMetaTests.swift` — 18 neue Tests (voller 13-Feld-Parse
+aus Fake-`custom_fields`, fehlende/null-Felder → nil, leere Task/Liste → `.empty`, kaputtes JSON → throw,
+Mapper direkt mit Fake-Feldern, Registry-Lookup, stillgelegte Route übersprungen, **Route umlegen leitet
+Quelle auf anderes Ziel**, Registry-Codable-Roundtrip, project_phase-Regression). Kein echtes ClickUp/
+Netzwerk/Keychain.
+
+```
+Build:  ✅ swift build grün
+Tests:  ✅ 1103 grün (140 Suites) — 1085 Baseline + 18 neu
+Lint:   ✅ neue Dateien 0 Verstöße (swiftlint --strict); Projekt-Lauf mit (pfad-korrigierter) Baseline
+        sauber → Baseline musste NICHT neu geschrieben werden (Zeilen-Shift in ClickUpClient.swift von
+        der Baseline toleriert).
+CI:     <wird nach Push mit gh run watch geprüft>
+```
+
+**⚠️ Offen / Johannes-Entscheidung:** Die Route-`quelle`-Namen im `.default` nutzen die deutschen LABELS
+aus dem Plan („Budget (€)", „Nächstes Nachfassen" …). Der reale `custom_fields[].name` der ClickUp-API
+kann davon abweichen (Slug vs. Label) — genau dafür ist der Schaltschrank da: stimmt ein Name live nicht,
+wird EINE Route-Zeile angepasst, kein Parser-Umbau. Die exakten Live-Slugs bestätigt Johannes (bzw. eine
+Session mit echtem ClickUp-Read). **Nicht Teil dieses Auftrags** (spätere Schritte): Spiegeln in
+UI/Widgets/`Project`-Felder, Meilenstein-Timeline, Status-Ableitung, Alert-Pfad, Caching/Polling.
