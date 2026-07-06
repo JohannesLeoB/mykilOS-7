@@ -17,15 +17,20 @@ struct ChatMessageRecord: Codable, FetchableRecord, PersistableRecord {
     var statusJSON: Data
     var sequence: Int
     var createdAt: Double
+    // Multi-User (v25): welcher Bewohner besitzt diese Nachricht. Nullable —
+    // Alt-Zeilen (vor v25) haben NULL und werden beim Start dem Erst-Bewohner
+    // zugeordnet (MultiUserBackfill). Neue Zeilen tragen immer die aktive userID.
+    var userID: String?
 
     enum Columns {
         static let threadScopeKey = Column(CodingKeys.threadScopeKey)
         static let sequence = Column(CodingKeys.sequence)
+        static let userID = Column(CodingKeys.userID)
     }
 }
 
 extension ChatMessageRecord {
-    init(from message: ChatMessage, scopeKey: String, sequence: Int) throws {
+    init(from message: ChatMessage, scopeKey: String, sequence: Int, userID: String?) throws {
         self.id = message.id.uuidString
         self.threadScopeKey = scopeKey
         self.role = message.role.rawValue
@@ -33,6 +38,7 @@ extension ChatMessageRecord {
         self.statusJSON = try JSONEncoder().encode(message.status)
         self.sequence = sequence
         self.createdAt = message.createdAt.timeIntervalSince1970
+        self.userID = userID
     }
 
     func toDomain() throws -> ChatMessage {

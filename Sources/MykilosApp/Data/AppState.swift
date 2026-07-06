@@ -342,8 +342,6 @@ public final class AppState {
         self.favorites = FavoritesStore(db: database)
         self.profile = ProfileStore(db: database)
         self.residentIdentity = ResidentIdentityStore(db: database)
-        let chatStore = ChatStore(db: database)
-        self.chat = chatStore
         // V10 Folge-Block A: stabile lokale userID VOR den Keychain-AuthServices
         // ermitteln (synchron, direkt gegen die DB — profile.load() läuft erst
         // async in bootstrap(), zu spät für die Store-Konstruktion hier).
@@ -395,6 +393,18 @@ public final class AppState {
         // bleibt der Riegel inaktiv (Verhalten wie vor diesem Fix) statt Absturz.
         try? KeychainIdentityAnchorStore().ensureDevicePrimary(finalUserID)
         let userID = finalUserID
+        // MULTI-USER: Alt-Zeilen der privaten Stores (userID IS NULL, vor v25) dem
+        // Erst-Bewohner zuordnen — NUR wenn der aktive Bewohner der Primary ist
+        // (sonst bleiben sie unberührt + für einen Zweit-Bewohner unsichtbar →
+        // kein Datenverlust, kein Leak). Non-fatal, idempotent (siehe MultiUserBackfill).
+        if let primary = try? KeychainIdentityAnchorStore().loadDevicePrimary(), primary == userID {
+            try? MultiUserBackfill.assignNullRowsToPrimary(db: database, primaryUserID: primary)
+        }
+        // Chat-Store JETZT mit der ENDGÜLTIGEN userID bauen (privat, per-Bewohner
+        // gefiltert). Muss NACH CurrentUserContext.set(finalUserID) stehen, sonst
+        // erbte er die userID des vorigen Prozess-Laufs.
+        let chatStore = ChatStore(db: database, userID: userID)
+        self.chat = chatStore
         self.googleAuth = GoogleAuthService(tokenStore: KeychainGoogleTokenStore(userID: userID))
         self.clockodoAuth = ClockodoAuthService(
             credentialsStore: KeychainClockodoCredentialsStore(userID: userID))

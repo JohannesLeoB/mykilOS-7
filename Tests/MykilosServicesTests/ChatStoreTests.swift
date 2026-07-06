@@ -120,4 +120,59 @@ struct ChatStoreTests {
         #expect(ChatScope(rawKey: "project:ME-24") == .project("ME-24"))
         #expect(ChatScope(rawKey: "quatsch") == nil)
     }
+
+    // MARK: Multi-User — Chat ist pro Bewohner isoliert (PRIVAT, nie kreuzlesbar)
+    @Test func chatIstProBewohnerIsoliert() throws {
+        let db = try GRDBDatabase.inMemory()
+        // Bewohner A schreibt in Home + ein Projekt.
+        let storeA = ChatStore(db: db, userID: "user-a")
+        try storeA.append(.text("A's privater Chat", role: .user), to: .home)
+        try storeA.append(.text("A's Projekt-Chat", role: .user), to: .project("ME-24"))
+
+        // Bewohner B (andere userID) sieht NICHTS von A — auf demselben Gerät/DB.
+        let storeB = ChatStore(db: db, userID: "user-b")
+        try storeB.loadIfNeeded(.home)
+        try storeB.loadIfNeeded(.project("ME-24"))
+        #expect(storeB.messages(for: .home).isEmpty)
+        #expect(storeB.messages(for: .project("ME-24")).isEmpty)
+
+        // A findet seinen Verlauf nach „Neustart" (frischer Store, gleiche userID) wieder.
+        let storeA2 = ChatStore(db: db, userID: "user-a")
+        try storeA2.loadIfNeeded(.home)
+        #expect(storeA2.messages(for: .home).map(\.text) == ["A's privater Chat"])
+    }
+
+    // MARK: Multi-User — clear() eines Bewohners rührt fremde Nachrichten nicht an
+    @Test func clearLoeschtNurEigeneNachrichten() throws {
+        let db = try GRDBDatabase.inMemory()
+        let storeA = ChatStore(db: db, userID: "user-a")
+        try storeA.append(.text("A bleibt", role: .user), to: .home)
+        // B löscht seinen (leeren) Home-Scope — A's Nachricht bleibt unberührt.
+        let storeB = ChatStore(db: db, userID: "user-b")
+        try storeB.clear(.home)
+        let storeA2 = ChatStore(db: db, userID: "user-a")
+        try storeA2.loadIfNeeded(.home)
+        #expect(storeA2.messages(for: .home).map(\.text) == ["A bleibt"])
+    }
+
+    // MARK: Multi-User — Backfill ordnet Alt-Zeilen (userID NULL) dem Erst-Bewohner zu
+    @Test func backfillOrdnetAltZeilenDemErstBewohnerZu() throws {
+        let db = try GRDBDatabase.inMemory()
+        // Alt-Zustand vor v25: Nachricht ohne userID (NULL).
+        let legacyStore = ChatStore(db: db, userID: nil)
+        try legacyStore.append(.text("Bestehender Chat vor Multi-User", role: .user), to: .home)
+
+        // Backfill: NULL → Erst-Bewohner.
+        try MultiUserBackfill.assignNullRowsToPrimary(db: db, primaryUserID: "primary")
+
+        // Der Erst-Bewohner sieht die Alt-Nachricht (kein Datenverlust).
+        let primaryStore = ChatStore(db: db, userID: "primary")
+        try primaryStore.loadIfNeeded(.home)
+        #expect(primaryStore.messages(for: .home).map(\.text) == ["Bestehender Chat vor Multi-User"])
+
+        // Ein Zweit-Bewohner sieht sie NICHT (kein Leak).
+        let otherStore = ChatStore(db: db, userID: "other")
+        try otherStore.loadIfNeeded(.home)
+        #expect(otherStore.messages(for: .home).isEmpty)
+    }
 }

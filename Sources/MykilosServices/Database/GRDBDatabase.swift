@@ -493,6 +493,23 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v25_chat_user_isolation (Multi-User) — der Assistent-Chat-Verlauf ist
+        // PRIVAT (eiserne Regel: nie teamweit kreuzlesbar). Bisher lief er
+        // geräteweit ungefiltert → ein zweiter Bewohner auf demselben Mac sähe
+        // die Threads des ersten. Additive nullable Spalte (Muster v22): Alt-Zeilen
+        // bekommen NULL und werden beim Start dem Erst-Bewohner zugeordnet
+        // (MultiUserBackfill), neue Zeilen tragen die aktive userID. Index auf
+        // (userID, threadScopeKey) hält den gefilterten Load schnell.
+        migrator.registerMigration("v25_chat_user_isolation") { db in
+            try db.alter(table: "chatMessages") { t in
+                t.add(column: "userID", .text)
+            }
+            try db.execute(sql: """
+                CREATE INDEX IF NOT EXISTS idx_chatMessages_userID_scope
+                ON chatMessages(userID, threadScopeKey)
+                """)
+        }
+
         return migrator
     }
 

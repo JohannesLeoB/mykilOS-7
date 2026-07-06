@@ -20,12 +20,19 @@ public final class ChatStore {
     public private(set) var saveState: SaveState = .idle
 
     private let db: GRDBDatabase
+    // Multi-User: der aktive Bewohner. Alle Reads/Writes sind auf ihn gefiltert,
+    // damit auf einem geteilten Mac kein Bewohner die (privaten) Chats eines
+    // anderen sieht. Neustart-basiert: der Store wird beim Bewohner-Wechsel neu
+    // gebaut (AppState.init), daher ist auch der In-Memory-Cache byScope implizit
+    // je userID frisch — kein Cross-User-Cache-Leak.
+    private let userID: String?
     // Geladene Slices je Scope (rawKey → Nachrichten in Sequenz-Reihenfolge).
     private var byScope: [String: [ChatMessage]] = [:]
     private var loadedScopes: Set<String> = []
 
-    public init(db: GRDBDatabase) {
+    public init(db: GRDBDatabase, userID: String? = CurrentUserContext.current) {
         self.db = db
+        self.userID = userID
     }
 
     // MARK: Lesen
@@ -40,6 +47,7 @@ public final class ChatStore {
         let records = try db.read { dbConn in
             try ChatMessageRecord
                 .filter(ChatMessageRecord.Columns.threadScopeKey == key)
+                .filter(ChatMessageRecord.Columns.userID == userID)
                 .order(ChatMessageRecord.Columns.sequence)
                 .fetchAll(dbConn)
         }
@@ -58,7 +66,7 @@ public final class ChatStore {
         let sequence = list.count   // append-only → count ist die nächste Sequenz
         saveState = .saving
         do {
-            let record = try ChatMessageRecord(from: message, scopeKey: key, sequence: sequence)
+            let record = try ChatMessageRecord(from: message, scopeKey: key, sequence: sequence, userID: userID)
             try db.write { dbConn in
                 try record.insert(dbConn)
             }
@@ -104,7 +112,7 @@ public final class ChatStore {
         saveState = .saving
         do {
             // index == gespeicherte Sequenz (append-only, in Reihenfolge geladen).
-            let record = try ChatMessageRecord(from: updated, scopeKey: key, sequence: index)
+            let record = try ChatMessageRecord(from: updated, scopeKey: key, sequence: index, userID: userID)
             try db.write { dbConn in
                 try record.update(dbConn)
             }
@@ -125,6 +133,7 @@ public final class ChatStore {
             try db.write { dbConn in
                 try ChatMessageRecord
                     .filter(ChatMessageRecord.Columns.threadScopeKey == key)
+                    .filter(ChatMessageRecord.Columns.userID == userID)
                     .deleteAll(dbConn)
             }
             byScope[key] = []
