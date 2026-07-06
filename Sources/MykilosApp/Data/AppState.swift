@@ -263,6 +263,33 @@ public final class AppState {
         try? KeychainIdentityAnchorStore().saveLastEmail(email)
     }
 
+    /// MULTI-USER (2026-07-06): schließt die Login-Auflösung nach einem LIVE
+    /// (nicht App-Start) erfolgreichen Google-Login — der bisher fehlende
+    /// Gegenpart zu `signOutEverywhere()`. Aufgerufen via
+    /// `GoogleAuthService.onLoginComplete`.
+    ///
+    /// - Reichert den Personalausweis an (verankert Mail → userID, persistiert
+    ///   „letzte Mail" — wie beim App-Start, nur jetzt auch live).
+    /// - Hebt einen evtl. gesetzten Sign-out-Marker auf. Ohne diesen Aufruf
+    ///   blieb der Marker nach dem ERSTEN Abmelden für immer gesetzt (toter
+    ///   Code: `clearSignedOut()` war definiert, aber nirgends aufgerufen) —
+    ///   jeder künftige Rückkehrer wäre nie per Mail wiedererkannt worden.
+    /// - War der Marker gesetzt (= dies ist der erste Login NACH einem
+    ///   Abmelden, also ein Bewohner-Wechsel), löst es einen App-Neustart aus.
+    ///   Bewusst NEUSTART-BASIERT (kein Hot-Switch von CurrentUserContext/
+    ///   Stores während die App läuft — das wäre laut Bauplan Touchpoint 7
+    ///   unsicher). War kein Sign-out aktiv, ist es nur ein normales Re-Login
+    ///   derselben Person — kein Neustart nötig.
+    public func completeLoginAndRefresh() async {
+        let anchor = KeychainIdentityAnchorStore()
+        let warSignedOut = (try? anchor.isSignedOut()) ?? false
+        await enrichResidentIdentity()
+        try? anchor.clearSignedOut()
+        if warSignedOut {
+            AppRelaunch.relaunch()
+        }
+    }
+
     /// E6: Trägt den aktuellen Nutzer (aus der verifizierten Google-Identität) idempotent
     /// ins Team-Verzeichnis (Airtable Clockodo-Nutzer) ein. Bestätigungs-gated (die View
     /// fragt vorher), append-only (find-or-create — nie Update/Delete). Gibt die Record-ID
@@ -540,6 +567,11 @@ public final class AppState {
             dataFlowLogger: dataFlow,
             memoryStore: ChatMemoryStore(db: database, userID: userID)
         )
+        // MULTI-USER (2026-07-06): erst HIER, ganz am Ende von init, verdrahten —
+        // self ist ab jetzt vollständig initialisiert, [weak self] darf sicher
+        // eingefangen werden. Schließt den Kreis zum Abmelde-Button: nach einem
+        // LIVE-Login (nicht App-Start) läuft die Login-Auflösung.
+        self.googleAuth.onLoginComplete = { [weak self] in await self?.completeLoginAndRefresh() }
     }
 
     // MARK: Projekt-Board (lazy, gecached)

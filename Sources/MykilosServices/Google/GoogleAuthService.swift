@@ -21,6 +21,13 @@ public final class GoogleAuthService {
     private let scopes: [GoogleOAuthScope]
     private let userInfoClient: GoogleUserInfoFetching
 
+    // MULTI-USER (2026-07-06): Hook fuer einen LIVE (nicht App-Start) erfolgreichen
+    // Login. Bewusst eine settable var statt Init-Parameter, damit AppState sie erst
+    // am ENDE seines eigenen init setzen kann (self muss dort schon vollstaendig
+    // initialisiert sein, um sicher [weak self] zu capturen). Default nil -> Tests/
+    // Call-Sites ohne AppState bleiben unveraendert.
+    public var onLoginComplete: (@MainActor () async -> Void)?
+
     public init(
         tokenStore: GoogleTokenStoring = KeychainGoogleTokenStore(),
         redirectServer: GoogleOAuthLoopbackRedirectServer = .shared,
@@ -95,6 +102,10 @@ public final class GoogleAuthService {
                 currentUser = info
             } catch {}
             status = .connected
+            // MULTI-USER: nur nach einem ECHTEN Live-Login (dieser Punkt hier,
+            // nicht App-Start-Hydration) -- schliesst die Login-Ausfloesung
+            // (Sign-out-Marker aufheben, ggf. Neustart bei Bewohner-Wechsel).
+            await onLoginComplete?()
         } catch {
             redirectServer.stop()
             status = .error(String(describing: error))

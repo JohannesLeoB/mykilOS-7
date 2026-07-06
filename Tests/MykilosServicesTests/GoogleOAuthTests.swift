@@ -15,7 +15,9 @@ final class InMemoryGoogleTokenStore: GoogleTokenStoring, @unchecked Sendable {
 
     func store(_ tokens: GoogleTokens) throws { self.tokens = tokens }
     func load() throws -> GoogleTokens? { tokens }
-    func clear() throws { tokens = nil; userInfo = nil }
+    // MULTI-USER (2026-07-06): clear() raeumt jetzt auch clientID/clientSecret
+    // (spiegelt den echten KeychainGoogleTokenStore-Fix).
+    func clear() throws { tokens = nil; userInfo = nil; clientID = nil; clientSecret = nil }
     func storeClientID(_ clientID: String) throws { self.clientID = clientID }
     func loadClientID() throws -> String? { clientID }
     func storeClientSecret(_ clientSecret: String) throws { self.clientSecret = clientSecret }
@@ -102,6 +104,23 @@ struct GoogleOAuthTests {
 
         #expect(service.status == .disconnected)
         #expect(store.tokens == nil)
+    }
+
+    // MULTI-USER (2026-07-06, Datenleck-Falle #6): disconnect() muss auch die
+    // vom Nutzer eingetragene clientID/clientSecret raeumen, nicht nur Tokens —
+    // sonst bleiben seine OAuth-Client-Daten fuer immer im Keychain liegen.
+    @MainActor
+    @Test func disconnectRaeumtAuchClientIDUndSecret() throws {
+        let store = InMemoryGoogleTokenStore()
+        store.tokens = GoogleTokens(accessToken: "a", refreshToken: "r", expiresAt: Date())
+        store.clientID = "meine-client-id"
+        store.clientSecret = "mein-secret"
+        let service = GoogleAuthService(tokenStore: store, redirectServer: GoogleOAuthLoopbackRedirectServer())
+
+        try service.disconnect()
+
+        #expect(store.clientID == nil)
+        #expect(store.clientSecret == nil)
     }
 
     @MainActor
