@@ -35,7 +35,11 @@ public struct BackupService: Sendable {
 
     private let appSupportDir: URL
     private let backupDir: URL
-    private let fm = FileManager.default
+    // Computed statt stored: FileManager ist nicht Sendable, aber `.default` ist
+    // ein thread-sicheres Singleton. Als stored property einer Sendable-Struct
+    // wäre das im Swift-6-Sprachmodus ein Fehler (2026-07-06). Computed property
+    // umgeht das ohne Verhaltensänderung — alle Aufrufstellen bleiben `fm.xyz`.
+    private var fm: FileManager { .default }
 
     public init(
         appSupportDir: URL = FileManager.default
