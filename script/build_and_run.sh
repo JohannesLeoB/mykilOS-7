@@ -8,7 +8,7 @@ BUNDLE_ID="de.mykilos.mykilos6"
 # unterscheidbar sein — kein zweites „11.0.0" auf der Platte). Bewohner-Oberfläche =
 # 11.1.0-alpha-Linie; bei jeder neuen Build die alpha-Nummer hochzählen.
 # ⚠️ create_dmg.sh trägt DIESSELBE Zahl (Zeile ~18) — beide synchron halten!
-APP_VERSION="11.1.0-alpha4"
+APP_VERSION="11.1.0-alpha5"
 # App-Bundle trägt die Versionsnummer im Namen, damit im Dock/Finder immer
 # eindeutig ist, welche Version läuft. BUNDLE_ID bleibt KONSTANT (sonst neuer
 # DB-/Keychain-Pfad → Datenverlust).
@@ -37,7 +37,7 @@ APP_VERSION="11.1.0-alpha4"
 # Konsolidierungs-Session (Doku-Wahrheit + toter Code + Prompt-Caching).
 APP_NAME="mykilOS $APP_VERSION"
 DISPLAY_NAME="mykilOS $APP_VERSION"
-BUILD_VERSION="32"
+BUILD_VERSION="33"
 MIN_SYSTEM_VERSION="14.0"
 APP_ICON="AppIcon.icns"
 
