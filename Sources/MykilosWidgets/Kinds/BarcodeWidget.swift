@@ -98,13 +98,13 @@ public struct BarcodeWidget: View {
                 // beliebige Ziele zeigen; der Nutzer sieht die volle URL oben + im
                 // Hover-Tooltip und öffnet selbst. Nur http/https.
                 if let link = scannedLink {
-                    Button(action: { NSWorkspace.shared.open(link) }) {
+                    Button(action: { NSWorkspace.shared.open(link) }, label: {
                         HStack(spacing: MykSpace.s3) {
                             Image(systemName: "safari")
                             Text("Link öffnen")
                         }
                         .font(.mykCaption).foregroundStyle(MykColor.drive.color)
-                    }
+                    })
                     .buttonStyle(.plain)
                     .help(link.absoluteString)
                 }
