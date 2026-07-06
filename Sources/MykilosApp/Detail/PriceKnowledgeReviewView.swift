@@ -14,6 +14,9 @@ import MykilosKalkulationsCore
 struct PriceKnowledgeReviewView: View {
     let store: LearningStore
     var onClose: () -> Void
+    /// false, wenn diese View fest eingebettet ist (z. B. als Kataloge-Tab) statt als
+    /// dismissbares Sheet -- dann ergibt ein "Schließen"-Kreuz keinen Sinn.
+    var zeigtSchliessenButton: Bool = true
 
     @State private var pending: [PDFExtractedPosition] = []
     @State private var freigegeben: Set<String> = []
@@ -42,10 +45,12 @@ struct PriceKnowledgeReviewView: View {
                     .font(.mykMono(9.5)).foregroundStyle(MykColor.muted.color)
             }
             Spacer()
-            Button { onClose() } label: {
-                Image(systemName: "xmark.circle.fill").font(.mykHeadline).foregroundStyle(MykColor.faint.color)
+            if zeigtSchliessenButton {
+                Button { onClose() } label: {
+                    Image(systemName: "xmark.circle.fill").font(.mykHeadline).foregroundStyle(MykColor.faint.color)
+                }
+                .buttonStyle(.plain).accessibilityLabel("Schließen")
             }
-            .buttonStyle(.plain).accessibilityLabel("Schließen")
         }
         .padding(MykSpace.s6)
     }

@@ -10,7 +10,7 @@ import MykilosKit
 // Phase 4 (2026-06-30): „Warenkörbe" hinzugekommen; „Geräte"-Tab entfernt
 //   (DeviceCatalog/CSV bleibt für KalkulationsEngine.geraetepreis).
 enum KatalogTab: String, CaseIterable, Identifiable {
-    case artikel, lager, warenkörbe, angebote, zeichnungen, kontakte, notizen, aufgaben
+    case artikel, lager, warenkörbe, angebote, zeichnungen, kontakte, notizen, aufgaben, preiswissen
     var id: String { rawValue }
 
     var title: String {
@@ -23,6 +23,7 @@ enum KatalogTab: String, CaseIterable, Identifiable {
         case .kontakte:    "Kontakte"
         case .notizen:     "Notizen"
         case .aufgaben:    "Aufgaben"
+        case .preiswissen: "Preis-Wissen"
         }
     }
     var icon: String {
@@ -35,6 +36,7 @@ enum KatalogTab: String, CaseIterable, Identifiable {
         case .kontakte:    "person.2"
         case .notizen:     "note.text"
         case .aufgaben:    "checklist"
+        case .preiswissen: "brain.head.profile"
         }
     }
     var accent: MykColor {
@@ -47,11 +49,19 @@ enum KatalogTab: String, CaseIterable, Identifiable {
         case .kontakte:    .people
         case .notizen:     .personal
         case .aufgaben:    .tasks
+        case .preiswissen: .personal
         }
     }
 
     static var defaultOrder: [KatalogTab] {
-        [.artikel, .lager, .warenkörbe, .angebote, .zeichnungen, .kontakte, .notizen, .aufgaben]
+        [.artikel, .lager, .warenkörbe, .angebote, .zeichnungen, .kontakte, .notizen, .aufgaben, .preiswissen]
+    }
+
+    /// Standard-Sichtbarkeit ohne gespeicherte Nutzerwahl: alle AUSSER Preis-Wissen
+    /// (Johannes-Feedback 2026-07-06 — Admin-Opt-in, nicht standardmäßig sichtbar wie
+    /// die übrigen Kataloge).
+    static var defaultAktiveTabs: Set<KatalogTab> {
+        Set(allCases).subtracting([.preiswissen])
     }
 }
 
@@ -74,7 +84,7 @@ struct KatalogeView: View {
 
     private var aktiveTabs: Set<KatalogTab> {
         let parsed = aktiveTabsRaw.split(separator: ",").compactMap { KatalogTab(rawValue: String($0)) }
-        return parsed.isEmpty ? Set(KatalogTab.allCases) : Set(parsed)
+        return parsed.isEmpty ? KatalogTab.defaultAktiveTabs : Set(parsed)
     }
     private var sichtbareTabs: [KatalogTab] {
         let sichtbar = order.filter { aktiveTabs.contains($0) }
@@ -310,6 +320,9 @@ struct KatalogeView: View {
         case .kontakte: KontakteKatalogTab()
         case .notizen:  NotizenKatalogTab()
         case .aufgaben: AufgabenKatalogTab()
+        case .preiswissen:
+            PriceKnowledgeReviewView(store: appState.learningStore, onClose: {}, zeigtSchliessenButton: false)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
 
