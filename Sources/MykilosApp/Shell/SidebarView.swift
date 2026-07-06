@@ -183,6 +183,8 @@ struct SidebarView: View {
                     NavItem(title: module.rawValue, icon: module.icon, isSelected: selection == module, compact: isCompact) {
                         withAnimation(.easeInOut(duration: 0.18)) { selection = module }
                     }
+                    // Compact: das feste 42pt-Icon mittig in der Spalte (fluchtet mit dem Brand-Chip).
+                    .frame(maxWidth: .infinity)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -306,10 +308,12 @@ private struct NavItem: View {
 
     @ViewBuilder private var content: some View {
         if compact {
+            // Ausrichtung (Feedback 2026-07-06): feste 42pt-Breite wie der Brand-Chip
+            // oben, statt vollbreitem Background — so fluchten Button + alle Modul-Icons
+            // exakt auf einer vertikalen Linie (das NavItem wird außen zentriert).
             Image(systemName: icon)
                 .font(.mykBody)
-                .frame(height: 38)
-                .frame(maxWidth: .infinity)
+                .frame(width: 42, height: 38)
         } else {
             HStack(spacing: 12) {
                 Circle()

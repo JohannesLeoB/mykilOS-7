@@ -26,11 +26,16 @@ extension SettingsView {
                 .foregroundStyle(MykColor.muted.color)
                 .fixedSize(horizontal: false, vertical: true)
 
+            // Layout (Feedback 2026-07-06): Toggles greedy machen, damit der Switch
+            // ans rechte Ende rutscht — sonst klebt er hinter dem (unterschiedlich
+            // langen) Label und die Schalter stehen abgetreppt. maxWidth begrenzt die
+            // Zeile, damit Label und Switch nicht auseinandergerissen werden.
             Toggle(isOn: $miniModeEnabled) {
                 Label("Orange-Puls anzeigen", systemImage: "circle.grid.2x2")
                     .font(.mykSmall)
             }
             .toggleStyle(.switch)
+            .frame(maxWidth: 400, alignment: .leading)
 
             Divider().overlay(MykColor.line.color)
 
@@ -41,29 +46,30 @@ extension SettingsView {
             VStack(alignment: .leading, spacing: MykSpace.s3) {
                 Toggle(isOn: $miniModeTimer) {
                     Label("Aktiver Timer", systemImage: "timer").font(.mykSmall)
-                }
+                }.frame(maxWidth: .infinity, alignment: .leading)
                 Toggle(isOn: $miniModeTasks) {
                     Label("Offene Aufgaben", systemImage: "checklist").font(.mykSmall)
-                }
+                }.frame(maxWidth: .infinity, alignment: .leading)
                 Toggle(isOn: $miniModeSignals) {
                     Label("Offene Signale", systemImage: "sparkle").font(.mykSmall)
-                }
+                }.frame(maxWidth: .infinity, alignment: .leading)
                 // Wichtige Mails sind in V1 noch ohne passenden Cache-Producer — der
                 // Schalter ist vorhanden, wirkt aber erst mit einer echten Mail-Quelle.
                 // Ehrlicher Hinweis statt einer Zeile, die nie einen Wert zeigt.
                 Toggle(isOn: $miniModeMail) {
                     Label("Wichtige Mails (bald)", systemImage: "envelope").font(.mykSmall)
-                }
+                }.frame(maxWidth: .infinity, alignment: .leading)
                 .disabled(true)
                 // Nächster Termin ist in V1 noch ohne lokalen Cache — der Schalter ist
                 // vorhanden, wirkt aber erst mit dem geplanten Kalender-Cache. Ehrlicher
                 // Hinweis statt einer Zeile, die nie einen Wert zeigt.
                 Toggle(isOn: $miniModeCalendar) {
                     Label("Nächster Termin (bald)", systemImage: "calendar").font(.mykSmall)
-                }
+                }.frame(maxWidth: .infinity, alignment: .leading)
                 .disabled(true)
             }
             .toggleStyle(.switch)
+            .frame(maxWidth: 400, alignment: .leading)
             .disabled(!miniModeEnabled)
             .opacity(miniModeEnabled ? 1 : 0.5)
         }

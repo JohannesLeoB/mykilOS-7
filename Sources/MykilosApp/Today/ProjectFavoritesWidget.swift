@@ -134,6 +134,11 @@ private struct MiniProjectCard: View {
             RoundedRectangle(cornerRadius: MykRadius.sm)
                 .stroke(MykColor.line.color, lineWidth: 1)
         )
+        // Klick-Zuverlässigkeit (Feedback 2026-07-06): ohne explizite contentShape
+        // fängt der Button nur die opaken Pixel — abgerundete Ecken/transparente
+        // Stellen schluckten Klicks, man landete nicht zuverlässig in der Detailseite.
+        // Das ganze (abgerundete) Rechteck wird jetzt Hit-Target.
+        .contentShape(RoundedRectangle(cornerRadius: MykRadius.sm))
         .scaleEffect(isHovered ? 1.03 : 1.0)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
         .onHover { isHovered = $0 }
