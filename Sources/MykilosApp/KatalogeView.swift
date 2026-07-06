@@ -319,7 +319,7 @@ struct KatalogeView: View {
             GlobalPlansView()
         case .kontakte: KontakteKatalogTab()
         case .notizen:  NotizenKatalogTab()
-        case .aufgaben: AufgabenKatalogTab()
+        case .aufgaben: AufgabenKatalogView()
         case .preiswissen:
             PriceKnowledgeReviewView(store: appState.learningStore, onClose: {}, zeigtSchliessenButton: false)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

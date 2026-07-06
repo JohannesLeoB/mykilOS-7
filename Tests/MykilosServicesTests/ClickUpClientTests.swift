@@ -28,7 +28,7 @@ struct ClickUpClientTests {
               "status": { "status": "in progress" },
               "due_date": "1700000000000",
               "priority": { "priority": "urgent" },
-              "assignees": [ { "username": "J. Berger" } ]
+              "assignees": [ { "id": 42, "username": "J. Berger" } ]
             },
             {
               "id": "abc2",
@@ -48,11 +48,30 @@ struct ClickUpClientTests {
         #expect(tasks[0].name == "Bartresen-Detail freigeben")
         #expect(tasks[0].status == "in progress")
         #expect(tasks[0].isUrgent == true)
+        #expect(tasks[0].priority == .urgent)
         #expect(tasks[0].assignee == "J. Berger")
+        #expect(tasks[0].assigneeID == "42")
         #expect(tasks[0].dueDate == Date(timeIntervalSince1970: 1_700_000_000))
         #expect(tasks[1].isUrgent == false)
+        #expect(tasks[1].priority == nil)
         #expect(tasks[1].assignee == nil)
+        #expect(tasks[1].assigneeID == nil)
         #expect(tasks[1].dueDate == nil)
+    }
+
+    // Aufgaben-Spalte 2 (2026-07-07): volle Prio-Granularität, nicht nur isUrgent.
+    @Test func parseTasksDekodiertAllePrioStufen() throws {
+        let stufen: [(String, ClickUpPriority)] = [
+            ("urgent", .urgent), ("high", .high), ("normal", .normal), ("low", .low),
+        ]
+        for (raw, erwartet) in stufen {
+            let json = """
+            { "tasks": [ { "id": "x", "name": "n", "status": { "status": "open" },
+                           "due_date": null, "priority": { "priority": "\(raw)" }, "assignees": [] } ] }
+            """
+            let tasks = try ClickUpClient.parseTasks(from: Data(json.utf8))
+            #expect(tasks.first?.priority == erwartet)
+        }
     }
 
     @Test func parseTasksLeereListe() throws {

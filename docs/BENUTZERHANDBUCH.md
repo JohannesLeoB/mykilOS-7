@@ -501,6 +501,22 @@ Oben rechts: **+ Neues Projekt** (Fragebogen) und der **Warenkorb-Badge** (Posit
   - **Alarm-Voraussetzungen:** Ein Alarm feuert nur, wenn (a) der globale Aufgaben-Alarm in
     *Einstellungen → Mitteilungen* an ist, (b) die Aufgabe selbst „Alarm" gesetzt hat,
     (c) eine Fälligkeit in der Zukunft liegt und (d) die Aufgabe offen ist.
+  - **Quellen-Umschalter „Privat / ClickUp" (Aufgaben-Spalten-System, Spalte 1+2, 2026-07-07):**
+    Ein Segmented Control über der Liste wechselt zwischen der privaten Aufgabenliste (oben,
+    Default) und einer **projektübergreifenden, rein lesenden ClickUp-Ansicht**. Die Wahl wird
+    gemerkt (`kataloge.aufgaben.quelle`).
+    - **ClickUp-Spalte:** sammelt Aufgaben aus **allen** Projekten mit verknüpfter ClickUp-Liste
+      (gleiche Quelle wie das ClickUp-Aufgaben-Widget), nach Fälligkeit sortiert (früheste
+      zuerst, ohne Fälligkeit zuletzt). Filter: **Meine/Alle** (Abgleich über die ClickUp-
+      Mitglieds-ID aus Airtable — ohne hinterlegte ID zeigt die App einen Hinweis statt still
+      leer zu bleiben), **Projekt** (Dropdown, „Alle Projekte" als Default), **Prio** (Alle/
+      Dringend/Hoch/Normal/Niedrig, ClickUps native 4 Stufen), **Nur mit Fälligkeit** (Toggle).
+    - **Rein lesend.** Kein Erstellen, kein Zuweisen, kein Statuswechsel hier — das ist bewusst
+      Spalte 3 (separater, späterer Schritt), weil "zuweisen" mit der eisernen Regel "KI weist
+      NIE Menschen zu" kollidiert (siehe CLAUDE.md „Aufgaben & Autorität").
+    - Fehler beim Laden einzelner Listen werden als Hinweis angezeigt, blenden aber die
+      erfolgreich geladenen Projekte nicht aus (kein stiller Datenverlust, kein Totalausfall
+      wegen einer einzelnen kaputten Liste).
 
 ### Kalkulation (jetzt im Assistenten, S27)
 Der eigene „Kalkulation"-Sidebar-Tab ist **entfernt** — die Kostenschätzungs-Engine

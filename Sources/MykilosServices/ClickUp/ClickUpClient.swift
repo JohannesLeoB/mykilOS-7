@@ -11,61 +11,44 @@ public struct ClickUpTask: Identifiable, Equatable, Sendable {
     public var status: String
     public var dueDate: Date?
     public var assignee: String?
+    /// Numerische ClickUp-Member-ID des ersten Zugewiesenen (falls die API sie liefert) —
+    /// zum Abgleich mit `ResidentIdentity.clickUpMemberID` für "meine Aufgaben"-Filter.
+    /// `assignee` (Username) reicht dafür NICHT, da beide Felder unterschiedliche Formate sind.
+    public var assigneeID: String?
     public var isUrgent: Bool
+    /// Volle Prio-Stufe (Aufgaben-Spalte 2, 2026-07-07) — additiv neben `isUrgent`,
+    /// das weiterhin für bestehende Aufrufer (TasksWidget, AssistantTool) unverändert bleibt.
+    public var priority: ClickUpPriority?
     /// Custom Field `project_phase` (Testspace, per Task) — falls auf dieser Aufgabe gesetzt.
     public var projectPhase: ClickUpProjectPhase?
 
     public init(id: String, name: String, status: String,
-                dueDate: Date? = nil, assignee: String? = nil, isUrgent: Bool = false,
+                dueDate: Date? = nil, assignee: String? = nil, assigneeID: String? = nil,
+                isUrgent: Bool = false, priority: ClickUpPriority? = nil,
                 projectPhase: ClickUpProjectPhase? = nil) {
         self.id = id
         self.name = name
         self.status = status
         self.dueDate = dueDate
         self.assignee = assignee
+        self.assigneeID = assigneeID
         self.isUrgent = isUrgent
+        self.priority = priority
         self.projectPhase = projectPhase
     }
 }
 
-// MARK: - ClickUpProjectPhase (2026-07-04)
-// Das Custom Field `project_phase` (Testspace `90128024109`, verifiziert per
-// `clickup_get_custom_fields`) — 7 Stufen, feiner als mykilOS' 5-stufiger
-// Lebenszyklus-Stepper (`ProjectLifecycleStage`). Read-only Abgleich, siehe
-// docs/CLICKUP_PROJEKT_MAPPING.md §2: „Abgleich mit Lebenszyklus-Stepper … kein
-// Auto-Write in beide Richtungen" — ClickUp sagt nur, mykilOS schreibt nie zurück,
-// und der Nutzer setzt seine Stufe weiterhin selbst im Stepper.
-public enum ClickUpProjectPhase: Int, CaseIterable, Sendable, Equatable {
-    case briefing = 0
-    case planung = 1
-    case angebot = 2
-    case bestellung = 3
-    case ausfuehrung = 4
-    case abschluss = 5
-    case service = 6
+// MARK: - ClickUpPriority (Aufgaben-Spalte 2, 2026-07-07)
+// ClickUps 4 native Prio-Stufen, roh aus dem `priority.priority`-String der API.
+public enum ClickUpPriority: String, CaseIterable, Sendable, Equatable {
+    case urgent, high, normal, low
 
     public var label: String {
         switch self {
-        case .briefing:   "Briefing"
-        case .planung:    "Planung"
-        case .angebot:    "Angebot"
-        case .bestellung: "Bestellung"
-        case .ausfuehrung: "Ausführung"
-        case .abschluss:  "Abschluss"
-        case .service:    "Service"
-        }
-    }
-
-    /// Grobe Abbildung auf die 5-stufige mykilOS-Sicht: Bestellung fällt unter Ausführung
-    /// (Beschaffung läuft parallel zur Umsetzung), Service unter Abschluss (Nachbetreuung
-    /// eines bereits abgeschlossenen Projekts).
-    public var mykilosStage: ProjectLifecycleStage {
-        switch self {
-        case .briefing:    .akquise
-        case .planung:     .planung
-        case .angebot:     .angebot
-        case .bestellung, .ausfuehrung: .ausfuehrung
-        case .abschluss, .service:      .abschluss
+        case .urgent: "Dringend"
+        case .high: "Hoch"
+        case .normal: "Normal"
+        case .low: "Niedrig"
         }
     }
 }
@@ -268,7 +251,9 @@ public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning, ClickU
                     status: entity.status?.status ?? "",
                     dueDate: Self.date(fromEpochMillis: entity.dueDate),
                     assignee: entity.assignees?.first?.username,
+                    assigneeID: entity.assignees?.first?.id.map(String.init),
                     isUrgent: entity.priority?.priority?.lowercased() == "urgent",
+                    priority: ClickUpPriority(rawValue: entity.priority?.priority?.lowercased() ?? ""),
                     projectPhase: phaseIndex.flatMap(ClickUpProjectPhase.init(rawValue:))
                 )
             }
@@ -360,7 +345,7 @@ private struct ClickUpTaskEntity: Decodable {
 
     struct StatusEntity: Decodable { var status: String? }
     struct PriorityEntity: Decodable { var priority: String? }
-    struct AssigneeEntity: Decodable { var username: String? }
+    struct AssigneeEntity: Decodable { var id: Int?; var username: String? }
 
     // Custom Fields sind je nach Feldtyp heterogen (Bool/String/Int/null) — uns interessiert
     // hier nur `project_phase` (drop_down → `value` ist der Orderindex der Option als Int).
