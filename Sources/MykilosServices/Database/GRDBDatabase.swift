@@ -547,6 +547,22 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v29_datenschutz_praeferenzen (Vision-Doku "Nutzerprofil & Datenschutz", Stufe 3 —
+        // UI-Gerüst): pro Bewohner einzeln toggelbare Freigaben (kein Blanko-Konsens) + globaler
+        // "KI komplett aus"-Schalter. Single-Row id="local" wie userProfile. Alle Spalten
+        // NOT NULL mit Default true (=freigegeben) — bewusst opt-out, nicht opt-in-only-leer.
+        migrator.registerMigration("v29_datenschutz_praeferenzen") { db in
+            try db.create(table: "datenschutzPraeferenzen") { t in
+                t.primaryKey("id", .text)
+                t.column("teileMailMitAssistent", .boolean).notNull().defaults(to: true)
+                t.column("teileNotizenMitAssistent", .boolean).notNull().defaults(to: true)
+                t.column("teileChatMitAssistent", .boolean).notNull().defaults(to: true)
+                t.column("teileClockodoMitAssistent", .boolean).notNull().defaults(to: true)
+                t.column("kiKomplettAus", .boolean).notNull().defaults(to: false)
+                t.column("updatedAt", .double).notNull()
+            }
+        }
+
         return migrator
     }
 

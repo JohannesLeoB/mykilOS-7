@@ -22,6 +22,7 @@ public final class AppState {
     public let chat:       ChatStore
     public let conversation: ConversationEngine
     public let profile:    ProfileStore
+    public let datenschutzPraeferenzen: DatenschutzPraeferenzenStore
     // Personalausweis (ResidentIdentity): local-first Identitäts-Anker (verifizierte
     // Google-Mail als kanonischer Schlüssel + reine Handles zu externen Systemen).
     // GRDB-Master ist autoritativ; Airtable reichert read-only an. TRÄGT NIE EIN SECRET.
@@ -399,6 +400,7 @@ public final class AppState {
         self.audit = AuditStore(db: database)
         self.favorites = FavoritesStore(db: database)
         self.profile = ProfileStore(db: database)
+        self.datenschutzPraeferenzen = DatenschutzPraeferenzenStore(db: database)
         self.residentIdentity = ResidentIdentityStore(db: database)
         // V10 Folge-Block A: stabile lokale userID VOR den Keychain-AuthServices
         // ermitteln (synchron, direkt gegen die DB — profile.load() läuft erst
@@ -662,6 +664,7 @@ public final class AppState {
         try? homeBoard.load()
         try? homeNotes.load()
         try? profile.load()   // nicht-gefunden ist kein Fehler (leeres Profil)
+        try? datenschutzPraeferenzen.load()   // nicht-gefunden ist kein Fehler (Standard-Präferenzen)
         do {
             try audit.load()
         } catch {
