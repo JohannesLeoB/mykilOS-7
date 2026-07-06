@@ -405,6 +405,12 @@ abgelegtes PDF sagt nichts über E-Mails, Telefonate oder Reaktionen außerhalb 
 Ein/aus + Tage-Schwelle (Default 14) unter **Einstellungen → Mitteilungen**, per Nutzer
 individuell. Betrifft ausschließlich ausgehende Belege — eingehende werden nie geflaggt.
 
+**"Bitte reagieren"-Hinweis (2026-07-07):** Gegenrichtung zum Nachfass-Hinweis — eingehende
+Belege, die seit mehreren Tagen unverändert im Drive liegen (Label "seit X T offen"), unabhängig
+ein-/ausschaltbar mit eigener Tage-Schwelle (Default 14) unter **Einstellungen → Mitteilungen**.
+Gleiche ehrliche Einschränkung: reiner Alters-Hinweis, kein Beweis für eine noch fehlende eigene
+Reaktion. Betrifft ausschließlich eingehende Belege.
+
 ### Mail — Anhänge klickbar + in Drive ablegen (2026-07-02)
 Der Mail-Reader (Sidebar → Mail bzw. Assistent → Mail-Umschalter) zeigt zu jeder
 Nachricht ihre Anhänge. Diese sind jetzt **interaktiv**:

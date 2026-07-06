@@ -10,6 +10,8 @@ struct MitteilungenSectionView: View {
     @State private var ton: TaskAlarmSound = TaskAlarmPreferences.sound
     @State private var nachfassAn: Bool = NachfassAlertPreferences.aktiv
     @State private var nachfassSchwelle: Int = NachfassAlertPreferences.schwelleInTagen
+    @State private var bitteReagierenAn: Bool = BitteReagierenAlertPreferences.aktiv
+    @State private var bitteReagierenSchwelle: Int = BitteReagierenAlertPreferences.schwelleInTagen
 
     var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s4) {
@@ -57,6 +59,27 @@ struct MitteilungenSectionView: View {
                     .font(.mykMono(10)).frame(width: 160)
                     .disabled(nachfassAn == false)
             }
+
+            Divider().overlay(MykColor.line.color)
+
+            Text("\"Bitte reagieren\"-Hinweis bei eingehendem Beleg ohne Aktivität — die Gegenrichtung "
+                 + "zum Nachfass-Hinweis. Reiner Alters-Hinweis, kein Beweis für eine noch fehlende "
+                 + "eigene Reaktion (Alle Angebote → Eingehend).")
+                .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Toggle(isOn: bitteReagierenBinding) {
+                Label("\"Bitte reagieren\"-Hinweis aktiv", systemImage: "tray.and.arrow.down").font(.mykSmall)
+            }
+            .toggleStyle(.switch)
+            .frame(maxWidth: 400, alignment: .leading)
+
+            HStack(spacing: MykSpace.s3) {
+                Text("Ab wie vielen Tagen").font(.mykMono(9.5)).foregroundStyle(MykColor.faint.color)
+                Stepper("\(bitteReagierenSchwelle) Tage", value: bitteReagierenSchwelleBinding, in: 3...60)
+                    .font(.mykMono(10)).frame(width: 160)
+                    .disabled(bitteReagierenAn == false)
+            }
         }
         .settingsCard()
     }
@@ -75,5 +98,14 @@ struct MitteilungenSectionView: View {
 
     private var nachfassSchwelleBinding: Binding<Int> {
         Binding(get: { nachfassSchwelle }, set: { nachfassSchwelle = $0; NachfassAlertPreferences.schwelleInTagen = $0 })
+    }
+
+    private var bitteReagierenBinding: Binding<Bool> {
+        Binding(get: { bitteReagierenAn }, set: { bitteReagierenAn = $0; BitteReagierenAlertPreferences.aktiv = $0 })
+    }
+
+    private var bitteReagierenSchwelleBinding: Binding<Int> {
+        Binding(get: { bitteReagierenSchwelle },
+                set: { bitteReagierenSchwelle = $0; BitteReagierenAlertPreferences.schwelleInTagen = $0 })
     }
 }

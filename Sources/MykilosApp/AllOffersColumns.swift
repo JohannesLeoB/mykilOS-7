@@ -128,6 +128,14 @@ struct AllOfferRow: View {
         return NachfassAlertComputer.tageSeitAenderung(item)
     }
 
+    // "Bitte reagieren"-Hinweis (2026-07-07): Gegenrichtung — nur für eingehende Belege.
+    private var bitteReagierenTage: Int? {
+        guard BitteReagierenAlertPreferences.aktiv,
+              BitteReagierenAlertComputer.istFaellig(item, schwelleInTagen: BitteReagierenAlertPreferences.schwelleInTagen)
+        else { return nil }
+        return NachfassAlertComputer.tageSeitAenderung(item)
+    }
+
     var body: some View {
         Button {
             resolvedLocalURL = resolveLocalURL()
@@ -154,6 +162,12 @@ struct AllOfferRow: View {
                         .font(.mykMono(9))
                         .foregroundStyle(MykColor.tasks.color)
                         .help("Alters-Hinweis, keine bestätigte Kundenreaktion — Datei seit \(tage) Tagen im Drive unverändert.")
+                }
+                if let tage = bitteReagierenTage {
+                    Label("seit \(tage)T offen", systemImage: "tray.and.arrow.down")
+                        .font(.mykMono(9))
+                        .foregroundStyle(MykColor.tasks.color)
+                        .help("Alters-Hinweis, kein Beweis für eine fehlende Reaktion — Datei seit \(tage) Tagen im Drive unverändert.")
                 }
                 Image(systemName: "eye")
                     .font(.mykMono(10))

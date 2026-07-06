@@ -48,3 +48,44 @@ public enum NachfassAlertComputer {
         return Calendar.current.dateComponents([.day], from: modifiedAt, to: now).day
     }
 }
+
+// MARK: - BitteReagierenAlertPreferences (Backlog "Nachtrag 2026-07-02 spät", 2026-07-07)
+// Gegenrichtung zu NachfassAlertPreferences: eingehendes Ding ohne EIGENE Reaktion,
+// statt ausgehendes Angebot ohne Kundenreaktion. Gleiche Alters-Schwellen-Logik,
+// eigener Toggle + eigene Schwelle (unabhängig einstellbar).
+public enum BitteReagierenAlertPreferences {
+    private static let enabledKey = "bittereagieren.global"
+    private static let schwelleKey = "bittereagieren.schwelle.tage"
+
+    public static var aktiv: Bool {
+        get { UserDefaults.standard.object(forKey: enabledKey) as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: enabledKey) }
+    }
+
+    public static var schwelleInTagen: Int {
+        get {
+            let stored = UserDefaults.standard.object(forKey: schwelleKey) as? Int
+            return stored ?? 14
+        }
+        set { UserDefaults.standard.set(newValue, forKey: schwelleKey) }
+    }
+}
+
+// MARK: - BitteReagierenAlertComputer (2026-07-07)
+// Ehrliche Einschränkung wie bei NachfassAlertComputer: `modifiedAt` beweist nur, seit
+// wann das eingehende Dokument im Drive unverändert liegt — kein Beweis, dass Johannes
+// tatsächlich noch nicht reagiert hat (eine Antwort könnte z.B. rein per Telefon erfolgt
+// sein). Reiner Alters-Hinweis, NUR für EINGEHENDE Belege — Gegenrichtung zu
+// NachfassAlertComputer (dort: ausgehend).
+public enum BitteReagierenAlertComputer {
+    /// `true`, wenn ein eingehender Beleg seit mindestens `schwelleInTagen` Tagen
+    /// unverändert liegt (Alters-Proxy). Ausgehende Belege werden nie geflaggt.
+    public static func istFaellig(
+        _ offer: AllOffersCollector.AggregatedOffer, schwelleInTagen: Int, now: Date = Date()
+    ) -> Bool {
+        guard offer.direction == .incoming, schwelleInTagen > 0 else { return false }
+        guard let modifiedAt = offer.offer.file.modifiedAt else { return false }
+        let tageSeitEingang = Calendar.current.dateComponents([.day], from: modifiedAt, to: now).day ?? 0
+        return tageSeitEingang >= schwelleInTagen
+    }
+}

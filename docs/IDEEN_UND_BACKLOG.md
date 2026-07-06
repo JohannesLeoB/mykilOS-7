@@ -588,11 +588,13 @@ verdient volle Aufmerksamkeit + Johannes' Live-Abnahme auf echten PDFs, nicht ne
 
 ## Nachtrag 2026-07-02 spät — Drive/Mail-Alerts auf bestehenden Beobachtungspfaden (Johannes)
 
-- 📋 **„Bitte reagieren"-Alert bei liegengebliebenem Eingang:** eingehendes Freigabe-Dokument, Mail
-  oder Angebot, auf das Johannes lange nicht reagiert hat → Erinnerung. **Gegenrichtung** zur
-  bereits geloggten Nachfass-Erinnerung (dort: ausgehendes Angebot ohne Kundenreaktion; hier:
-  eingehendes Ding ohne EIGENE Reaktion) — gleiche zeitbasierte Alters-Schwellen-Logik, andere
-  Blickrichtung. Beide gehören zusammen in den ohnehin schon geforderten zentralen Alerts-Strang.
+- ✅ **„Bitte reagieren"-Alert bei liegengebliebenem Eingang (gebaut 2026-07-07):** als reiner
+  Alters-Hinweis (Label in `AllOfferRow`, „Alle Angebote" → Eingehend) ab konfigurierbarer
+  Tage-Schwelle (Einstellungen → Mitteilungen, `BitteReagierenAlertPreferences`, Default 14 Tage,
+  unabhängig vom Nachfass-Hinweis ein-/ausschaltbar). **Reduzierter Scope wie bei Nachfass:** nur
+  Belege aus `AllOffersCollector` (Eingehend), NICHT allgemeine Mail/Freigabe-Dokumente außerhalb
+  Drive — die volle "jede eingehende Mail ohne Reaktion"-Idee bräuchte eine neue Gmail-Watcher-
+  Logik, die hier bewusst nicht gebaut wurde. `BitteReagierenAlertComputer`, 5 Tests.
 - 📋 **„Kontakt anlegen"-Alert bei neu erkannten Kontaktdaten:** tauchen in Mail-Signaturen,
   Mail-Body oder Dokumenten Kontaktdaten auf, die noch **nicht** in der bestehenden Datenbank
   stehen → Vorschlag „Kontakt anlegen?". **Immer** Abgleich gegen die bestehende Datenbank vorher,
