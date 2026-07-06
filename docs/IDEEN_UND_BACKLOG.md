@@ -30,6 +30,18 @@ Verknüpfung zu Handoffs/Code, falls vorhanden. Status-Werte:
 
 ---
 
+## Nachtrag 2026-07-06 (nachts) — 💡 Assistent: Katalog-/Lagerbestand-Suche
+
+**Quelle:** Johannes im Chat, live beobachtet — Frage "welche Armaturen haben wir aktuell auf Lager?"
+konnte der Assistent nicht beantworten ("kein Lagerverwaltungssystem angebunden"). **Wunsch:** Der
+Assistent soll Kataloge/Artikel/Lagerbestand durchsuchen können — **gecached, schnell, unaufwendig,
+effektiv, günstig** (explizit kein teurer Live-API-Call pro Frage). Berührt vermutlich die Artikel-
+Datenbank (`appdxTeT6bhSBmwx5`, Daniels Hoheit, read-only!) oder einen separaten Lagerbestand — Quelle
+noch zu klären. Passt zur bestehenden Kalkulations-Korpus-Linie (lokaler Cache statt Live-Fetch).
+Noch nicht bewertet/entschieden — kein Umsetzungsauftrag.
+
+---
+
 ## Nachtrag 2026-07-05 (spät) — 🔖 VORGEMERKT: Multi-User auf EINEM Gerät (Nutzer-Wechsel), Johannes
 
 **Johannes: „Auf jeden Fall als Möglichkeit vormerken!!"** Heute ist das Identitätsmodell bewusst
