@@ -220,6 +220,7 @@ struct SettingsView: View {
             miniModeSection
         case .system:
             diagnoseSection
+            ordnerSchemaSection
             SchaltzentrumView()
         }
     }
