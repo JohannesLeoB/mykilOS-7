@@ -71,6 +71,8 @@ struct SettingsView: View {
     @State private var claudeApiKey: String = ""
     @State private var claudeModel: String = ClaudeAuthService.defaultModel
     @State private var claudeError: String?
+    // Multi-User: Abmelden (bestätigungs-gated, destructive).
+    @State private var showSignOutConfirm = false
     // E6: Team-Verzeichnis-Eintragung (bestätigungs-gated).
     @State private var showProvisionConfirm = false
     @State private var provisioning = false
@@ -350,6 +352,17 @@ struct SettingsView: View {
                     .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            // Multi-User: Abmelden — trennt alle 6 Integrationen, gibt den
+            // Namespace frei, startet die App neu. Geteilte Team-Daten
+            // (Airtable/Projekte) bleiben unberührt (kein clearLocalCache).
+            Divider()
+            Button("Abmelden (dieses Gerät)", role: .destructive) { showSignOutConfirm = true }
+            Text("Trennt Google/Clockodo/ClickUp/Sevdesk/Airtable/Claude, meldet dich ab und startet "
+                 + "die App neu. Der nächste Bewohner startet dann sauber isoliert — deine Daten bleiben "
+                 + "erhalten (per Mail-Login wiedererkannt), geteilte Team-Daten sind unberührt.")
+                .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(MykSpace.s6)
         .background(RoundedRectangle(cornerRadius: MykRadius.md).fill(MykColor.card.color))
@@ -361,6 +374,17 @@ struct SettingsView: View {
         } message: {
             Text("Legt einen Menschen-Record (Name + Mail) in der geteilten Airtable-Tabelle "
                  + "Clockodo-Nutzer an, falls noch keiner mit deiner Mail existiert. Append-only, kein Doppel.")
+        }
+        .confirmationDialog("Wirklich abmelden?",
+                            isPresented: $showSignOutConfirm, titleVisibility: .visible) {
+            Button("Abmelden + App neu starten", role: .destructive) {
+                appState.signOutEverywhere()
+                AppRelaunch.relaunch()
+            }
+            Button("Abbrechen", role: .cancel) {}
+        } message: {
+            Text("Trennt alle deine persönlichen Integrationen auf diesem Gerät und startet die App neu. "
+                 + "Geteilte Team-Daten (Airtable-Projekte) bleiben unberührt.")
         }
     }
 
