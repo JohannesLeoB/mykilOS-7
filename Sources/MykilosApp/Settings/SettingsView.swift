@@ -218,6 +218,7 @@ struct SettingsView: View {
             privateAreaSection
         case .datenschutz:
             datenschutzFreigabenSection
+            MitteilungenSectionView()
             miniModeSection
         case .system:
             diagnoseSection

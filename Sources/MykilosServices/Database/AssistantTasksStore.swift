@@ -15,6 +15,9 @@ struct AssistantTaskRecord: Codable, FetchableRecord, PersistableRecord {
     // Multi-User (v26): besitzender Bewohner. Nullable — Alt-Zeilen (vor v26) haben
     // NULL und werden beim Start dem Erst-Bewohner zugeordnet (MultiUserBackfill).
     var userID: String?
+    // Feature 2026-07-07 (v30): echter Alarm bei Fälligkeit. Additiv, NOT NULL DEFAULT 0
+    // (Migration) — Alt-Zeilen bekommen automatisch false.
+    var alarmAktiv: Bool
 
     init(from task: AssistantTask, userID: String?) {
         id = task.id
@@ -25,12 +28,13 @@ struct AssistantTaskRecord: Codable, FetchableRecord, PersistableRecord {
         createdAt = task.createdAt.timeIntervalSince1970
         updatedAt = task.updatedAt.timeIntervalSince1970
         self.userID = userID
+        alarmAktiv = task.alarmAktiv
     }
 
     var toDomain: AssistantTask {
         AssistantTask(id: id, title: title, done: done,
                       dueDate: dueDate.map { Date(timeIntervalSince1970: $0) },
-                      projectID: projectID,
+                      projectID: projectID, alarmAktiv: alarmAktiv,
                       createdAt: Date(timeIntervalSince1970: createdAt),
                       updatedAt: Date(timeIntervalSince1970: updatedAt))
     }
@@ -87,11 +91,51 @@ public actor AssistantTasksStore {
 
     /// Legt eine neue Aufgabe an und gibt sie zurück. `projectID` nil = global.
     @discardableResult
-    public func create(_ title: String, dueDate: Date? = nil, projectID: String? = nil, now: Date = Date()) throws -> AssistantTask {
+    public func create(
+        _ title: String, dueDate: Date? = nil, projectID: String? = nil,
+        alarmAktiv: Bool = false, now: Date = Date()
+    ) throws -> AssistantTask {
         let task = AssistantTask(title: title.trimmingCharacters(in: .whitespacesAndNewlines),
-                                 dueDate: dueDate, projectID: projectID, createdAt: now, updatedAt: now)
+                                 dueDate: dueDate, projectID: projectID, alarmAktiv: alarmAktiv,
+                                 createdAt: now, updatedAt: now)
         let record = AssistantTaskRecord(from: task, userID: userID)
         try db.write { conn in try record.insert(conn) }
+        return task
+    }
+
+    /// Volle Bearbeitung einer bestehenden Aufgabe per ID (UI-Editieren, nicht die
+    /// Fuzzy-Suche der Chat-Tools). nil, wenn die ID nicht existiert oder einem anderen
+    /// Bewohner gehört.
+    @discardableResult
+    public func update(
+        id: String, title: String, dueDate: Date?, alarmAktiv: Bool, now: Date = Date()
+    ) throws -> AssistantTask? {
+        guard var task = try all().first(where: { $0.id == id }) else { return nil }
+        task.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        task.dueDate = dueDate
+        task.alarmAktiv = alarmAktiv
+        task.updatedAt = now
+        let record = AssistantTaskRecord(from: task, userID: userID)
+        try db.write { conn in try record.update(conn) }
+        return task
+    }
+
+    /// Erledigt/offen per ID (UI-Checkbox, präziser als die Fuzzy-Suche unten).
+    @discardableResult
+    public func setDone(id: String, done: Bool, now: Date = Date()) throws -> AssistantTask? {
+        guard var task = try all().first(where: { $0.id == id }) else { return nil }
+        task.done = done
+        task.updatedAt = now
+        let record = AssistantTaskRecord(from: task, userID: userID)
+        try db.write { conn in try record.update(conn) }
+        return task
+    }
+
+    /// Löscht per ID (UI-Papierkorb-Button).
+    @discardableResult
+    public func delete(id: String) throws -> AssistantTask? {
+        guard let task = try all().first(where: { $0.id == id }) else { return nil }
+        _ = try db.write { conn in try AssistantTaskRecord.deleteOne(conn, key: id) }
         return task
     }
 

@@ -563,6 +563,15 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v30_assistant_task_alarm (Johannes-Feedback 2026-07-06/07, Aufgaben-Spalten):
+        // echter Alarm bei Fälligkeit einer privaten Aufgabe. Additiv, NOT NULL DEFAULT
+        // false — bestehende Aufgaben bekommen automatisch keinen Alarm.
+        migrator.registerMigration("v30_assistant_task_alarm") { db in
+            try db.alter(table: "assistantTasks") { t in
+                t.add(column: "alarmAktiv", .boolean).notNull().defaults(to: false)
+            }
+        }
+
         return migrator
     }
 
