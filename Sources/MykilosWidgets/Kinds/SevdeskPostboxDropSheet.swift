@@ -27,6 +27,10 @@ struct SevdeskPostboxDropSheet: View {
     @State private var kunde: String = ""
     @State private var kundennummer: String = ""
     @State private var betreff: String = ""
+    // Kontakte aus Airtable (read-only), damit ein echter Kunde ausgewählt statt neu
+    // getippt werden kann — „Kunden in den Warenkorb packen". Lädt lazy; ist Airtable
+    // nicht verbunden, bleibt nur die Freitext-Eingabe (die Sektion funktioniert weiter).
+    @State private var kontakteLoader = AirtableContactsLoader()
     @State private var preview: CheckoutPreview?
     @State private var previewError: String?
     @State private var status: Status = .idle
@@ -70,6 +74,7 @@ struct SevdeskPostboxDropSheet: View {
         .frame(width: 560, height: 560)
         .background(MykColor.paper.color)
         .task(id: belegTyp) { await ladeVorschau() }
+        .task { if kontakteLoader.state == .idle { await kontakteLoader.load() } }
     }
 
     // MARK: Bausteine
@@ -120,7 +125,11 @@ struct SevdeskPostboxDropSheet: View {
     // sevDesk-Oberfläche direkt gegeben sind, statt dort neu getippt zu werden.
     private var kundeSektion: some View {
         VStack(alignment: .leading, spacing: MykSpace.s3) {
-            Text("Kunde (für sevDesk)").font(.mykSmall).foregroundStyle(MykColor.muted.color)
+            HStack {
+                Text("Kunde (für sevDesk)").font(.mykSmall).foregroundStyle(MykColor.muted.color)
+                Spacer()
+                kontaktPicker
+            }
             TextField("Kundenname oder Firma", text: $kunde)
                 .textFieldStyle(.roundedBorder).font(.mykSmall)
                 .disabled(status == .laeuft)
@@ -138,6 +147,41 @@ struct SevdeskPostboxDropSheet: View {
                 .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    // Picker über die echten Airtable-Kontakte. Nur sichtbar, wenn Kontakte geladen sind
+    // (sonst bleibt die Freitext-Eingabe die einzige, weiterhin gültige Quelle). Ein Klick
+    // prefillt das Kunde-Feld mit Firma bzw. Name — Kundennummer/Betreff bleiben manuell,
+    // weil die Kontakte-Tabelle keine sevDesk-Kundennummer trägt.
+    @ViewBuilder
+    private var kontaktPicker: some View {
+        let kontakte = kontakteLoader.contacts
+        if kontakte.isEmpty == false {
+            Menu {
+                ForEach(kontakte.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { kontakt in
+                    Button {
+                        let firma = kontakt.organisation?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                        kunde = firma.isEmpty ? kontakt.name : firma
+                    } label: {
+                        Text(kontaktLabel(kontakt))
+                    }
+                }
+            } label: {
+                Label("Aus Kontakten wählen", systemImage: "person.crop.circle.badge.plus")
+                    .font(.mykMono(9.5)).foregroundStyle(MykColor.people.color)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .disabled(status == .laeuft)
+            .help("Kunde aus dem Airtable-Kontaktverzeichnis übernehmen")
+        }
+    }
+
+    private func kontaktLabel(_ kontakt: StudioContact) -> String {
+        if let firma = kontakt.organisation, firma.isEmpty == false, firma != kontakt.name {
+            return "\(kontakt.name) · \(firma)"
+        }
+        return kontakt.name
     }
 
     private var vorschauSektion: some View {
