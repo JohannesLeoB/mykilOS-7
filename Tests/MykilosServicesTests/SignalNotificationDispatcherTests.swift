@@ -25,6 +25,19 @@ struct SignalNotificationDispatcherTests {
         #expect(inhalt?.text == "2026-002: Werkzeichnung.pdf")
     }
 
+    // ClickUp-Vollintegration (2026-07-07): personalisierter Alert, anders als deadlineNear.
+    @Test func myClickUpTaskDueSoonErzeugtInhalt() {
+        let heute = WidgetSignal.myClickUpTaskDueSoon(projectID: "2026-015", taskName: "Aufmaß", days: 0)
+        #expect(SignalNotificationDispatcher.inhalt(fuer: heute)?.titel == "Eigene Aufgabe heute fällig")
+        #expect(SignalNotificationDispatcher.inhalt(fuer: heute)?.text == "2026-015: Aufmaß")
+
+        let morgen = WidgetSignal.myClickUpTaskDueSoon(projectID: "2026-015", taskName: "Aufmaß", days: 1)
+        #expect(SignalNotificationDispatcher.inhalt(fuer: morgen)?.titel == "Eigene Aufgabe morgen fällig")
+
+        let inTagen = WidgetSignal.myClickUpTaskDueSoon(projectID: "2026-015", taskName: "Aufmaß", days: 5)
+        #expect(SignalNotificationDispatcher.inhalt(fuer: inTagen)?.titel == "Eigene Aufgabe in 5 Tagen fällig")
+    }
+
     @Test func andereSignaleErzeugenKeinenInhalt() {
         let signale: [WidgetSignal] = [
             .driveFileAdded(projectID: "2026-001", fileName: "x.pdf"),

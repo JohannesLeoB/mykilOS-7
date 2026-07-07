@@ -78,7 +78,8 @@ public final class StudioContext {
              let .drawingDetected(p, _),
              let .reviewSuggested(p, _),
              let .budgetThresholdCrossed(p, _),
-             let .deadlineNear(p, _):
+             let .deadlineNear(p, _),
+             let .myClickUpTaskDueSoon(p, _, _):
             return p
         }
     }

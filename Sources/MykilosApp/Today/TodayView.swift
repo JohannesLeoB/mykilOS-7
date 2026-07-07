@@ -164,7 +164,7 @@ private struct SignalPill: View {
     private var signalColor: Color {
         switch signal {
         case .offerDetected, .reviewSuggested:    MykColor.cash.color
-        case .deadlineNear, .budgetThresholdCrossed: MykColor.critical.color
+        case .deadlineNear, .budgetThresholdCrossed, .myClickUpTaskDueSoon: MykColor.critical.color
         case .driveFileAdded, .drawingDetected:   MykColor.drive.color
         case .projectFocused:                     MykColor.faint.color
         }
@@ -179,6 +179,7 @@ private struct SignalPill: View {
         case .reviewSuggested(let p, let label):    "Review: \(p) · \(label)"
         case .budgetThresholdCrossed(let p, let r): "Budget \(p): \(Int(r * 100)) %"
         case .deadlineNear(let p, let days):        "Deadline \(p): \(days) Tage"
+        case .myClickUpTaskDueSoon(let p, let name, let days): "Eigene Aufgabe \(p): \(name) (\(days) Tage)"
         }
     }
 }

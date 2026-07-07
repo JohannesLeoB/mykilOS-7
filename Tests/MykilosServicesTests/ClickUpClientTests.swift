@@ -51,12 +51,35 @@ struct ClickUpClientTests {
         #expect(tasks[0].priority == .urgent)
         #expect(tasks[0].assignee == "J. Berger")
         #expect(tasks[0].assigneeID == "42")
+        #expect(tasks[0].assigneeIDs == ["42"])
         #expect(tasks[0].dueDate == Date(timeIntervalSince1970: 1_700_000_000))
         #expect(tasks[1].isUrgent == false)
         #expect(tasks[1].priority == nil)
         #expect(tasks[1].assignee == nil)
         #expect(tasks[1].assigneeID == nil)
+        #expect(tasks[1].assigneeIDs.isEmpty)
         #expect(tasks[1].dueDate == nil)
+    }
+
+    // ClickUp-Vollintegration (2026-07-07): Aufgaben können mehrere Assignees tragen —
+    // `assigneeID` bleibt der erste (bestehende "meine Aufgaben"-Filter), `assigneeIDs`
+    // trägt ALLE (für die Farb-Chip-Anzeige).
+    @Test func parseTasksDekodiertAlleAssigneeIDsBeiMehrerenZuweisungen() throws {
+        let json = """
+        {
+          "tasks": [
+            {
+              "id": "multi1",
+              "name": "Gemeinsame Aufgabe",
+              "status": { "status": "in progress" },
+              "assignees": [ { "id": 99729772, "username": "Jo" }, { "id": 296479146, "username": "Da" } ]
+            }
+          ]
+        }
+        """
+        let tasks = try ClickUpClient.parseTasks(from: Data(json.utf8))
+        #expect(tasks[0].assigneeID == "99729772")
+        #expect(tasks[0].assigneeIDs == ["99729772", "296479146"])
     }
 
     // Aufgaben-Spalte 2 (2026-07-07): volle Prio-Granularität, nicht nur isUrgent.
@@ -111,6 +134,82 @@ struct ClickUpClientTests {
     @Test func buildUpdateTaskURLEnthaeltTaskID() {
         let url = ClickUpClient.buildUpdateTaskURL(baseURL: baseURL, taskID: "abc123")
         #expect(url?.absoluteString == "https://api.clickup.com/api/v2/task/abc123")
+    }
+
+    // MARK: - Space-Auflösung (ClickUpWriteGate-Grundlage, S4 2026-07-07)
+
+    @Test func buildListDetailURLEnthaeltListID() {
+        let url = ClickUpClient.buildListDetailURL(baseURL: baseURL, listID: "901218617645")
+        #expect(url?.absoluteString == "https://api.clickup.com/api/v2/list/901218617645")
+    }
+
+    @Test func parseSpaceIDLiestEingebetteteSpace() throws {
+        let json = """
+        { "id": "901218617645", "name": "Liste", "space": { "id": "90127216979", "name": "PROJEKTE" } }
+        """
+        #expect(try ClickUpClient.parseSpaceID(from: Data(json.utf8)) == "90127216979")
+    }
+
+    @Test func parseSpaceIDNilOhneSpaceFeld() throws {
+        let json = """
+        { "id": "901218940344", "name": "Liste ohne Space" }
+        """
+        #expect(try ClickUpClient.parseSpaceID(from: Data(json.utf8)) == nil)
+    }
+
+    @Test func parseSpaceIDWirftBeiKaputtemJSON() {
+        #expect(throws: ClickUpError.decodingFailed) {
+            _ = try ClickUpClient.parseSpaceID(from: Data("kein json".utf8))
+        }
+    }
+
+    // MARK: - Identifizierung (Onboarding, 2026-07-07)
+
+    @Test func parseCurrentUserDekodiertIdUndUsername() throws {
+        let json = """
+        { "user": { "id": 99729772, "username": "Johannes Berger", "email": "johannes@mykilos.com", "color": "#000" } }
+        """
+        let user = try ClickUpClient.parseCurrentUser(from: Data(json.utf8))
+        #expect(user.id == "99729772")
+        #expect(user.username == "Johannes Berger")
+        #expect(user.email == "johannes@mykilos.com")
+    }
+
+    @Test func parseCurrentUserToleriertFehlendeEmail() throws {
+        let json = """
+        { "user": { "id": 42, "username": "Ohne Mail" } }
+        """
+        let user = try ClickUpClient.parseCurrentUser(from: Data(json.utf8))
+        #expect(user.id == "42")
+        #expect(user.email == nil)
+    }
+
+    @Test func parseCurrentUserWirftBeiKaputtemJSON() {
+        #expect(throws: ClickUpError.decodingFailed) {
+            _ = try ClickUpClient.parseCurrentUser(from: Data("kein json".utf8))
+        }
+    }
+
+    @Test func currentUserWirftNotConnectedOhneCredentials() async {
+        let store = InMemoryClickUpCredentialsStore()
+        let client = ClickUpClient(credentialsStore: store)
+        do {
+            _ = try await client.currentUser()
+            Issue.record("sollte werfen")
+        } catch {
+            #expect(error as? ClickUpError == .notConnected)
+        }
+    }
+
+    @Test func spaceIDWirftNotConnectedOhneCredentials() async {
+        let store = InMemoryClickUpCredentialsStore()
+        let client = ClickUpClient(credentialsStore: store)
+        do {
+            _ = try await client.spaceID(forListID: "901218617645")
+            Issue.record("sollte werfen")
+        } catch {
+            #expect(error as? ClickUpError == .notConnected)
+        }
     }
 
     @Test func createTaskWirftNotConnectedOhneCredentials() async {

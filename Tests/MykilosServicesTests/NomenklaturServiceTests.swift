@@ -13,6 +13,12 @@ struct NomenklaturServiceTests {
         FileManager.default.temporaryDirectory.appendingPathComponent("myk6-nomen-\(UUID().uuidString)", isDirectory: true)
     }
 
+    // Diese Tests prüfen die Schema-Logik, nicht das Admin-Gate (das deckt
+    // AdminEnforcementTests.swift ab) — daher hier einfach eine echte Admin-Identität.
+    private var adminAusweis: ResidentIdentity {
+        ResidentIdentity(googleEmail: "johannes@mykilos.com", userID: "u-admin-test")
+    }
+
     // MARK: NumberAuthority
 
     @Test func authorityNextIstMaxPlusEinsUeberAktivUndArchiv() async throws {
@@ -237,7 +243,7 @@ struct NomenklaturServiceTests {
         let dbA = try GRDBDatabase(url: url)
         let storeA = NomenklaturStore(db: dbA)
         try storeA.load()
-        try storeA.setzeSchema(eigenesSchema)
+        try storeA.setzeSchema(eigenesSchema, ausgeloestVon: adminAusweis, tokenPresent: true)
         #expect(storeA.aktivesSchema() == eigenesSchema)
         #expect(storeA.aktiveSchemaVersion == 2)
 
@@ -253,10 +259,10 @@ struct NomenklaturServiceTests {
         let db = try GRDBDatabase.inMemory()
         let store = NomenklaturStore(db: db)
         try store.load()
-        try store.setzeSchema(FolderSchema(version: 3, rootTemplate: "x", children: [], rootDateien: []))
+        try store.setzeSchema(FolderSchema(version: 3, rootTemplate: "x", children: [], rootDateien: []), ausgeloestVon: adminAusweis, tokenPresent: true)
         #expect(store.aktivesSchema().version == 3)
 
-        try store.setzeSchemaAufStandard()
+        try store.setzeSchemaAufStandard(ausgeloestVon: adminAusweis, tokenPresent: true)
         #expect(store.aktivesSchema() == FolderSchema.v1)
         #expect(store.customFolderSchema == nil)
         #expect(store.aktiveSchemaVersion == 1)

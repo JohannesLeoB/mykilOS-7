@@ -145,6 +145,8 @@ public struct ClaudeMessagesClient: AssistantLLMProviding {
             "- Budget in \(projectID): \(Int(ratio * 100)) Prozent"
         case .deadlineNear(let projectID, let days):
             "- Deadline in \(projectID): \(days) Tage"
+        case .myClickUpTaskDueSoon(let projectID, let taskName, let days):
+            "- Eigene Aufgabe in \(projectID): \(taskName) (\(days) Tage)"
         }
     }
 

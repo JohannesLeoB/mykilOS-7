@@ -29,6 +29,9 @@ public enum SignalNotificationPreferences {
 // budgetThresholdCrossed, deadlineNear) lösen bewusst KEINE Mitteilung aus — driveFileAdded
 // ist zu unspezifisch für einen Banner (jede x-beliebige neue Datei), die übrigen sind
 // interne Ableitungen ohne eigenen, für den Nutzer verständlichen Text an dieser Stelle.
+// `myClickUpTaskDueSoon` (2026-07-07) löst bewusst DOCH aus — es ist per Konstruktion
+// personalisiert (nur EIGENE Aufgaben, gefiltert über die eigene clickUpMemberID),
+// anders als das projektweite deadlineNear oben.
 public enum SignalNotificationDispatcher {
     /// Reine, testbare Entscheidung: Titel + Text für ein Signal, oder nil, wenn dieses
     /// Signal keine Mitteilung auslösen soll. Getrennt von der eigentlichen
@@ -39,6 +42,11 @@ public enum SignalNotificationDispatcher {
             return ("Neues Angebot erkannt", "\(projectID): \(label)")
         case let .drawingDetected(projectID, label):
             return ("Neue Werkzeichnung erkannt", "\(projectID): \(label)")
+        case let .myClickUpTaskDueSoon(projectID, taskName, days):
+            // Personalisiert (2026-07-07): nur EIGENE Aufgaben, deshalb hier — anders als
+            // deadlineNear (projektweit, jede Fälligkeit egal wer), das bewusst still bleibt.
+            let faelligkeit = days == 0 ? "heute fällig" : (days == 1 ? "morgen fällig" : "in \(days) Tagen fällig")
+            return ("Eigene Aufgabe \(faelligkeit)", "\(projectID): \(taskName)")
         case .driveFileAdded, .projectFocused, .reviewSuggested, .budgetThresholdCrossed, .deadlineNear:
             return nil
         }

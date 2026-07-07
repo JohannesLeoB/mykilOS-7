@@ -62,6 +62,10 @@ public final class AppState {
     // austauschbarer Adapter für die spätere Sevdesk-Vorgabe). Rein lokal, kein externer Write.
     public let nomenklatur: NomenklaturStore
     public let numberAuthority: any NumberAuthority
+    // ClickUp-Vollintegration S10 (2026-07-07): admin-verwaltete Go-Live-Whitelist konkreter
+    // Listen-IDs — die einzige Brücke von Testspace-Schreiben zu echten Produktivlisten,
+    // nie ein Bool-Toggle. Leer bis ein Admin explizit freischaltet.
+    public let clickUpGoLive: ClickUpGoLiveWhitelistStore
     // Review-Fix (high, Block D): konkreter Typ zusätzlich zum Protokoll gespeichert, damit
     // numberAuthorityLocal() nie einen unsicheren `as?`-Fallback mit LEERER aktiveNummern-Closure
     // bauen muss (Kollisionsgefahr bei Nummernvergabe). Ein Cast kann nie mehr fehlschlagen.
@@ -188,6 +192,25 @@ public final class AppState {
     public var sevdeskPostboxPort: SevdeskPostboxCheckoutPort {
         SevdeskPostboxCheckoutPort(
             airtableCreate: AirtableClient(), airtableFetch: AirtableClient(), logger: dataFlow)
+    }
+
+    // Onboarding-Wizard (2026-07-07): "wer bin ich in ClickUp?" — EINMALIG nach dem Verbinden
+    // aufgerufen (GET /user, read-only). Liefert die echte ClickUp-Member-ID direkt aus
+    // ClickUp — zuverlässiger als der Airtable-Ghost-Personas-Abgleich, der für neue
+    // Teammitglieder erst manuell nachgepflegt werden muss. Nur lokaler Write (ResidentIdentity).
+    /// Gibt den ClickUp-Anzeigenamen zur Bestätigung zurück, oder `nil` bei Fehler/kein Google-
+    /// Login (ohne verifizierte Mail kein gültiger Ausweis-Schlüssel, s. `hasValidKey`).
+    @discardableResult
+    public func identifiziereClickUpNutzer() async -> String? {
+        guard var identitaet = currentIdentity, identitaet.hasValidKey else { return nil }
+        do {
+            let nutzer = try await ClickUpClient().currentUser()
+            identitaet.clickUpMemberID = nutzer.id
+            try residentIdentity.save(identitaet)
+            return nutzer.username
+        } catch {
+            return nil
+        }
     }
 
     // S9: legt einen vom Nutzer BESTÄTIGTEN Kontakt via People API an + Audit.
@@ -540,6 +563,7 @@ public final class AppState {
         self.timer = TimerStore(db: database, userID: userID)
         let nomenklaturStore = NomenklaturStore(db: database)
         self.nomenklatur = nomenklaturStore
+        self.clickUpGoLive = ClickUpGoLiveWhitelistStore(db: database, audit: audit)
         // Aktive Projektnummern kommen live aus dem lokalen Routing-Cache (Eine Wahrheit) —
         // die Authority kombiniert sie mit ihrem GRDB-Register (archiviert/reserviert).
         // Das Datei-IO läuft explizit off-main (Task.detached), damit ein Vergabe-Aufruf
@@ -699,7 +723,10 @@ public final class AppState {
     // Stores (neuer User). Krypto/Format liegt getestet in MykInviteService — hier nur die
     // Store-Orchestrierung. Persönliches (eigener Google-Login, Clockodo) reist NIE mit.
 
-    /// Admin: baut das Bündel aus den aktuell verbundenen, ausgewählten Team-Keys.
+    /// Admin: baut das Bündel aus den aktuell verbundenen, ausgewählten Team-Keys. Store-Gate
+    /// S4: `assertAdmin` als ERSTE Zeile, VOR jedem Keychain-Read unten (kein Nicht-Admin liest
+    /// je ein Team-Secret). Bei Erfolg ein Audit-Eintrag mit der verifizierten `googleEmail`
+    /// als Actor (nie ein spoofbares Feld) — keine Keys werden geloggt.
     public func einladungErstellen(
         inhalt: MykInviteInhalt,
         eingeladeneEmail: String?,
@@ -707,6 +734,8 @@ public final class AppState {
         passwort: String,
         gueltigTage: Int? = 7
     ) throws -> Data {
+        let identity = currentIdentity
+        try adminAuthority.assertAdmin(identity, tokenPresent: currentAdminTokenPresent, funktion: "Einladung erstellen")
         var werte: [String: String] = [:]
         if inhalt.contains(.airtable), let creds = try airtableAuth.storedCredentials() {
             werte[MykInvitePayload.Schluessel.airtablePAT] = creds.pat
@@ -722,13 +751,23 @@ public final class AppState {
             werte[MykInvitePayload.Schluessel.claudeAPIKey] = creds.apiKey
             werte[MykInvitePayload.Schluessel.claudeModel] = creds.model
         }
-        return try MykInviteService.einladungErstellen(
+        let daten = try MykInviteService.einladungErstellen(
             werte: werte,
             eingeladeneEmail: eingeladeneEmail,
             eingeladenerName: eingeladenerName,
             passwort: passwort,
             gueltigTage: gueltigTage
         )
+        // Audit ist Teil des Erfolgs — schlägt das Protokollieren fehl, wirft der ganze Aufruf
+        // (kein „erstellt aber nicht protokolliert"-Stillstand), keine Keys im Summary.
+        try audit.append(AuditEntry(
+            actorUserID: identity?.googleEmail ?? "unbekannt",
+            projectID: "admin",
+            action: .inviteCreated,
+            summary: "Einladung erstellt" + (eingeladeneEmail.map { " für \($0)" } ?? ""),
+            quelle: "admin-invite"
+        ))
+        return daten
     }
 
     /// Neuer User: entschlüsselt das Bündel und verteilt die enthaltenen Keys in die Stores.
@@ -784,6 +823,7 @@ public final class AppState {
         try? projectNumberBindings.load()   // mykilOS 8, Block A: ungefunden = leere Liste
         try? timer.load()              // mykilOS 8, Block B: laufender Timer/offene Buchung überlebt Neustart
         try? nomenklatur.load()        // mykilOS 8, Block C: Konnektoren (v1-Seed), Schema-Version, Kostenstellen-Overrides
+        try? clickUpGoLive.load()      // ClickUp-Vollintegration S10: ungefunden = leere Whitelist (sicherer Default)
         try? clickUpRouting.load()     // mykilOS 8, Block D: ClickUp-Routing-Gerüst (Default-Zeilen seeden)
         try? projectLifecycle.load()   // mykilOS 8: lokale Lebenszyklus-Stufen je Projekt
         // Registry seeden/laden

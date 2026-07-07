@@ -14,12 +14,19 @@ import MykilosServices
 // Stufe (Kollisions-/Zyklen-Prüfung), bewusst zurückgestellt.
 struct OrdnerSchemaEditorView: View {
     let store: NomenklaturStore
+    // Admin-Ebene S4: für das Store-Gate durchgereicht (nie aus der View selbst behauptet) —
+    // AdminZoneSection zeigt diese View ohnehin nur Admins, aber der Store prüft trotzdem
+    // selbst (UI-Verstecken ist nie die einzige Grenze, ADMIN_EBENE_BAUPLAN.md Härtung 3).
+    let identity: ResidentIdentity?
+    let tokenPresent: Bool
 
     @State private var entwurf: FolderSchema
     @State private var zeigeZuruecksetzenBestaetigung = false
 
-    init(store: NomenklaturStore) {
+    init(store: NomenklaturStore, identity: ResidentIdentity?, tokenPresent: Bool) {
         self.store = store
+        self.identity = identity
+        self.tokenPresent = tokenPresent
         _entwurf = State(initialValue: store.aktivesSchema())
     }
 
@@ -136,7 +143,7 @@ struct OrdnerSchemaEditorView: View {
         // Fehler landet sichtbar in store.saveState (saveStateLabel oben) — kein zweiter
         // Fehlerkanal in der View nötig.
         do {
-            try store.setzeSchema(neu)
+            try store.setzeSchema(neu, ausgeloestVon: identity, tokenPresent: tokenPresent)
             entwurf = neu
         } catch {
             // store.saveState trägt den Fehler bereits sichtbar.
@@ -145,7 +152,7 @@ struct OrdnerSchemaEditorView: View {
 
     private func zuruecksetzen() {
         do {
-            try store.setzeSchemaAufStandard()
+            try store.setzeSchemaAufStandard(ausgeloestVon: identity, tokenPresent: tokenPresent)
             entwurf = store.aktivesSchema()
         } catch {
             // store.saveState trägt den Fehler bereits sichtbar.

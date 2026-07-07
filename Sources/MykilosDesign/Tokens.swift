@@ -23,6 +23,10 @@ public enum MykColor {
     case folderIcon   // Mac-Ordner-Blau (Dateien-Baum) — dunkel angehoben für Kontrast
     case notesPaper   // Notiz-Pergament-Hintergrund (dark = warmes Dunkelpapier)
     case notesInk     // Notiz-Tinte auf Pergament (dark = warmes Cremé, lesbar)
+    // Team-Mitglieder-Farben (ClickUp-Vollintegration, 2026-07-07): eine Farbe pro
+    // Ghost-Kürzel für Assignee-Chips (Aufgaben je Projekt/Zuweisung). Bewusst eigene
+    // Hue-Familien, nicht die Quellen-Farben oben — sonst verwechselt sich "wer" mit "woher".
+    case memberJo, memberDa, memberFra, memberSen, memberJil
 
     public var color: Color {
         switch self {
@@ -54,6 +58,24 @@ public enum MykColor {
         case .folderIcon: Self.adaptive(light: 0x478AE6, dark: 0x5A9CF0)
         case .notesPaper: Self.adaptive(light: 0xFBF3DA, dark: 0x2E2A1E)
         case .notesInk:   Self.adaptive(light: 0x6B5A2F, dark: 0xE6D9B0)
+        case .memberJo:   Self.adaptive(light: 0x5C6BC0, dark: 0x7B89D6)   // Indigo
+        case .memberDa:   Self.adaptive(light: 0x2E9C8F, dark: 0x4DB8AA)   // Teal
+        case .memberFra:  Self.adaptive(light: 0xC15C86, dark: 0xD57BA0)   // Rose
+        case .memberSen:  Self.adaptive(light: 0x9C7A3C, dark: 0xB8955A)   // Bronze
+        case .memberJil:  Self.adaptive(light: 0x4A8FA6, dark: 0x66AAC0)   // Stahlblau
+        }
+    }
+
+    /// Farbe für ein Ghost-Kürzel (Jo/Da/Fra/Sen/Jil) — `muted`, falls unbekannt/kein
+    /// Assignee. Einzige Stelle, die Kürzel auf eine Farbe abbildet (Assignee-Chips).
+    public static func fuerTeamKuerzel(_ kuerzel: String?) -> Color {
+        switch kuerzel {
+        case "Jo":  MykColor.memberJo.color
+        case "Da":  MykColor.memberDa.color
+        case "Fra": MykColor.memberFra.color
+        case "Sen": MykColor.memberSen.color
+        case "Jil": MykColor.memberJil.color
+        default:    MykColor.muted.color
         }
     }
 

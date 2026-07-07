@@ -24,6 +24,10 @@ struct OnboardingWizardView: View {
     @State private var profileError: String?
     @State private var claudeError: String?
     @State private var googleError: String?
+    // ClickUp-Identifizierung (2026-07-07)
+    @State private var clickUpToken = ""
+    @State private var clickUpError: String?
+    @State private var clickUpIdentifiziertAls: String?
     // E4: lokal bestätigbare clockodoUserID (Meldeadresse-Schritt).
     @State private var clockodoUserIDInput = ""
     @State private var meldeadresseError: String?
@@ -94,6 +98,7 @@ struct OnboardingWizardView: View {
         case .profile:  profileBody
         case .claude:   claudeBody
         case .google:   googleBody
+        case .clickup:  clickUpBody
         case .meldeadresse: meldeadresseBody
         case .optional: optionalBody
         case .done:     doneBody
@@ -176,6 +181,29 @@ struct OnboardingWizardView: View {
         }
     }
 
+    // ClickUp-Identifizierung (2026-07-07): einmaliger Login mit dem eigenen Personal-API-
+    // Token → GET /user identifiziert den Nutzer direkt bei ClickUp (clickUpMemberID).
+    private var clickUpBody: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            stepTitle("ClickUp verbinden", "Meldet dich einmalig bei ClickUp an, damit deine Aufgaben "
+                      + "dir richtig zugeordnet werden. Kannst du überspringen.")
+            ConnectionStatusView(state: clickUpDisplay)
+            Button("ClickUp öffnen …") { clickUpOeffnen() }
+                .buttonStyle(.plain).font(.mykSmall).foregroundStyle(MykColor.drive.color)
+            secureField("Personal API-Token (pk_…)", text: $clickUpToken, placeholder: "pk_…")
+            Button(appState.clickUpAuth.status == .connected ? "Erneut verbinden" : "Verbinden") { connectClickUp() }
+                .disabled(clickUpToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            if let clickUpIdentifiziertAls {
+                Label("Erkannt als \(clickUpIdentifiziertAls)", systemImage: "checkmark.circle.fill")
+                    .font(.mykMono(9.5)).foregroundStyle(MykColor.positive.color)
+            }
+            if let clickUpError { errorText(clickUpError) }
+            hint("Öffnet clickup.com in deinem Browser. Dort unter Einstellungen → Apps einen "
+                 + "Personal API-Token erstellen, hier einfügen. mykilOS meldet dich damit einmalig "
+                 + "an, um dich zu identifizieren — keine automatische Zuweisung, keine Benachrichtigung an andere.")
+        }
+    }
+
     // E4: Meldeadresse-Bestätigung — der Ausweis zeigt die aus Google erkannte Identität
     // (read-only), die clockodoUserID lässt sich lokal ergänzen. Kein externer Write.
     private var meldeadresseBody: some View {
@@ -209,7 +237,6 @@ struct OnboardingWizardView: View {
     private var optionalBody: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
             stepTitle("Optionale Quellen", "Kannst du jetzt überspringen und in den Einstellungen einrichten.")
-            optionalRow("ClickUp Aufgaben", state: clickUpDisplay)
             optionalRow("Clockodo Zeiterfassung", state: clockodoDisplay)
             optionalRow("Airtable Projektdaten (read-only)", state: airtableDisplay)
             hint("Diese Quellen richtest du in den Einstellungen ein — der Assistent funktioniert auch ohne sie.")
@@ -353,6 +380,30 @@ struct OnboardingWizardView: View {
         Task {
             do { try await appState.googleAuth.startAuthorization(clientID: id) }
             catch { googleError = "Verbindung fehlgeschlagen: \(error)" }
+        }
+    }
+
+    private func clickUpOeffnen() {
+        guard let url = URL(string: "https://app.clickup.com/settings/apps") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    private func connectClickUp() {
+        clickUpError = nil
+        clickUpIdentifiziertAls = nil
+        do {
+            try appState.clickUpAuth.connect(apiToken: clickUpToken)
+        } catch {
+            clickUpError = "Verbindung fehlgeschlagen: \(error)"
+            return
+        }
+        Task {
+            if let name = await appState.identifiziereClickUpNutzer() {
+                clickUpIdentifiziertAls = name
+            } else {
+                clickUpError = "Verbunden, aber Identifizierung fehlgeschlagen — Aufgaben-Zuordnung "
+                    + "funktioniert später ggf. nicht automatisch."
+            }
         }
     }
 

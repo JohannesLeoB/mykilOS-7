@@ -172,6 +172,7 @@ public enum AssistantGrounding {
         case .reviewSuggested(let p, let label):     "- Review-Vorschlag in \(p): \(label)"
         case .budgetThresholdCrossed(let p, let r):  "- Budget in \(p): \(Int(r * 100)) Prozent"
         case .deadlineNear(let p, let days):         "- Deadline in \(p): \(days) Tage"
+        case .myClickUpTaskDueSoon(let p, let name, let days): "- Eigene Aufgabe in \(p): \(name) (\(days) Tage)"
         }
     }
 }

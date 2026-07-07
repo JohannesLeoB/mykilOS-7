@@ -83,6 +83,18 @@ public protocol AdminAuthorizing: Sendable {
     func istAdmin(_ identity: ResidentIdentity?, tokenPresent: Bool) -> Bool
 }
 
+extension AdminAuthorizing {
+    /// Store-/Service-Gate: wirft `nurAdmin`, wenn die Identität kein Admin ist. Als
+    /// Protokoll-Default (nicht nur auf `AllowlistAdminAuthority`), damit jeder Aufrufer, der
+    /// nur `any AdminAuthorizing` kennt (NomenklaturStore, AppState), dieselbe Gate-Methode
+    /// nutzen kann — kein Store baut sich seine eigene Wurf-Logik.
+    public func assertAdmin(_ identity: ResidentIdentity?, tokenPresent: Bool, funktion: String) throws {
+        guard istAdmin(identity, tokenPresent: tokenPresent) else {
+            throw BerechtigungError.nurAdmin(funktion: funktion)
+        }
+    }
+}
+
 // MARK: - AllowlistAdminAuthority
 // Prüft die verifizierte Identität gegen die Allowlist. Rein, deterministisch, testbar.
 public struct AllowlistAdminAuthority: AdminAuthorizing {
@@ -104,13 +116,5 @@ public struct AllowlistAdminAuthority: AdminAuthorizing {
         guard let identity, identity.hasValidKey else { return false }
         guard tokenPresent else { return false }
         return allowlist.enthaelt(identity.googleEmail)
-    }
-
-    /// Store-/Service-Gate: wirft `nurAdmin`, wenn die Identität kein Admin ist.
-    /// Sichtbar (throws) statt still — jeder Admin-Only-Aufrufpfad ruft das zuerst.
-    public func assertAdmin(_ identity: ResidentIdentity?, tokenPresent: Bool, funktion: String) throws {
-        guard istAdmin(identity, tokenPresent: tokenPresent) else {
-            throw BerechtigungError.nurAdmin(funktion: funktion)
-        }
     }
 }

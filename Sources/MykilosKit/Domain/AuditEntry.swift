@@ -7,7 +7,12 @@ public struct AuditEntry: Codable, Identifiable, Sendable {
     public enum Action: String, Codable, Sendable {
         case offerImported, draftCreated, draftSent, projectLinked, noteUpdated, estimateAdjusted, calibrationPromoted, contactCreated, driveFileUploaded,
              warenkorbGesendet,   // Webshop Phase 1: Warenkorb-Version in Airtable gespeichert (append-only)
-             mailAktionAusgefuehrt   // gelesen/ungelesen, Stern, Archiv, Papierkorb (Gmail messages.modify/trash)
+             mailAktionAusgefuehrt,   // gelesen/ungelesen, Stern, Archiv, Papierkorb (Gmail messages.modify/trash)
+             inviteCreated,   // Admin-Ebene S4: .mykinvite erstellt (Actor = verifizierte googleEmail, keine Keys geloggt)
+             clickUpStatusChanged,   // ClickUp-Vollintegration S4: Status interaktiv geändert (nur Testspace, ClickUpWriteGate)
+             clickUpTaskCreated,   // S4: Aufgabe interaktiv angelegt (ClickUpWriteGate, Ghost-Kürzel nur als Text-Marker)
+             clickUpGoLiveFreigegeben,   // S10: eine Liste admin-only auf die Go-Live-Whitelist gesetzt
+             clickUpGoLiveGesperrt   // S10: eine Liste von der Go-Live-Whitelist entfernt
     }
     public let id: UUID
     public let timestamp: Date

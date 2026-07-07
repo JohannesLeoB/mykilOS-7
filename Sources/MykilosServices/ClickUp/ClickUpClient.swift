@@ -15,6 +15,10 @@ public struct ClickUpTask: Identifiable, Equatable, Sendable {
     /// zum Abgleich mit `ResidentIdentity.clickUpMemberID` für "meine Aufgaben"-Filter.
     /// `assignee` (Username) reicht dafür NICHT, da beide Felder unterschiedliche Formate sind.
     public var assigneeID: String?
+    /// ALLE zugewiesenen ClickUp-Member-IDs (ClickUp-Vollintegration, 2026-07-07) — additiv
+    /// neben `assigneeID` (bleibt der/die erste, für bestehende Aufrufer wie "meine Aufgaben").
+    /// Nur zum ANZEIGEN (Farb-Chips je Teammitglied) — nie ein Schreibpfad.
+    public var assigneeIDs: [String]
     public var isUrgent: Bool
     /// Volle Prio-Stufe (Aufgaben-Spalte 2, 2026-07-07) — additiv neben `isUrgent`,
     /// das weiterhin für bestehende Aufrufer (TasksWidget, AssistantTool) unverändert bleibt.
@@ -24,7 +28,7 @@ public struct ClickUpTask: Identifiable, Equatable, Sendable {
 
     public init(id: String, name: String, status: String,
                 dueDate: Date? = nil, assignee: String? = nil, assigneeID: String? = nil,
-                isUrgent: Bool = false, priority: ClickUpPriority? = nil,
+                assigneeIDs: [String] = [], isUrgent: Bool = false, priority: ClickUpPriority? = nil,
                 projectPhase: ClickUpProjectPhase? = nil) {
         self.id = id
         self.name = name
@@ -32,6 +36,7 @@ public struct ClickUpTask: Identifiable, Equatable, Sendable {
         self.dueDate = dueDate
         self.assignee = assignee
         self.assigneeID = assigneeID
+        self.assigneeIDs = assigneeIDs.isEmpty ? Array([assigneeID].compactMap { $0 }) : assigneeIDs
         self.isUrgent = isUrgent
         self.priority = priority
         self.projectPhase = projectPhase
@@ -75,6 +80,38 @@ public extension ClickUpFetching {
     func projektMeta(listID: String) async throws -> ClickUpProjektMeta { .empty }
 }
 
+// MARK: - ClickUpSpaceResolving (S4, 2026-07-07)
+// Löst die Space-ID einer Liste LIVE über ClickUp auf — die Grundlage für `ClickUpWriteGate`.
+// Getrennt vom eigentlichen Schreiben (`ClickUpTaskWriting`): der Client bleibt reiner
+// Transport, das GATE (Store-Ebene, `ClickUpTaskActionStore`) entscheidet anhand des
+// Ergebnisses, ob geschrieben werden darf.
+public protocol ClickUpSpaceResolving: Sendable {
+    /// `nil`, wenn die Liste keine Space-Info liefert (z. B. unbekannt) — Aufrufer behandelt
+    /// das im Gate wie eine fremde Space (fail-closed).
+    func spaceID(forListID listID: String) async throws -> String?
+}
+
+// MARK: - ClickUpUserIdentifying (Onboarding, 2026-07-07)
+// "Wer bin ich in ClickUp?" — GET /user, EINMALIG beim Verbinden im Onboarding-Wizard
+// aufgerufen. Liefert die echte ClickUp-Member-ID direkt aus ClickUp selbst (statt sich
+// allein auf den Airtable-Ghost-Personas-Abgleich zu verlassen) — der Nutzer identifiziert
+// sich, indem er sich einmalig mit seinem eigenen Personal-API-Token verbindet.
+public protocol ClickUpUserIdentifying: Sendable {
+    func currentUser() async throws -> ClickUpUserInfo
+}
+
+public struct ClickUpUserInfo: Equatable, Sendable {
+    public var id: String
+    public var username: String
+    public var email: String?
+
+    public init(id: String, username: String, email: String? = nil) {
+        self.id = id
+        self.username = username
+        self.email = email
+    }
+}
+
 // MARK: - ClickUpTaskWriting (2026-07-04)
 // Interaktive Write-Basics FÜR DEN NUTZER (nicht das automatische Provisioning oben):
 // Aufgabe anlegen, Status ändern/erledigt markieren. EISERNE REGELN (nicht verhandelbar):
@@ -82,8 +119,9 @@ public extension ClickUpFetching {
 //     assignee-Methode. Eine simulierte Zuweisung ist nur ein Text-Marker (Ghost-Kürzel im
 //     `content`/Beschreibungsfeld), NIE das native ClickUp-`assignees`-Feld.
 //   - Entwicklung/Test NUR im Testspace `90128024109` ([[clickup-ghost-persona-rule]]) — dieser
-//     Client selbst kennt keinen Space und erzwingt das nicht technisch; die aufrufende Stelle
-//     ist dafür verantwortlich, in dieser Phase nur Testspace-Listen-IDs zu übergeben.
+//     Client selbst kennt keinen Space und erzwingt das nicht technisch (bleibt reiner
+//     Transport); das technische Gate sitzt in `ClickUpTaskActionStore` + `ClickUpWriteGate`
+//     (S4, 2026-07-07) über `ClickUpSpaceResolving.spaceID(forListID:)`.
 public protocol ClickUpTaskWriting: Sendable {
     /// Legt eine Aufgabe an. `content` ist die Beschreibung (ClickUp-Feld `content`) — Träger für
     /// einen optionalen Ghost-Kürzel-Marker ("Zugewiesen (simuliert): Jo"), NIE ein echtes Feld.
@@ -111,7 +149,8 @@ public protocol ClickUpProjectProvisioning: Sendable {
 // MARK: - ClickUpClient
 // Liest die offenen Aufgaben einer ClickUp-Liste des verbundenen Accounts.
 // Auth: Personal-API-Token direkt im Authorization-Header (kein "Bearer").
-public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning, ClickUpTaskWriting {
+public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning, ClickUpTaskWriting,
+                              ClickUpSpaceResolving, ClickUpUserIdentifying {
     private let credentialsStore: ClickUpCredentialsStoring
     private let session: URLSession
     private let baseURL = "https://api.clickup.com/api/v2"
@@ -258,6 +297,58 @@ public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning, ClickU
         return URL(string: "\(baseURL)/task/\(encoded)")
     }
 
+    // MARK: - Identifizierung (ClickUpUserIdentifying, Onboarding)
+
+    public func currentUser() async throws -> ClickUpUserInfo {
+        guard let credentials = try? credentialsStore.load() else { throw ClickUpError.notConnected }
+        guard let url = URL(string: "\(baseURL)/user") else { throw ClickUpError.invalidResponse }
+        var request = URLRequest(url: url)
+        request.setValue(credentials.apiToken, forHTTPHeaderField: "Authorization")
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw ClickUpError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw ClickUpError.httpError(http.statusCode) }
+        return try Self.parseCurrentUser(from: data)
+    }
+
+    static func parseCurrentUser(from data: Data) throws -> ClickUpUserInfo {
+        do {
+            let decoded = try JSONDecoder().decode(CurrentUserResponse.self, from: data)
+            return ClickUpUserInfo(id: String(decoded.user.id), username: decoded.user.username, email: decoded.user.email)
+        } catch {
+            throw ClickUpError.decodingFailed
+        }
+    }
+
+    // MARK: - Space-Auflösung (ClickUpSpaceResolving, S4 — Grundlage für ClickUpWriteGate)
+
+    public func spaceID(forListID listID: String) async throws -> String? {
+        guard let credentials = try? credentialsStore.load() else { throw ClickUpError.notConnected }
+        guard let url = Self.buildListDetailURL(baseURL: baseURL, listID: listID) else {
+            throw ClickUpError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.setValue(credentials.apiToken, forHTTPHeaderField: "Authorization")
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw ClickUpError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw ClickUpError.httpError(http.statusCode) }
+        return try Self.parseSpaceID(from: data)
+    }
+
+    static func buildListDetailURL(baseURL: String, listID: String) -> URL? {
+        let encoded = listID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? listID
+        return URL(string: "\(baseURL)/list/\(encoded)")
+    }
+
+    /// `GET /list/{id}` liefert die Liste inkl. eingebetteter `space`-Referenz — keine
+    /// zweite Anfrage (folder→space) nötig.
+    static func parseSpaceID(from data: Data) throws -> String? {
+        do {
+            return try JSONDecoder().decode(ListDetailResponse.self, from: data).space?.id
+        } catch {
+            throw ClickUpError.decodingFailed
+        }
+    }
+
     // MARK: - Reine, testbare Bausteine (kein Netzwerk/Keychain)
 
     static func buildTasksURL(baseURL: String, listID: String) -> URL? {
@@ -283,6 +374,7 @@ public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning, ClickU
                     dueDate: Self.date(fromEpochMillis: entity.dueDate),
                     assignee: entity.assignees?.first?.username,
                     assigneeID: entity.assignees?.first?.id.map(String.init),
+                    assigneeIDs: (entity.assignees ?? []).compactMap { $0.id.map(String.init) },
                     isUrgent: entity.priority?.priority?.lowercased() == "urgent",
                     priority: ClickUpPriority(rawValue: entity.priority?.priority?.lowercased() ?? ""),
                     projectPhase: phaseIndex.flatMap(ClickUpProjectPhase.init(rawValue:))
@@ -353,6 +445,16 @@ private struct ClickUpListsResponse: Decodable {
 }
 
 private struct ClickUpCreatedEntity: Decodable { var id: String }
+
+private struct ListDetailResponse: Decodable {
+    var space: SpaceEntity?
+    struct SpaceEntity: Decodable { var id: String }
+}
+
+private struct CurrentUserResponse: Decodable {
+    var user: UserEntity
+    struct UserEntity: Decodable { var id: Int; var username: String; var email: String? }
+}
 
 // MARK: - Decodable-Spiegel der ClickUp-Antwort
 private struct ClickUpTasksResponse: Decodable {

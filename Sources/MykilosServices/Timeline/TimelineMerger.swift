@@ -42,6 +42,11 @@ public extension AuditEntry.Action {
         case .driveFileUploaded:  "Datei hochgeladen"
         case .warenkorbGesendet:  "Warenkorb gesendet"
         case .mailAktionAusgefuehrt: "Mail-Aktion"
+        case .inviteCreated:      "Einladung erstellt"
+        case .clickUpStatusChanged: "ClickUp-Status geändert"
+        case .clickUpTaskCreated: "ClickUp-Aufgabe angelegt"
+        case .clickUpGoLiveFreigegeben: "ClickUp-Liste Go-Live freigeschaltet"
+        case .clickUpGoLiveGesperrt: "ClickUp-Liste Go-Live gesperrt"
         }
     }
 }

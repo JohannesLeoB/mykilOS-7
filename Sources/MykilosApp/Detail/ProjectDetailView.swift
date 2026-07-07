@@ -318,7 +318,10 @@ private struct ProjectWidgetBoardView: View {
     private func projectWidgetView(for instance: WidgetInstance) -> some View {
         switch instance.kind {
         case .drive:     DriveWidget(projectID: projectID, driveFolderID: driveFolderID)
-        case .tasks:     TasksWidget(projectID: projectID, clickUpListID: clickUpListID)
+        case .tasks:     TasksWidget(projectID: projectID, clickUpListID: clickUpListID,
+                                      eigeneClickUpID: appState.residentIdentity.identity?.clickUpMemberID,
+                                      auditStore: auditStore, actorUserID: appState.actorUserID,
+                                      goLiveWhitelist: appState.clickUpGoLive)
         case .contacts:  ContactsWidget(projectID: projectID, contactsQuery: contactsQuery,
                                         onMailContact: { composeMailTarget = MailComposeTarget(id: $0) })
         case .cash:      CashWidget(projectID: projectID, sevdeskRef: sevdeskRef, budget: budget, auditStore: auditStore, workBasketStore: appState.workBaskets,

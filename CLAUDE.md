@@ -23,6 +23,34 @@ Agenten, jede Session, jedes Tool.**
 
 Vollständiger Kontext + Warum: Gedächtnis `kein-hohles-erledigt-nie-ansagen-vergessen`.
 
+---
+
+## ⛔ EISERNE REGEL: Kein Plan ohne Bau-Pflicht (verankert 2026-07-07, eskalierte Session)
+
+**Johannes, wörtlich: „WARUM WIRD ÜBERHAUPT ETWAS DOKUMENTIERT, DANN ABER NIE GEBAUT????" Auslöser:
+Aufmaß-Widget, ClickUp-Sortierung und volle ClickUp-Bedienbarkeit waren alle ausführlich geplant
+(eigene Handoff-Dokumente) und real 0–30 % gebaut. Ein Plan-Dokument fühlte sich wie Fortschritt an,
+war aber keiner. Das hört jetzt auf.**
+
+1. **Ein Plan-Dokument ist NIEMALS ein Ersatz für Code.** Wer einen Plan schreibt, baut in DERSELBEN
+   Session mindestens den ersten Baustein — real, getestet, gebaut. Kein Plan ohne sofortigen
+   ersten Schritt.
+2. **Kein eigenständiges Handoff-Plan-Dokument für bloße Ideen.** Ist etwas nur angedacht, noch
+   nicht zugesagt, gehört es NUR in `docs/IDEEN_UND_BACKLOG.md` (bewusst stumm, keine Session
+   greift es automatisch auf). Ein Dokument, das wie eine Zusage aussieht (`HANDOFF_...PLAN.md`),
+   IST eine Zusage — und braucht ab sofort sofortigen Bau-Fortschritt, sonst wird es nicht so
+   angelegt.
+3. **`docs/OFFENE_ZUSAGEN.md` ist die einzige Wahrheit über den Bau-Stand.** Jede Zusage steht dort
+   mit verifiziertem (nicht behauptetem) Status. Ein Plan-Dokument ohne Eintrag dort UND ohne
+   Code-Fortschritt in derselben Session gilt automatisch als NICHT zugesagt — egal wie
+   ausführlich es ist.
+4. **Jede Session aktualisiert `docs/OFFENE_ZUSAGEN.md` mindestens einmal** — auch wenn nur
+   bestätigt wird, dass sich der Stand nicht geändert hat. Keine Ausnahme, keine Verschiebung
+   „mach ich beim nächsten Mal".
+5. **Bei jeder Melde-Formulierung „X ist jetzt möglich" gehört das Delta zum ursprünglichen Wunsch
+   sofort mit dazu** — nicht nur, was fertig wurde, sondern explizit, was vom eigentlich
+   gewünschten Umfang noch fehlt. Kein Melden von Teilfortschritt als vollem Fortschritt.
+
 ## 🔁 SESSION-ROUTINE — jedes Mal besser als beim letzten Mal
 
 **Verankert 2026-07-05 (Johannes: „Wie machen wir es jedes Mal besser als beim letzten Mal?"). Gilt bei
@@ -32,16 +60,22 @@ am 2026-07-05).**
 
 1. **Anfang — ZUERST die letzte Prozess-Lektion lesen** (`docs/erfahrungstraeger/PROZESS_LESSONS.md`,
    oberster Eintrag) und in einem Satz sagen, wie du den letzten Stolperer *diesmal* vermeidest.
+1b. **DANN `docs/OFFENE_ZUSAGEN.md` lesen** (verankert 2026-07-07, nach wiederholtem Frust: Dinge
+   werden zugesagt und dann nicht/nur teilweise umgesetzt, verstreut über Plan-Docs, die niemand
+   zusammenhält). Das ist die EINE ehrliche Liste offener Zusagen mit verifiziertem Stand — kein
+   Ideen-Backlog. Arbeitest du an einem der Punkte, aktualisiere den Status DORT sofort, nicht am
+   Session-Ende.
 2. **Ziel, nicht Plan.** Johannes' aktuelle #1-Priorität in EINEM Satz zurückspiegeln — „das, was du
    jetzt am dringendsten brauchst, ist X — richtig?" — und erst nach seinem Ja bauen.
 3. **Richtung früh + billig zeigen.** Vor viel Bauen ein Einzeiler „ich mach jetzt X", damit er in
    Sekunden umlenken kann — nicht erst nach einem Tag Arbeit.
 4. **Klein bauen, jede Stufe von Johannes LIVE abgenommen** — dann fällt „falsche Richtung" nach 20
    Minuten auf, nicht nach einem Tag.
-5. **„Fertig" = Johannes hat's geprüft.** Nie „grün/Tests = fertig" (Proxy ≠ Beweis).
+5. **„Fertig" = Johannes hat's geprüft.** Nie „grün/Tests = fertig" (Proxy ≠ Beweis). „Tests grün"
+   beweist nur, dass der Code nicht kaputt ist — nicht, dass die Aufgabe erledigt ist.
 6. **Ende — 3 ehrliche Zeilen** an `PROZESS_LESSONS.md` (append-only): was näher an der Vision, was
-   gestolpert, die EINE Sache anders. Für die nächste Session (→ Schritt 1). Danach das Gästebuch
-   (menschliche Ebene) bei Bedarf.
+   gestolpert, die EINE Sache anders. **Plus: `docs/OFFENE_ZUSAGEN.md` gegen den echten, verifizierten
+   Stand abgleichen** — nicht gegen Erinnerung. Danach das Gästebuch (menschliche Ebene) bei Bedarf.
 
 **Kurzform: Ziel zuerst · klein bauen · Johannes prüft · wir lernen laut.**
 Johannes hält aktiv ehrlich („bist du sicher?") — das ist Teil des Systems, kein Störfaktor.

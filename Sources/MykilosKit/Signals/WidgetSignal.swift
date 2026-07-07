@@ -24,4 +24,8 @@ public enum WidgetSignal: Sendable, Equatable {
     case reviewSuggested(projectID: String, label: String)   // VORSCHLAG, kein Write
     case budgetThresholdCrossed(projectID: String, ratio: Double)
     case deadlineNear(projectID: String, days: Int)
+    /// Personalisiert (ClickUp-Alerts, 2026-07-07): NUR ausgelöst, wenn `assigneeID` der
+    /// geladenen Aufgabe der eigenen `clickUpMemberID` entspricht — anders als `deadlineNear`
+    /// (projektweit, jede Fälligkeit) ist das hier "meine eigene Aufgabe wird bald fällig".
+    case myClickUpTaskDueSoon(projectID: String, taskName: String, days: Int)
 }

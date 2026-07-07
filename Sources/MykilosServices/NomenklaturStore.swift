@@ -54,11 +54,17 @@ public final class NomenklaturStore {
     public private(set) var saveState: SaveState = .idle
 
     private let db: GRDBDatabase
+    // Admin-Ebene S3: dieselbe eingebackene Allowlist wie AppState.adminAuthority — Struktur/
+    // Schema/Umgebung sind Admin-only (ADMIN_EBENE_BAUPLAN.md). Default austauschbar für Tests.
+    private let adminAuthority: any AdminAuthorizing
     private static let schemaVersionKey = "blockC.activeFolderSchemaVersion"
     private static let authorityModeKey = "blockC.numberAuthorityMode"
     private static let customFolderSchemaKey = "blockC.customFolderSchemaJSON"
 
-    public init(db: GRDBDatabase) { self.db = db }
+    public init(db: GRDBDatabase, adminAuthority: any AdminAuthorizing = AllowlistAdminAuthority()) {
+        self.db = db
+        self.adminAuthority = adminAuthority
+    }
 
     public func load() throws {
         // Konnektoren laden + FEHLENDE Default-Slots ergänzen. Nicht „nur wenn leer" —
@@ -110,9 +116,11 @@ public final class NomenklaturStore {
     /// Das aktive Ordnerschema — das vom Admin gespeicherte, falls eins existiert, sonst `.v1`.
     public func aktivesSchema() -> FolderSchema { customFolderSchema ?? .v1 }
 
-    /// Admin-Schema speichern (Ordner-Schema-Editor, Stufe 1 — Domain + Persistenz, noch ohne UI).
-    /// `aktivesSchema()` liefert danach dieses Schema statt `.v1`.
-    public func setzeSchema(_ schema: FolderSchema) throws {
+    /// Admin-Schema speichern (Ordner-Schema-Editor). `aktivesSchema()` liefert danach dieses
+    /// Schema statt `.v1`. Store-Gate S4: erste Zeile, VOR jeder Persistenz (kein UI-Verstecken
+    /// als einzige Grenze — ADMIN_EBENE_BAUPLAN.md Härtung 3).
+    public func setzeSchema(_ schema: FolderSchema, ausgeloestVon identity: ResidentIdentity?, tokenPresent: Bool) throws {
+        try adminAuthority.assertAdmin(identity, tokenPresent: tokenPresent, funktion: "Ordnerschema ändern")
         let data = try JSONEncoder().encode(schema)
         guard let json = String(data: data, encoding: .utf8) else {
             throw PersistenceError.encodeFailed
@@ -133,13 +141,35 @@ public final class NomenklaturStore {
         }
     }
 
-    /// Wirft das Admin-Schema weg, `aktivesSchema()` fällt wieder auf `.v1` zurück.
-    public func setzeSchemaAufStandard() throws {
+    /// Wirft das Admin-Schema weg, `aktivesSchema()` fällt wieder auf `.v1` zurück. Store-Gate S4.
+    public func setzeSchemaAufStandard(ausgeloestVon identity: ResidentIdentity?, tokenPresent: Bool) throws {
+        try adminAuthority.assertAdmin(identity, tokenPresent: tokenPresent, funktion: "Ordnerschema zurücksetzen")
         saveState = .saving
         do {
             try db.write { dbc in _ = try NomenklaturConfigRow.deleteOne(dbc, key: Self.customFolderSchemaKey) }
             customFolderSchema = nil
             aktiveSchemaVersion = 1
+            saveState = .saved(Date())
+        } catch {
+            saveState = .failed(error.localizedDescription)
+            throw error
+        }
+    }
+
+    /// Wechselt den Nummern-Autoritätsmodus (`.local`/`.airtable`/`.sevdesk`). Store-Gate S4:
+    /// „von Geburt an gegatet" — der Setter existiert erst mit diesem Guard, es gab vorher
+    /// keinen Weg, ihn ungegatet zu bauen. Die tatsächliche `.airtable`-Implementierung +
+    /// UI-Umschalter folgen erst in S6 (ADMIN_EBENE_BAUPLAN.md); dieser Setter ist bereits
+    /// jetzt korrekt geschützte Infrastruktur dafür.
+    public func setzeAuthorityMode(_ mode: NumberAuthorityMode, ausgeloestVon identity: ResidentIdentity?, tokenPresent: Bool) throws {
+        try adminAuthority.assertAdmin(identity, tokenPresent: tokenPresent, funktion: "Nummern-Autoritätsmodus ändern")
+        let ts = Date().timeIntervalSince1970
+        saveState = .saving
+        do {
+            try db.write { dbc in
+                try NomenklaturConfigRow(key: Self.authorityModeKey, value: mode.rawValue, updatedAt: ts).save(dbc)
+            }
+            authorityMode = mode
             saveState = .saved(Date())
         } catch {
             saveState = .failed(error.localizedDescription)

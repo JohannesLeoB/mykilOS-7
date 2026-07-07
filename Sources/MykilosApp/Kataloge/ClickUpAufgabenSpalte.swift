@@ -2,6 +2,7 @@ import SwiftUI
 import MykilosDesign
 import MykilosServices
 import MykilosKit
+import MykilosWidgets
 
 // MARK: - ClickUp-Aufgaben-Spalte (Aufgaben-Spalten-System, Spalte 2/3, 2026-07-07)
 // Johannes-Feedback (wörtlich): "Neue zweite Spalte: ClickUp Aufgaben: Meine Aufgaben,
@@ -122,6 +123,7 @@ enum ClickUpPrioFilter: String, CaseIterable, Identifiable {
 // MARK: - ClickUpAufgabenSpalte (die View)
 struct ClickUpAufgabenSpalte: View {
     @Environment(AppState.self) private var appState
+    @Environment(StudioContext.self) private var context
     @State private var loader = ClickUpAufgabenLoader()
     @State private var zuweisung: ClickUpZuweisungsFilter = .alle
     @State private var projektFilter: String?   // nil = alle Projekte
@@ -181,7 +183,26 @@ struct ClickUpAufgabenSpalte: View {
                 }
             }
         }
-        .task(id: appState.registry.projects.count) { await loader.load(refs: projektRefs) }
+        .task(id: appState.registry.projects.count) {
+            await loader.load(refs: projektRefs)
+            emitEigeneFaelligkeitsAlerts()
+        }
+    }
+
+    /// Refresh-on-open (kein Hintergrund-Poll über alle Projekte, Rate-Budget) — bei jedem
+    /// Laden dieser Spalte ein personalisierter Alert für EIGENE Aufgaben, die in ≤7 Tagen
+    /// fällig sind. Anders als der projektweite `deadlineNear` (TasksWidget) nur MEINE.
+    private func emitEigeneFaelligkeitsAlerts() {
+        guard let eigeneClickUpID else { return }
+        let now = Date()
+        let sevenDays: TimeInterval = 7 * 24 * 3600
+        for item in loader.items {
+            guard item.task.assigneeIDs.contains(eigeneClickUpID), let due = item.task.dueDate else { continue }
+            let secs = due.timeIntervalSince(now)
+            guard secs >= 0 && secs <= sevenDays else { continue }
+            let days = Calendar.current.dateComponents([.day], from: now, to: due).day ?? 0
+            context.emit(.myClickUpTaskDueSoon(projectID: item.projectNumber, taskName: item.task.name, days: max(0, days)))
+        }
     }
 
     private var filterBar: some View {
@@ -243,9 +264,7 @@ struct ClickUpAufgabenSpalte: View {
                         Text(prio.label.uppercased()).font(.mykMono(9)).foregroundStyle(MykColor.tasks.color)
                     }
                     Text("\(item.projectNumber) · \(item.projectTitle)").font(.mykMono(9)).foregroundStyle(MykColor.tasks.color)
-                    if let assignee = item.task.assignee {
-                        Text(assignee).font(.mykMono(9)).foregroundStyle(MykColor.muted.color)
-                    }
+                    AssigneeChipRow(assigneeIDs: item.task.assigneeIDs)
                 }
             }
             Spacer()

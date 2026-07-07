@@ -585,6 +585,19 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v32_clickup_golive_whitelist (ClickUp-Vollintegration S10, 2026-07-07): Go-Live ist
+        // eine WHITELIST konkreter Listen-IDs, kein Bool-Toggle (ADMIN_EBENE_BAUPLAN.md /
+        // CLICKUP_IO_ARCHITEKTUR_PLAN.md E5) — jede Freigabe ist admin-only + einzeln auditiert.
+        // Leer bis ein Admin explizit eine Liste freischaltet ("kein Nebeneffekt-Kippen").
+        migrator.registerMigration("v32_clickup_golive_whitelist") { db in
+            try db.create(table: "clickUpGoLiveWhitelist") { t in
+                t.primaryKey("listID", .text)
+                t.column("projektNummer", .text).notNull()
+                t.column("freigegebenVon", .text).notNull()
+                t.column("freigegebenAm", .double).notNull()
+            }
+        }
+
         return migrator
     }
 

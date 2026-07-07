@@ -222,8 +222,7 @@ struct SettingsView: View {
             miniModeSection
         case .system:
             diagnoseSection
-            ordnerSchemaSection
-            mykInviteSection
+            AdminZoneSection()
             SchaltzentrumView()
         }
     }
