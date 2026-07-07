@@ -1645,12 +1645,16 @@ Werkzeug-Einordnung in [[massendaten-katalog-miner]] (Memory):
   eigener Katalog vorbereiten. Braucht echten Drive-Zugriff (read-only, unproblematisch) über
   hunderte Projektordner — **Codex-Strang**, gleicher Bauplan wie oben, andere Quelle (Drive
   statt Web).
-- 💡 **Vectorworks-Planköpfe aus Checkout generieren + direkt senden (Johannes 2026-07-03,
-  Erweiterung):** aus einem mykilOS-Checkout die **Plankopf-/Title-Block-Daten** eines Vectorworks-
-  Plans befüllen (Kunde · Geräte · Materialien · Projektdaten) und direkt rausgeben/senden. Konkrete
-  Ausprägung des Vectorworks-Ports (Port #17), eng verwandt mit „Geräteliste an Tischler" — statt
-  eigenem Dokument werden hier die strukturierten Planköpfe eines CAD-Plans bespielt. **Vectorworks-
-  Referenz-Screenshot** von Johannes angekündigt (Feedback-Ordner) — beim Bau/Recherche ansehen.
+- 🚧 **Vectorworks-Planköpfe aus Checkout generieren + direkt senden (Johannes-Auftrag
+  2026-07-07):** `VWPlankopfPort` (Sources/MykilosApp/Wirbelsaeule/Ports/VWPlankopfPort.swift)
+  ist ein v1-CheckoutPort — gruppiert Picks nach Kunde/Projekt/Material und (für Artikel-Picks)
+  nach `attribute["kategorie"]` in Geräte/Ausstattung/Beschläge (Johannes' Feldliste 2026-07-07),
+  liefert einen strukturierten **Text-Entwurf** als `CheckoutResult.nutzlast`. **Ehrliche
+  Scope-Grenze:** das echte Vectorworks-Zielformat (Data-Record-Felder? Worksheet-Spalten?) ist
+  NICHT verifiziert — der angekündigte Vectorworks-Referenz-Screenshot lag beim Bau noch nicht
+  vor. Reiner Text-Entwurf zum Copy-Paste, keine Vectorworks-native Ausgabe. **Noch offen:** UI-
+  Verdrahtung (kein Checkout-Sheet-Eintrag, wie bei DokumentPort/MoodboardPort auch noch nicht
+  verdrahtet), echtes Feldformat sobald die Referenz vorliegt. 6 Tests (`WirbelsaeulePortsTests`).
 - 💡 **Vectorworks-Sync (Zeichnungs-Integration):** Artikel-Warenkörbe (Geräte/Material/Kunde/
   Projekt) in Vectorworks-Zeichnungsfelder exportieren/importieren/syncen. Trifft den bereits
   benannten, aber leeren **Port #17 „CAD-/Zeichnungs-Handoff"** im S10-Blueprint

@@ -217,6 +217,115 @@ struct WirbelsaeulePortsTests {
 
     // MARK: - 4. PortRegistry-Integration (Inhalts-Art-Gate mit echten Ports)
 
+    // MARK: - VWPlankopfPort (Johannes-Auftrag 2026-07-07)
+
+    private func plankopfKorb() -> WorkBasket {
+        let kunde = BasicPick(
+            matrix: .kunde,
+            objektID: CatalogObjectID("kunde-1"),
+            snapshot: PickSnapshot(bezeichnung: "Familie Cirnavuk")
+        )
+        let projekt = BasicPick(
+            matrix: .projekt,
+            objektID: CatalogObjectID("proj-1"),
+            snapshot: PickSnapshot(bezeichnung: "Küche Neubau")
+        )
+        let material = BasicPick(
+            matrix: .material,
+            objektID: CatalogObjectID("mat-1"),
+            snapshot: PickSnapshot(bezeichnung: "Eiche geölt")
+        )
+        let geraet = BasicPick(
+            matrix: .artikel,
+            objektID: CatalogObjectID("art-geraet"),
+            snapshot: PickSnapshot(bezeichnung: "Backofen Bosch", menge: 1, attribute: ["kategorie": "geraet"])
+        )
+        let ausstattung = BasicPick(
+            matrix: .artikel,
+            objektID: CatalogObjectID("art-ausstattung"),
+            snapshot: PickSnapshot(bezeichnung: "LED-Lichtband", menge: 3, attribute: ["kategorie": "ausstattung"])
+        )
+        let beschlag = BasicPick(
+            matrix: .artikel,
+            objektID: CatalogObjectID("art-beschlag"),
+            snapshot: PickSnapshot(bezeichnung: "Blum Legrabox", menge: 4, attribute: ["kategorie": "beschlag"])
+        )
+        let unkategorisiert = BasicPick(
+            matrix: .artikel,
+            objektID: CatalogObjectID("art-sonstige"),
+            snapshot: PickSnapshot(bezeichnung: "Kleinteile")
+        )
+        return WorkBasket(
+            id: WorkBasketID("WK-2026-015-0003"),
+            projektNummer: "2026-015",
+            inhaltsArt: .gemischt,
+            picks: [kunde, projekt, material, geraet, ausstattung, beschlag, unkategorisiert]
+        )
+    }
+
+    @Test func plankopfPortErlaubteArten() {
+        let port = VWPlankopfPort()
+        #expect(port.erlaubteInhaltsArten() == [.gemischt, .material, .artikel])
+    }
+
+    @Test func plankopfPortGruppiertNachMatrixUndKategorie() async throws {
+        let gruppen = try await VWPlankopfPort.gruppiere(plankopfKorb().picks)
+        #expect(gruppen.kunde.map(\.bezeichnung) == ["Familie Cirnavuk"])
+        #expect(gruppen.projekt.map(\.bezeichnung) == ["Küche Neubau"])
+        #expect(gruppen.material.map(\.bezeichnung) == ["Eiche geölt"])
+        #expect(gruppen.geraete.map(\.bezeichnung) == ["Backofen Bosch"])
+        #expect(gruppen.ausstattung.map(\.bezeichnung) == ["LED-Lichtband"])
+        #expect(gruppen.beschlaege.map(\.bezeichnung) == ["Blum Legrabox"])
+        #expect(gruppen.sonstigeArtikel.map(\.bezeichnung) == ["Kleinteile"])
+    }
+
+    @Test func plankopfPortPreviewNenntSektionenUndWarntEntwurf() async throws {
+        let port = VWPlankopfPort()
+        let preview = try await port.preview(basket: plankopfKorb(), ziel: PortZiel(kind: "download"))
+        #expect(preview.zusammenfassung.contains("2026-015"))
+        #expect(preview.zusammenfassung.contains("7 Positionen"))
+        #expect(preview.zusammenfassung.contains("Geräte"))
+        #expect(preview.warnungen.contains { $0.contains("noch nicht verifiziert") })
+    }
+
+    @Test func plankopfPortPreviewWarntZusaetzlichBeiLeeremKorb() async throws {
+        let port = VWPlankopfPort()
+        let leer = WorkBasket(id: WorkBasketID("WK-x"), projektNummer: "2026-000", inhaltsArt: .gemischt)
+        let preview = try await port.preview(basket: leer, ziel: PortZiel(kind: "download"))
+        #expect(preview.warnungen.count == 2)
+    }
+
+    @Test func plankopfPortExecuteLiefertStrukturiertenTextExport() async throws {
+        let port = VWPlankopfPort()
+        let result = try await port.execute(basket: plankopfKorb(), ziel: PortZiel(kind: "download"))
+        #expect(result.erfolg)
+        let data = try #require(result.nutzlast)
+        let text = try #require(String(data: data, encoding: .utf8))
+        #expect(text.contains("Projekt: 2026-015"))
+        #expect(text.contains("KUNDE:"))
+        #expect(text.contains("Familie Cirnavuk"))
+        #expect(text.contains("GERÄTE:"))
+        #expect(text.contains("Backofen Bosch"))
+        #expect(text.contains("AUSSTATTUNG:"))
+        #expect(text.contains("LED-Lichtband ×3"))
+        #expect(text.contains("BESCHLÄGE:"))
+        #expect(text.contains("Blum Legrabox ×4"))
+        #expect(text.contains("SONSTIGE ARTIKEL:"))
+        #expect(text.contains("Kleinteile"))
+        #expect(result.referenz == "WK-2026-015-0003")
+    }
+
+    @Test func plankopfPortExecuteLeererKorbNurProjektzeile() async throws {
+        let port = VWPlankopfPort()
+        let leer = WorkBasket(id: WorkBasketID("WK-leer"), projektNummer: "2026-000", inhaltsArt: .gemischt)
+        let result = try await port.execute(basket: leer, ziel: PortZiel(kind: "download"))
+        #expect(result.erfolg)
+        let data = try #require(result.nutzlast)
+        let text = try #require(String(data: data, encoding: .utf8))
+        #expect(text.contains("Projekt: 2026-000"))
+        #expect(text.contains("KUNDE:") == false)
+    }
+
     @Test func registryFiltertEchteC2Ports() {
         var registry = PortRegistry()
         registry.registriere(DokumentPort())
