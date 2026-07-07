@@ -124,8 +124,27 @@ ClickUp-Chat-Channel (channelID) ──? Projekt   [Zuordnung + v3-API UNBEKANNT
 
 ## E) OFFENE ENTSCHEIDUNGEN FÜR JOHANNES (zuerst 1+2)
 
-1. **Testspace → echte Listen: ab wann, welche der 31 Projekte zuerst, wer trägt die echten Produktiv-Listen-IDs in Airtable `ClickUp-Liste` ein?** (Bis dahin zeigt Read nur Testspace.)
+> **BESTÄTIGT (Johannes, 2026-07-07): mykilOS ist die Ursprungs-Instanz (System of Record).**
+> Projekte/Kunden entstehen in der App; mykilOS **vergibt Nummer + Schema-Namen und feuert sie
+> nach Drive + ClickUp + Airtable raus.** Das ist bereits gebaut und am Code verifiziert:
+> `Projektnummer` (JJJJ-NNN/JJJJ_NNN), `NumberAuthority`/`LocalSequentialAuthority` (atomar +
+> Drive-Kollisions-Check), `ProjektProvisioningService` (3-Schritt-Fan-out Drive→Airtable→ClickUp,
+> idempotent, **`guard mode == .test`** — PROD im Code hart gesperrt bis Go-Live).
+> → **E2 damit beantwortet:** für NEUE Projekte legt `ProjektProvisioningService` die ClickUp-Liste
+> (Schritt 3, `ClickUpProjectProvisioning.findOrCreateList`) an und die List-ID fließt zurück; für die
+> 11 BESTEHENDEN Projekte werden die geernteten List-IDs (CLICKUP_GRUNDWAHRHEIT_GEERNTET.md) verlinkt.
+> → **Gate-Konsistenz:** der im Plan genannte `ClickUpWriteGate` soll den bestehenden
+> `ProvisioningMode.test`/`writeGateGesperrt`-Mechanismus MITNUTZEN, nicht ein zweites Gate erfinden.
+
+1. **Testspace → echte Listen: ab wann, welche der 31 Projekte zuerst?** Praktisch = **wann wird
+   `ProvisioningMode.prod` freigegeben** (heute im Code gesperrt). Für Bestandsprojekte: List-IDs aus
+   der Ernte übernehmen. (Bis dahin schreibt Provisioning nur in die TEST-Sandbox.)
 2. **Chat senden (C2) überhaupt gewünscht?** (Einziger Pfad mit echter Notifikation. Wenn ja: nur per-User-Token + Nur-Ghost-Channel.)
+2b. **Nummern-Autorität bei ECHTEM Multi-User:** `LocalSequentialAuthority` ist atomar *pro Gerät*
+    + prüft echte Drive-Ordner — aber zwei Nutzer offline könnten dieselbe `JJJJ-NNN` ziehen. Für ein
+    Team, das parallel Projekte feuert, ist der saubere Weg der schon vorgesehene
+    `NumberAuthorityMode.airtable` (Nummernkreis/Reservierung in Airtable = global atomar). Umschalten
+    per Config, kein Aufrufer-Umbau. **Entscheidung: `.local` behalten oder auf `.airtable` kippen?**
 3. „Meine Aufgaben": Quelle für `clickUpMemberID` je User; OK, dass „Meine" im Testspace bewusst leer bleibt?
 4. Chat-Umfang C1/C2 + Bestätigung DM/privat-Ausschluss; existiert ClickUp-Chat über v3 überhaupt (S7 entscheidet)?
 5. Go-Live-Whitelist: Speicherort + Granularität + Verifikation (kein Nebeneffekt-Kippen).
