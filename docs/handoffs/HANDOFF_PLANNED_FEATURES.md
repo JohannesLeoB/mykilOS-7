@@ -89,7 +89,17 @@ korrekt lesbar/anzeigbar, wenn sich der Katalog später ändert. Das `Positionen
 Excel/CSV** exportierbar sein; ebenso **Warenkörbe** nach Bedarf.
 
 - **Warenkorb-Export (klein, zuerst):**
-  - **CSV:** eine Zeile je Position aus dem `Positionen (JSON)`-Snapshot (Artikelnummer, Bezeichnung,
+  - ✅ **CSV (gebaut 2026-07-07):** `WarenkorbCSVExporter` (Sources/MykilosApp/, reine testbare
+    String-Erzeugung, 13 Tests) + „CSV"-Knopf im Warenkorb-Panel (NSSavePanel, rein lesend).
+    Spalten: Pos./Artikelnummer/Bezeichnung/Lieferant/Kategorie/Quelle/Menge/EK-Einzel/VK-Einzel/
+    VK-Summe + Kopf (Datum, Positionsanzahl) + VK-Summenzeile. Semikolon-getrennt (dt. Excel),
+    RFC-4180-Escaping, UTF-8-BOM, dt. Komma-Preise, unbekannte Preise leer (nie erfundene 0,00).
+    Lieferant/Kategorie aus den verifizierten `attribute`-Keys (`lieferant`/`kategorie`).
+    **Ehrliche Abweichung vom Plan:** Kopf ohne „Version" (der Session-Warenkorb im Panel trägt
+    keine Versionsnummer — nur der projektgebundene WorkBasket); Projekt-Kopfzeile optional (wird
+    nur geschrieben, wenn gesetzt, nichts erfunden). ~~CSV~~ **PDF steht noch aus** (nächster
+    Schritt, gemeinsamer MykPDFRenderer-Baustein existiert schon via DokumentPort).
+  - **CSV (Ursprungsplan):** eine Zeile je Position aus dem `Positionen (JSON)`-Snapshot (Artikelnummer, Bezeichnung,
     Hersteller, Kategorie, Menge, EK, VK, Summe) + Kopf (Bezeichnung, Projekt, Datum, Version) +
     Summenzeile. Reiner String → `.fileExporter` / Speicherort-Dialog. Excel öffnet CSV direkt.
   - **PDF:** druckbare Tabelle (mykilOS-Stil, Logo, Kopf, Positionsliste, Summen EK/VK) via

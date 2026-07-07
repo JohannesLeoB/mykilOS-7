@@ -206,6 +206,16 @@ identischer Drop legt nichts Neues an (Idempotenz). *Wo:* Projekt → Übersicht
 Bearbeiten → „In sevDesk-Postbox". *Voraussetzung:* Airtable verbunden; Warenkorb mit Positionen.
 *Einschränkung:* schreibt in die mykilOS-Postbox, **nie** direkt nach sevDesk.
 
+**CSV-Export (2026-07-07):** Im Warenkorb-Panel gibt es den Knopf **„CSV"**. Er speichert den
+aktuellen Warenkorb über den macOS-Speicherdialog als CSV-Datei (öffnet direkt in Excel).
+Spalten: Pos. · Artikelnummer · Bezeichnung · Lieferant · Kategorie · Quelle · Menge · EK-Einzel
+· VK-Einzel · VK-Summe, plus Kopfzeilen (Datum, Positionsanzahl) und eine Summenzeile (VK).
+**Rein lesend** — kein Airtable-Schreiben, keine stille Ablage (immer über den Speicherdialog).
+Technisch sauber: Semikolon-getrennt (deutsches Excel), korrektes Escaping für Artikelnamen mit
+Sonderzeichen (Komma, Anführungszeichen, Zoll-Zeichen), UTF-8 mit BOM (Umlaute korrekt), Preise
+im deutschen Komma-Format, unbekannte Preise bleiben leer (nie erfundene 0,00). *Wo:* Warenkorb-
+Panel → „CSV" (deaktiviert bei leerem Korb). *Noch offen:* PDF-Export (späterer Schritt).
+
 **Cash-Widget — „Kalkuliert (Warenkorb)" (V10, Block H — 2026-07-03):** Das Cash-Widget zeigt
 zusätzlich eine schlanke Zeile mit der **kalkulierten Warenkorb-Summe** dieses Projekts
 (VK **netto** und **brutto** inkl. 19 % MwSt), sobald ein Warenkorb mit Positionen existiert.

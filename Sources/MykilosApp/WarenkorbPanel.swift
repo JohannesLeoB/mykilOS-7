@@ -1,4 +1,6 @@
 import SwiftUI
+import AppKit
+import UniformTypeIdentifiers
 import MykilosDesign
 import MykilosServices
 import MykilosKit
@@ -15,6 +17,7 @@ struct WarenkorbPanel: View {
     @State private var showVersand = false
     @State private var showDevCheckout = false
     @State private var showPreview = false
+    @State private var csvFehler: String?
 
     // MARK: - Task B: Suche/Sortieren/Filtern/Gruppieren (session-lokal, kein Persistenz-Bedarf)
     @State private var query: String = ""
@@ -218,6 +221,17 @@ struct WarenkorbPanel: View {
                     }
                     .buttonStyle(.plain)
 
+                    Button {
+                        exportiereCSV()
+                    } label: {
+                        Label("CSV", systemImage: "tablecells")
+                            .font(.mykSmall)
+                            .foregroundStyle(MykColor.muted.color)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(warenkorb.istLeer)
+                    .help("Warenkorb als CSV speichern (öffnet in Excel; rein lesend, kein Airtable-Write)")
+
                     Spacer()
 
                     Button {
@@ -292,6 +306,31 @@ struct WarenkorbPanel: View {
                 positionen: sichtbarePositionen.map { $0.devExportPosition },
                 onDismiss: { showPreview = false }
             )
+        }
+        .alert("CSV-Export fehlgeschlagen", isPresented: Binding(
+            get: { csvFehler != nil }, set: { if $0 == false { csvFehler = nil } }
+        )) {
+            Button("OK", role: .cancel) { csvFehler = nil }
+        } message: {
+            Text(csvFehler ?? "")
+        }
+    }
+
+    // MARK: - CSV-Export (Feature D — rein lesend, System-Speicherdialog, kein Airtable-Write)
+
+    private func exportiereCSV() {
+        guard warenkorb.istLeer == false else { return }
+        let csv = WarenkorbCSVExporter.csv(positionen: warenkorb.positionen)
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "warenkorb.csv"
+        panel.allowedContentTypes = [.commaSeparatedText]
+        panel.prompt = "Speichern"
+        panel.message = "Warenkorb als CSV speichern"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try csv.data(using: .utf8)?.write(to: url)
+        } catch {
+            csvFehler = error.localizedDescription
         }
     }
 
