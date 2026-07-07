@@ -71,6 +71,11 @@ am 2026-07-05).**
    zusammenhält). Das ist die EINE ehrliche Liste offener Zusagen mit verifiziertem Stand — kein
    Ideen-Backlog. Arbeitest du an einem der Punkte, aktualisiere den Status DORT sofort, nicht am
    Session-Ende.
+1c. **DANN `docs/BAUABLAUF.md` lesen** (verankert 2026-07-08) — der EINE feste Bauablauf: die
+   verbindliche Schritt-Reihenfolge (Welle 1 = ClickUp voll, dann Performance/Drive, S0-Grounding,
+   Feature-Wellen), das eiserne Arbeitsgesetz (ein Schritt, kein Schwarm, Sonnet-5-niedrig,
+   verifizieren-dann-weiter) und der 5-Gate-Verifikationszyklus pro Schritt. Jede Session nimmt den
+   NÄCHSTEN offenen Schritt dort, baut NUR den, verifiziert hart, stoppt. Kein Vorgreifen.
 2. **Ziel, nicht Plan.** Johannes' aktuelle #1-Priorität in EINEM Satz zurückspiegeln — „das, was du
    jetzt am dringendsten brauchst, ist X — richtig?" — und erst nach seinem Ja bauen.
 3. **Richtung früh + billig zeigen.** Vor viel Bauen ein Einzeiler „ich mach jetzt X", damit er in
