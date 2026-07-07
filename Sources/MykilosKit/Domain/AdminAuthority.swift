@@ -16,9 +16,20 @@ import Foundation
 // Damit kann sich kein normaler User selbst hochstufen. Default-deny: alles
 // Unbekannte/Leere/Nicht-Verifizierte ist KEIN Admin.
 //
+// EHRLICHE GRENZE (adversariale Härtung 2026-07-07): Auf einem local-first
+// macOS-Client, dessen Prozess unter dem Angreifer-User läuft, ist KEINE rein
+// lokale Admin-Grenze fälschungssicher — wer den eigenen Keychain + GRDB schreibt,
+// kann jeden lokalen Anker fälschen. Der Client-Guard ist Komfort + Nachweis +
+// Verzögerung; die ABSOLUTE Grenze sitzt serverseitig bei den Airtable-/Google-
+// Key-Scopes. Deshalb koppelt `istAdmin` an ein echtes Google-Token (s. u.) und
+// externe Admin-Aktionen reverifizieren zusätzlich live — der Trust verschiebt sich
+// vom fälschbaren String auf ein nicht-triviales Google-Secret.
+//
 // Diese Datei ist nur das reine Fundament (Foundation-only, testbar). Die
-// Enforcement-Gates an den Admin-Only-Aufrufpfaden und die optionale read-only
-// Airtable-Override der Allowlist folgen als eigene, je live-abgenommene Stufen.
+// Enforcement-Gates an den Admin-Only-Aufrufpfaden folgen als eigene, je
+// live-abgenommene Stufen. (Eine Airtable-Rollen-Override wird in V1 bewusst NICHT
+// gebaut: der Team-PAT steckt in jeder .mykinvite und kann ein Rollen-Feld selbst
+// schreiben → Selbst-Beförderung. Einziger Anker = diese eingebackene Allowlist.)
 public enum BerechtigungError: Error, Sendable, Equatable, LocalizedError {
     /// Eine Admin-Only-Funktion wurde von einer Nicht-Admin-Identität aufgerufen.
     case nurAdmin(funktion: String)
@@ -69,7 +80,7 @@ public struct AdminAllowlist: Sendable, Equatable {
 
 // MARK: - AdminAuthorizing
 public protocol AdminAuthorizing: Sendable {
-    func istAdmin(_ identity: ResidentIdentity?) -> Bool
+    func istAdmin(_ identity: ResidentIdentity?, tokenPresent: Bool) -> Bool
 }
 
 // MARK: - AllowlistAdminAuthority
@@ -81,17 +92,24 @@ public struct AllowlistAdminAuthority: AdminAuthorizing {
         self.allowlist = allowlist
     }
 
-    /// Admin NUR, wenn eine gültige (nicht-leere) verifizierte Google-Mail vorliegt UND
-    /// sie in der Allowlist steht. Kein Ausweis / leerer Schlüssel → kein Admin.
-    public func istAdmin(_ identity: ResidentIdentity?) -> Bool {
+    /// Admin NUR, wenn (1) eine gültige verifizierte Google-Mail vorliegt, (2) ein echtes
+    /// Google-Token im selben per-User-Namespace anwesend ist (`tokenPresent`), UND (3) die
+    /// Mail in der Allowlist steht. Kein Ausweis / leerer Schlüssel / kein Token → kein Admin.
+    ///
+    /// `tokenPresent` (Token-Kopplung): die googleEmail wird beim App-Start ohne Netz aus dem
+    /// lokal beschreibbaren Keychain hydriert — der String allein ist fälschbar. Ein echtes
+    /// Google-Refresh-Token für die Admin-Mail kann ein lokaler Angreifer NICHT erzeugen. Der
+    /// Aufrufer (AppState) berechnet `tokenPresent` aus dem per-User-Keychain-Namespace.
+    public func istAdmin(_ identity: ResidentIdentity?, tokenPresent: Bool) -> Bool {
         guard let identity, identity.hasValidKey else { return false }
+        guard tokenPresent else { return false }
         return allowlist.enthaelt(identity.googleEmail)
     }
 
     /// Store-/Service-Gate: wirft `nurAdmin`, wenn die Identität kein Admin ist.
     /// Sichtbar (throws) statt still — jeder Admin-Only-Aufrufpfad ruft das zuerst.
-    public func assertAdmin(_ identity: ResidentIdentity?, funktion: String) throws {
-        guard istAdmin(identity) else {
+    public func assertAdmin(_ identity: ResidentIdentity?, tokenPresent: Bool, funktion: String) throws {
+        guard istAdmin(identity, tokenPresent: tokenPresent) else {
             throw BerechtigungError.nurAdmin(funktion: funktion)
         }
     }

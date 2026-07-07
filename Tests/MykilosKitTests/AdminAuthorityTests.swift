@@ -14,47 +14,59 @@ struct AdminAuthorityTests {
         ResidentIdentity(googleEmail: email, userID: "u-\(email)")
     }
 
-    @Test func adminMailIstAdmin() {
+    @Test func adminMailMitTokenIstAdmin() {
         let autoritaet = AllowlistAdminAuthority(allowlist: AdminAllowlist(["johannes@mykilos.com"]))
-        #expect(autoritaet.istAdmin(ausweis("johannes@mykilos.com")))
+        #expect(autoritaet.istAdmin(ausweis("johannes@mykilos.com"), tokenPresent: true))
+    }
+
+    @Test func adminMailOhneTokenIstKeinAdmin() {
+        // TOKEN-KOPPLUNG: die googleEmail allein ist fälschbar (lokal aus Keychain hydriert).
+        // Ohne echtes Google-Token → kein Admin, auch wenn die Mail in der Allowlist steht.
+        let autoritaet = AllowlistAdminAuthority(allowlist: AdminAllowlist(["johannes@mykilos.com"]))
+        #expect(autoritaet.istAdmin(ausweis("johannes@mykilos.com"), tokenPresent: false) == false)
     }
 
     @Test func normalerUserIstNiemalsAdmin() {
-        // ESKALATIONS-NEGATIVTEST: eine Mail, die nicht in der Allowlist steht, ist kein Admin.
+        // ESKALATIONS-NEGATIVTEST: eine Mail, die nicht in der Allowlist steht, ist kein Admin —
+        // auch mit vorhandenem Token.
         let autoritaet = AllowlistAdminAuthority(allowlist: AdminAllowlist(["johannes@mykilos.com"]))
-        #expect(autoritaet.istAdmin(ausweis("gast@example.com")) == false)
+        #expect(autoritaet.istAdmin(ausweis("gast@example.com"), tokenPresent: true) == false)
     }
 
     @Test func nilOderLeererAusweisIstKeinAdmin() {
         let autoritaet = AllowlistAdminAuthority(allowlist: AdminAllowlist(["johannes@mykilos.com"]))
-        #expect(autoritaet.istAdmin(nil) == false)
+        #expect(autoritaet.istAdmin(nil, tokenPresent: true) == false)
         // Leerer kanonischer Schlüssel → hasValidKey == false → deny (kein geteilter Anker-Kollaps).
-        #expect(autoritaet.istAdmin(ausweis("")) == false)
-        #expect(autoritaet.istAdmin(ausweis("   ")) == false)
+        #expect(autoritaet.istAdmin(ausweis(""), tokenPresent: true) == false)
+        #expect(autoritaet.istAdmin(ausweis("   "), tokenPresent: true) == false)
     }
 
     @Test func normalisierungGrossKleinUndWhitespace() {
         let autoritaet = AllowlistAdminAuthority(allowlist: AdminAllowlist(["johannes@mykilos.com"]))
-        #expect(autoritaet.istAdmin(ausweis("JOHANNES@MYKILOS.COM")))
-        #expect(autoritaet.istAdmin(ausweis("  johannes@mykilos.com  ")))
+        #expect(autoritaet.istAdmin(ausweis("JOHANNES@MYKILOS.COM"), tokenPresent: true))
+        #expect(autoritaet.istAdmin(ausweis("  johannes@mykilos.com  "), tokenPresent: true))
     }
 
     @Test func assertAdminWirftFuerNichtAdminUndNichtFuerAdmin() throws {
         let autoritaet = AllowlistAdminAuthority(allowlist: AdminAllowlist(["johannes@mykilos.com"]))
-        // Admin: kein Wurf.
-        try autoritaet.assertAdmin(ausweis("johannes@mykilos.com"), funktion: "Einladung erzeugen")
+        // Admin (Mail + Token): kein Wurf.
+        try autoritaet.assertAdmin(ausweis("johannes@mykilos.com"), tokenPresent: true, funktion: "Einladung erzeugen")
         // Nicht-Admin: wirft nurAdmin mit der benannten Funktion.
         #expect(throws: BerechtigungError.nurAdmin(funktion: "Einladung erzeugen")) {
-            try autoritaet.assertAdmin(ausweis("gast@example.com"), funktion: "Einladung erzeugen")
+            try autoritaet.assertAdmin(ausweis("gast@example.com"), tokenPresent: true, funktion: "Einladung erzeugen")
+        }
+        // Admin-Mail aber ohne Token: wirft ebenfalls.
+        #expect(throws: BerechtigungError.nurAdmin(funktion: "Einladung erzeugen")) {
+            try autoritaet.assertAdmin(ausweis("johannes@mykilos.com"), tokenPresent: false, funktion: "Einladung erzeugen")
         }
     }
 
     @Test func gebackenerDefaultEnthaeltJohannesNichtBeliebige() {
-        // Der eingebackene Anker: Johannes ist Admin, ein beliebiger anderer nicht.
+        // Der eingebackene Anker: Johannes (mit Token) ist Admin, ein beliebiger anderer nicht.
         // (Daniels echte Mail wird von Johannes ergänzt — hier bewusst nicht geraten.)
         let autoritaet = AllowlistAdminAuthority()   // .gebacken
-        #expect(autoritaet.istAdmin(ausweis("johannes@mykilos.com")))
-        #expect(autoritaet.istAdmin(ausweis("irgendwer@mykilos.com")) == false)
+        #expect(autoritaet.istAdmin(ausweis("johannes@mykilos.com"), tokenPresent: true))
+        #expect(autoritaet.istAdmin(ausweis("irgendwer@mykilos.com"), tokenPresent: true) == false)
     }
 
     @Test func allowlistNormalisiertUndFiltertLeere() {
