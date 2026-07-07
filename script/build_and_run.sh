@@ -74,6 +74,11 @@ APP_ICON_SOURCE="$ROOT_DIR/Sources/MykilosApp/Resources/$APP_ICON"
 pkill -x "$EXECUTABLE_NAME" >/dev/null 2>&1 || true
 
 cd "$ROOT_DIR"
+# In-App-Hilfe: die kanonische docs/BENUTZERHANDBUCH.md in die App-Resources spiegeln,
+# damit die HilfeView immer den aktuellen Stand zeigt (Resources werden via
+# .copy("Resources") gebündelt → Bundle.module findet sie). Kein Drift: die docs/-Version
+# bleibt die einzige Quelle der Wahrheit, dieser Schritt kopiert sie bei jedem Build frisch.
+cp "$ROOT_DIR/docs/BENUTZERHANDBUCH.md" "$ROOT_DIR/Sources/MykilosApp/Resources/BENUTZERHANDBUCH.md"
 swift build --disable-sandbox
 BUILD_BINARY="$(swift build --disable-sandbox --show-bin-path)/$PRODUCT_NAME"
 

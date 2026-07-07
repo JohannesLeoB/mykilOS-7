@@ -77,6 +77,13 @@ struct MykilOS6App: App {
         }
         .defaultSize(width: 440, height: 300)
         .windowResizability(.contentSize)
+
+        WindowGroup("mykilOS Handbuch", id: "hilfe") {
+            HilfeView()
+                .frame(minWidth: 720, minHeight: 520)
+                .preferredColorScheme(appearance.preferredColorScheme)
+        }
+        .defaultSize(width: 920, height: 660)
     }
 
     @ViewBuilder
@@ -731,6 +738,12 @@ struct AppCommands: Commands {
             Divider()
             // Lern-Loop: offene PDF-Positions-Kandidaten freigeben (dauerhaft erreichbar).
             Button("Preis-Wissen freigeben …") { priceReviewOpen = true }
+        }
+        // Ersetzt das macOS-Standard-Hilfemenü („Help isn't available for mykilOS") durch
+        // das echte In-App-Handbuch (HilfeView rendert docs/BENUTZERHANDBUCH.md).
+        CommandGroup(replacing: .help) {
+            Button("mykilOS Handbuch") { openWindow(id: "hilfe") }
+                .keyboardShortcut("?", modifiers: .command)
         }
     }
 }
