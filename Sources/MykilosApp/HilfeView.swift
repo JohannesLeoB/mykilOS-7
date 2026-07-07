@@ -13,6 +13,17 @@ import MykilosDesign
 // Rein lesend, keine Aktion, kein Schreibvorgang.
 @MainActor
 struct HilfeView: View {
+    /// Welche gebundelte Markdown-Datei gerendert wird (Ressourcenname ohne `.md`) — Default
+    /// bleibt das Handbuch. Wiederverwendet für `docs/OFFENE_ZUSAGEN.md` (Prozess-Tagebuch,
+    /// 2026-07-07: "ALLE Memories kommen IN die App, nicht nur lokal versteckt").
+    let resourceName: String
+    let seitentitel: String
+
+    init(resourceName: String = "BENUTZERHANDBUCH", seitentitel: String = "Handbuch") {
+        self.resourceName = resourceName
+        self.seitentitel = seitentitel
+    }
+
     @State private var sektionen: [HilfeSektion] = []
     @State private var auswahl: HilfeSektion.ID?
     @State private var suche: String = ""
@@ -45,7 +56,7 @@ struct HilfeView: View {
 
     private var seitenleiste: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Handbuch")
+            Text(seitentitel)
                 .font(.mykHeadline)
                 .foregroundStyle(MykColor.ink.color)
                 .padding(.horizontal, MykSpace.s5)
@@ -125,7 +136,7 @@ struct HilfeView: View {
                     .padding(MykSpace.s8)
                 }
             } else {
-                zentriert("Handbuch wird geladen …")
+                zentriert("\(seitentitel) wird geladen …")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -212,9 +223,9 @@ struct HilfeView: View {
     // MARK: Laden + Parsen
 
     private func ladeHandbuch() {
-        guard let url = Bundle.module.url(forResource: "BENUTZERHANDBUCH", withExtension: "md", subdirectory: "Resources")
-            ?? Bundle.module.url(forResource: "BENUTZERHANDBUCH", withExtension: "md") else {
-            ladeFehler = "Handbuch konnte nicht geladen werden (Ressource fehlt im Bundle)."
+        guard let url = Bundle.module.url(forResource: resourceName, withExtension: "md", subdirectory: "Resources")
+            ?? Bundle.module.url(forResource: resourceName, withExtension: "md") else {
+            ladeFehler = "\(seitentitel) konnte nicht geladen werden (Ressource fehlt im Bundle)."
             return
         }
         do {
@@ -222,7 +233,7 @@ struct HilfeView: View {
             sektionen = Self.parse(text)
             auswahl = sektionen.first?.id
         } catch {
-            ladeFehler = "Handbuch konnte nicht gelesen werden: \(error.localizedDescription)"
+            ladeFehler = "\(seitentitel) konnte nicht gelesen werden: \(error.localizedDescription)"
         }
     }
 

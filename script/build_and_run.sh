@@ -8,7 +8,7 @@ BUNDLE_ID="de.mykilos.mykilos6"
 # unterscheidbar sein — kein zweites „11.0.0" auf der Platte). Bewohner-Oberfläche =
 # 11.1.0-alpha-Linie; bei jeder neuen Build die alpha-Nummer hochzählen.
 # ⚠️ create_dmg.sh trägt DIESSELBE Zahl (Zeile ~18) — beide synchron halten!
-APP_VERSION="11.1.0-alpha31"
+APP_VERSION="11.1.0-alpha32"
 # App-Bundle trägt die Versionsnummer im Namen, damit im Dock/Finder immer
 # eindeutig ist, welche Version läuft. BUNDLE_ID bleibt KONSTANT (sonst neuer
 # DB-/Keychain-Pfad → Datenverlust).
@@ -79,6 +79,9 @@ cd "$ROOT_DIR"
 # .copy("Resources") gebündelt → Bundle.module findet sie). Kein Drift: die docs/-Version
 # bleibt die einzige Quelle der Wahrheit, dieser Schritt kopiert sie bei jedem Build frisch.
 cp "$ROOT_DIR/docs/BENUTZERHANDBUCH.md" "$ROOT_DIR/Sources/MykilosApp/Resources/BENUTZERHANDBUCH.md"
+# Prozess-Tagebuch (2026-07-07): docs/OFFENE_ZUSAGEN.md genauso spiegeln — die eine ehrliche
+# Zusagen-Liste lebt jetzt IN der App (Hilfe-Menü "Offene Zusagen"), nicht nur im Repo versteckt.
+cp "$ROOT_DIR/docs/OFFENE_ZUSAGEN.md" "$ROOT_DIR/Sources/MykilosApp/Resources/OFFENE_ZUSAGEN.md"
 swift build --disable-sandbox
 BUILD_BINARY="$(swift build --disable-sandbox --show-bin-path)/$PRODUCT_NAME"
 

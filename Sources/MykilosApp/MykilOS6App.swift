@@ -84,6 +84,16 @@ struct MykilOS6App: App {
                 .preferredColorScheme(appearance.preferredColorScheme)
         }
         .defaultSize(width: 920, height: 660)
+
+        // Prozess-Tagebuch (2026-07-07): "ALLE Memories/Erfahrungen kommen IN die App, nicht
+        // nur lokal versteckt" — rendert docs/OFFENE_ZUSAGEN.md mit demselben Mechanismus wie
+        // das Handbuch (gleicher build_and_run.sh-Spiegel, gleicher Markdown-Renderer).
+        WindowGroup("Offene Zusagen", id: "prozess") {
+            HilfeView(resourceName: "OFFENE_ZUSAGEN", seitentitel: "Offene Zusagen")
+                .frame(minWidth: 720, minHeight: 520)
+                .preferredColorScheme(appearance.preferredColorScheme)
+        }
+        .defaultSize(width: 920, height: 660)
     }
 
     @ViewBuilder
@@ -744,6 +754,7 @@ struct AppCommands: Commands {
         CommandGroup(replacing: .help) {
             Button("mykilOS Handbuch") { openWindow(id: "hilfe") }
                 .keyboardShortcut("?", modifiers: .command)
+            Button("Offene Zusagen …") { openWindow(id: "prozess") }
         }
     }
 }
