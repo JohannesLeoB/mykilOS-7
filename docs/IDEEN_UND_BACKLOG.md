@@ -678,11 +678,16 @@ verdient volle Aufmerksamkeit + Johannes' Live-Abnahme auf echten PDFs, nicht ne
 
 ## Nachtrag 2026-07-02 (Assistenten-Tweaks, Johannes im Auto-Modus)
 
-- 📋 **Bestätigung per natürlichem Befehl:** Action-Cards im Assistenten sollen sich auch per
-  Wort im Chat bestätigen lassen — „ist bestätigt", „mach", „go", „los", „ja" — statt nur per
-  Klick auf den Karten-Button. Sicher: nur auslösen, wenn es GENAU EINE offene, unbestätigte
-  Action-Card im letzten Assistenten-Zug gibt (sonst normal an den LLM). Läuft weiter über die
-  bestehenden gated Handler (Karte→Bestätigung→Audit) — der Confirm-Word ersetzt nur den Klick.
+- ✅ **Bestätigung per natürlichem Befehl (bereits gebaut — Status-Korrektur 2026-07-07, dieser
+  Eintrag war veraltet):** Verifiziert in `Sources/MykilosWidgets/AssistantChatView.swift` —
+  `confirmWords`-Set (Zeile 382), `pendingSingleAction` (Zeile 395, exakt der geforderte
+  „GENAU EINE offene Card"-Schutz), `send()` fängt Confirm-Wörter ab (Zeile 414) und ruft
+  `confirmPending()` (Zeile 434), das über die bestehenden gated Handler läuft (Karte→
+  Bestätigung→Audit, kein neuer Schreibpfad). **Kleine Lücke, kein Blocker:** die Karten-eigene
+  `@State`-Phase (idle/saving/done/failed) synct sich nicht rückwirkend, wenn per Chat-Wort statt
+  Klick bestätigt wurde — das Ergebnis erscheint aber korrekt als Chat-Nachricht, rein kosmetisch.
+  Keine dedizierten Tests für diese Logik (privates State in der SwiftUI-View, nicht isoliert
+  unit-testbar ohne UI-Test-Harness) — funktional aber bereits produktiv nutzbar.
 - 📋 **Datei-/Screenshot-Upload → Bild-Analyse + Kontext + Action-Vorschläge:** Screenshot droppen
   + „schau mal / kennst du das / analysiere" → Assistent erkennt den Inhalt und schlägt passende
   Aktionen als Action-Cards vor: Kontakt-Screenshot → „Kontakt anlegen?"; Google-Maps → „Adresse
