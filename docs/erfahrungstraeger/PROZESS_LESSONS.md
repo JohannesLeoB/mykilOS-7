@@ -1,5 +1,28 @@
 # Prozess-Lessons — laufender Abschlussbericht
 
+## 2026-07-07 (Tag/Abend, Non-Stop-Fortsetzung — Warenkorb-Bug, sevDesk-Kunden, In-App-Hilfe)
+
+**Näher an der Vision:** Johannes' konkreten Zwei-Teiler exakt geliefert: (1) Bugfix — herausgelöste
+PDF-Positionen landen jetzt auch im per-Projekt-Zweig des Angebote-Moduls sichtbar im Korb
+(`160337f`); (2) „Kunden für die sevDesk-Oberfläche" — Kernbefund: `SevdeskPostboxCheckoutPort`
+schrieb `Kunde`/`Kundennummer`/`Betreff` längst, aber der Drop-Sheet füllte diese `ziel.parameter`
+NIE → gingen immer leer raus. Behoben + Kontakt-Picker aus dem echten Airtable-Verzeichnis.
+Danach als unblockierten Sanktions-Punkt das echte In-App-Handbuch gebaut (HilfeView rendert die
+verifizierte docs/BENUTZERHANDBUCH.md, ersetzt „Help isn't available"). 1254 Tests grün, 3 DMGs
+(alpha22/23/24), alles gepusht.
+
+**Was stolperte:** Der eigentliche Wert lag nicht im „neuen Feld bauen", sondern im Erkennen, dass
+die Datenpipeline (Port) schon fertig war und nur der UI-Draht fehlte — erst durch das Lesen des
+Ports statt Vermuten sichtbar geworden. Zweiter Stolperer: die literale Bitte („Kunden in Warenkörbe
+packen") zeigte auf den falschen Korb — der Kataloge-Session-Korb erreicht sevDesk NIE, nur der
+Projekt-WorkBasket. Bewusst dort gebaut, wo es sevDesk WIRKLICH erreicht, und die Design-Entscheidung
+offen an Johannes gemeldet statt sie zu verstecken.
+
+**Die eine Sache anders nächstes Mal:** Wenn eine Bitte einen mehrdeutigen Begriff enthält („in
+Warenkörbe" bei ZWEI getrennten Korb-Systemen), zuerst 2 Minuten die Datenflüsse beider Kandidaten
+verifizieren, BEVOR gebaut wird — hat hier verhindert, das Feature an der Stelle zu bauen, wo es
+folgenlos verpufft wäre.
+
 ## 2026-07-07 (~02:50, Non-Stop-Nachtsession, sauber abgeschlossen)
 
 **Näher an der Vision:** 9 echte Features non-stop gebaut+getestet+gelintet+committet
