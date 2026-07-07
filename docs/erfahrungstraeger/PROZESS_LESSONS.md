@@ -1,5 +1,27 @@
 # Prozess-Lessons — laufender Abschlussbericht
 
+## 2026-07-07 (~02:50, Non-Stop-Nachtsession, sauber abgeschlossen)
+
+**Näher an der Vision:** 9 echte Features non-stop gebaut+getestet+gelintet+committet
+(Aufgaben-Alarme, ClickUp-Spalte 2, Nachfass-/Bitte-reagieren-Hinweise als ehrlich beschriftete
+Alters-Heuristiken statt erfundener "Reaktion erkannt"-Behauptungen, Werkzeichnung-Alert,
+VWPlankopfPort mit an echte Vectorworks-Exporte geerdetem Feld-Vokabular, echte Mac-Mitteilungen,
+Assistent-Tagebuch als sicherer Feedback-Kanal statt Selbst-Editierung). 1213 Tests grün, 9 DMGs.
+Ein Backlog-Eintrag ("Bestätigung per natürlichem Befehl") stellte sich beim Gegenlesen als
+bereits fertig gebaut heraus — Backlog korrigiert statt blind neu gebaut.
+
+**Was stolperte:** Mehrfach Subagent-Berichte NICHT blind übernommen, sondern selbst im Code
+gegengeprüft — einmal lohnte es sich echt (ein Subagent behauptete "Barcode-Scanner existiert
+UND ist noch zu bauen" im selben Bericht, Widerspruch erst beim eigenen Nachsehen aufgefallen).
+Bei mehreren Ideen (Kontakte-Galerie, Mail-Alerts, Screenshot-Vision-Analyse) ehrlich NICHT
+gebaut, weil sie entweder fehlende Infrastruktur (Kontaktfotos, Mail-Watcher) oder unklare,
+fehleranfällige Klassifikationslogik gebraucht hätten — bewusst kein hohles "erledigt" erzwungen.
+
+**Die eine Sache anders nächstes Mal:** Bei jeder neuen Backlog-Idee ZUERST prüfen, ob sie nicht
+schon (ganz oder teilweise) im Code existiert, BEVOR ein Scoping-Agent für die Detailplanung
+losgeschickt wird — hätte bei "Bestätigung per natürlichem Befehl" einen kompletten Scoping-
+Durchlauf gespart, der am Ende nur "ist schon fertig" ergab.
+
 ## 2026-07-07 (00:10, Übergabe wegen Kontextfenster-Grenze 91%)
 
 **Näher an der Vision:** 13 Commits diese Nacht, zwei echte Bugs gefunden+behoben (Mail-Signatur-
