@@ -210,7 +210,9 @@ struct WarenkorbPanel: View {
 
                 Divider().overlay(MykColor.line.color)
 
-                // Actions
+                // Actions — CSV+PDF in EINEM „Export"-Menü zusammengefasst (statt zwei Buttons);
+                // Panel auf 520pt verbreitert (wie die Geschwister-Sheets). Alle Labels lineLimit(1)
+                // + fixedSize, damit nie wieder etwas zeichenweise umbricht.
                 HStack(spacing: MykSpace.s3) {
                     Button(role: .destructive) {
                         warenkorb.leeren()
@@ -218,30 +220,26 @@ struct WarenkorbPanel: View {
                         Label("Leeren", systemImage: "trash")
                             .font(.mykSmall)
                             .foregroundStyle(MykColor.critical.color)
+                            .lineLimit(1)
                     }
                     .buttonStyle(.plain)
+                    .fixedSize()
 
-                    Button {
-                        exportiereCSV()
+                    // CSV + PDF in EINEM „Export"-Menü (Feature-D-Plan „Exportieren ▾") — zwei
+                    // getrennte Buttons sprengten die Breite (Labels brachen zeichenweise um).
+                    Menu {
+                        Button("Als CSV (Excel) …") { exportiereCSV() }
+                        Button("Als PDF (Vorschau) …") { exportierePDF() }
                     } label: {
-                        Label("CSV", systemImage: "tablecells")
+                        Label("Export", systemImage: "square.and.arrow.up")
                             .font(.mykSmall)
                             .foregroundStyle(MykColor.muted.color)
+                            .lineLimit(1)
                     }
-                    .buttonStyle(.plain)
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
                     .disabled(warenkorb.istLeer)
-                    .help("Warenkorb als CSV speichern (öffnet in Excel; rein lesend, kein Airtable-Write)")
-
-                    Button {
-                        exportierePDF()
-                    } label: {
-                        Label("PDF", systemImage: "doc.richtext")
-                            .font(.mykSmall)
-                            .foregroundStyle(MykColor.muted.color)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(warenkorb.istLeer)
-                    .help("Warenkorb als druckbares PDF speichern (Kalkulations-Vorschau, kein offizielles Angebot)")
+                    .help("Warenkorb als CSV (Excel) oder PDF speichern — rein lesend, kein Airtable-Write")
 
                     Spacer()
 
@@ -251,8 +249,10 @@ struct WarenkorbPanel: View {
                         Label("Vorschau", systemImage: "eye")
                             .font(.mykSmall)
                             .foregroundStyle(MykColor.muted.color)
+                            .lineLimit(1)
                     }
                     .buttonStyle(.plain)
+                    .fixedSize()
                     .help("Zeigt das JSON-Format des Dev-Exports, bevor du checkoutest")
 
                     Button {
@@ -261,6 +261,7 @@ struct WarenkorbPanel: View {
                         Label("Checkout (Dev)", systemImage: "shippingbox")
                             .font(.mykSmall)
                             .foregroundStyle(MykColor.cash.color)
+                            .lineLimit(1)
                             .padding(.horizontal, MykSpace.s5)
                             .padding(.vertical, MykSpace.s3)
                             .background(MykColor.card.color)
@@ -268,6 +269,7 @@ struct WarenkorbPanel: View {
                             .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.cash.color, lineWidth: 1))
                     }
                     .buttonStyle(.plain)
+                    .fixedSize()
                     .help("Lokaler Dev-Export-Vorschau (kein Airtable-Schreiben)")
 
                     Button {
@@ -276,18 +278,20 @@ struct WarenkorbPanel: View {
                         Label("An Airtable senden", systemImage: "arrow.up.doc")
                             .font(.mykSmall)
                             .foregroundStyle(MykColor.paper.color)
+                            .lineLimit(1)
                             .padding(.horizontal, MykSpace.s5)
                             .padding(.vertical, MykSpace.s3)
                             .background(MykColor.tasks.color)
                             .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
                     }
                     .buttonStyle(.plain)
+                    .fixedSize()
                 }
                 .padding(.horizontal, MykSpace.s7)
                 .padding(.vertical, MykSpace.s5)
             }
         }
-        .frame(width: 420)
+        .frame(width: 520)
         .background(MykColor.paper.color)
         .clipShape(RoundedRectangle(cornerRadius: MykRadius.md))
         .overlay(
