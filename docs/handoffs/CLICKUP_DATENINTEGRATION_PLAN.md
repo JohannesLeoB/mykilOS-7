@@ -44,10 +44,15 @@ Nachfass-Fälligkeit) — Kontext für die Alert-/Fälligkeits-Ableitung.
 
 ## Bau-Reihenfolge (klein, read-only zuerst)
 
-1. **`ClickUpProjektMeta`-Struct** — die generisch dekodierten `custom_fields` in ein typisiertes
-   Modell heben (13 Felder). Der Adapter liest `customFields` schon; nur das Auswerten erweitern.
-2. **Spiegeln in bestehende Felder:** Drive-Ordner→`driveFolderID`, Kunde→`customer`,
-   Projekttyp→`kind`, Budget→Cash-Widget. Read-only, kein Schreiben.
+1. ✅ **`ClickUpProjektMeta`-Struct (gebaut):** typisiertes 13-Feld-Modell + umsteckbarer
+   Schaltschrank (`ClickUpFieldRouteRegistry`/`ClickUpProjektMetaMapper`, 18 Tests) + Fetch
+   `ClickUpClient.projektMeta(listID:)` (2026-07-07, +2 Tests). Rein lesend.
+2. 🚧 **ANZEIGE gebaut (2026-07-07), Spiegelung offen:** `ClickUpProjektMetaStrip` zeigt die
+   gesetzten Meta-Felder als read-only Chip-Zeile im Projekt-Detail (unter dem Lebenszyklus-Band,
+   6 Tests für die reine Chip-Ableitung). **Noch NICHT gemacht — die eigentliche „Spiegelung":**
+   Drive-Ordner→`driveFolderID`, Kunde→`customer`, Projekttyp→`kind`, Budget→Cash-Widget. Das ist
+   heikler als reine Anzeige (überschreibt/ergänzt lokale Felder — Konflikt-/Vorrang-Frage), bewusst
+   als eigener Schritt zurückgestellt.
 3. **Meilensteine:** `ClickUpTask` um `isMilestone` (ClickUp liefert `milestone: true`) +
    Angebots-/Auftragsdatum → Projekt-**Timeline**-Marker (Backlog „Timeline erkennt Meilensteine").
 4. **Projekt-Status ableiten** — ✅ **ERLEDIGT, schon gebaut** (Korrektur 2026-07-06/07: dieser

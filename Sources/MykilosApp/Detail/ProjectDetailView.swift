@@ -33,6 +33,7 @@ struct ProjectDetailView: View {
                     onToggleFavorite: { try? appState.favorites.toggle(projectNumber: project.projectNumber) }
                 )
                 ProjectLifecycleBar(project: project)
+                ClickUpProjektMetaStrip(clickUpListID: project.links.clickUpListID)
                 Divider().overlay(MykColor.line.color)
                 tabBar
                 Divider().overlay(MykColor.line.color)

@@ -165,6 +165,15 @@ automatisch — der Nutzer entscheidet weiterhin selbst per Tippen auf die passe
 Herangezogen wird die am weitesten fortgeschrittene gesetzte Phase unter den Aufgaben der
 Liste (kein einzelner „Projekt-Meister"-Datensatz nötig).
 
+**ClickUp-Projektdaten (2026-07-07):** Direkt unter dem Lebenszyklus-Band erscheint eine
+kompakte, **rein lesende** Chip-Zeile mit den in ClickUp gepflegten Projekt-Custom-Feldern
+(Budget, Angebots-/Auftragsdatum, nächstes Nachfassen, Ort, Lead, Typ, Risiko/Engpass,
+Lieferanten). Nur **gesetzte** Felder erscheinen — leere bleiben weg, nichts wird erfunden.
+Die Zuordnung ClickUp-Feld → Anzeige läuft über eine umsteckbare Routing-Tabelle
+(„Schaltschrank"): stimmt ein ClickUp-Feldname live nicht, wird dort eine Zeile umgelegt,
+kein Code angefasst. **Kein Schreiben, keine automatische Übernahme in lokale Felder** — reine
+Anzeige. Erscheint nur, wenn eine ClickUp-Liste verknüpft ist und mindestens ein Feld gefüllt ist.
+
 **Tabs:**
 
 ### Übersicht
