@@ -30,8 +30,10 @@ Fast alles 1:1: `darstellungSection` · `privateAreaSection` (Orange) · `Keycha
 `MykSettingsGroup` (settingsCard-Hülle + Rows + Divider), optional `MykIdentityHeader`.
 
 ## Etappen (kleinste zuerst)
-1. **Etappe 1 — Enum-Rename + Reihenfolge + `railCases` (KLEIN).** „Verbindungen"→„Integrationen",
-   privat/geteilt-Reihenfolge, beide ForEachs auf `railCases`. Kein neuer View. Sofort abnehmbar, null Risiko.
+1. ✅ **Etappe 1 — Enum-Rename + Reihenfolge + `railCases` (gebaut, Status-Korrektur 2026-07-07):**
+   Verifiziert in `SettingsView.swift` — Label `.verbindungen: "Integrationen"` (Z.23), `railCases`
+   filtert `.profil` (Z.18), Reihenfolge in privat→geteilt-Bändern (Z.9-13, rawValues unverändert →
+   AppStorage-Persistenz bleibt). Test `SettingsCategoryTests.swift` vorhanden. **Nichts mehr zu tun.**
 2. **Etappe 2 — Personalausweis-Header + Detail-Case (MITTEL).** Sticky-Header im Content-Pane,
    `identitySection`+`mailSignaturSection` umhängen, `.profil` entfernen. Header speist aus DERSELBEN
    Google-Quelle wie `identitySection` (KEIN `ResidentIdentity`-Merge in dieser Etappe!).

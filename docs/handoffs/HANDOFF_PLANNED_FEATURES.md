@@ -97,8 +97,12 @@ Excel/CSV** exportierbar sein; ebenso **Warenkörbe** nach Bedarf.
     Lieferant/Kategorie aus den verifizierten `attribute`-Keys (`lieferant`/`kategorie`).
     **Ehrliche Abweichung vom Plan:** Kopf ohne „Version" (der Session-Warenkorb im Panel trägt
     keine Versionsnummer — nur der projektgebundene WorkBasket); Projekt-Kopfzeile optional (wird
-    nur geschrieben, wenn gesetzt, nichts erfunden). ~~CSV~~ **PDF steht noch aus** (nächster
-    Schritt, gemeinsamer MykPDFRenderer-Baustein existiert schon via DokumentPort).
+    nur geschrieben, wenn gesetzt, nichts erfunden).
+  - ✅ **PDF (gebaut 2026-07-07):** `WarenkorbPDFExporter` (reuse `MykPDFRenderer` wie DokumentPort,
+    7 Tests inkl. %PDF-Magic-Byte-Check) + „PDF"-Knopf im Warenkorb-Panel (NSSavePanel, rein lesend).
+    A4, Terrakotta-Kopf, Positionstabelle (Pos./Artikelnummer/Bezeichnung/Menge/EK-Einzel/VK-Einzel/
+    VK-Summe — schlanker als CSV für Druckbreite), Summen EK/VK netto. **Belegführung (eiserne Regel):**
+    Fußnote „Kalkulations-Vorschau — kein offizielles Angebot" — mykilOS stellt nie einen Beleg aus.
   - **CSV (Ursprungsplan):** eine Zeile je Position aus dem `Positionen (JSON)`-Snapshot (Artikelnummer, Bezeichnung,
     Hersteller, Kategorie, Menge, EK, VK, Summe) + Kopf (Bezeichnung, Projekt, Datum, Version) +
     Summenzeile. Reiner String → `.fileExporter` / Speicherort-Dialog. Excel öffnet CSV direkt.

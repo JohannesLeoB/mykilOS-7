@@ -214,7 +214,15 @@ Spalten: Pos. · Artikelnummer · Bezeichnung · Lieferant · Kategorie · Quell
 Technisch sauber: Semikolon-getrennt (deutsches Excel), korrektes Escaping für Artikelnamen mit
 Sonderzeichen (Komma, Anführungszeichen, Zoll-Zeichen), UTF-8 mit BOM (Umlaute korrekt), Preise
 im deutschen Komma-Format, unbekannte Preise bleiben leer (nie erfundene 0,00). *Wo:* Warenkorb-
-Panel → „CSV" (deaktiviert bei leerem Korb). *Noch offen:* PDF-Export (späterer Schritt).
+Panel → „CSV" (deaktiviert bei leerem Korb).
+
+**PDF-Export (2026-07-07):** Der Knopf **„PDF"** daneben speichert den Warenkorb als druckbares
+A4-Dokument im mykilOS-Stil (Terrakotta-Kopfzeile, Positionstabelle, Summen EK/VK netto) über den
+macOS-Speicherdialog. Nutzt denselben `MykPDFRenderer` wie die anderen mykilOS-PDFs. **Wichtig
+(Belegführung):** Das PDF trägt immer die Fußnote **„Kalkulations-Vorschau — kein offizielles
+Angebot"** — mykilOS stellt nie einen verbuchungspflichtigen Beleg aus; das offizielle Angebot
+entsteht separat in sevDesk. Rein lesend, kein Airtable-Schreiben. *Wo:* Warenkorb-Panel → „PDF"
+(deaktiviert bei leerem Korb).
 
 **Cash-Widget — „Kalkuliert (Warenkorb)" (V10, Block H — 2026-07-03):** Das Cash-Widget zeigt
 zusätzlich eine schlanke Zeile mit der **kalkulierten Warenkorb-Summe** dieses Projekts

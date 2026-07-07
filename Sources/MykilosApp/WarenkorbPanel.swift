@@ -232,6 +232,17 @@ struct WarenkorbPanel: View {
                     .disabled(warenkorb.istLeer)
                     .help("Warenkorb als CSV speichern (öffnet in Excel; rein lesend, kein Airtable-Write)")
 
+                    Button {
+                        exportierePDF()
+                    } label: {
+                        Label("PDF", systemImage: "doc.richtext")
+                            .font(.mykSmall)
+                            .foregroundStyle(MykColor.muted.color)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(warenkorb.istLeer)
+                    .help("Warenkorb als druckbares PDF speichern (Kalkulations-Vorschau, kein offizielles Angebot)")
+
                     Spacer()
 
                     Button {
@@ -307,7 +318,7 @@ struct WarenkorbPanel: View {
                 onDismiss: { showPreview = false }
             )
         }
-        .alert("CSV-Export fehlgeschlagen", isPresented: Binding(
+        .alert("Export fehlgeschlagen", isPresented: Binding(
             get: { csvFehler != nil }, set: { if $0 == false { csvFehler = nil } }
         )) {
             Button("OK", role: .cancel) { csvFehler = nil }
@@ -329,6 +340,26 @@ struct WarenkorbPanel: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             try csv.data(using: .utf8)?.write(to: url)
+        } catch {
+            csvFehler = error.localizedDescription
+        }
+    }
+
+    private func exportierePDF() {
+        guard warenkorb.istLeer == false else { return }
+        let pdf = WarenkorbPDFExporter.pdf(positionen: warenkorb.positionen)
+        guard pdf.isEmpty == false else {
+            csvFehler = "PDF konnte nicht erzeugt werden."
+            return
+        }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "warenkorb.pdf"
+        panel.allowedContentTypes = [.pdf]
+        panel.prompt = "Speichern"
+        panel.message = "Warenkorb als PDF speichern (Kalkulations-Vorschau, kein offizielles Angebot)"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try pdf.write(to: url)
         } catch {
             csvFehler = error.localizedDescription
         }
