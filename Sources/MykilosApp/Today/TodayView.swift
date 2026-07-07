@@ -165,7 +165,7 @@ private struct SignalPill: View {
         switch signal {
         case .offerDetected, .reviewSuggested:    MykColor.cash.color
         case .deadlineNear, .budgetThresholdCrossed: MykColor.critical.color
-        case .driveFileAdded:                     MykColor.drive.color
+        case .driveFileAdded, .drawingDetected:   MykColor.drive.color
         case .projectFocused:                     MykColor.faint.color
         }
     }
@@ -175,6 +175,7 @@ private struct SignalPill: View {
         case .projectFocused(let p):                "Projekt fokussiert: \(p)"
         case .driveFileAdded(let p, let name):      "Datei in \(p): \(name)"
         case .offerDetected(let p, let label):      "Angebot in \(p): \(label)"
+        case .drawingDetected(let p, let label):    "Neue Werkzeichnung in \(p): \(label)"
         case .reviewSuggested(let p, let label):    "Review: \(p) · \(label)"
         case .budgetThresholdCrossed(let p, let r): "Budget \(p): \(Int(r * 100)) %"
         case .deadlineNear(let p, let days):        "Deadline \(p): \(days) Tage"

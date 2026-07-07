@@ -48,9 +48,9 @@ public final class DriveOfferWatcher {
         let fresh = nonFolders.filter { seen.contains($0.id) == false }
         seen.formUnion(fresh.map(\.id))
         return fresh.map { file in
-            Self.isOffer(file)
-                ? .offerDetected(projectID: projectID, label: file.name)
-                : .driveFileAdded(projectID: projectID, fileName: file.name)
+            if Self.isOffer(file) { return .offerDetected(projectID: projectID, label: file.name) }
+            if Self.isWerkzeichnung(file) { return .drawingDetected(projectID: projectID, label: file.name) }
+            return .driveFileAdded(projectID: projectID, fileName: file.name)
         }
     }
 
@@ -104,5 +104,20 @@ public final class DriveOfferWatcher {
         guard isAcceptedOfferFileType(file) else { return false }
         let name = file.name.lowercased()
         return offerKeywords.contains { name.contains($0) }
+    }
+
+    // MARK: - "Neue Werkzeichnung"-Alert (Backlog "Nachtrag 2026-07-02 spät", 2026-07-07)
+    // Direkt auf dem bestehenden `DriveOfferWatcher`-Muster gebaut: gleiche Baseline-/
+    // Signal-Logik, eigenes (bewusst kleines) Schlüsselwort-Set. Reduzierter Scope: nur
+    // CAD-Export-Dateitypen, die die bestehende Beleg-Typ-Whitelist ohnehin schon zulässt
+    // (PDF/Bild) — native CAD-Formate (DWG/DXF) sind NICHT enthalten, da sie weder als
+    // Belegtyp noch anderswo in mykilOS gehandhabt werden. Wer eine native CAD-Datei
+    // hochlädt, bekommt weiterhin das generische `driveFileAdded`-Signal.
+    nonisolated public static let drawingKeywords = ["zeichnung", "werkzeichnung"]
+
+    nonisolated public static func isWerkzeichnung(_ file: GoogleDriveFile) -> Bool {
+        guard isAcceptedOfferFileType(file) else { return false }
+        let name = file.name.lowercased()
+        return drawingKeywords.contains { name.contains($0) }
     }
 }

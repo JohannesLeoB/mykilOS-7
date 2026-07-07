@@ -20,6 +20,7 @@ public enum WidgetSignal: Sendable, Equatable {
     case projectFocused(projectID: String)
     case driveFileAdded(projectID: String, fileName: String)
     case offerDetected(projectID: String, label: String)
+    case drawingDetected(projectID: String, label: String)   // neue Werkzeichnung im Drive-Ordner
     case reviewSuggested(projectID: String, label: String)   // VORSCHLAG, kein Write
     case budgetThresholdCrossed(projectID: String, ratio: Double)
     case deadlineNear(projectID: String, days: Int)

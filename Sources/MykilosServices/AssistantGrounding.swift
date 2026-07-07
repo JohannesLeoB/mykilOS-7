@@ -168,6 +168,7 @@ public enum AssistantGrounding {
         case .projectFocused(let p):                 "- Projekt fokussiert: \(p)"
         case .driveFileAdded(let p, let name):       "- Drive-Datei in \(p): \(name)"
         case .offerDetected(let p, let label):       "- Angebot in \(p): \(label)"
+        case .drawingDetected(let p, let label):     "- Neue Werkzeichnung in \(p): \(label)"
         case .reviewSuggested(let p, let label):     "- Review-Vorschlag in \(p): \(label)"
         case .budgetThresholdCrossed(let p, let r):  "- Budget in \(p): \(Int(r * 100)) Prozent"
         case .deadlineNear(let p, let days):         "- Deadline in \(p): \(days) Tage"

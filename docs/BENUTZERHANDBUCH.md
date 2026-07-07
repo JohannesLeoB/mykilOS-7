@@ -106,7 +106,11 @@ offene Aufgaben und Kalender-Ereignisse auf einen Blick.
   alle aktiven Projekt-Ordner sitzt jetzt zentral in **Einstellungen → Integrationen → Google →
   „Drive-Ordner synchronisieren"** (Parent-I/O-Prinzip). Der Dateien-Tab lädt seinen Ordner
   beim Öffnen ohnehin frisch; der Hintergrund-Poll (alle 5 Min) läuft unverändert weiter.
-- **Signal-Strip**: zeigt Signale aus dem aktuellen Projektkontext (z.B. neue Angebote erkannt).
+- **Signal-Strip**: zeigt Signale aus dem aktuellen Projektkontext (z.B. neue Angebote erkannt,
+  seit 2026-07-07 auch **neue Werkzeichnungen** — gleicher Drive-Poll-Mechanismus wie
+  `offerDetected`, eigenes Schlüsselwort-Set ("zeichnung"/"werkzeichnung"), eigenes Signal
+  `drawingDetected`. Reduzierter Scope: nur PDF/Bild/Mail-Dateitypen wie bei Belegen — native
+  CAD-Formate (DWG/DXF) lösen weiterhin nur das generische "neue Datei"-Signal aus).
 - **Favoriten**: angepinnte Projekte als Schnellzugriff (Stern auf einer Projektkarte/im
   Detail-Header). Leer, bis du das erste Projekt anpinnst.
 - **Letzte Aktivität**: die neuesten Datenstrom-Handshakes (Sync/Tool-Calls) und bestätigten

@@ -122,6 +122,56 @@ struct DriveOfferWatcherTests {
         }
     }
 
+    // MARK: - "Neue Werkzeichnung"-Alert (2026-07-07)
+
+    @Test func neueZeichnungEmitiertDrawingDetected() async {
+        let fake = FakeDriveClient(files: [
+            file(id: "1", name: "Angebot alt.pdf", mime: "application/pdf"),
+        ])
+        let watcher = DriveOfferWatcher(client: fake)
+        _ = await watcher.poll(projectID: "ME-24", folderID: "folder1")   // Baseline
+
+        fake.files.append(file(id: "2", name: "Werkzeichnung_Kueche_v2.pdf", mime: "application/pdf"))
+        let signals = await watcher.poll(projectID: "ME-24", folderID: "folder1")
+
+        #expect(signals.count == 1)
+        if case let .drawingDetected(projectID, label) = signals.first {
+            #expect(projectID == "ME-24")
+            #expect(label == "Werkzeichnung_Kueche_v2.pdf")
+        } else {
+            Issue.record("erwartet drawingDetected, war \(String(describing: signals.first))")
+        }
+    }
+
+    @Test func zeichnungKeywordGreiftAuchOhneWerkPraefix() {
+        let files = [file(id: "1", name: "Zeichnung Bad.pdf", mime: "application/pdf")]
+        #expect(DriveOfferWatcher.isWerkzeichnung(files[0]))
+    }
+
+    @Test func zeichnungTypWhitelistGreiftGenauwieBeleg() {
+        // ZIP mit Schlüsselwort ist trotzdem keine Werkzeichnung — gleiche Typ-Whitelist.
+        let zip = file(id: "1", name: "Werkzeichnung_Paket.zip", mime: "application/zip")
+        #expect(DriveOfferWatcher.isWerkzeichnung(zip) == false)
+    }
+
+    @Test func angebotUndZeichnungSchliessenSichGegenseitigAus() async {
+        // Ein Dateiname mit BEIDEN Schlüsselwörtern ist unwahrscheinlich, aber die
+        // Klassifikation muss deterministisch sein: Angebot hat Vorrang (poll()-Reihenfolge).
+        let fake = FakeDriveClient(files: [])
+        let watcher = DriveOfferWatcher(client: fake)
+        _ = await watcher.poll(projectID: "ME-24", folderID: "folder1")   // Baseline
+
+        fake.files.append(file(id: "1", name: "Angebot_mit_Zeichnung.pdf", mime: "application/pdf"))
+        let signals = await watcher.poll(projectID: "ME-24", folderID: "folder1")
+
+        #expect(signals.count == 1)
+        if case .offerDetected = signals.first {
+            // erwartet
+        } else {
+            Issue.record("erwartet offerDetected (Angebot hat Vorrang), war \(String(describing: signals.first))")
+        }
+    }
+
     @Test func fehlerOderLeererOrdnerMeldetNichts() async {
         let failing = FakeDriveClient(files: [], error: GoogleDriveError.notConnected)
         let watcher = DriveOfferWatcher(client: failing)

@@ -137,6 +137,8 @@ public struct ClaudeMessagesClient: AssistantLLMProviding {
             "- Drive-Datei in \(projectID): \(fileName)"
         case .offerDetected(let projectID, let label):
             "- Angebot in \(projectID): \(label)"
+        case .drawingDetected(let projectID, let label):
+            "- Neue Werkzeichnung in \(projectID): \(label)"
         case .reviewSuggested(let projectID, let label):
             "- Review-Vorschlag in \(projectID): \(label)"
         case .budgetThresholdCrossed(let projectID, let ratio):

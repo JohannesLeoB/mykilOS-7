@@ -631,11 +631,12 @@ verdient volle Aufmerksamkeit + Johannes' Live-Abnahme auf echten PDFs, nicht ne
   (Rückrichtung aus §5i/§5j: sevDesk schreibt Status → mykilOS liest, nie direkter Read). Ohne die
   bleibt es Vermutung, nicht Fakt — sollte im UI klar als „ungewiss" markiert sein, falls doch
   heuristisch gebaut wird.
-- 📋 **„Neue Werkzeichnung"-Alert:** entweder bei passendem **Mail-Betreff** (neuer, paralleler
-  Watcher analog zum bestehenden Gmail-Search-Tool) oder bei **neuer Datei im Drive-Projektordner**
-  — **Zweiteres direkt auf dem bestehenden `DriveOfferWatcher`-Muster baubar**: Keyword-Set einfach
-  um „zeichnung"/„werkzeichnung" erweitern (heute nur angebot/rechnung/kostenvoranschlag/offer/
-  invoice), gleiche Baseline-/Signal-Logik (`offerDetected` → Mediator → Widget-Hinweis).
+- ✅ **„Neue Werkzeichnung"-Alert (gebaut 2026-07-07):** die Drive-Datei-Variante ist umgesetzt —
+  eigenes `drawingDetected`-Signal (nicht in `offerKeywords` gemischt, um das offerDetected/Cash-
+  Widget-Signal nicht mit Zeichnungen zu verwässern), eigenes Schlüsselwort-Set ("zeichnung"/
+  "werkzeichnung"), gleiche Baseline-/Poll-Logik wie `DriveOfferWatcher`. **Nicht gebaut:** die
+  Mail-Betreff-Variante (neuer Gmail-Watcher) — nur die Drive-Datei-Erkennung wie im Backlog-Text
+  als "direkt baubar" markiert. 4 neue Tests (`DriveOfferWatcherTests`).
 - **Querverbindung:** das ist bereits die **vierte** Alert-Idee heute (CAD-Adapter, Angebots-/
   Rechnungs-Status, Werkzeichnung, plus die früher erkannte Lücke „Benachrichtigungs-Zentrum" aus
   `FINALE_APP_RUECKWAERTS.md`) — verstärkt den Fall für einen eigenen, zentralen Alerts-Strang statt

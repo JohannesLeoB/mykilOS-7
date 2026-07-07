@@ -75,6 +75,7 @@ public final class StudioContext {
         case let .projectFocused(p),
              let .driveFileAdded(p, _),
              let .offerDetected(p, _),
+             let .drawingDetected(p, _),
              let .reviewSuggested(p, _),
              let .budgetThresholdCrossed(p, _),
              let .deadlineNear(p, _):
