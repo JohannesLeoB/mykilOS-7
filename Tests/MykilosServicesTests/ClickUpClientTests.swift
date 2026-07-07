@@ -137,6 +137,27 @@ struct ClickUpClientTests {
         }
     }
 
+    // MARK: - projektMeta-Fetch (CLICKUP_DATENINTEGRATION Schritt 2, 2026-07-07)
+
+    @Test func projektMetaWirftNotConnectedOhneCredentials() async {
+        let store = InMemoryClickUpCredentialsStore()
+        let client = ClickUpClient(credentialsStore: store)
+        do {
+            _ = try await client.projektMeta(listID: "9012345")
+            Issue.record("sollte werfen")
+        } catch {
+            #expect(error as? ClickUpError == .notConnected)
+        }
+    }
+
+    // Additiv-Sicherheit: ein ClickUpFetching-Double, das NUR `tasks` implementiert, erbt die
+    // Protokoll-Extension-Default `.empty` — bestehende Fakes brechen durch die neue Methode nicht.
+    @Test func projektMetaDefaultLiefertEmptyFuerNurTasksFake() async throws {
+        let fake = NurTasksFake()
+        let meta = try await fake.projektMeta(listID: "irgendeine")
+        #expect(meta.isEmpty)
+    }
+
     // MARK: - project_phase Custom Field (2026-07-04)
 
     @Test func parseTasksDekodiertProjectPhaseAusCustomFields() throws {
@@ -221,4 +242,11 @@ final class InMemoryClickUpCredentialsStore: ClickUpCredentialsStoring, @uncheck
     func clear() throws {
         stored = nil
     }
+}
+
+// Minimaler ClickUpFetching-Double, der NUR die Pflicht-Methode `tasks` implementiert —
+// `projektMeta` kommt aus der Protokoll-Extension-Default (.empty). Beweist die Additiv-
+// Sicherheit: bestehende Fakes müssen die neue Methode nicht kennen.
+private struct NurTasksFake: ClickUpFetching {
+    func tasks(listID: String) async throws -> [ClickUpTask] { [] }
 }

@@ -64,6 +64,15 @@ public enum ClickUpError: Error, Sendable, Equatable {
 // MARK: - ClickUpFetching
 public protocol ClickUpFetching: Sendable {
     func tasks(listID: String) async throws -> [ClickUpTask]
+    /// Liest die 13 Projekt-Custom-Fields der Liste als typisiertes `ClickUpProjektMeta`
+    /// (CLICKUP_DATENINTEGRATION_PLAN Schritt 2 — rein lesend). Default-Extension liefert
+    /// `.empty`, damit bestehende Test-Doubles/Fakes nicht angefasst werden müssen; der echte
+    /// `ClickUpClient` überschreibt mit dem Live-Fetch + Schaltschrank-Mapper.
+    func projektMeta(listID: String) async throws -> ClickUpProjektMeta
+}
+
+public extension ClickUpFetching {
+    func projektMeta(listID: String) async throws -> ClickUpProjektMeta { .empty }
 }
 
 // MARK: - ClickUpTaskWriting (2026-07-04)
@@ -132,6 +141,28 @@ public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning, ClickU
         guard (200...299).contains(http.statusCode) else { throw ClickUpError.httpError(http.statusCode) }
 
         return try Self.parseTasks(from: data)
+    }
+
+    /// Liest die Projekt-Custom-Fields der Liste (dieselbe `tasks`-Antwort, anderer Decodable-Pfad).
+    /// Rein lesend: `ClickUpProjektMetaMapper` hebt die generischen `custom_fields` über den
+    /// umsteckbaren Schaltschrank in ein typisiertes `ClickUpProjektMeta`. Kein Schreiben.
+    public func projektMeta(listID: String) async throws -> ClickUpProjektMeta {
+        guard let credentials = try? credentialsStore.load() else {
+            throw ClickUpError.notConnected
+        }
+        guard let url = Self.buildTasksURL(baseURL: baseURL, listID: listID) else {
+            throw ClickUpError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue(credentials.apiToken, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw ClickUpError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw ClickUpError.httpError(http.statusCode) }
+
+        return try ClickUpProjektMetaMapper.parse(from: data)
     }
 
     // MARK: - Schreiben (Provisioning, Schritt `.clickUpStruktur`)
