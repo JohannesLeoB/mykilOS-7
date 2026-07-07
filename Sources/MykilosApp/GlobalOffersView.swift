@@ -158,7 +158,8 @@ struct GlobalOffersView: View {
             OffersTabView(
                 projectID: project.projectNumber,
                 driveFolderID: project.links.driveFolderID,
-                driveFolderPath: project.links.driveFolderPath
+                driveFolderPath: project.links.driveFolderPath,
+                warenkorb: warenkorb
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {

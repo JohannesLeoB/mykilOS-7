@@ -25,6 +25,11 @@ struct OffersTabView: View {
     var workBasketStore: WorkBasketStore? = nil
     var kundeName: String? = nil
     var projektTitel: String? = nil
+    // Globales Angebote-Modul (GlobalOffersView): der session-lokale WarenkorbState statt des
+    // projektgebundenen WorkBasketStore. Genau EINER von beiden ist je Kontext gesetzt — der
+    // Positionen-Picker landet dadurch immer im SICHTBAREN Korb (Bugfix 2026-07-07: im per-Projekt-
+    // Zweig des globalen Moduls fehlte bisher jeder Korb → „In Warenkorb" tauchte gar nicht auf).
+    var warenkorb: WarenkorbState? = nil
 
     @State private var loader = OffersLoader()
     @State private var searchText = ""
@@ -290,6 +295,7 @@ struct OffersTabView: View {
                 eingehend: true,
                 projektNummer: projectID,
                 workBasketStore: workBasketStore,
+                warenkorb: warenkorb,
                 projectFolderID: driveFolderID,
                 projectFolderPath: driveFolderPath
             )
@@ -301,6 +307,7 @@ struct OffersTabView: View {
                 eingehend: false,
                 projektNummer: projectID,
                 workBasketStore: workBasketStore,
+                warenkorb: warenkorb,
                 projectFolderID: driveFolderID,
                 projectFolderPath: driveFolderPath
             )
@@ -318,6 +325,7 @@ private struct OfferColumn: View {
     var eingehend: Bool = true
     var projektNummer: String = ""
     var workBasketStore: WorkBasketStore? = nil
+    var warenkorb: WarenkorbState? = nil
     var projectFolderID: String? = nil
     var projectFolderPath: String? = nil
 
@@ -362,6 +370,7 @@ private struct OfferColumn: View {
                              eingehend: eingehend,
                              projektNummer: projektNummer,
                              workBasketStore: workBasketStore,
+                             warenkorb: warenkorb,
                              projectFolderID: projectFolderID,
                              projectFolderPath: projectFolderPath)
                     if offer.id != offers.last?.id {
@@ -430,6 +439,7 @@ private struct OfferRow: View {
     var eingehend: Bool = true
     var projektNummer: String = ""
     var workBasketStore: WorkBasketStore? = nil
+    var warenkorb: WarenkorbState? = nil
     var projectFolderID: String? = nil
     var projectFolderPath: String? = nil
 
@@ -468,6 +478,49 @@ private struct OfferRow: View {
     private func remoteContent() -> (@Sendable () async -> Data?)? {
         let fileID = file.id
         return { try? await GoogleDriveClient().downloadContent(fileID: fileID) }
+    }
+
+    // Übernahme einer herausgelösten Position in den SICHTBAREN Korb. `warenkorb` (globales
+    // Angebote-Modul) hat Vorrang vor `workBasketStore` (Projekt-Detail) — genau EINER ist je
+    // Kontext gesetzt. Fehlen beide, ist onTake nil und der „In Warenkorb"-Knopf erscheint nicht.
+    private var positionsUebernahme: ((OfferPositionPDFReader.PagedPosition, Int) -> Void)? {
+        if let warenkorb {
+            return { paged, index in
+                let p = paged.position
+                let preis = p.netPrice.map { ($0 as NSDecimalNumber).doubleValue }
+                warenkorb.addPosition(
+                    objektID: "\(file.id)-\(paged.pageNumber)-\(index)",
+                    bezeichnung: p.title.isEmpty ? file.name : p.title,
+                    menge: max(1, Int((p.quantity ?? 1).rounded())),
+                    preisNetto: preis,
+                    eingehend: eingehend,
+                    attribute: positionsAttribute(p, quelle: file.name, seite: paged.pageNumber, eingehend: eingehend))
+                warenkorb.showPanel = true
+            }
+        }
+        if let store = workBasketStore {
+            return { paged, index in
+                let p = paged.position
+                let preis = p.netPrice.map { ($0 as NSDecimalNumber).doubleValue }
+                Task {
+                    // Fehler nicht stumm schlucken (Ultra-Review): der WorkBasketStore macht ihn
+                    // über seinen SaveState im Warenkorb-Widget sichtbar.
+                    do {
+                        try await store.fuegePositionHinzu(
+                            projektNummer: projektNummer,
+                            bezeichnung: p.title.isEmpty ? file.name : p.title,
+                            menge: max(1, Int((p.quantity ?? 1).rounded())),
+                            ekEinzel: eingehend ? preis : nil,
+                            vkEinzel: eingehend ? nil : preis,
+                            objektID: "\(file.id)-\(paged.pageNumber)-\(index)",
+                            attribute: positionsAttribute(p, quelle: file.name, seite: paged.pageNumber, eingehend: eingehend))
+                    } catch {
+                        MykLog.lifecycle.error("Warenkorb-Anhängen fehlgeschlagen: \(String(describing: error), privacy: .public)")
+                    }
+                }
+            }
+        }
+        return nil
     }
 
     var body: some View {
@@ -560,28 +613,7 @@ private struct OfferRow: View {
         .sheet(isPresented: $showPositions) {
             OfferPositionsSheet(
                 file: file,
-                onTake: workBasketStore.map { store in
-                    { (paged: OfferPositionPDFReader.PagedPosition, index: Int) in
-                        let p = paged.position
-                        let preis = p.netPrice.map { ($0 as NSDecimalNumber).doubleValue }
-                        Task {
-                            // Fehler nicht stumm schlucken (Ultra-Review): der WorkBasketStore
-                            // macht ihn über seinen SaveState im Warenkorb-Widget sichtbar.
-                            do {
-                                try await store.fuegePositionHinzu(
-                                    projektNummer: projektNummer,
-                                    bezeichnung: p.title.isEmpty ? file.name : p.title,
-                                    menge: max(1, Int((p.quantity ?? 1).rounded())),   // runden statt abschneiden (Ultra-Review)
-                                    ekEinzel: eingehend ? preis : nil,
-                                    vkEinzel: eingehend ? nil : preis,
-                                    objektID: "\(file.id)-\(paged.pageNumber)-\(index)",
-                                    attribute: positionsAttribute(p, quelle: file.name, seite: paged.pageNumber, eingehend: eingehend))
-                            } catch {
-                                MykLog.lifecycle.error("Warenkorb-Anhängen fehlgeschlagen: \(String(describing: error), privacy: .public)")
-                            }
-                        }
-                    }
-                },
+                onTake: positionsUebernahme,
                 learningStore: appState.learningStore,
                 onClose: { showPositions = false })
         }
