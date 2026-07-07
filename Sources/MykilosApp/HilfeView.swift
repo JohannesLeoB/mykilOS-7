@@ -113,8 +113,12 @@ struct HilfeView: View {
                             .font(.mykDisplay)
                             .foregroundStyle(MykColor.ink.color)
                             .padding(.bottom, MykSpace.s3)
-                        ForEach(Array(sektion.zeilen.enumerated()), id: \.offset) { _, zeileText in
-                            zeile(zeileText)
+                        ForEach(Self.bloecke(sektion.zeilen)) { block in
+                            if block.istCode {
+                                codeBlock(block.zeilen)
+                            } else {
+                                zeile(block.zeilen.first ?? "")
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -130,6 +134,26 @@ struct HilfeView: View {
     private func zentriert(_ text: String) -> some View {
         VStack { Spacer(); Text(text).font(.mykBody).foregroundStyle(MykColor.muted.color); Spacer() }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // Ein zusammenhängender ```-Codeblock: monospaced, eigener Rahmen, horizontal
+    // scrollbar (lange Kommandozeilen brechen die Seite sonst auf).
+    private func codeBlock(_ zeilen: [String]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(Array(zeilen.enumerated()), id: \.offset) { _, codezeile in
+                    Text(codezeile.isEmpty ? " " : codezeile)
+                        .font(.mykMono(10)).foregroundStyle(MykColor.inkSoft.color)
+                        .textSelection(.enabled)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(MykSpace.s4)
+        }
+        .background(MykColor.card.color)
+        .clipShape(RoundedRectangle(cornerRadius: MykRadius.sm))
+        .overlay(RoundedRectangle(cornerRadius: MykRadius.sm).stroke(MykColor.line.color, lineWidth: 1))
+        .padding(.vertical, MykSpace.s2)
     }
 
     // MARK: Zeilen-Renderer (leichtgewichtiges Markdown)
@@ -230,13 +254,55 @@ struct HilfeView: View {
         abschliessen()
         return ergebnis
     }
+
+    /// Gruppiert die Zeilen eines Abschnitts in Blöcke: zusammenhängende ```-Fences
+    /// werden zu EINEM Code-Block (monospaced gerendert), alles andere bleibt eine
+    /// Ein-Zeilen-Text-Block (den der bestehende `zeile`-Renderer verarbeitet). Reine,
+    /// deterministische Funktion — testbar ohne Bundle/View.
+    static func bloecke(_ zeilen: [String]) -> [HilfeBlock] {
+        var ergebnis: [HilfeBlock] = []
+        var index = 0
+        var imCode = false
+        var codeZeilen: [String] = []
+
+        for zeile in zeilen {
+            if zeile.trimmingCharacters(in: .whitespaces).hasPrefix("```") {
+                if imCode {
+                    ergebnis.append(HilfeBlock(id: index, istCode: true, zeilen: codeZeilen))
+                    index += 1
+                    codeZeilen = []
+                    imCode = false
+                } else {
+                    imCode = true
+                }
+                continue
+            }
+            if imCode {
+                codeZeilen.append(zeile)
+            } else {
+                ergebnis.append(HilfeBlock(id: index, istCode: false, zeilen: [zeile]))
+                index += 1
+            }
+        }
+        // Nicht geschlossener Fence: den gesammelten Code trotzdem als Block ausgeben.
+        if imCode && codeZeilen.isEmpty == false {
+            ergebnis.append(HilfeBlock(id: index, istCode: true, zeilen: codeZeilen))
+        }
+        return ergebnis
+    }
 }
 
-// MARK: - HilfeSektion
+// MARK: - HilfeSektion / HilfeBlock
 
 struct HilfeSektion: Identifiable, Equatable {
     let id: Int
     let titel: String
     let zeilen: [String]
     var rohtext: String { zeilen.joined(separator: "\n") }
+}
+
+struct HilfeBlock: Identifiable, Equatable {
+    let id: Int
+    let istCode: Bool
+    let zeilen: [String]
 }

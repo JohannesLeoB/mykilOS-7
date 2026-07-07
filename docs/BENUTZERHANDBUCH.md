@@ -252,23 +252,23 @@ sevDesk passieren. *Wo:* Projekt → Übersicht → Warenkorb → Bearbeiten →
 Sektion „Kunde (für sevDesk)". *Einschränkung:* Kundennummer/Betreff bleiben Freitext (die
 Kontakte-Tabelle trägt keine sevDesk-Kundennummer).
 
-**CSV-Export (2026-07-07):** Im Warenkorb-Panel gibt es den Knopf **„CSV"**. Er speichert den
-aktuellen Warenkorb über den macOS-Speicherdialog als CSV-Datei (öffnet direkt in Excel).
-Spalten: Pos. · Artikelnummer · Bezeichnung · Lieferant · Kategorie · Quelle · Menge · EK-Einzel
-· VK-Einzel · VK-Summe, plus Kopfzeilen (Datum, Positionsanzahl) und eine Summenzeile (VK).
-**Rein lesend** — kein Airtable-Schreiben, keine stille Ablage (immer über den Speicherdialog).
-Technisch sauber: Semikolon-getrennt (deutsches Excel), korrektes Escaping für Artikelnamen mit
-Sonderzeichen (Komma, Anführungszeichen, Zoll-Zeichen), UTF-8 mit BOM (Umlaute korrekt), Preise
-im deutschen Komma-Format, unbekannte Preise bleiben leer (nie erfundene 0,00). *Wo:* Warenkorb-
-Panel → „CSV" (deaktiviert bei leerem Korb).
+**Export CSV/PDF (2026-07-07):** Im Warenkorb-Panel gibt es ein **„Export"-Menü** (zusammengefasst,
+seit die zwei getrennten Knöpfe die Aktionsleiste sprengten) mit zwei Einträgen:
+**„Als CSV (Excel) …"** und **„Als PDF (Vorschau) …"**. Beide speichern über den macOS-
+Speicherdialog, **rein lesend** — kein Airtable-Schreiben, keine stille Ablage.
 
-**PDF-Export (2026-07-07):** Der Knopf **„PDF"** daneben speichert den Warenkorb als druckbares
-A4-Dokument im mykilOS-Stil (Terrakotta-Kopfzeile, Positionstabelle, Summen EK/VK netto) über den
-macOS-Speicherdialog. Nutzt denselben `MykPDFRenderer` wie die anderen mykilOS-PDFs. **Wichtig
-(Belegführung):** Das PDF trägt immer die Fußnote **„Kalkulations-Vorschau — kein offizielles
-Angebot"** — mykilOS stellt nie einen verbuchungspflichtigen Beleg aus; das offizielle Angebot
-entsteht separat in sevDesk. Rein lesend, kein Airtable-Schreiben. *Wo:* Warenkorb-Panel → „PDF"
-(deaktiviert bei leerem Korb).
+- **CSV:** öffnet direkt in Excel. Spalten: Pos. · Artikelnummer · Bezeichnung · Lieferant ·
+  Kategorie · Quelle · Menge · EK-Einzel · VK-Einzel · VK-Summe, plus Kopfzeilen (Datum,
+  Positionsanzahl) und eine Summenzeile (VK). Technisch sauber: Semikolon-getrennt (deutsches
+  Excel), korrektes Escaping für Sonderzeichen (Komma, Anführungszeichen, Zoll-Zeichen), UTF-8
+  mit BOM (Umlaute korrekt), Preise im deutschen Komma-Format, unbekannte Preise bleiben leer
+  (nie erfundene 0,00).
+- **PDF:** druckbares A4-Dokument im mykilOS-Stil (Terrakotta-Kopfzeile, Positionstabelle, Summen
+  EK/VK netto), derselbe `MykPDFRenderer` wie die anderen mykilOS-PDFs. **Wichtig (Belegführung):**
+  trägt immer die Fußnote **„Kalkulations-Vorschau — kein offizielles Angebot"** — mykilOS stellt
+  nie einen verbuchungspflichtigen Beleg aus; das offizielle Angebot entsteht separat in sevDesk.
+
+*Wo:* Warenkorb-Panel → „Export" (Menü deaktiviert bei leerem Korb).
 
 **Cash-Widget — „Kalkuliert (Warenkorb)" (V10, Block H — 2026-07-03):** Das Cash-Widget zeigt
 zusätzlich eine schlanke Zeile mit der **kalkulierten Warenkorb-Summe** dieses Projekts

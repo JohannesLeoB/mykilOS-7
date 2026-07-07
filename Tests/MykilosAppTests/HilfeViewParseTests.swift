@@ -52,4 +52,35 @@ struct HilfeViewParseTests {
         #expect(sektionen[0].titel == "A")
         #expect(sektionen[0].rohtext.contains("### Unterpunkt"))
     }
+
+    // MARK: bloecke — Code-Fence-Gruppierung
+
+    @Test func codeFenceWirdEinBlock() {
+        let bloecke = HilfeView.bloecke(["Vor", "```bash", "swift build", "swift test", "```", "Nach"])
+        #expect(bloecke.count == 3)
+        #expect(bloecke[0].istCode == false)
+        #expect(bloecke[0].zeilen == ["Vor"])
+        #expect(bloecke[1].istCode == true)
+        #expect(bloecke[1].zeilen == ["swift build", "swift test"])
+        #expect(bloecke[2].istCode == false)
+        #expect(bloecke[2].zeilen == ["Nach"])
+    }
+
+    @Test func textOhneFenceIstProZeileEinBlock() {
+        let bloecke = HilfeView.bloecke(["a", "b"])
+        #expect(bloecke.count == 2)
+        #expect(bloecke.allSatisfy { $0.istCode == false })
+    }
+
+    @Test func nichtGeschlossenerFenceGibtCodeTrotzdemAus() {
+        let bloecke = HilfeView.bloecke(["```", "x", "y"])
+        #expect(bloecke.count == 1)
+        #expect(bloecke[0].istCode == true)
+        #expect(bloecke[0].zeilen == ["x", "y"])
+    }
+
+    @Test func stabileBlockIDs() {
+        let bloecke = HilfeView.bloecke(["a", "```", "c", "```", "d"])
+        #expect(bloecke.map(\.id) == [0, 1, 2])
+    }
 }
