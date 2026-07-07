@@ -19,6 +19,14 @@ struct SevdeskPostboxDropSheet: View {
     let onClose: () -> Void
 
     @State private var belegTyp: String = "Angebot"
+    // Kundendaten für den sevDesk-Beleg (Johannes 2026-07-07: „Kunden muss ich in
+    // Warenkörbe packen, damit Kundendaten für die Sevdesk Oberfläche gegeben sind").
+    // Der Port schreibt „Kunde"/„Kundennummer"/„Betreff" in den Postbox-Beleg, wenn sie
+    // hier gefüllt sind — vorher gingen diese Felder immer leer raus. Alles optional:
+    // ein Mensch kann den Beleg auch erst in sevDesk zuordnen.
+    @State private var kunde: String = ""
+    @State private var kundennummer: String = ""
+    @State private var betreff: String = ""
     @State private var preview: CheckoutPreview?
     @State private var previewError: String?
     @State private var status: Status = .idle
@@ -32,7 +40,14 @@ struct SevdeskPostboxDropSheet: View {
     }
 
     private var ziel: PortZiel {
-        PortZiel(kind: "postbox", parameter: ["belegTyp": belegTyp, "user": actorUserID])
+        var parameter: [String: String] = ["belegTyp": belegTyp, "user": actorUserID]
+        let kundeText = kunde.trimmingCharacters(in: .whitespacesAndNewlines)
+        if kundeText.isEmpty == false { parameter["kunde"] = kundeText }
+        let kundennummerText = kundennummer.trimmingCharacters(in: .whitespacesAndNewlines)
+        if kundennummerText.isEmpty == false { parameter["kundennummer"] = kundennummerText }
+        let betreffText = betreff.trimmingCharacters(in: .whitespacesAndNewlines)
+        if betreffText.isEmpty == false { parameter["betreff"] = betreffText }
+        return PortZiel(kind: "postbox", parameter: parameter)
     }
 
     var body: some View {
@@ -43,6 +58,7 @@ struct SevdeskPostboxDropSheet: View {
                 VStack(alignment: .leading, spacing: MykSpace.s6) {
                     hinweisBanner
                     belegTypPicker
+                    kundeSektion
                     vorschauSektion
                     statusSektion
                 }
@@ -96,6 +112,31 @@ struct SevdeskPostboxDropSheet: View {
             }
             .pickerStyle(.segmented).labelsHidden()
             .disabled(status == .laeuft)
+        }
+    }
+
+    // Kunde (für sevDesk): Name/Firma + Kundennummer + Betreff. Alles optional — wenn
+    // gefüllt, schreibt der Port sie in den Postbox-Beleg, sodass die Kundendaten in der
+    // sevDesk-Oberfläche direkt gegeben sind, statt dort neu getippt zu werden.
+    private var kundeSektion: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s3) {
+            Text("Kunde (für sevDesk)").font(.mykSmall).foregroundStyle(MykColor.muted.color)
+            TextField("Kundenname oder Firma", text: $kunde)
+                .textFieldStyle(.roundedBorder).font(.mykSmall)
+                .disabled(status == .laeuft)
+            HStack(spacing: MykSpace.s3) {
+                TextField("Kundennummer (optional)", text: $kundennummer)
+                    .textFieldStyle(.roundedBorder).font(.mykSmall)
+                    .disabled(status == .laeuft)
+                TextField("Betreff (optional)", text: $betreff)
+                    .textFieldStyle(.roundedBorder).font(.mykSmall)
+                    .disabled(status == .laeuft)
+            }
+            Text("Optional. Gefüllte Felder landen als Kunde/Kundennummer/Betreff im Postbox-Beleg "
+                 + "— ein Mensch baut daraus in sevDesk den echten Beleg. Leer lassen, wenn die "
+                 + "Zuordnung erst in sevDesk passiert.")
+                .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
