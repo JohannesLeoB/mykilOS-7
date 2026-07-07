@@ -233,6 +233,17 @@ identischer Drop legt nichts Neues an (Idempotenz). *Wo:* Projekt → Übersicht
 Bearbeiten → „In sevDesk-Postbox". *Voraussetzung:* Airtable verbunden; Warenkorb mit Positionen.
 *Einschränkung:* schreibt in die mykilOS-Postbox, **nie** direkt nach sevDesk.
 
+**Kunde am sevDesk-Postbox-Drop (2026-07-07):** Das Drop-Fenster hat jetzt eine Sektion
+**„Kunde (für sevDesk)"** mit drei optionalen Feldern — **Name/Firma, Kundennummer, Betreff**.
+Gefüllte Werte landen im Postbox-Beleg (Felder `Kunde` / `Kundennummer` / `Betreff`), sodass die
+Kundendaten direkt in sevDesk vorliegen, statt dort neu getippt zu werden. Über dem Namensfeld
+liegt **„Aus Kontakten wählen"** — ein Menü über das echte Airtable-Kontaktverzeichnis, das per
+Klick den Namen/die Firma übernimmt. Alles optional: Ist Airtable nicht verbunden, erscheint das
+Menü nicht und die Freitext-Eingabe bleibt die einzige Quelle; die Zuordnung darf auch erst in
+sevDesk passieren. *Wo:* Projekt → Übersicht → Warenkorb → Bearbeiten → „In sevDesk-Postbox" →
+Sektion „Kunde (für sevDesk)". *Einschränkung:* Kundennummer/Betreff bleiben Freitext (die
+Kontakte-Tabelle trägt keine sevDesk-Kundennummer).
+
 **CSV-Export (2026-07-07):** Im Warenkorb-Panel gibt es den Knopf **„CSV"**. Er speichert den
 aktuellen Warenkorb über den macOS-Speicherdialog als CSV-Datei (öffnet direkt in Excel).
 Spalten: Pos. · Artikelnummer · Bezeichnung · Lieferant · Kategorie · Quelle · Menge · EK-Einzel
