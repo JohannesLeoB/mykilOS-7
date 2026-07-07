@@ -10,11 +10,26 @@ public struct MykInvitePayload: Codable, Equatable, Sendable {
     public var werte: [String: String]
     public var erstelltAm: Date
     public var ablaufAm: Date?
+    /// Für WEN ist diese Einladung? Reine Metadaten (kein Secret) — liegen bewusst INNERHALB
+    /// der Verschlüsselung, damit die E-Mail nicht im Klartext auf der Datei steht. Der
+    /// Onboarding-Wizard begrüßt damit namentlich UND kann prüfen, dass der spätere Google-
+    /// Login zur eingeladenen Adresse passt. Beide optional — alte Dateien ohne diese Felder
+    /// dekodieren weiter (additiv).
+    public var eingeladeneEmail: String?
+    public var eingeladenerName: String?
 
-    public init(werte: [String: String], erstelltAm: Date = Date(), ablaufAm: Date? = nil) {
+    public init(
+        werte: [String: String],
+        erstelltAm: Date = Date(),
+        ablaufAm: Date? = nil,
+        eingeladeneEmail: String? = nil,
+        eingeladenerName: String? = nil
+    ) {
         self.werte = werte
         self.erstelltAm = erstelltAm
         self.ablaufAm = ablaufAm
+        self.eingeladeneEmail = eingeladeneEmail
+        self.eingeladenerName = eingeladenerName
     }
 
     public var istAbgelaufen: Bool {
@@ -23,8 +38,15 @@ public struct MykInvitePayload: Codable, Equatable, Sendable {
     }
 
     /// Stabile Schlüssel-Konstanten (Schaltschrank-Prinzip: keine verstreuten Stringliterale).
+    /// Team-geteilte Zugangsdaten — NIE persönliche Secrets (eigener Google-Login/Clockodo).
     public enum Schluessel {
         public static let airtablePAT = "airtable.pat"
         public static let airtableBaseID = "airtable.baseID"
+        // Google-OAuth-CLIENT-Config (App-Ebene, kein User-Token) — Johannes 2026-07-07.
+        public static let googleClientID = "google.clientID"
+        public static let googleClientSecret = "google.clientSecret"
+        // Team-Claude-Key (nur wenn EIN geteilter Anthropic-Key genutzt wird) — Johannes 2026-07-07.
+        public static let claudeAPIKey = "claude.apiKey"
+        public static let claudeModel = "claude.model"
     }
 }
