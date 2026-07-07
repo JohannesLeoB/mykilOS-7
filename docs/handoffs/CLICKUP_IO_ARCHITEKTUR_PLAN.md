@@ -140,11 +140,21 @@ ClickUp-Chat-Channel (channelID) ──? Projekt   [Zuordnung + v3-API UNBEKANNT
    `ProvisioningMode.prod` freigegeben** (heute im Code gesperrt). Für Bestandsprojekte: List-IDs aus
    der Ernte übernehmen. (Bis dahin schreibt Provisioning nur in die TEST-Sandbox.)
 2. **Chat senden (C2) überhaupt gewünscht?** (Einziger Pfad mit echter Notifikation. Wenn ja: nur per-User-Token + Nur-Ghost-Channel.)
-2b. **Nummern-Autorität bei ECHTEM Multi-User:** `LocalSequentialAuthority` ist atomar *pro Gerät*
-    + prüft echte Drive-Ordner — aber zwei Nutzer offline könnten dieselbe `JJJJ-NNN` ziehen. Für ein
-    Team, das parallel Projekte feuert, ist der saubere Weg der schon vorgesehene
-    `NumberAuthorityMode.airtable` (Nummernkreis/Reservierung in Airtable = global atomar). Umschalten
-    per Config, kein Aufrufer-Umbau. **Entscheidung: `.local` behalten oder auf `.airtable` kippen?**
+2b. **Nummern-Autorität bei ECHTEM Multi-User → ENTSCHIEDEN über die Rolle (Johannes, 2026-07-07):
+    „Admin hat die erweiterten Funktionen".** Projekt-Ursprung/Nummerierung/Provisioning/Go-Live/
+    Key-Verteilung sind **Admin-Funktionen**, kein Jedermann-Recht → die Kollisions-Fläche schrumpft
+    auf „wie viele Admin-Geräte feuern".
+    - **Empfehlung Nummern-Autorität:** `.airtable` als durable Truth (system-of-record, überlebt
+      Geräteverlust, Nummernkreis team-sichtbar). `.local` ist akzeptabel, solange strikt EIN
+      Admin-Gerät originiert. Umschalten per Config, kein Aufrufer-Umbau.
+    - **⚠️ EHRLICHE LÜCKE — die Admin-Grenze ist NICHT gebaut:** `UserProfile.role` ist Freitext
+      (kein Berechtigungs-Enum); „Hausmeister" hängt am `devicePrimary`-Keychain-Anker (verankert nur
+      Geräte-Eigentum, steuert nichts); `.prod` ist per Code-Lock gesperrt, nicht per Rolle. →
+      **Neue Grundlage „Admin-Rolle" nötig** (erzwungenes Gate über die erweiterten Funktionen),
+      bevor „Admin hat die erweiterten Funktionen" wahr ist. Kandidat: `istAdmin` aus devicePrimary
+      ableiten ODER explizites Admin-Flag in `ResidentIdentity`/`UserProfile`; dann gaten:
+      Provisioning (`ProjektProvisioningService`), Nummernvergabe, `ProvisioningModeStore.setMode(.prod)`,
+      `MykInviteService` (Key-Verteilung). Gehört als Berechtigungs-Schicht neben S0.
 3. „Meine Aufgaben": Quelle für `clickUpMemberID` je User; OK, dass „Meine" im Testspace bewusst leer bleibt?
 4. Chat-Umfang C1/C2 + Bestätigung DM/privat-Ausschluss; existiert ClickUp-Chat über v3 überhaupt (S7 entscheidet)?
 5. Go-Live-Whitelist: Speicherort + Granularität + Verifikation (kein Nebeneffekt-Kippen).
