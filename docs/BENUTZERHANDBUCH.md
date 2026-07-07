@@ -1,10 +1,18 @@
 # mykilOS 6 — Benutzerhandbuch
 
-**Stetige Mitschrift aller Funktionen. Stand: 2026-07-04 · Version 10.0.0-alpha14**
+**Stetige Mitschrift aller Funktionen. Stand: 2026-07-07 · Version 11.1.0-alpha24**
 Jede neue Funktion wird hier beim Build dokumentiert. Dieses Dokument ist kein
 Abschlussdokument — es wächst mit der App.
 
 ---
+
+## Hilfe & Handbuch (In-App, 2026-07-07)
+
+Genau dieses Handbuch ist **in der App eingebaut**: Menü **Hilfe → „mykilOS Handbuch"**
+(oder **⌘?**) öffnet ein eigenes Fenster mit Suchfeld links (alle Abschnitte) und dem
+gewählten Abschnitt rechts. Ersetzt den macOS-Standard „Help isn't available for mykilOS".
+Rein lesend. Der Inhalt ist immer der aktuelle Stand von `docs/BENUTZERHANDBUCH.md` (wird
+bei jedem App-Build frisch mitgenommen). *Wo:* Menüleiste → Hilfe, oder ⌘?.
 
 ## Navigation
 
