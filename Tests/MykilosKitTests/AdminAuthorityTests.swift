@@ -66,6 +66,7 @@ struct AdminAuthorityTests {
         // (Daniels echte Mail wird von Johannes ergänzt — hier bewusst nicht geraten.)
         let autoritaet = AllowlistAdminAuthority()   // .gebacken
         #expect(autoritaet.istAdmin(ausweis("johannes@mykilos.com"), tokenPresent: true))
+        #expect(autoritaet.istAdmin(ausweis("dk@mykilos.com"), tokenPresent: true))   // Daniel
         #expect(autoritaet.istAdmin(ausweis("irgendwer@mykilos.com"), tokenPresent: true) == false)
     }
 

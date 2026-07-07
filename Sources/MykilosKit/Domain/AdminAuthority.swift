@@ -73,8 +73,8 @@ public struct AdminAllowlist: Sendable, Equatable {
     /// Johannes trägt sie ein (ein falscher Eintrag wäre ein Sicherheitsfehler:
     /// entweder sperrt er Daniel aus oder gibt Fremden Admin).
     public static let gebacken = AdminAllowlist([
-        // Daniels verifizierte Google-Mail hier ergänzen (Johannes trägt sie ein).
-        "johannes@mykilos.com"
+        "johannes@mykilos.com",
+        "dk@mykilos.com"          // Daniel (von Johannes 2026-07-07 bestätigt)
     ])
 }
 

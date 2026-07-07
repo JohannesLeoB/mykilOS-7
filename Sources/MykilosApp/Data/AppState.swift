@@ -27,6 +27,10 @@ public final class AppState {
     // Google-Mail als kanonischer Schlüssel + reine Handles zu externen Systemen).
     // GRDB-Master ist autoritativ; Airtable reichert read-only an. TRÄGT NIE EIN SECRET.
     public let residentIdentity: ResidentIdentityStore
+    // Stabile aktive Bewohner-userID dieses Prozesslaufs — für den Lockout-sicheren
+    // Fallback-Ausweis (currentIdentity), wenn der GRDB-ResidentIdentity noch nicht
+    // angereichert ist. Nicht sicherheitsrelevant für istAdmin (dort zählt nur die Mail).
+    public let deviceUserID: String
     // E6 (Bewohner-Oberfläche): idempotente Anlage des eigenen Menschen-Records in
     // Airtable Clockodo-Nutzer (find-or-create über die Mail). Bestätigungs-gated,
     // append-only, nie DELETE. Nutzt AirtableClient (Keychain-Auth).
@@ -146,6 +150,36 @@ public final class AppState {
     // Wer hat den Datenstrom ausgelöst? Für Handshake-Einträge im Schaltzentrum.
     public var actorUserID: String {
         googleAuth.currentUser?.email ?? profile.profile?.displayName ?? "local"
+    }
+
+    // MARK: - Admin-Ebene (S2, read-only Erkennung — noch KEIN Enforcement/Gate)
+    // Trennt Admin (Struktur/Einladungen/Go-Live/Keys) von normalen Usern (Projekte anlegen +
+    // arbeiten). Voller gehärteter Plan: docs/handoffs/ADMIN_EBENE_BAUPLAN.md.
+
+    /// Verifizierte Identität für Autorisierung. Bevorzugt den angereicherten GRDB-Ausweis;
+    /// fällt (Lockout-Schutz A.5) auf die roh verifizierte Google-Mail zurück, wenn die
+    /// Airtable-Anreicherung (`enrichResidentIdentity`, non-fatal Best-Effort) noch nicht lief —
+    /// sonst würde ein Airtable-Timeout Johannes aus seinen eigenen Admin-Funktionen aussperren.
+    /// Dieselbe Mail-Quelle in beiden Pfaden, nur ohne die Zusatz-Handles. NIE aus `UserProfile.role`.
+    public var currentIdentity: ResidentIdentity? {
+        if let ausweis = residentIdentity.identity, ausweis.hasValidKey { return ausweis }
+        guard let email = currentGoogleUser?.email, email.isEmpty == false else { return nil }
+        return ResidentIdentity(googleEmail: email, userID: deviceUserID)
+    }
+
+    /// Token-Kopplung (Härtung A.3): ist ein echtes Google-Token im per-User-Keychain-Namespace
+    /// anwesend? `GoogleAuthService.status` wird aus `tokenStore.load()` (dem echten Token-Bündel)
+    /// abgeleitet, NICHT aus der fälschbaren userInfo-Cache — also der ehrliche „Token da"-Beweis.
+    /// Ein gefälschter Mail-String ohne echtes Token ergibt so keinen Admin.
+    public var currentAdminTokenPresent: Bool { googleAuth.status == .connected }
+
+    /// Die eingebackene Admin-Autorität (Allowlist = Johannes + Daniel, compile-time verankert).
+    public var adminAuthority: any AdminAuthorizing { AllowlistAdminAuthority() }
+
+    /// Ist der aktuelle Nutzer Admin? = verifizierte Allowlist-Mail UND echtes Token. Default-deny:
+    /// nil/leer/kein Token → false. Noch nirgends als Gate erzwungen — nur Anzeige/Vorbereitung.
+    public var istAktuellAdmin: Bool {
+        adminAuthority.istAdmin(currentIdentity, tokenPresent: currentAdminTokenPresent)
     }
 
     // sevDesk-Postbox-CheckoutPort (append-only Positions-Drop). Leichter Struct,
@@ -456,6 +490,7 @@ public final class AppState {
         // bleibt der Riegel inaktiv (Verhalten wie vor diesem Fix) statt Absturz.
         try? KeychainIdentityAnchorStore().ensureDevicePrimary(finalUserID)
         let userID = finalUserID
+        self.deviceUserID = userID
         // MULTI-USER: Alt-Zeilen der privaten Stores (userID IS NULL, vor v25) dem
         // Erst-Bewohner zuordnen — NUR wenn der aktive Bewohner der Primary ist
         // (sonst bleiben sie unberührt + für einen Zweit-Bewohner unsichtbar →

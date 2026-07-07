@@ -1071,6 +1071,9 @@ struct SettingsView: View {
                 diagRow("Gebaut",  AppIdentity.buildDate)
                 diagRow("Bundle",  AppIdentity.bundlePath)
                 diagRow("DB",      AppIdentity.dbPath)
+                // Admin-Ebene (S2, read-only): verifizierte Allowlist-Mail UND echtes Google-Token.
+                // Nur Anzeige — noch kein Gate. Ermöglicht die Live-Abnahme der Admin-Erkennung.
+                diagRow("Admin", appState.istAktuellAdmin ? "ja" : "nein")
             }
             HStack(spacing: MykSpace.s4) {
                 Button("Diagnose kopieren") { copyDiagnostics() }
