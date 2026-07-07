@@ -41,24 +41,35 @@ Today), nicht nur als Filterliste.
 **Ist-Stand:** Nur Filtern (Meine/Alle, Projekt, Prio, Fälligkeit) — KEINE Spalten-/Kanban-Ansicht,
 weder im Aufgaben-Tab noch auf der Übersicht. 🔴 Nicht gebaut.
 
-## 🔴 ClickUp-Bearbeitbarkeit + Zuweisen — Johannes 2026-07-07, mit Nachdruck
+## 🔴 ClickUp-Bearbeitbarkeit + Zuweisen — Johannes 2026-07-07/08, mit Nachdruck (VOLLE FUNKTIONALITÄT)
 
 **Zugesagt/gefordert (Johannes, wörtlich):** "WO IST DIE VERDAMMTE BEARBEITBARKEIT??? ZUWEISEN UND
-ERSTELLEN VON AUFGABEN???"
-**Ist-Stand, ehrlich aufgeschlüsselt (verifiziert 2026-07-07):**
-- Aufgabe **erstellen**: ✅ gebaut (TasksWidget, gegen Testspace-/Go-Live-Gate), aber noch nicht
-  von Johannes live geprüft.
+ERSTELLEN VON AUFGABEN???" (07-07), dann (07-08): "VOLLE CLICKUP FUNKTIONALITÄT JETZT" — inkl.
+Kanban-Spalten im Aufgaben-Widget der Übersichtsseite UND in den Kataloge-„Aufgaben".
+**Ist-Stand, ehrlich aufgeschlüsselt (verifiziert 2026-07-08, per eigenem Build/Test/grep, NICHT
+per Subagenten-Behauptung):**
+- Aufgabe **erstellen**: ✅ gebaut (TasksWidget, gegen Testspace-/Go-Live-Gate), noch nicht von
+  Johannes live geprüft.
 - Status **ändern**: ✅ gebaut, gleiches Gate, noch nicht live geprüft.
-- **Bearbeiten** (Fälligkeitsdatum, Priorität, Titel, zwischen Listen verschieben, Custom Fields):
-  🔴 nicht gebaut. Nur Status + Neuanlage existieren.
-- **Zuweisen** (echte ClickUp-Assignees, MENSCH-initiiert über die UI mit Bestätigung — nicht die
-  KI, die weist nie zu, das bleibt eiserne Regel): 🔴 nicht gebaut. Bisher bewusst ausgeschlossen,
-  weil ohne Go-Live-Freigabe jede Zuweisung eine echte Benachrichtigung an eine echte Person
-  auslösen würde. Mit der heute gebauten Go-Live-Whitelist (S10) ist die technische Grundlage für
-  ein SICHERES, whitelist-beschränktes Zuweisen jetzt vorhanden — der Zuweisen-Schreibpfad selbst
-  ist aber noch nicht gebaut.
-**Nächster Schritt:** Bearbeitbarkeit (Fälligkeitsdatum/Priorität mind.) + ein Mensch-bestätigter
-Zuweisen-Pfad (gegen dasselbe Gate wie Status/Anlegen) sind die nächsten konkreten Bausteine.
+- **Bearbeiten** (Titel/Fälligkeit/Priorität): 🟡 TEILWEISE — `ClickUpClient.updateTask` +
+  `ClickUpTaskActionStore.updateTask` durchs bestehende Gate sind gebaut, 3 Tests grün, committet
+  (`10e3aae`). **Es fehlt noch das UI-Sheet** (Bearbeiten-Button/Menü in TasksWidget +
+  ClickUpAufgabenSpalte) — ohne UI ist es für Johannes unsichtbar/unbedienbar, also NICHT als
+  "fertig" zu werten. Custom Fields schreiben + zwischen Listen verschieben: 🔴 nicht gebaut.
+- **Kanban-Spalten** (Aufgaben-Widget Übersicht + Kataloge-„Aufgaben"): 🔴 nicht gebaut. Aktuell
+  nur Filterliste (Meine/Alle/Projekt/Prio/Fälligkeit), keine Status-Gruppierung.
+- **Zuweisen** (echte ClickUp-Assignees, MENSCH-initiiert mit Bestätigung, KI weist nie zu — bleibt
+  eiserne Regel): 🔴 nicht gebaut. Go-Live-Whitelist (S10) ist die technische Grundlage, aber der
+  eigentliche Zuweisen-Schreibpfad (Client-Methode + Store + Member-Picker-UI) fehlt.
+- **Chat lesen** (Team-Channels, DM/privat ausgeschlossen): 🔴 nicht gebaut. v3-API-Spike (ClickUp-
+  Chat ist ein anderer API-Stamm als der bestehende v2-Client) noch nicht mal begonnen.
+- **Werkbank-Architekturmakel** (`ClickUpTestWerkbankView` ruft `ClickUpClient` DIREKT auf, umgeht
+  Gate+Audit — nur durch die hartcodierte Test-Liste sicher, kein akutes Risiko, aber inkonsistent
+  mit dem "ein kanonischer Schreibpfad"-Prinzip): 🔴 noch nicht bereinigt.
+**Nächster Schritt (in dieser Reihenfolge, jeder Schritt selbst gebaut + selbst verifiziert, KEINE
+Subagenten-Delegation für verzahnte Mehrdatei-Änderungen laut docs/SUBAGENT_DISZIPLIN.md):**
+(1) UI-Sheet fürs bereits gebaute `updateTask` fertigstellen, (2) Kanban-Spalten, (3) Zuweisen
+durchs Go-Live-Gate, (4) Chat-Lesen-Spike, (5) Werkbank auf ClickUpTaskActionStore umstellen.
 
 ## 🔴 Assistent-Grounding-Gate (S0) — KRITISCH, mit akutem Vorfall
 
