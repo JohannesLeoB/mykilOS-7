@@ -95,7 +95,8 @@ public struct DateiKachel: View {
                     .clipShape(RoundedRectangle(cornerRadius: MykRadius.md))
             } else {
                 Image(systemName: file.iconName)
-                    .font(.system(size: side * 0.3))   // skaliert mit Kachel — bewusste Token-Ausnahme (dokumentiert): dynamische Größe
+                    // swiftlint:disable:next no_system_font_in_features — dynamische Icon-Größe, skaliert mit Kachel; kein statischer Typo-Token möglich
+                    .font(.system(size: side * 0.3))
                     .foregroundStyle(MykColor.faint.color)
             }
             // Hover: sanfte Abdunklung unten + Quick-Action.

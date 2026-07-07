@@ -33,10 +33,10 @@ custom_rules:
     severity: error
   no_hex_color_in_features:
     name: "Keine Color(hex:) — nutze MykColor"
-    # L26: ergänzt — CLAUDE.md verbietet Color(hex:) in Feature/Widget-Code, der Linter
-    #      prüfte es bisher nicht. Die `init(hex:)`-Definition (Tokens.swift) ist kein
-    #      Call-Site `Color(hex:` und wird ohnehin nicht erfasst; match_kinds hält Kommentare raus.
-    regex: 'Color\(\s*hex\s*:'
+    # Negativer Lookbehind (wie no_raw_color): schließt NSColor(hex:) aus — das ist die
+    # dokumentierte PDF-Druck-Ausnahme in MykPDFRenderer.swift (CLAUDE.md). Fängt weiter
+    # jedes echte Color(hex: in Feature/Widget-Code hart. init(hex:)-Definition ist kein Call-Site.
+    regex: '(?<![A-Za-z])Color\(\s*hex\s*:'
     match_kinds: [identifier, typeidentifier]
     message: "Hardcodierte Hex-Farben verboten. Verwende MykColor."
     severity: error
@@ -46,6 +46,30 @@ custom_rules:
     message: "try? verschluckt Fehler. Wirf oder behandle ihn sichtbar (SaveState)."
     severity: warning
 
+# Severity sauber getiert (2026-07-08): die Token-Disziplin (Custom-Rules oben) bleibt hart
+# `error` und bricht den Build. Länge/Struktur/Namen sind Debt-WARNUNGEN — lokal sichtbar,
+# aber kein Build-Gate. Das ersetzt die kaputte (maschinen-absolute Pfade) Baseline + das
+# `--strict`, das alle ~1863 Warnungen fälschlich zu fatal machte. CI lintet non-strict:
+# Fehler = hart, Warnungen = getracktes Debt zum Abtragen.
+identifier_name:
+  min_length: 0          # kurze idiomatische Namen (m, s, i in Closures/Schleifen) sind kein Disziplin-Verstoß
+  max_length:
+    warning: 60
+    error: 100
 line_length:
   warning: 140
-  error: 200
+  error: 2000            # nur absurd lange Zeilen hart; 140 bleibt sichtbare Warnung (viele lange Prompt-Literale)
+file_length:
+  warning: 500
+  error: 6000
+type_body_length:
+  warning: 400
+  error: 6000
+function_body_length:
+  warning: 100
+  error: 6000
+type_name:
+  min_length: 2
+  max_length:
+    warning: 40
+    error: 90

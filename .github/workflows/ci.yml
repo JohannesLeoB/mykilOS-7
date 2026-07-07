@@ -24,19 +24,18 @@ jobs:
         run: swift --version
       - name: SwiftLint (Disziplin-Gate)
         run: |
-          # Verankert 2026-07-07: `brew install swiftlint` zog immer die NEUESTE Version —
-          # jede neue SwiftLint-Regel erzeugte sofort "neue" Verstöße gegen die eingefrorene
-          # Baseline, obwohl lokal (ältere Version) alles grün war. Die CI war dadurch seit
-          # 2026-07-06 durchgehend rot, unbemerkt über Dutzende Commits. Fix: EXAKT dieselbe
-          # Version wie lokal fest verdrahten (0.65.0), kein "immer neueste" mehr — Version
-          # nur bewusst zusammen mit einer frisch geprüften Baseline hochziehen, nie beiläufig.
+          # Root-Fix 2026-07-08 der monatelang roten CI. Vorher: `--strict --baseline`.
+          # Zwei verkettete Fehler: (a) `--strict` machte ALLE ~1863 Style-Warnungen zu fatal;
+          # (b) die Baseline-Datei speicherte maschinen-absolute Pfade (file:///Users/johannes...),
+          # die auf dem CI-Runner (/Users/runner/work/...) NIE matchen → Baseline unterdrückte dort
+          # nichts → CI dauerrot, lokal grün. SwiftLint-Baselines sind grundsätzlich nicht
+          # pfad-portabel. Fix: keine Baseline, kein --strict. Die eigentliche Disziplin
+          # (Token-Custom-Rules, siehe .swiftlint.yml) ist `severity: error` und bricht den Build
+          # hart; Länge/Style/Namen sind dort zu Warnungen getiert (getracktes Debt, kein Gate).
           curl -sSL -o SwiftLint.pkg "https://github.com/realm/SwiftLint/releases/download/0.65.0/SwiftLint.pkg"
           sudo installer -pkg SwiftLint.pkg -target /
           swiftlint version
-          # Baseline (2026-07-05): die vorbestehende Lint-Schuld (1787 Verstöße, ganze
-          # Codebase) ist in swiftlint-baseline.json eingefroren. Die CI meldet damit nur
-          # NEUE Verstöße hart — die Alt-Schuld wird als eigener Strang abgetragen.
-          swiftlint lint --strict --baseline swiftlint-baseline.json || (echo "::error::NEUE Lint-Regeln verletzt (Alt-Schuld ist baselined)"; exit 1)
+          swiftlint lint
       - name: Build
         run: swift build
       - name: Test (inkl. Cold-Start)

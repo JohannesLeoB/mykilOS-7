@@ -437,7 +437,7 @@ struct FragebogenView: View {
     private var stilSektion: some View {
         VStack(alignment: .leading, spacing: MykSpace.s5) {
             sektionHeader(icon: "sparkles", titel: "Küchen-Stil", farbe: .personal)
-            ChipMultiPicker(options: Kueche_Stil.allCases, selection: $modell.stil, label: \.rawValue, farbe: .personal)
+            ChipMultiPicker(options: KuecheStil.allCases, selection: $modell.stil, label: \.rawValue, farbe: .personal)
             IntakeTextArea(label: "Freitext Stil-Wunsch", text: $modell.stilFreitext)
 
             sektionHeader(icon: "hand.tap", titel: "Griffkonzept", farbe: .personal)

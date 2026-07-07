@@ -59,7 +59,7 @@ public final class FragebogenModel {
     public var einbausituationFreitext: String = ""
 
     // MARK: - Sektion 2: Küchen-Stil
-    public var stil: Set<Kueche_Stil> = []
+    public var stil: Set<KuecheStil> = []
     public var stilFreitext: String = ""
 
     // MARK: - Sektion 3: Griffkonzept
@@ -405,7 +405,7 @@ public enum Einbausituation: String, CaseIterable, Sendable, Hashable, Identifia
     public var id: String { rawValue }
 }
 
-public enum Kueche_Stil: String, CaseIterable, Sendable, Hashable, Identifiable {
+public enum KuecheStil: String, CaseIterable, Sendable, Hashable, Identifiable {
     case modern = "Modern / Minimalistisch"
     case klassisch = "Klassisch / Landhaus"
     case skandinavisch = "Skandinavisch"
@@ -528,7 +528,7 @@ public enum Inneneinteilung: String, CaseIterable, Sendable, Hashable, Identifia
 
 public enum Haengeschraenk: String, CaseIterable, Sendable, Hashable, Identifiable {
     case standard = "Standard"
-    case bis_decke = "Bis zur Decke"
+    case bisDecke = "Bis zur Decke"
     case offen = "Offene Regalzone"
     case kein = "Keine Hängeschränke"
     case sonstige = "Sonstige"
@@ -544,7 +544,7 @@ public enum Haushaltgeraet: String, CaseIterable, Sendable, Hashable, Identifiab
 }
 
 public enum TechnikWunsch: String, CaseIterable, Sendable, Hashable, Identifiable {
-    case kabellose_laden = "Induktives Laden (Qi)"
+    case kabelloseLaden = "Induktives Laden (Qi)"
     case smarthome = "Smart-Home-Integration"
     case sprachsteuerung = "Sprachsteuerung"
     case sonstige = "Sonstige"
