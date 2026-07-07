@@ -1,5 +1,27 @@
 # Prozess-Lessons — laufender Abschlussbericht
 
+## 2026-07-07 (Abend/Nacht — ClickUp-I/O-Architektur + Admin-Ebene, Design-Dialog + Bau)
+
+**Näher an der Vision:** Ein dichter Design-Dialog mit Johannes zur ClickUp-Vollintegration + Admin-Ebene,
+Schritt für Schritt mitgesteuert (nicht vorgeprescht). Drei lebende Plan-Docs, jede Load-bearing-Aussage
+am Code verifiziert. „Sauberes Vernetzen" mit der ClickUp-KI neu gerahmt: nicht KI-zu-KI-Chat (fragil,
+verschwindet beim Go-Live, verdoppelt Erfindungsrisiko), sondern ihre **Struktur read-only ernten** —
+und tatsächlich getan (echte Listen-IDs, Phasen-Template, 10-Feld-Kontrakt mit Join-Schlüssel). Admin-Ebene
+S1+S2 gebaut, je live-abnehmbar. **Der adversariale Workflow fand ein echtes Loch in meinem gerade
+committeten Fundament** (googleEmail aus lokal beschreibbarem Keychain → fälschbar) und ich habe es sofort
+gehärtet (Token-Kopplung) — genau der Wert der Angriffs-Runde.
+
+**Was stolperte:** Zwei Berechtigungs-Modell-Korrekturen von Johannes nötig (erst „alles Admin-gated",
+dann „User dürfen Projekte anlegen, Admin = Struktur/Einladungen") — ich hatte die Grenze zu weit gezogen.
+Habe die laufende Sicherheits-Orchestrierung darauf gestoppt + korrigiert neugestartet statt mit falscher
+Prämisse weiterzurechnen. Und ein feiner S0-Moment in der Praxis: Daniels Mail NICHT geraten, sondern von
+Johannes eingetragen (`dk@mykilos.com`) — kein Faktum ohne Beleg, auch bei mir selbst.
+
+**Die eine Sache anders nächstes Mal:** Bei einem Berechtigungs-/Sicherheits-Modell ganz früh die
+Trennlinie in EINEM Satz zurückspiegeln lassen („Admin = X, User = Y — richtig?"), BEVOR ein
+Design-Workflow läuft — hätte den einen Neustart der Orchestrierung erspart. Die Grenze ist die teuerste
+Annahme; sie gehört zuerst bestätigt.
+
 ## 2026-07-07 (Tag/Abend, Non-Stop-Fortsetzung — Warenkorb-Bug, sevDesk-Kunden, In-App-Hilfe)
 
 **Näher an der Vision:** Johannes' konkreten Zwei-Teiler exakt geliefert: (1) Bugfix — herausgelöste
