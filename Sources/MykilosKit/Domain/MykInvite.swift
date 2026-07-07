@@ -50,3 +50,19 @@ public struct MykInvitePayload: Codable, Equatable, Sendable {
         public static let claudeModel = "claude.model"
     }
 }
+
+// MARK: - MykInviteInhalt — welche Team-Key-Gruppen der Admin in die Datei legt
+// OptionSet, damit die Admin-UI je Gruppe an-/abwählen kann. ClickUp bewusst NICHT dabei
+// (geht bald per-User live — ein geteilter Token wäre dann falsch). Persönliches (eigener
+// Google-Login, Clockodo) ist grundsätzlich nie eine Option.
+public struct MykInviteInhalt: OptionSet, Sendable {
+    public let rawValue: Int
+    public init(rawValue: Int) { self.rawValue = rawValue }
+
+    /// Airtable-PAT + Base-ID (die geteilten Projekt-/Kontaktdaten, read-only).
+    public static let airtable = MykInviteInhalt(rawValue: 1 << 0)
+    /// Google-OAuth-Client-Config (Client-ID + -Secret, App-Ebene — kein User-Token).
+    public static let googleClient = MykInviteInhalt(rawValue: 1 << 1)
+    /// Team-Claude-Key + Modell (nur bei EINEM geteilten Anthropic-Key sinnvoll).
+    public static let claude = MykInviteInhalt(rawValue: 1 << 2)
+}

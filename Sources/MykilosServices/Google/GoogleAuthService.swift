@@ -50,6 +50,20 @@ public final class GoogleAuthService {
         try tokenStore.loadClientSecret()
     }
 
+    /// Legt NUR die OAuth-Client-Config ab (ID + optional Secret), OHNE den Login zu starten —
+    /// für den Einladungs-Import (Schlüsselbund): der neue User bekommt die geteilte Client-
+    /// Config, muss danach nur noch seinen persönlichen Google-Login machen (kein User-Token
+    /// wandert je mit). Leere ID = No-Op (nichts zu setzen).
+    public func storeClientConfig(clientID: String, clientSecret: String?) throws {
+        let trimmedID = clientID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedID.isEmpty == false else { return }
+        try tokenStore.storeClientID(trimmedID)
+        if let clientSecret {
+            let trimmedSecret = clientSecret.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedSecret.isEmpty == false { try tokenStore.storeClientSecret(trimmedSecret) }
+        }
+    }
+
     public func startAuthorization(clientID: String, clientSecret: String = "") async throws {
         let trimmedClientID = clientID.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedClientSecret = clientSecret.trimmingCharacters(in: .whitespacesAndNewlines)

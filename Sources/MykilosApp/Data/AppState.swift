@@ -658,6 +658,66 @@ public final class AppState {
         return total
     }
 
+    // MARK: - Einladungs-Schlüsselbund (Johannes 2026-07-07)
+    // Sammelt die AUSGEWÄHLTEN geteilten Team-Keys aus den einzelnen Auth-Services in EIN
+    // verschlüsseltes .mykinvite-Bündel (Admin) bzw. verteilt sie beim Import wieder in die
+    // Stores (neuer User). Krypto/Format liegt getestet in MykInviteService — hier nur die
+    // Store-Orchestrierung. Persönliches (eigener Google-Login, Clockodo) reist NIE mit.
+
+    /// Admin: baut das Bündel aus den aktuell verbundenen, ausgewählten Team-Keys.
+    public func einladungErstellen(
+        inhalt: MykInviteInhalt,
+        eingeladeneEmail: String?,
+        eingeladenerName: String?,
+        passwort: String,
+        gueltigTage: Int? = 7
+    ) throws -> Data {
+        var werte: [String: String] = [:]
+        if inhalt.contains(.airtable), let creds = try airtableAuth.storedCredentials() {
+            werte[MykInvitePayload.Schluessel.airtablePAT] = creds.pat
+            werte[MykInvitePayload.Schluessel.airtableBaseID] = creds.baseID
+        }
+        if inhalt.contains(.googleClient), let clientID = try googleAuth.storedClientID(), clientID.isEmpty == false {
+            werte[MykInvitePayload.Schluessel.googleClientID] = clientID
+            if let secret = try googleAuth.storedClientSecret(), secret.isEmpty == false {
+                werte[MykInvitePayload.Schluessel.googleClientSecret] = secret
+            }
+        }
+        if inhalt.contains(.claude), let creds = try claudeAuth.storedCredentials() {
+            werte[MykInvitePayload.Schluessel.claudeAPIKey] = creds.apiKey
+            werte[MykInvitePayload.Schluessel.claudeModel] = creds.model
+        }
+        return try MykInviteService.einladungErstellen(
+            werte: werte,
+            eingeladeneEmail: eingeladeneEmail,
+            eingeladenerName: eingeladenerName,
+            passwort: passwort,
+            gueltigTage: gueltigTage
+        )
+    }
+
+    /// Neuer User: entschlüsselt das Bündel und verteilt die enthaltenen Keys in die Stores.
+    /// Gibt den Payload zurück (Wizard zeigt „Einladung für …" + kann die Identität prüfen).
+    @discardableResult
+    public func einladungOeffnen(daten: Data, passwort: String) throws -> MykInvitePayload {
+        let payload = try MykInviteService.einladungLesen(daten: daten, passwort: passwort)
+        let werte = payload.werte
+        if let pat = werte[MykInvitePayload.Schluessel.airtablePAT],
+           let baseID = werte[MykInvitePayload.Schluessel.airtableBaseID] {
+            try airtableAuth.connect(pat: pat, baseID: baseID)
+        }
+        if let clientID = werte[MykInvitePayload.Schluessel.googleClientID] {
+            try googleAuth.storeClientConfig(
+                clientID: clientID,
+                clientSecret: werte[MykInvitePayload.Schluessel.googleClientSecret])
+        }
+        if let apiKey = werte[MykInvitePayload.Schluessel.claudeAPIKey],
+           let model = werte[MykInvitePayload.Schluessel.claudeModel] {
+            try claudeAuth.connect(apiKey: apiKey, model: model)
+        }
+        return payload
+    }
+
     // MARK: Notizen-Flush (App-Quit / Hintergrund)
     /// Sichert alle Notiz-Stores mit ungespeicherten Änderungen. Aufzurufen bei
     /// scenePhase == .background, damit Cmd-Q keine offene Notiz verliert.
