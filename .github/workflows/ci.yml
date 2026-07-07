@@ -24,7 +24,15 @@ jobs:
         run: swift --version
       - name: SwiftLint (Disziplin-Gate)
         run: |
-          brew install swiftlint || true
+          # Verankert 2026-07-07: `brew install swiftlint` zog immer die NEUESTE Version —
+          # jede neue SwiftLint-Regel erzeugte sofort "neue" Verstöße gegen die eingefrorene
+          # Baseline, obwohl lokal (ältere Version) alles grün war. Die CI war dadurch seit
+          # 2026-07-06 durchgehend rot, unbemerkt über Dutzende Commits. Fix: EXAKT dieselbe
+          # Version wie lokal fest verdrahten (0.65.0), kein "immer neueste" mehr — Version
+          # nur bewusst zusammen mit einer frisch geprüften Baseline hochziehen, nie beiläufig.
+          curl -sSL -o SwiftLint.pkg "https://github.com/realm/SwiftLint/releases/download/0.65.0/SwiftLint.pkg"
+          sudo installer -pkg SwiftLint.pkg -target /
+          swiftlint version
           # Baseline (2026-07-05): die vorbestehende Lint-Schuld (1787 Verstöße, ganze
           # Codebase) ist in swiftlint-baseline.json eingefroren. Die CI meldet damit nur
           # NEUE Verstöße hart — die Alt-Schuld wird als eigener Strang abgetragen.
