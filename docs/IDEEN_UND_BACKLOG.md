@@ -386,12 +386,16 @@ heutigem Stand.
   sich selbst baut". Eigener, großer architektonischer Strang — nicht jetzt, braucht eigene
   Grundsatzentscheidung zur Sicherheitsgrenze. **Johannes: „zu dünnes Eis" — Selbst-Editierung
   bleibt verworfen, nicht weiterverfolgen.**
-- 📋 **PRIO MITTEL-HOCH — Bau-Auftrag: Datenschutz sichtbar machen (Settings/Onboarding), noch
-  NICHT gebaut (Johannes 2026-07-02 spät).** Die Per-User-Isolation-Regel (Mail/Memos/Assistent-
-  Chat nie kreuzlesbar) + Anti-Impersonation ist jetzt in `CLAUDE.md`/`docs/BENUTZERHANDBUCH.md`
-  dokumentiert — braucht noch **echte UI-Umsetzung**: ein Datenschutz-Abschnitt in Settings
-  (analog Private Area) UND ein Onboarding-Screen, der das beim ersten Start klar erklärt. Braucht
-  Johannes' Wording/Freigabe vor dem Bauen (Rechtstexte nicht einfach selbst formulieren) — kein
+- 🚧 **PRIO MITTEL-HOCH — Bau-Auftrag: Datenschutz sichtbar machen (Settings/Onboarding),
+  TEILWEISE gebaut (Johannes 2026-07-02 spät; Status-Korrektur 2026-07-07 — dieser Eintrag war
+  veraltet).** Die Per-User-Isolation-Regel (Mail/Memos/Assistent-Chat nie kreuzlesbar) +
+  Anti-Impersonation ist in `CLAUDE.md`/`docs/BENUTZERHANDBUCH.md` dokumentiert. **Settings-Hälfte
+  bereits gebaut** (`Sources/MykilosApp/Settings/DatenschutzFreigabenSectionView.swift`, Phase A):
+  globaler „KI komplett aus"-Schalter, einzeln togglebare Kategorien (Mail/Notizen/Chat/Clockodo),
+  „Meine Daten exportieren"-Button (DSGVO Art. 15/20, `DatenschutzExportService`) — Wortlaut
+  bewusst noch als „ENTWURF" markiert (Johannes redigiert final). **Onboarding-Hälfte fehlt
+  weiterhin** (kein Datenschutz-Screen in `Sources/MykilosApp/Onboarding/`) — braucht weiterhin
+  Johannes' Wording/Freigabe vor dem Bauen (Rechtstexte nicht einfach selbst formulieren), kein
   Kandidat für den unbeaufsichtigten Nacht-Automode.
   **Erweiterte Anforderungen (Johannes, Nachtrag):**
   - Muss von **jedem User klar lesbar** sein, **einzeln getoggelt/opt-in/opt-out** — kein
@@ -411,19 +415,22 @@ heutigem Stand.
     Notizen/Memos, persönliche Settings — NICHT geteilte Team-/Projektdaten, die nicht exklusiv
     dem Nutzer gehören). Deckt sich mit **DSGVO Art. 15 (Auskunftsrecht) + Art. 20
     (Datenportabilität)** — echte gesetzliche Pflicht, kein optionales Extra.
-- 📋 **PRIO MITTEL-HOCH — im Implementierungsplan (S10_WIRBELSAEULE.md §9, Parallel-Track)
-  eingetragen (Johannes 2026-07-02 spät).** Stattdessen (viel sicherer): Assistent-Tagebuch/
-  Erfahrungsbericht als Feedback-Kanal.
-  Statt Code selbst zu editieren, schreibt der Assistent bei **Friktionspunkten** (kann etwas
-  nicht lesen, Daten widersprechen sich, fehlende Info) einen kurzen **strukturierten Eintrag**
-  in ein **append-only Tagebuch** — gleiche Risikoklasse wie das bestehende `AuditEntry`-Muster
-  (nur Log-Schreiben, kein Datei-/Code-Zugriff, kein neuer Sicherheitsgrenzfall). Konkretes
-  Beispiel aus heute Abend selbst: „PDF liegt nur im Mail-Anhang, kann ich nicht lesen" beim
-  Deckenkoffer-Fall — genau so ein Friktionspunkt, deckt sich sogar mit der bereits geloggten
-  „PDF automatisch ins Drive ablegen"-Idee. **Wert:** echte, aus dem Alltag gesammelte Reibungs-
-  punkte statt erratener Ideen — direkt als Input für künftige Claude-Code-Sessions/Backlog
-  lesbar. Deutlich reifer/sicherer als der Dev-Agent-Ansatz oben, guter Kandidat für einen
-  konkreten, bald baubaren Strang.
+- ✅ **PRIO MITTEL-HOCH — Assistent-Tagebuch/Erfahrungsbericht als Feedback-Kanal (gebaut
+  2026-07-07):** Statt Code selbst zu editieren, schreibt der Assistent bei **Friktionspunkten**
+  (kann etwas nicht lesen, Daten widersprechen sich, fehlende Info) einen kurzen
+  **strukturierten Eintrag** über das neue Tool `log_friction_point` in ein **append-only
+  Tagebuch** (`AssistantTagebuchStore`, gleiches Muster wie `AuditStore` — nur Log-Schreiben,
+  kein Datei-/Code-Zugriff, kein neuer Sicherheitsgrenzfall, NICHT per-User isoliert, da
+  operative Protokollierung statt persönlicher Daten). 4 Arten: `kann_nicht_lesen`,
+  `widerspruch`, `fehlende_info`, `sonstiges` (unbekannte Werte fallen tolerant auf
+  `sonstiges`). Konkretes Beispiel aus dem Backlog selbst: „PDF liegt nur im Mail-Anhang, kann
+  ich nicht lesen" beim Deckenkoffer-Fall — genau so ein Friktionspunkt. **Wert:** echte, aus
+  dem Alltag gesammelte Reibungspunkte statt erratener Ideen — direkt als Input für künftige
+  Claude-Code-Sessions/Backlog lesbar (`store.eintraege`/`load(projectID:)`). **Noch offen:**
+  keine UI-Ansicht der Einträge (nur Chat-Tool-Schreiben bisher, kein Lese-Screen in Settings/
+  Kataloge) — Auslesen aktuell nur über den Store direkt oder eine künftige Session, die den
+  DB-Inhalt liest. 7 Tests (`AssistantTagebuchStoreTests`/`LogFrictionToolTests`, inkl.
+  Cold-Start-Beweis).
 
 ## Nachtrag 2026-07-02 spät — Großes Vormerken: iPad-Version von mykilOS (Johannes)
 

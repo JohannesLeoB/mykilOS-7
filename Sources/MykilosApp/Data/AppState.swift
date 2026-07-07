@@ -116,6 +116,9 @@ public final class AppState {
     // S6: vom Assistenten verwaltete Aufgaben/Erinnerungen (lokal, persistent).
     public let assistantTasks: AssistantTasksStore
 
+    // S10_WIRBELSAEULE §9: append-only Friktionspunkt-Tagebuch des Assistenten.
+    public let assistantTagebuch: AssistantTagebuchStore
+
     // Härtung (2026-07-01, API-Effizienz-Audit): TTL-Cache für search_gmail — war fertig
     // gebaut (GmailCacheStore, eigene Tests) aber nie hier instanziiert/übergeben, sodass
     // jede Gmail-Suche im Chat immer live gegen die API lief. Eine EINZIGE, langlebige
@@ -569,12 +572,19 @@ public final class AppState {
         self.assistantNotes = notes
         let tasks = AssistantTasksStore(db: database, userID: userID)
         self.assistantTasks = tasks
+        // Nicht per-User isoliert (wie AuditStore): operative Friktions-Protokollierung,
+        // keine persönlichen Nutzerdaten — Teams sollen dieselben Reibungspunkte sehen.
+        let tagebuch = AssistantTagebuchStore(db: database)
+        self.assistantTagebuch = tagebuch
         // Read-only Tool-Whitelist (Sevdesk NIE enthalten) + die lokalen Schreib-Tools
         // für Notizen (S4) und Aufgaben (S6). Tools laufen nur bei Opt-in (siehe AssistantChatView).
         self.conversation = ConversationEngine(
             chatStore: chatStore,
             provider: ClaudeChatClient(),
-            registry: .standard(gmailCache: gmailCache, kalkulationsEngine: kalkulationsEngine, notesStore: notes, tasksStore: tasks),
+            registry: .standard(
+                gmailCache: gmailCache, kalkulationsEngine: kalkulationsEngine,
+                notesStore: notes, tasksStore: tasks, tagebuchStore: tagebuch
+            ),
             dataFlowLogger: dataFlow,
             memoryStore: ChatMemoryStore(db: database, userID: userID)
         )
@@ -1044,7 +1054,8 @@ public final class AppState {
             gmailCache: gmailCache,
             kalkulationsEngine: kalkulationsEngine, kundenDirectory: brain,
             contactDirectory: contactDir, clickUpListings: clickUpListings,
-            notesStore: assistantNotes, tasksStore: assistantTasks, projectDirectory: dir))
+            notesStore: assistantNotes, tasksStore: assistantTasks,
+            tagebuchStore: assistantTagebuch, projectDirectory: dir))
     }
 
     /// Umfang des Drive-Ordners für die echte Provisionierung (Fragebogen). `.leadRumpf`

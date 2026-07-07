@@ -572,6 +572,19 @@ public final class GRDBDatabase: Sendable {
             }
         }
 
+        // v31_assistant_tagebuch (S10_WIRBELSAEULE.md §9, Parallel-Track, 2026-07-07):
+        // append-only Friktionspunkt-Tagebuch des Assistenten — gleiche Risikoklasse wie
+        // auditEntries (nur Log-Schreiben, kein Datei-/Code-Zugriff).
+        migrator.registerMigration("v31_assistant_tagebuch") { db in
+            try db.create(table: "assistantTagebuch") { t in
+                t.primaryKey("id", .text)
+                t.column("timestamp", .double).notNull()
+                t.column("projectID", .text)
+                t.column("art", .text).notNull()
+                t.column("text", .text).notNull()
+            }
+        }
+
         return migrator
     }
 

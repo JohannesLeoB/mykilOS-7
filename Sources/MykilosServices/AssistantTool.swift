@@ -1443,6 +1443,7 @@ public struct AssistantToolRegistry: Sendable {
         clickUpListings: [ProjectClickUpRef] = [],
         notesStore: AssistantNotesStore? = nil,
         tasksStore: AssistantTasksStore? = nil,
+        tagebuchStore: AssistantTagebuchStore? = nil,
         projectDirectory: ProjectDirectory? = nil
     ) -> AssistantToolRegistry {
         var tools: [any AssistantTool] = [
@@ -1487,6 +1488,9 @@ public struct AssistantToolRegistry: Sendable {
             tools.append(ListTasksTool(store: tasksStore))
             tools.append(CompleteTaskTool(store: tasksStore))
             tools.append(DeleteTaskTool(store: tasksStore))
+        }
+        if let tagebuchStore {
+            tools.append(LogFrictionTool(store: tagebuchStore))
         }
         if let engine = kalkulationsEngine {
             tools.append(KostenSchaetzungTool(engine: engine))
