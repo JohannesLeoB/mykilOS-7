@@ -140,10 +140,16 @@ ClickUp-Chat-Channel (channelID) ──? Projekt   [Zuordnung + v3-API UNBEKANNT
    `ProvisioningMode.prod` freigegeben** (heute im Code gesperrt). Für Bestandsprojekte: List-IDs aus
    der Ernte übernehmen. (Bis dahin schreibt Provisioning nur in die TEST-Sandbox.)
 2. **Chat senden (C2) überhaupt gewünscht?** (Einziger Pfad mit echter Notifikation. Wenn ja: nur per-User-Token + Nur-Ghost-Channel.)
-2b. **Nummern-Autorität bei ECHTEM Multi-User → ENTSCHIEDEN über die Rolle (Johannes, 2026-07-07):
-    „Admin hat die erweiterten Funktionen".** Projekt-Ursprung/Nummerierung/Provisioning/Go-Live/
-    Key-Verteilung sind **Admin-Funktionen**, kein Jedermann-Recht → die Kollisions-Fläche schrumpft
-    auf „wie viele Admin-Geräte feuern".
+2b. **Rollen-Grenze VERFEINERT (Johannes, 2026-07-07):** Die Grenze läuft NICHT über Projekt-Anlegen.
+    - **Normale User DÜRFEN:** Projekte anlegen (Intake→Nummer→Provisioning in die BESTEHENDE Struktur,
+      aktiver ProvisioningMode), arbeiten, eigener Scope. Ursprung + Nummern + Provisioning sind KEINE
+      Admin-Funktionen.
+    - **ADMIN-ONLY:** Ordner-Struktur/Schema-Template definieren/editieren (`OrdnerSchemaEditorView`/
+      `FolderSchema`), Einladungen/Onboarding (`MykInviteService`), Go-Live-Unlock (`.prod`), Key-/Config-
+      Verteilung, Ghost→echt. Merksatz: Admin besitzt Struktur+Umgebung+Onboarding, User operieren darin.
+    - **Nummern-Autorität:** weil AUCH normale User (viele, parallel) nummerieren, ist `.local`
+      unzureichend → **`.airtable` (global atomar) faktisch Pflicht**; Config-Umschaltung ist Admin-only.
+    - **Admins:** perspektivisch zwei — Johannes + Daniel, getrennte Geräte.
     - **Empfehlung Nummern-Autorität:** `.airtable` als durable Truth (system-of-record, überlebt
       Geräteverlust, Nummernkreis team-sichtbar). `.local` ist akzeptabel, solange strikt EIN
       Admin-Gerät originiert. Umschalten per Config, kein Aufrufer-Umbau.
