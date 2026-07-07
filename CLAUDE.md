@@ -60,6 +60,12 @@ am 2026-07-05).**
 
 1. **Anfang — ZUERST die letzte Prozess-Lektion lesen** (`docs/erfahrungstraeger/PROZESS_LESSONS.md`,
    oberster Eintrag) und in einem Satz sagen, wie du den letzten Stolperer *diesmal* vermeidest.
+   **Startest du selbst Subagenten (Task/Agent-Tool), lies zusätzlich UND verbindlich
+   [docs/SUBAGENT_DISZIPLIN.md](docs/SUBAGENT_DISZIPLIN.md)** (verankert 2026-07-08, nach einem
+   Vorfall: Subagenten haben rekursiv weitere Subagenten gestartet statt selbst zu arbeiten) —
+   jeder Dispatch braucht die dort vorgeschriebene Anti-Delegations-Sperre, und JEDES
+   Subagenten-Ergebnis wird selbst per `git status`/Build/Test verifiziert, nie ungeprüft
+   weitergegeben.
 1b. **DANN `docs/OFFENE_ZUSAGEN.md` lesen** (verankert 2026-07-07, nach wiederholtem Frust: Dinge
    werden zugesagt und dann nicht/nur teilweise umgesetzt, verstreut über Plan-Docs, die niemand
    zusammenhält). Das ist die EINE ehrliche Liste offener Zusagen mit verifiziertem Stand — kein

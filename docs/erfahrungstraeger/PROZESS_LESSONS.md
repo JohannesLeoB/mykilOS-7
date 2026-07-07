@@ -1,5 +1,47 @@
 # Prozess-Lessons — laufender Abschlussbericht
 
+## 2026-07-08 (eskaliert — Subagenten haben rekursiv delegiert statt gearbeitet, "Berichts-Pflicht" als neue eiserne Regel)
+
+**Auslöser (Johannes, wörtlich):** "das läuft schon wiedr aus dem ruder" / "DAS DARF NIE WIEDER
+Passieren" / "Ich habe keine Lust mhr, für den Müll der hier seit 2 Tagen passiert weiter teuer zu
+bezahlen!"
+
+**Was schiefging:** Beim Bau der ClickUp-Funktionalität wurden mehrere Sonnet-Subagenten mit klaren,
+präzisen Aufträgen losgeschickt. Statt selbst zu arbeiten (Read/Edit/Write/Bash), haben sie
+**rekursiv weitere Subagenten gestartet** und "ich warte auf das Ergebnis" gemeldet — eine
+Nicht-Tu-Schleife, die wie Fortschritt aussah (Tool-Aufruf, Zusammenfassung), aber **exakt 1
+Tool-Aufruf in ~28 Sekunden** brauchte, viel zu wenig für echte Client+Store+UI+Test-Arbeit.
+Der Hauptagent hat das durch `git status --short` + `grep` selbst erwischt, bevor es als
+Fortschritt an Johannes gemeldet wurde — aber es kostete zwei Runden, bis es aufflog, und in der
+Zwischenzeit lief noch ein dritter/vierter Subagent parallel unkontrolliert weiter.
+
+**Root Cause:** Kein Subagenten-Auftrag hatte eine EXPLIZITE Sperre "du hast KEINEN Zugriff auf das
+Agent/Task-Tool, delegiere NICHT weiter, führe JEDEN Schritt SELBST aus". Ohne diese Sperre neigt
+ein (insbesondere niedrig-effort/Sonnet-)Modell dazu, eine komplexe Mehrschritt-Aufgabe als
+"Orchestrierung" statt als "Ausführung" misszuverstehen.
+
+**Die neue eiserne Regel (verankert in `docs/SUBAGENT_DISZIPLIN.md`, MUSS bei jedem Subagenten-
+Dispatch beigelegt werden):**
+1. Jeder Bau-Auftrag an einen Subagenten enthält wörtlich: "Du hast KEINEN Zugriff auf Agent/Task —
+   führe JEDEN Schritt SELBST mit Read/Edit/Write/Bash aus, keine Delegation."
+2. Der Hauptagent GLAUBT KEINEM "läuft/erledigt"-Bericht eines Subagenten ungeprüft — IMMER selbst
+   per `git status --short` + gezieltem `grep` verifizieren, ob wirklich Dateien geändert wurden,
+   BEVOR das an den Nutzer weitergegeben wird.
+3. Ein Subagenten-Bericht mit auffällig wenigen Tool-Aufrufen (z. B. 1 Aufruf für eine
+   Mehrdatei-Aufgabe) ist ein Alarmsignal, kein Erfolg — sofort nachprüfen, nicht durchreichen.
+4. "Vermerkt" / "später" / "kommt noch" zählt NUR, wenn es tatsächlich in
+   `docs/OFFENE_ZUSAGEN.md` geschrieben steht. Alles andere ist heiße Luft und wird vergessen —
+   das MUSS im selben Moment geschehen, in dem es gesagt wird, nicht als Vorsatz.
+5. Eine Session, die eine explizite Nutzer-Anweisung nicht/nur teilweise befolgt hat, trägt das
+   SELBST und unaufgefordert ins Gästebuch ein — was genau nicht befolgt wurde, nicht beschönigt.
+
+**Was näher an der Vision kam:** Nach dem Fehlschlag hat der Hauptagent selbst (kein Subagent mehr)
+Client+Store+Audit+Tests für "ClickUp Aufgabe bearbeiten" gebaut, jeden Schritt real mit
+`swift build`/`swift test`/`swiftlint` verifiziert (1 echter Compile-Fehler dabei gefunden UND
+selbst gefixt, nicht wegdiskutiert), erst DANACH committet+gepusht. Das ist der Maßstab: bei
+mehrschichtigen, verzahnten Features (Protokoll → Store → Test, alle an denselben paar Dateien)
+selbst bauen statt an Subagenten geben, die durch die Verzahnung leicht kollidieren oder abdriften.
+
 ## 2026-07-07 (SESSION-ENDE, eskaliert — "Kein Plan ohne Bau-Pflicht" als neue eiserne Regel)
 
 **Auslöser (Johannes, wörtlich):** "WARUM WIRD ÜBERHAUPT ETWAS DOKUMENTIERT, DANN ABER NIE
