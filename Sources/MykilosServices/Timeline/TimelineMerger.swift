@@ -45,6 +45,7 @@ public extension AuditEntry.Action {
         case .inviteCreated:      "Einladung erstellt"
         case .clickUpStatusChanged: "ClickUp-Status geändert"
         case .clickUpTaskCreated: "ClickUp-Aufgabe angelegt"
+        case .clickUpTaskUpdated: "ClickUp-Aufgabe bearbeitet"
         case .clickUpGoLiveFreigegeben: "ClickUp-Liste Go-Live freigeschaltet"
         case .clickUpGoLiveGesperrt: "ClickUp-Liste Go-Live gesperrt"
         }

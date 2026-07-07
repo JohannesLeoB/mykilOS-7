@@ -11,6 +11,7 @@ public struct AuditEntry: Codable, Identifiable, Sendable {
              inviteCreated,   // Admin-Ebene S4: .mykinvite erstellt (Actor = verifizierte googleEmail, keine Keys geloggt)
              clickUpStatusChanged,   // ClickUp-Vollintegration S4: Status interaktiv geändert (nur Testspace, ClickUpWriteGate)
              clickUpTaskCreated,   // S4: Aufgabe interaktiv angelegt (ClickUpWriteGate, Ghost-Kürzel nur als Text-Marker)
+             clickUpTaskUpdated,   // Aufgabe interaktiv bearbeitet: Titel/Fälligkeit/Priorität (ClickUpWriteGate)
              clickUpGoLiveFreigegeben,   // S10: eine Liste admin-only auf die Go-Live-Whitelist gesetzt
              clickUpGoLiveGesperrt   // S10: eine Liste von der Go-Live-Whitelist entfernt
     }

@@ -129,6 +129,10 @@ public protocol ClickUpTaskWriting: Sendable {
     /// Setzt den Status einer Aufgabe (Statuswerte sind pro Liste konfiguriert — der Aufrufer
     /// kennt sie aus den bereits geladenen `ClickUpTask.status`-Werten der Liste).
     func setStatus(taskID: String, status: String) async throws
+    /// Aktualisiert Titel/Fälligkeit/Priorität einer Aufgabe (PUT /task/{id}). Nur die
+    /// übergebenen (non-nil) Felder werden gesendet — nil = unverändert lassen. NIE `assignees`
+    /// (Zuweisen ist ein getrennter Pfad hinter dem Go-Live-Gate, [[aufgaben-nur-mensch-zu-mensch-regel]]).
+    func updateTask(taskID: String, name: String?, dueDate: Date?, priority: ClickUpPriority?) async throws
 }
 
 // MARK: - ClickUpProjectProvisioning
@@ -292,9 +296,40 @@ public struct ClickUpClient: ClickUpFetching, ClickUpProjectProvisioning, ClickU
         guard (200...299).contains(http.statusCode) else { throw ClickUpError.httpError(http.statusCode) }
     }
 
+    public func updateTask(taskID: String, name: String?, dueDate: Date?, priority: ClickUpPriority?) async throws {
+        guard let credentials = try? credentialsStore.load() else { throw ClickUpError.notConnected }
+        guard let url = Self.buildUpdateTaskURL(baseURL: baseURL, taskID: taskID) else {
+            throw ClickUpError.invalidResponse
+        }
+        // Nur gesetzte Felder senden — heterogener Body (String/Int) → JSONSerialization.
+        var body: [String: Any] = [:]
+        if let name, name.isEmpty == false { body["name"] = name }
+        if let dueDate { body["due_date"] = Int(dueDate.timeIntervalSince1970 * 1000) }
+        if let priority { body["priority"] = Self.nativePriority(priority) }
+        guard body.isEmpty == false else { return }   // nichts zu ändern → kein Netzcall
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue(credentials.apiToken, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let (_, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw ClickUpError.invalidResponse }
+        guard (200...299).contains(http.statusCode) else { throw ClickUpError.httpError(http.statusCode) }
+    }
+
     static func buildUpdateTaskURL(baseURL: String, taskID: String) -> URL? {
         let encoded = taskID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? taskID
         return URL(string: "\(baseURL)/task/\(encoded)")
+    }
+
+    /// ClickUp-natives Prio-Mapping (API erwartet Int): urgent=1, high=2, normal=3, low=4.
+    static func nativePriority(_ priority: ClickUpPriority) -> Int {
+        switch priority {
+        case .urgent: 1
+        case .high: 2
+        case .normal: 3
+        case .low: 4
+        }
     }
 
     // MARK: - Identifizierung (ClickUpUserIdentifying, Onboarding)

@@ -14,6 +14,9 @@ struct ClickUpTaskActionStoreTests {
         private(set) var setStatusAufrufe = 0
         private(set) var createTaskAufrufe = 0
         private(set) var letzterContent: String?
+        private(set) var updateTaskAufrufe = 0
+        private(set) var letzterUpdateName: String?
+        private(set) var letzteUpdatePriority: ClickUpPriority?
         var wirftBeimSchreiben: Error?
 
         func createTask(listID: String, name: String, content: String?) async throws -> String {
@@ -25,6 +28,13 @@ struct ClickUpTaskActionStoreTests {
 
         func setStatus(taskID: String, status: String) async throws {
             setStatusAufrufe += 1
+            if let wirftBeimSchreiben { throw wirftBeimSchreiben }
+        }
+
+        func updateTask(taskID: String, name: String?, dueDate: Date?, priority: ClickUpPriority?) async throws {
+            updateTaskAufrufe += 1
+            letzterUpdateName = name
+            letzteUpdatePriority = priority
             if let wirftBeimSchreiben { throw wirftBeimSchreiben }
         }
 
@@ -155,5 +165,57 @@ struct ClickUpTaskActionStoreTests {
         }
         #expect(fake.createTaskAufrufe == 0)
         #expect(audit.entries.isEmpty)
+    }
+
+    // MARK: updateTask (Bearbeiten) — gleiches Gate wie setStatus/createTask
+
+    @Test func updateTaskInTestspaceSchreibtUndProtokolliert() async throws {
+        let fake = FakeWriter()
+        fake.spaceIDToReturn = ClickUpWriteGate.testspaceID
+        let db = try GRDBDatabase.inMemory()
+        let audit = AuditStore(db: db)
+        let store = ClickUpTaskActionStore(client: fake, audit: audit)
+
+        try await store.updateTask(
+            taskID: "t1", listID: "901218940344", name: "Neuer Titel", dueDate: nil, priority: .high,
+            projectID: "2026-999", actorUserID: "johannes@mykilos.com")
+
+        #expect(fake.updateTaskAufrufe == 1)
+        #expect(fake.letzterUpdateName == "Neuer Titel")
+        #expect(fake.letzteUpdatePriority == .high)
+        #expect(audit.entries.contains { $0.action == .clickUpTaskUpdated })
+    }
+
+    @Test func updateTaskInFremderListeWirftUndSchreibtNie() async throws {
+        let fake = FakeWriter()
+        fake.spaceIDToReturn = "90127216979"
+        let db = try GRDBDatabase.inMemory()
+        let audit = AuditStore(db: db)
+        let store = ClickUpTaskActionStore(client: fake, audit: audit)
+
+        await #expect(throws: ClickUpWriteGateError.self) {
+            try await store.updateTask(
+                taskID: "t1", listID: "901218617645", name: "Darf nie geschrieben werden",
+                dueDate: nil, priority: nil, projectID: "2026-015", actorUserID: "johannes@mykilos.com")
+        }
+        #expect(fake.updateTaskAufrufe == 0)
+        #expect(audit.entries.isEmpty)
+    }
+
+    @Test func updateTaskMitGoLiveWhitelistErlaubtSchreiben() async throws {
+        let fake = FakeWriter()
+        fake.spaceIDToReturn = "90127216979"
+        let db = try GRDBDatabase.inMemory()
+        let audit = AuditStore(db: db)
+        let whitelist = ClickUpGoLiveWhitelistStore(db: db, audit: audit)
+        try whitelist.freischalten(listID: "901218617645", projektNummer: "2026-015", ausgeloestVon: admin(), tokenPresent: true)
+        let store = ClickUpTaskActionStore(client: fake, audit: audit, goLiveWhitelist: whitelist)
+
+        try await store.updateTask(
+            taskID: "t1", listID: "901218617645", name: nil, dueDate: nil, priority: .urgent,
+            projectID: "2026-015", actorUserID: "johannes@mykilos.com")
+
+        #expect(fake.updateTaskAufrufe == 1)
+        #expect(audit.entries.contains { $0.action == .clickUpTaskUpdated })
     }
 }

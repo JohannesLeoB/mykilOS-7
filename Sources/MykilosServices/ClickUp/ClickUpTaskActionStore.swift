@@ -49,6 +49,29 @@ public final class ClickUpTaskActionStore {
         }
     }
 
+    /// Aufgabe bearbeiten (Titel/Fälligkeit/Priorität). Gleiches Gate wie `setStatus` —
+    /// löst die Space-ID live auf und lehnt fremde/unbekannte Listen fail-closed ab. `nil`-Felder
+    /// bleiben unverändert. NIE `assignees` (Zuweisen ist ein getrennter, gegateter Pfad).
+    public func updateTask(
+        taskID: String, listID: String, name: String?, dueDate: Date?, priority: ClickUpPriority?,
+        projectID: String, actorUserID: String
+    ) async throws {
+        saveState = .saving
+        do {
+            let spaceID = try await client.spaceID(forListID: listID)
+            try ClickUpWriteGate.assertSchreibErlaubt(
+                spaceID: spaceID, listID: listID, goLiveWhitelist: goLiveWhitelist?.listIDs ?? [])
+            try await client.updateTask(taskID: taskID, name: name, dueDate: dueDate, priority: priority)
+            try audit.append(AuditEntry(
+                actorUserID: actorUserID, projectID: projectID, action: .clickUpTaskUpdated,
+                summary: "ClickUp-Aufgabe aktualisiert: \(name ?? taskID)", quelle: "clickup-write"))
+            saveState = .saved(Date())
+        } catch {
+            saveState = .failed(error.localizedDescription)
+            throw error
+        }
+    }
+
     /// Aufgabe anlegen. `ghostKuerzel` (falls gesetzt) wird NUR als Text-Marker im
     /// Beschreibungsfeld hinterlegt — NIE das native ClickUp-`assignees`-Feld
     /// ([[aufgaben-nur-mensch-zu-mensch-regel]]). Gleiches Gate wie `setStatus`.
