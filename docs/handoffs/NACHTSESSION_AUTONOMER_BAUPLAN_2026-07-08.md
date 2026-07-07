@@ -1,3 +1,9 @@
+> **ÜBERHOLT (2026-07-08, konsolidiert):** Nie freigegeben, nie autonom gestartet — stattdessen
+> hat Johannes am 2026-07-08 direkt weitergearbeitet ("VOLLE CLICKUP FUNKTIONALITÄT JETZT").
+> Aktueller Stand: [HANDOFF_2026-07-08_KONSOLIDIERT.md](HANDOFF_2026-07-08_KONSOLIDIERT.md).
+> Diese Datei bleibt als historisches Dokument stehen (zeigt die Screen-unabhängige
+> Definition-of-Done-Haltung), ist aber NICHT der aktuelle Plan.
+
 # Nachtsession — Autonomer Bauplan (verankert 2026-07-07 Nacht, für eine fremde Session)
 
 **Kontext:** Diese Session läuft NONSTOP über Nacht, autonom, ohne Johannes' Anwesenheit, in einem
