@@ -27,6 +27,11 @@ struct OnboardingWizardView: View {
     // E4: lokal bestätigbare clockodoUserID (Meldeadresse-Schritt).
     @State private var clockodoUserIDInput = ""
     @State private var meldeadresseError: String?
+    // Schlüsselbund-Import (2026-07-07)
+    @State private var einladungPasswort = ""
+    @State private var einladungDaten: Data?
+    @State private var einladungInfo: String?
+    @State private var einladungFehler: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -85,6 +90,7 @@ struct OnboardingWizardView: View {
     private var stepBody: some View {
         switch step {
         case .welcome:  welcomeBody
+        case .einladung: einladungBody
         case .profile:  profileBody
         case .claude:   claudeBody
         case .google:   googleBody
@@ -104,6 +110,31 @@ struct OnboardingWizardView: View {
             bullet("Google Workspace — empfohlen. Mail, Kalender, Drive live lesen (nur lesend).")
             Text("Claude genügt für den Start. Google ergänzt du jederzeit in den Einstellungen.")
                 .font(.mykSmall).foregroundStyle(MykColor.muted.color)
+        }
+    }
+
+    private var einladungBody: some View {
+        VStack(alignment: .leading, spacing: MykSpace.s5) {
+            stepTitle("Hast du eine Einladung?",
+                      "Eine .mykinvite-Datei von deinem Admin bringt alle geteilten Team-Zugänge mit. "
+                      + "Kein Problem, wenn nicht — überspring einfach.")
+            HStack(spacing: MykSpace.s3) {
+                Button(einladungDaten == nil ? "Einladung wählen …" : "Andere Datei …") { einladungWaehlen() }
+                    .buttonStyle(.plain).font(.mykSmall).foregroundStyle(MykColor.drive.color)
+                if einladungDaten != nil {
+                    Label("Datei geladen", systemImage: "doc.badge.checkmark")
+                        .font(.mykMono(9)).foregroundStyle(MykColor.positive.color)
+                }
+            }
+            if einladungDaten != nil {
+                secureField("Passwort (vom Admin über getrennten Kanal)", text: $einladungPasswort, placeholder: "Passwort")
+                Button("Importieren") { einladungImportieren() }
+                    .disabled(einladungPasswort.isEmpty)
+            }
+            if let einladungInfo { hint("✓ \(einladungInfo)") }
+            if let einladungFehler { errorText(einladungFehler) }
+            hint("Dein eigener Google-Login kommt erst in den nächsten Schritten — der reist nie in "
+                 + "einer Einladung mit. Die Einladung bringt nur die geteilten Team-Keys.")
         }
     }
 
@@ -322,6 +353,44 @@ struct OnboardingWizardView: View {
         Task {
             do { try await appState.googleAuth.startAuthorization(clientID: id) }
             catch { googleError = "Verbindung fehlgeschlagen: \(error)" }
+        }
+    }
+
+    // MARK: Schlüsselbund-Import
+    private func einladungWaehlen() {
+        einladungFehler = nil
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsOtherFileTypes = true
+        panel.prompt = "Einladung wählen"
+        panel.message = "Eine .mykinvite-Datei wählen"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            einladungDaten = try Data(contentsOf: url)
+            einladungInfo = nil
+        } catch {
+            einladungFehler = "Datei konnte nicht gelesen werden: \(error.localizedDescription)"
+        }
+    }
+
+    private func einladungImportieren() {
+        einladungFehler = nil
+        guard let daten = einladungDaten else { return }
+        do {
+            let payload = try appState.einladungOeffnen(daten: daten, passwort: einladungPasswort)
+            // Wizard-Felder mit den importierten Team-Keys nachziehen, damit die folgenden
+            // Schritte (Claude/Google) sie verbunden zeigen bzw. vorbefüllt haben.
+            googleClientID = (try? appState.googleAuth.storedClientID()) ?? googleClientID
+            if let claude = try? appState.claudeAuth.storedCredentials() {
+                claudeKey = claude.apiKey; claudeModel = claude.model
+            }
+            let fuer = payload.eingeladenerName ?? payload.eingeladeneEmail
+            einladungInfo = fuer.map { "Übernommen — Einladung für \($0). Team-Zugänge sind vorbereitet." }
+                ?? "Team-Zugänge übernommen."
+            einladungPasswort = ""
+        } catch {
+            einladungFehler = error.localizedDescription
         }
     }
 

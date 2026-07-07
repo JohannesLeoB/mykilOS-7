@@ -47,6 +47,24 @@ auf Nummer, Titel oder Kundenname; Prefix-Treffer stehen oben). **Enter** oder *
 - **Meldeadresse im Onboarding (2026-07-05):** Nach dem Google-Schritt bestätigt ein Schritt die
   erkannte Identität („Erkannt als … stimmt das?") + optional die Clockodo-User-ID. **Nur lokal
   gespeichert**, kein externer Write.
+- **Einladungs-Schlüsselbund / „Kollegen einladen" (2026-07-07):** Ein neuer Kollege muss nicht
+  jeden Team-Zugang einzeln eintippen — der Admin gibt ihm eine **verschlüsselte `.mykinvite`-Datei**.
+  - **Admin** (Einstellungen → System → „Kollegen einladen" → „Einladung erstellen"): wählt aus, **was**
+    mitgeht (Checkboxen: Airtable · Google-Login-Config · Team-Claude-Key — nicht verbundene Quellen sind
+    deaktiviert), optional **für wen** (E-Mail/Name), und ein **Passwort** (Knopf „Generieren" = starkes
+    Zufallspasswort, empfohlen). Ergebnis: eine `.mykinvite`-Datei.
+  - **Zwei-Kanal-Übergabe:** die **Datei per Mail**, das **Passwort getrennt** (mündlich/Signal). Wer nur
+    eins abfängt, hat nichts. Datei ist standardmäßig **7 Tage gültig**.
+  - **Neuer Kollege:** im **Erst-Setup** (Onboarding, gleich nach der Willkommens-Seite ein Schritt
+    „Hast du eine Einladung?") ODER später in den Einstellungen → Datei wählen + Passwort → alle
+    geteilten Team-Zugänge landen im Keychain. Danach macht er **nur noch seinen eigenen Google-Login**.
+  - **Was NIE in einer Einladung reist:** der **eigene Google-Login** (wird beim OAuth persönlich erzeugt,
+    unübertragbar) und **Clockodo** (pro Nutzer privat). Eine Einladung trägt nur **geteilte Team-Keys**.
+  - **ClickUp** ist bewusst **nicht** dabei — das geht bald pro-Nutzer live (eigener Login je Person).
+  - *Ehrliche Sicherheits-Notiz:* Die Dateiverschlüsselung (AES-GCM) ist stark; die Schlüsselableitung
+    aus dem Passwort nutzt bewusst ein einfaches Verfahren (kein PBKDF2/Argon2, SPM-Grenze). Deshalb ist
+    das **starke Zufallspasswort** die eigentliche Absicherung — mit einem generierten Passwort ist die
+    Datei praktisch unbrechbar. Für schwache Handpasswörter wäre sie es nicht.
 - **Ins Team-Verzeichnis eintragen (2026-07-05):** In den Einstellungen → Personalausweis-Detail ein
   Knopf, der dich (Name + Mail) einmalig ins geteilte Airtable-Team-Verzeichnis („Clockodo-Nutzer")
   einträgt. **Bestätigungs-gated** (Klick → Nachfrage → Eintrag), **idempotent** (find-or-create über

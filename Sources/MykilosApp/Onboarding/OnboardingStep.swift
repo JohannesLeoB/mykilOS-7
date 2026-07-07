@@ -7,6 +7,10 @@ import Foundation
 // erkannte Identität (read-only, nur lokaler Write).
 enum OnboardingStep: Int, CaseIterable {
     case welcome
+    // Schlüsselbund-Import (2026-07-07): hat der neue Kollege eine .mykinvite-Einladung, lädt
+    // er sie gleich hier + Passwort → alle geteilten Team-Keys (Airtable/Google-Client/Claude)
+    // sind vorbereitet, die folgenden Schritte zeigen sie verbunden. Überspringbar.
+    case einladung
     case profile
     case claude
     case google

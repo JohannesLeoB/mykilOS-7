@@ -9,6 +9,16 @@ Prinzip: Schaltschrank — der Admin verteilt die geteilten Zugänge als eine st
          der User steckt sie einmal ein. Keys landen im Keychain (OS-geschützt), nie im Chat/Klartext.
 ```
 
+> ✅ **UMGESETZT 2026-07-07 (Schlüsselbund-Ausbau, Johannes-Entscheidung):** Die `.mykinvite`-Einladung
+> trägt jetzt **mehrere** Team-Keys statt nur Airtable — **Airtable + Google-OAuth-Client-Config +
+> Team-Claude-Key** (ClickUp bewusst NICHT, geht bald per-User live). Admin-UI mit Key-Auswahl +
+> eingeladener E-Mail/Name + **Passwort-Generator**; Import als eigener **Onboarding-Schritt** (nicht
+> mehr nur Settings). Genau der hier beschriebene Ablauf: neuer User importiert die Einladung → alle
+> Team-Keys im Keychain → nur noch der eigene Google-Login. Krypto-Kern + Passwort-Generator voll
+> getestet. **Offen geblieben:** echtes PBKDF2/Argon2 (SPM-Grenze) — praktisch abgesichert durch das
+> starke Zufallspasswort; Identitäts-**Prüfung** (Google-Login == eingeladene E-Mail) ist als Metadatum
+> vorbereitet, aber noch nicht erzwungen.
+
 ## Zwei Ebenen (zusammen = das ganze Onboarding)
 
 ### Ebene 1 — Google-App-Ausweis EINBACKEN (löst das dringendste Problem sofort)
