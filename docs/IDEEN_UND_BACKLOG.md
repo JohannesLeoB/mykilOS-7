@@ -1649,12 +1649,21 @@ Werkzeug-Einordnung in [[massendaten-katalog-miner]] (Memory):
   2026-07-07):** `VWPlankopfPort` (Sources/MykilosApp/Wirbelsaeule/Ports/VWPlankopfPort.swift)
   ist ein v1-CheckoutPort — gruppiert Picks nach Kunde/Projekt/Material und (für Artikel-Picks)
   nach `attribute["kategorie"]` in Geräte/Ausstattung/Beschläge (Johannes' Feldliste 2026-07-07),
-  liefert einen strukturierten **Text-Entwurf** als `CheckoutResult.nutzlast`. **Ehrliche
-  Scope-Grenze:** das echte Vectorworks-Zielformat (Data-Record-Felder? Worksheet-Spalten?) ist
-  NICHT verifiziert — der angekündigte Vectorworks-Referenz-Screenshot lag beim Bau noch nicht
-  vor. Reiner Text-Entwurf zum Copy-Paste, keine Vectorworks-native Ausgabe. **Noch offen:** UI-
-  Verdrahtung (kein Checkout-Sheet-Eintrag, wie bei DokumentPort/MoodboardPort auch noch nicht
-  verdrahtet), echtes Feldformat sobald die Referenz vorliegt. 6 Tests (`WirbelsaeulePortsTests`).
+  liefert einen strukturierten **Text-Entwurf** als `CheckoutResult.nutzlast`. **Feld-Vokabular
+  geerdet (2026-07-07):** read-only Recherche in Johannes' echter Vectorworks-Werkstatt-Ablage
+  (`~/Desktop/Icloud desktop/vectorworks/exporte/`) zeigte, dass seine ECHTEN Beschläge-/
+  Material-Exporte (`Custom.csv`, „Liste (Beschlaege) - US600_1T_EB-2.xlsx“) die Spalten
+  Projekt-Nr./Bauvorhaben/Kommission/Position/Artikel(-nummer)/Bezeichnung/Lieferant/Menge/
+  Einzelpreis/Gesamtpreis nutzen (Häfele-Artikelnummern als Beispiel) — der Artikel-Tabellenteil
+  des Entwurfs übernimmt jetzt genau dieses Vokabular. `.vwx`/`.sta` selbst sind reine Binärdateien
+  ohne extrahierbare Klassen-/Records-Namen (keine ZIP-Container, nur `file`-Ausgabe "data") — die
+  Feld-Grundlage kommt daher ausschließlich aus seinen Tabellen-Exporten, nicht aus reverse-
+  engineerten CAD-Dateien. **Ehrliche Scope-Grenze bleibt:** das echte Vectorworks-Titelblock-
+  Zielformat (Data-Record-Felder? Worksheet-Spalten?) ist WEITERHIN nicht verifiziert — der
+  angekündigte Referenz-Screenshot lag beim Bau noch nicht vor. Reiner Text-Entwurf zum
+  Copy-Paste, keine Vectorworks-native Ausgabe. **Noch offen:** UI-Verdrahtung (kein Checkout-
+  Sheet-Eintrag, wie bei DokumentPort/MoodboardPort auch noch nicht verdrahtet), echtes
+  Titelblock-Feldformat sobald die Referenz vorliegt. 9 Tests (`WirbelsaeulePortsTests`).
 - 💡 **Vectorworks-Sync (Zeichnungs-Integration):** Artikel-Warenkörbe (Geräte/Material/Kunde/
   Projekt) in Vectorworks-Zeichnungsfelder exportieren/importieren/syncen. Trifft den bereits
   benannten, aber leeren **Port #17 „CAD-/Zeichnungs-Handoff"** im S10-Blueprint

@@ -301,18 +301,54 @@ struct WirbelsaeulePortsTests {
         #expect(result.erfolg)
         let data = try #require(result.nutzlast)
         let text = try #require(String(data: data, encoding: .utf8))
-        #expect(text.contains("Projekt: 2026-015"))
+        #expect(text.contains("Projekt-Nr.: 2026-015"))
         #expect(text.contains("KUNDE:"))
         #expect(text.contains("Familie Cirnavuk"))
         #expect(text.contains("GERÄTE:"))
         #expect(text.contains("Backofen Bosch"))
         #expect(text.contains("AUSSTATTUNG:"))
-        #expect(text.contains("LED-Lichtband ×3"))
+        #expect(text.contains("LED-Lichtband"))
         #expect(text.contains("BESCHLÄGE:"))
-        #expect(text.contains("Blum Legrabox ×4"))
+        #expect(text.contains("Blum Legrabox"))
         #expect(text.contains("SONSTIGE ARTIKEL:"))
         #expect(text.contains("Kleinteile"))
+        // Tabellen-Kopfzeile im Vokabular der echten Häfele-Beschläge-Exporte.
+        #expect(text.contains("Pos. | Artikel | Bezeichnung | Lieferant | Menge | Einzelpreis | Gesamtpreis"))
         #expect(result.referenz == "WK-2026-015-0003")
+    }
+
+    @Test func plankopfPortExecuteFehlendeArtikelAttributeZeigenGedankenstrich() async throws {
+        // Kein "artikelnummer"/"lieferant"-Attribut gesetzt -> ehrlich "—" statt Erfindung.
+        let port = VWPlankopfPort()
+        let ohneAttribute = BasicPick(
+            matrix: .artikel,
+            objektID: CatalogObjectID("art-x"),
+            snapshot: PickSnapshot(bezeichnung: "Sockelleiste", menge: 2, vkEinzel: 10, attribute: ["kategorie": "geraet"])
+        )
+        let basket = WorkBasket(id: WorkBasketID("WK-attr"), projektNummer: "2026-020", inhaltsArt: .artikel, picks: [ohneAttribute])
+        let result = try await port.execute(basket: basket, ziel: PortZiel(kind: "download"))
+        let data = try #require(result.nutzlast)
+        let text = try #require(String(data: data, encoding: .utf8))
+        #expect(text.contains("1 | — | Sockelleiste | — | 2 | 10.00 € | 20.00 €"))
+    }
+
+    @Test func plankopfPortExecuteBauvorhabenUndKommissionAusZielParametern() async throws {
+        let port = VWPlankopfPort()
+        let ziel = PortZiel(kind: "download", parameter: ["bauvorhaben": "Küche Neubau Cirnavuk", "kommission": "KOM-4711"])
+        let result = try await port.execute(basket: plankopfKorb(), ziel: ziel)
+        let data = try #require(result.nutzlast)
+        let text = try #require(String(data: data, encoding: .utf8))
+        #expect(text.contains("Bauvorhaben: Küche Neubau Cirnavuk"))
+        #expect(text.contains("Kommission: KOM-4711"))
+    }
+
+    @Test func plankopfPortExecuteOhneBauvorhabenUndKommissionBleibenWeg() async throws {
+        let port = VWPlankopfPort()
+        let result = try await port.execute(basket: plankopfKorb(), ziel: PortZiel(kind: "download"))
+        let data = try #require(result.nutzlast)
+        let text = try #require(String(data: data, encoding: .utf8))
+        #expect(text.contains("Bauvorhaben:") == false)
+        #expect(text.contains("Kommission:") == false)
     }
 
     @Test func plankopfPortExecuteLeererKorbNurProjektzeile() async throws {
@@ -322,7 +358,7 @@ struct WirbelsaeulePortsTests {
         #expect(result.erfolg)
         let data = try #require(result.nutzlast)
         let text = try #require(String(data: data, encoding: .utf8))
-        #expect(text.contains("Projekt: 2026-000"))
+        #expect(text.contains("Projekt-Nr.: 2026-000"))
         #expect(text.contains("KUNDE:") == false)
     }
 
