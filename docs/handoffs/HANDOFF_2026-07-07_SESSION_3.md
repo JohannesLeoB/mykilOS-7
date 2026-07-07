@@ -43,11 +43,11 @@ Datum:  2026-07-07
 1. **Live-Abnahme** aller vier Punkte (Build/Test/Lint = Proxy, kein Beweis). Besonders:
    feuert der sevDesk-Drop mit gefüllten Kundenfeldern die Airtable-Felder korrekt? Öffnet
    das Hilfe-Menü das Handbuch-Fenster sauber?
-2. **„Kunden in Warenkorb" auch im Kataloge-Modul?** (offene Frage c). Der Kataloge-Session-Korb
-   (`WarenkorbState` in `KatalogeView`) erreicht sevDesk NIE — nur der Projekt-`WorkBasket`.
-   Deshalb wurde die Kundenerfassung am sevDesk-Drop gebaut (wo sie sevDesk wirklich erreicht).
-   Ein zusätzlicher „In Warenkorb"-Knopf an den Kontakt-Zeilen wäre ein separater Weg ohne
-   sevDesk-Wirkung — nur bauen, wenn Johannes ihn ausdrücklich will.
+2. **„Kunden in Warenkorb" auch im Kataloge-Modul? → ENTSCHIEDEN: NEIN** (Johannes, 2026-07-07: „nö").
+   Der Kataloge-Session-Korb (`WarenkorbState` in `KatalogeView`) erreicht sevDesk NIE — nur der
+   Projekt-`WorkBasket`. Die Kundenerfassung wurde am sevDesk-Drop gebaut (wo sie sevDesk wirklich
+   erreicht); ein zusätzlicher „In Warenkorb"-Knopf an den Kontakt-Zeilen wäre folgenlos und wird
+   NICHT gebaut. Nicht neu vorschlagen. (Gedächtnis: `kein-in-warenkorb-an-kontakt-zeilen`.)
 3. **Aufgaben-Spalte 3 (ClickUp schreiben/zuweisen)** — weiterhin bewusst NICHT gebaut
    (Ghost-Persona-Regel, „KI weist NIE zu", braucht Johannes' Blick). Kein Automode-Kandidat.
 4. Restliche Backlog-Punkte (Datenschutz-Onboarding-Rechtstexte, Vectorworks-Referenz-Screenshot,
