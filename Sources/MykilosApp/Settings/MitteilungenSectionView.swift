@@ -12,6 +12,7 @@ struct MitteilungenSectionView: View {
     @State private var nachfassSchwelle: Int = NachfassAlertPreferences.schwelleInTagen
     @State private var bitteReagierenAn: Bool = BitteReagierenAlertPreferences.aktiv
     @State private var bitteReagierenSchwelle: Int = BitteReagierenAlertPreferences.schwelleInTagen
+    @State private var signaleAn: Bool = SignalNotificationPreferences.aktiv
 
     var body: some View {
         VStack(alignment: .leading, spacing: MykSpace.s4) {
@@ -80,6 +81,20 @@ struct MitteilungenSectionView: View {
                     .font(.mykMono(10)).frame(width: 160)
                     .disabled(bitteReagierenAn == false)
             }
+
+            Divider().overlay(MykColor.line.color)
+
+            Text("Echte macOS-Mitteilungen (Banner/Mitteilungszentrale) für neu erkannte Angebote "
+                 + "und Werkzeichnungen — auch wenn mykilOS nicht im Vordergrund ist. Gilt nur für "
+                 + "diesen Mac, kein Versand aufs Handy.")
+                .font(.mykMono(9)).foregroundStyle(MykColor.faint.color)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Toggle(isOn: signaleBinding) {
+                Label("Mac-Mitteilungen für Signale aktiv", systemImage: "bell.badge").font(.mykSmall)
+            }
+            .toggleStyle(.switch)
+            .frame(maxWidth: 400, alignment: .leading)
         }
         .settingsCard()
     }
@@ -107,5 +122,9 @@ struct MitteilungenSectionView: View {
     private var bitteReagierenSchwelleBinding: Binding<Int> {
         Binding(get: { bitteReagierenSchwelle },
                 set: { bitteReagierenSchwelle = $0; BitteReagierenAlertPreferences.schwelleInTagen = $0 })
+    }
+
+    private var signaleBinding: Binding<Bool> {
+        Binding(get: { signaleAn }, set: { signaleAn = $0; SignalNotificationPreferences.aktiv = $0 })
     }
 }

@@ -111,6 +111,11 @@ offene Aufgaben und Kalender-Ereignisse auf einen Blick.
   `offerDetected`, eigenes Schlüsselwort-Set ("zeichnung"/"werkzeichnung"), eigenes Signal
   `drawingDetected`. Reduzierter Scope: nur PDF/Bild/Mail-Dateitypen wie bei Belegen — native
   CAD-Formate (DWG/DXF) lösen weiterhin nur das generische "neue Datei"-Signal aus).
+  **Echte Mac-Mitteilungen (2026-07-07):** neu erkannte Angebote/Werkzeichnungen lösen zusätzlich
+  eine echte macOS-Mitteilung aus (Banner/Mitteilungszentrale), auch wenn mykilOS nicht im
+  Vordergrund ist — ein/ausschaltbar unter **Einstellungen → Mitteilungen** ("Mac-Mitteilungen
+  für Signale"). **Gilt nur für diesen Mac** — keine Zustellung aufs Handy (bräuchte eigene
+  Infrastruktur wie einen Push-Relay-Dienst oder eine eigene iOS-App, noch nicht gebaut).
 - **Favoriten**: angepinnte Projekte als Schnellzugriff (Stern auf einer Projektkarte/im
   Detail-Header). Leer, bis du das erste Projekt anpinnst.
 - **Letzte Aktivität**: die neuesten Datenstrom-Handshakes (Sync/Tool-Calls) und bestätigten

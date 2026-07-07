@@ -630,7 +630,10 @@ public final class AppState {
             scanned += 1
             let watcher = offerWatcher(for: project.projectNumber)
             let signals = await watcher.poll(projectID: project.projectNumber, folderID: folderID)
-            for signal in signals { context.emit(signal) }
+            for signal in signals {
+                context.emit(signal)
+                await SignalNotificationDispatcher.benachrichtige(fuer: signal)
+            }
             total += signals.count
         }
         // Handshake nur bei echtem Treffer protokollieren — der 300s-Hintergrund-

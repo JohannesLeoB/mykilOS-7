@@ -1575,15 +1575,20 @@ stört den professionellen Betrieb; erst der Opt-in weckt die Spielereien. Dezen
   Datenschutz-/Settings-Sektion wie die Alert-Toggles
   ([[alerts-dezent-datenschutz-toggle-regel]]) — konsequent zu Ende gedacht: nicht nur OB ein
   Alert klingt, sondern WIE (welcher Sound aus der Bibliothek), pro Kategorie und pro Person.
-- 📋 **Verbindende Infrastruktur — native macOS-Push-Benachrichtigungen (Johannes 2026-07-02
-  spät):** echte System-Notifications wie gewohnt (Banner/Notification-Center), über Apples
-  **`UserNotifications`-Framework** (`UNUserNotificationCenter`) — Standard-API, keine
-  Unsicherheit, braucht nur einmalige `requestAuthorization`-Berechtigung. **Das ist der fehlende
-  Zustellweg für ALLE heute geloggten Alert-Ideen** (Werkzeichnung/Nachfass/Kontakt-Erkennung/
-  Bezahlt-Status-ungewiss/„Bitte reagieren") **und der Träger für die Sound-Bibliothek oben** —
-  Kategorie + Sound + Ein/Aus-Toggle greifen direkt hier. Baut den Datenschutz-Toggle
-  ([[alerts-dezent-datenschutz-toggle-regel]]) technisch um: pro Kategorie eigene
-  `UNNotificationCategory`, System-Berechtigung einmal beim ersten Alert anfragen.
+- 🚧 **Verbindende Infrastruktur — native macOS-Push-Benachrichtigungen (Johannes 2026-07-02
+  spät, teilgebaut 2026-07-07):** `SignalNotificationDispatcher`
+  (Sources/MykilosServices/SignalNotificationDispatcher.swift) liefert echte lokale
+  macOS-Mitteilungen (`UNUserNotificationCenter`, sofortige Zustellung, gleiches Muster wie
+  `TaskAlarmScheduler`) für **`offerDetected`** und **`drawingDetected`** — die beiden Signale,
+  die bereits über den bestehenden Hintergrund-Poll laufen
+  (`AppState.pollAllActiveProjectsForOffers`). Ein/aus über Einstellungen → Mitteilungen
+  ("Mac-Mitteilungen für Signale"), Default an. **Noch nicht abgedeckt:** Nachfass-/„Bitte
+  reagieren"-Hinweise (die sind reine On-Demand-Badges in `AllOfferRow`, kein Signal-/Poll-
+  Mechanismus — bräuchten einen eigenen periodischen Check, um proaktiv zu benachrichtigen,
+  statt nur beim Öffnen von „Alle Angebote" sichtbar zu sein), Kontakt-Erkennung und
+  Bezahlt-Status (beide selbst noch nicht gebaut). Kein pro-Kategorie `UNNotificationCategory`
+  (nur ein globaler Toggle bisher) — reicht für den aktuellen Umfang, kann bei Bedarf
+  granularer werden. 3 Tests (`SignalNotificationDispatcherTests`, reine Inhalts-Entscheidung).
   **⚠️ Gilt nur für den Mac.** Aufs **Handy** braucht es echte zusätzliche Infrastruktur, die
   mykilOS heute nicht hat (kein Server, keine iOS-Companion-App) — drei realistische Wege,
   Aufwand steigend: **(a) Drittanbieter-Push-Relay** (Pushover/ntfy.sh — mykilOS macht einen
